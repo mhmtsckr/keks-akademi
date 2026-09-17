@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  COACH
+  STUDENT
+}
+
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum AccessSource {
+  ACADEMY_CODE
+  PAID
+  ADMIN_GRANT
+}
+
+enum TestAccessStatus {
+  READY
+  USED
+  REVOKED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String?       @unique
+  passwordHash String?
+  name         String
+  role         Role
+  status       AccountStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  coachProfile CoachProfile?
+  student      Student?
+}
+
+model CoachProfile {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students  Student[]
+  createdAt DateTime  @default(now())
+}
+
+model Student {
+  id               String          @id @default(cuid())
+  userId           String?         @unique
+  user             User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  coachId          String?
+  coach            CoachProfile?   @relation(fields: [coachId], references: [id], onDelete: SetNull)
+  studentCode      String          @unique
+  accessKeyHash    String
+  fullName         String
+  gradeLevel       String?
+  legacyExternalId String?         @unique
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  plans            StudyPlan[]
+  dailyLogs        DailyLog[]
+  examResults      ExamResult[]
+  assessments      Assessment[]
+  testAccesses     TestAccess[]
+  payments         Payment[]
+}
+
+model StudyPlan {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  payload     Json
+  active      Boolean  @default(true)
+  legacyId    String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DailyLog {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  payload   Json
+  legacyId  String?  @unique
+  createdAt DateTime @default(now())
+}
+
+model ExamResult {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examType  String
+  payload   Json
+  legacyId  String?  @unique
+  createdAt DateTime @default(now())
+}
+
+model AcademyCode {
+  id                String   @id @default(cuid())
+  codeHash          String   @unique
+  codeHint          String
+  assignedStudentId String?
+  maxUses           Int      @default(1)
+  useCount          Int      @default(0)
+  active            Boolean  @default(true)
+  expiresAt         DateTime?
+  createdByUserId   String
+  createdAt         DateTime @default(now())
+  usedAt            DateTime?
+}
+
+model TestAccess {
+  id            String           @id @default(cuid())
+  studentId     String
+  student       Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  source        AccessSource
+  status        TestAccessStatus @default(READY)
+  academyCodeId String?
+  paymentId     String?
+  createdAt     DateTime         @default(now())
+  usedAt        DateTime?
+
+  @@index([studentId, status])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  studentId       String
+  student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  provider        String        @default("PAYTR")
+  merchantOid     String        @unique
+  amountKurus     Int
+  status          PaymentStatus @default(PENDING)
+  providerPayload Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Assessment {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  formVersion String
+  answers     Json
+  scores      Json
+  report      Json
+  completedAt DateTime @default(now())
+  emailedAt   DateTime?
+}
+
+model TestQuestion {
+  id          String   @id @default(cuid())
+  formVersion String
+  ageBand     String
+  orderNo     Int
+  dimension   String
+  reverse     Boolean  @default(false)
+  prompt      String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([formVersion, ageBand, orderNo])
+  @@index([formVersion, ageBand, active])
+}
