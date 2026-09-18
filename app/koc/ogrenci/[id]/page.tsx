@@ -23,25 +23,30 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
 
   return <main className="shell">
     <nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a><div className="navlinks"><a href="/koc">← Öğrencilerim</a></div></nav>
-    <section className="section"><span className="pill">Koç Öğrenci Çalışma Alanı</span><h1>{student.fullName}</h1><p className="muted">Öğrenci kodu: {student.studentCode}{student.gradeLevel?' · '+student.gradeLevel:''}</p></section>
-    <section className="grid">
+    <section className="section student-header"><div><span className="pill">Koç Öğrenci Çalışma Alanı</span><h1>{student.fullName}</h1><div className="meta"><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.goal&&<span>Hedef tanımlı</span>}</div></div></section>
+    <nav className="tabs no-print">
+      <a href="#genel">Genel Bakış</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
+    </nav>
+    <section id="genel" className="grid section-anchor">
       <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Program</div></div>
       <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme</div></div>
       <div className="card"><div className="kpi">{student.reports.length}</div><div className="muted">Rapor</div></div>
     </section>
-    <section className="section"><StudentWorkspaceForms studentId={student.id}/></section>
+    <section id="program" className="section section-anchor"><StudentWorkspaceForms studentId={student.id}/></section>
 
-    <section className="section"><h2>Mevcut Kayıtlar</h2>
+    <section id="calisma" className="section section-anchor"><h2>Mevcut Kayıtlar</h2>
       <div className="grid">
         <div className="card"><h3>Programlar</h3>{student.plans.map(p=><div key={p.id} style={{marginBottom:10}}><strong>{p.title}</strong><div className="muted">{JSON.stringify(p.payload)}</div></div>)}</div>
-        <div className="card"><h3>Teknikler</h3>{student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:10}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
-        <div className="card"><h3>Denemeler</h3>{student.examResults.map(x=><div key={x.id} style={{marginBottom:10}}><strong>{x.examType}</strong><div className="muted">{JSON.stringify(x.payload)}</div></div>)}</div>
+        <div id="teknikler" className="card section-anchor"><h3>Teknikler</h3>{student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:10}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
+        <div id="denemeler" className="card section-anchor"><h3>Denemeler</h3>{student.examResults.map(x=><div key={x.id} style={{marginBottom:10}}><strong>{x.examType}</strong><div className="muted">{JSON.stringify(x.payload)}</div></div>)}</div>
       </div>
     </section>
 
-    <section className="section"><div className="grid" style={{gridTemplateColumns:'2fr 1fr'}}>
+    <section id="raporlar" className="section section-anchor"><div className="grid" style={{gridTemplateColumns:'2fr 1fr'}}>
       <div className="card"><h2>Raporlar</h2>{student.reports.length===0?<p className="muted">Henüz rapor yok.</p>:student.reports.map(r=><article key={r.id} style={{padding:'12px 0',borderBottom:'1px solid var(--line)'}}><strong>{r.title}</strong><p className="muted">{r.summary}</p><p>{r.content}</p><a className="btn" href={'/koc/ogrenci/'+student.id+'/rapor/'+r.id}>Raporu Yazdır</a></article>)}</div>
-      <div className="card"><h2>Kütüphane</h2>{student.libraryItems.length===0?<p className="muted">Henüz kayıt yok.</p>:student.libraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
+      <div id="kutuphane" className="card section-anchor"><h2>Kütüphane</h2>{student.libraryItems.length===0?<p className="muted">Henüz kayıt yok.</p>:student.libraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
     </div></section>
+    <section id="hedef" className="section section-anchor"><div className="card"><h2>Hedef ve Profil</h2><p>{student.goal||'Henüz hedef eklenmemiş.'}</p>{student.profile&&<p className="muted">{JSON.stringify(student.profile)}</p>}</div></section>
+    <section id="veli" className="section section-anchor"><div className="card"><h2>Veli Erişimi</h2><p className="muted">Aktif veli erişimi: {student.parentProfiles.length}</p><p>Yeni veya yenilenmiş veli giriş kodunu yukarıdaki “Veli Girişi Oluştur” bölümünden oluşturabilirsiniz.</p></div></section>
   </main>;
 }
