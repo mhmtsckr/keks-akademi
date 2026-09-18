@@ -18,14 +18,14 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   let fileName: string | null = null;
   let mimeType: string | null = null;
   let fileSize: number | null = null;
-  let fileData: Buffer | null = null;
+  let fileData: Uint8Array<ArrayBuffer> | null = null;
 
   if (file instanceof File && file.size > 0) {
     if (file.size > 5 * 1024 * 1024) return NextResponse.json({ error: 'Dosya en fazla 5 MB olabilir.' }, { status: 413 });
     fileName = file.name;
     mimeType = file.type || 'application/octet-stream';
     fileSize = file.size;
-    fileData = Buffer.from(await file.arrayBuffer());
+    fileData = new Uint8Array(await file.arrayBuffer());
   }
 
   const row = await db.libraryItem.create({
