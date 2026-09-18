@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   if (!user.student) return NextResponse.json({ error: 'Öğrenci profili yok.' }, { status: 400 });
 
   const merchantId = process.env.PAYTR_MERCHANT_ID;
-  const appUrl = process.env.APP_URL;
+  const appUrl = process.env.APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '');
   if (!merchantId || !process.env.PAYTR_MERCHANT_KEY || !process.env.PAYTR_MERCHANT_SALT || !appUrl) {
     return NextResponse.json({ error: 'PayTR henüz yapılandırılmadı.' }, { status: 503 });
   }
