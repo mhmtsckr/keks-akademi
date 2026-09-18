@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
@@ -31,6 +32,9 @@ function dateOf(v: unknown): Date {
 }
 function legacyId(source: string, category: string, item: Record<string, unknown>, index: number) {
   return `legacy:${source}:${category}:${str(item.id) || index}`;
+}
+function json(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
 export async function POST(req: Request) {
@@ -84,7 +88,7 @@ export async function POST(req: Request) {
         title: `Eski KEKS tam veri arşivi · kaynak ${sourceCode}`,
         active: false,
         legacyId: `legacy:${sourceCode}:archive`,
-        payload: {
+        payload: json({
           importedFrom: 'ags-edebiyat-mizac.chatgpt.site',
           sourceStudentCode: sourceCode,
           sourceStudent: source,
@@ -94,11 +98,11 @@ export async function POST(req: Request) {
             library: relatedLibrary,
             teamChallenges: relatedChallenges,
           },
-        },
+        }),
       },
       update: {
         studentId: target.id,
-        payload: {
+        payload: json({
           importedFrom: 'ags-edebiyat-mizac.chatgpt.site',
           sourceStudentCode: sourceCode,
           sourceStudent: source,
@@ -108,7 +112,7 @@ export async function POST(req: Request) {
             library: relatedLibrary,
             teamChallenges: relatedChallenges,
           },
-        },
+        }),
       },
     });
 
@@ -119,26 +123,26 @@ export async function POST(req: Request) {
         title: 'Eski Sistem Çalışma Programı',
         active: true,
         legacyId: `legacy:${sourceCode}:schedule`,
-        payload: {
+        payload: json({
           schedule,
           targetNet: source.targetNet ?? null,
           targetSchool: source.targetSchool ?? null,
           processGoal: source.processGoal ?? null,
           intakeNote: source.intakeNote ?? null,
           nextReevalDate: source.nextReevalDate ?? null,
-        },
+        }),
       },
       update: {
         studentId: target.id,
         active: true,
-        payload: {
+        payload: json({
           schedule,
           targetNet: source.targetNet ?? null,
           targetSchool: source.targetSchool ?? null,
           processGoal: source.processGoal ?? null,
           intakeNote: source.intakeNote ?? null,
           nextReevalDate: source.nextReevalDate ?? null,
-        },
+        }),
       },
     });
 
@@ -152,12 +156,12 @@ export async function POST(req: Request) {
             studentId: target.id,
             date: dateOf(item.date ?? item.startAt),
             legacyId: lid,
-            payload: { category, ...item },
+            payload: json({ category, ...item }),
           },
           update: {
             studentId: target.id,
             date: dateOf(item.date ?? item.startAt),
-            payload: { category, ...item },
+            payload: json({ category, ...item }),
           },
         });
       }
@@ -173,12 +177,12 @@ export async function POST(req: Request) {
             studentId: target.id,
             examType: str(item.examType ?? item.type ?? item.name) || (category === 'net' ? 'Eski Sistem Net Kaydı' : 'Eski Sistem Sınavı'),
             legacyId: lid,
-            payload: { category, ...item },
+            payload: json({ category, ...item }),
           },
           update: {
             studentId: target.id,
             examType: str(item.examType ?? item.type ?? item.name) || (category === 'net' ? 'Eski Sistem Net Kaydı' : 'Eski Sistem Sınavı'),
-            payload: { category, ...item },
+            payload: json({ category, ...item }),
           },
         });
       }
@@ -193,9 +197,9 @@ export async function POST(req: Request) {
       const data = {
         studentId: target.id,
         formVersion: version,
-        answers: (item.answers ?? {}) as object,
-        scores: (item.scores ?? item.result ?? {}) as object,
-        report: item as object,
+        answers: json(item.answers ?? {}),
+        scores: json(item.scores ?? item.result ?? {}),
+        report: json(item),
         completedAt: dateOf(item.date ?? item.completedAt),
       };
       if (existing) await tx.assessment.update({ where: { id: existing.id }, data });
