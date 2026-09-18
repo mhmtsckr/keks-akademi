@@ -11,6 +11,7 @@ enum Role {
   ADMIN
   COACH
   STUDENT
+  PARENT
 }
 
 enum AccountStatus {
@@ -50,6 +51,7 @@ model User {
 
   coachProfile CoachProfile?
   student      Student?
+  parentProfile ParentProfile?
 }
 
 model CoachProfile {
@@ -70,6 +72,8 @@ model Student {
   accessKeyHash    String
   fullName         String
   gradeLevel       String?
+  goal             String?
+  profile          Json?
   legacyExternalId String?         @unique
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -80,6 +84,10 @@ model Student {
   assessments      Assessment[]
   testAccesses     TestAccess[]
   payments         Payment[]
+  studyTechniques  StudyTechnique[]
+  reports          StudentReport[]
+  libraryItems     LibraryItem[]
+  parentProfiles   ParentProfile[]
 }
 
 model StudyPlan {
@@ -180,4 +188,64 @@ model TestQuestion {
 
   @@unique([formVersion, ageBand, orderNo])
   @@index([formVersion, ageBand, active])
+}
+
+
+model StudyTechnique {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([studentId])
+}
+
+model StudentReport {
+  id               String   @id @default(cuid())
+  studentId        String
+  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title            String
+  summary          String?
+  content          String
+  createdByUserId  String?
+  visibleToStudent Boolean  @default(true)
+  visibleToParent  Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  @@index([studentId])
+}
+
+model LibraryItem {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title           String
+  note            String?
+  fileName        String?
+  mimeType        String?
+  fileSize        Int?
+  fileData        Bytes?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  @@index([studentId])
+}
+
+model ParentProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId      String
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  accessCodeHash String
+  codeHint       String
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([studentId])
 }
