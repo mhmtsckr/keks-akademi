@@ -10,7 +10,7 @@ Public uygulama iskeleti: öğrenci/koç/yönetici rolleri, mevcut öğrenci pla
 - Test erişimi iki yolla açılır: yönetici tarafından üretilmiş KEKS Akademi kodu veya başarılı 350 TL ödeme.
 - Ödeme sonucu tarayıcı ekranına güvenilerek değil PayTR callback hash doğrulamasıyla işlenir.
 - Gerçek KEKS soru havuzu **public repoya konmaz**.
-- Test tamamlandığında rapor `REPORT_RECIPIENT` adresine gönderilir; varsayılan hedef `mhmtsckr029@gmail.com`.
+- Test tamamlandığında rapor `REPORT_RECIPIENT` adresine gönderilir; varsayılan hedef `keksakademi@gmail.com`.
 - Eski öğrenci kodları, planlar, günlük kayıtlar ve deneme sonuçları silinmez; migrasyon `upsert` ile yapılır.
 
 ## Kurulum
