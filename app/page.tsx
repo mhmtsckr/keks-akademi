@@ -5,6 +5,7 @@ export default function Home() {
       <div className="navlinks">
         <a href="/ogrenci">Öğrenci</a>
         <a href="/koc">Koç</a>
+        <a href="/veli">Veli</a>
         <a href="/yonetici">Yönetici</a>
       </div>
     </nav>
