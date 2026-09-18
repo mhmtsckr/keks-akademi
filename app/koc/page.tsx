@@ -12,6 +12,6 @@ export default async function CoachPage() {
   return <main className="shell">
     <nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a><div className="navlinks"><a href="/">Ana Sayfa</a>{user.role==='ADMIN'&&<a href="/yonetici">Yönetici</a>}</div></nav>
     <section className="section"><span className="pill">Koç Paneli</span><h1>{user.name}</h1><p className="muted">Yalnızca kendi öğrencilerinizi görür ve takip edersiniz.</p></section>
-    <section className="grid" style={{gridTemplateColumns:'1fr 2fr'}}><CoachActions/><div className="card"><h2>Öğrencilerim ({students.length})</h2>{students.length===0?<p className="muted">Henüz öğrenci eklenmemiş.</p>:<table className="table"><thead><tr><th>Kod</th><th>Öğrenci</th><th>Grup</th></tr></thead><tbody>{students.map(s=><tr key={s.id}><td>{s.studentCode}</td><td>{s.fullName}</td><td>{s.gradeLevel||'—'}</td></tr>)}</tbody></table>}</div></section>
+    <section className="grid" style={{gridTemplateColumns:'1fr 2fr'}}><CoachActions/><div className="card"><h2>Öğrencilerim ({students.length})</h2>{students.length===0?<p className="muted">Henüz öğrenci eklenmemiş.</p>:<table className="table"><thead><tr><th>Kod</th><th>Öğrenci</th><th>Grup</th></tr></thead><tbody>{students.map(s=><tr key={s.id}><td>{s.studentCode}</td><td><a href={'/koc/ogrenci/'+s.id}><strong>{s.fullName}</strong></a></td><td>{s.gradeLevel||'—'}</td></tr>)}</tbody></table>}</div></section>
   </main>;
 }
