@@ -27,13 +27,13 @@ export async function currentUser() {
   try {
     const { payload } = await jwtVerify(token, secret());
     if (!payload.sub) return null;
-    return db.user.findUnique({ where: { id: payload.sub }, include: { coachProfile: true, student: true } });
+    return db.user.findUnique({ where: { id: payload.sub }, include: { coachProfile: true, student: true, parentProfile: true } });
   } catch {
     return null;
   }
 }
 
-export async function requireRole(roles: Array<'ADMIN'|'COACH'|'STUDENT'>) {
+export async function requireRole(roles: Array<'ADMIN'|'COACH'|'STUDENT'|'PARENT'>) {
   const user = await currentUser();
   if (!user || !roles.includes(user.role)) throw new Error('UNAUTHORIZED');
   return user;
