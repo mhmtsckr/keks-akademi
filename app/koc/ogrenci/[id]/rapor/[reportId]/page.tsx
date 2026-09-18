@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { PrintButton } from '@/app/components/PrintButton';
 
 export default async function PrintReportPage({params}:{params:Promise<{id:string;reportId:string}>}) {
   const user=await currentUser();
@@ -9,7 +10,7 @@ export default async function PrintReportPage({params}:{params:Promise<{id:strin
   const report=await db.studentReport.findFirst({where:{id:reportId,studentId:id},include:{student:true}});
   if(!report || report.student.coachId!==user.coachProfile.id) return notFound();
   return <main className="shell" style={{maxWidth:800}}>
-    <div className="row" style={{justifyContent:'space-between'}}><a href={'/koc/ogrenci/'+id}>← Geri</a><button className="btn" onClick={undefined}>Tarayıcı menüsünden Yazdır / PDF</button></div>
+    <div className="row" style={{justifyContent:'space-between'}}><a href={'/koc/ogrenci/'+id}>← Geri</a><PrintButton/></div>
     <article className="card" style={{marginTop:20}}>
       <div className="brand">KEKS AKADEMİ</div>
       <h1>{report.title}</h1>
