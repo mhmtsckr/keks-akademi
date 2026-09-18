@@ -1,0 +1,27 @@
+name: Build Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+      AUTH_SECRET: build-check-secret-not-for-production-1234567890
+      APP_URL: http://localhost:3000
+      ADMIN_EMAIL: keksakademi@gmail.com
+      REPORT_RECIPIENT: keksakademi@gmail.com
+      TEST_PRICE_KURUS: "35000"
+      PAYTR_TEST_MODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build
