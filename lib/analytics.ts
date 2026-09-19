@@ -22,17 +22,21 @@ export async function buildStudentInsights(studentId:string){
   })).sort((a,b)=>a.accuracy-b.accuracy);
   const weakSubjects=subjects.filter(x=>x.questions>=10&&x.accuracy<60).slice(0,3);
   const incomplete=topics.filter(x=>!x.completed);
-  const suggestion=weakSubjects[0]
-    ? `Öncelik: ${weakSubjects[0].subject}. Son kayıtlarda doğruluk %${weakSubjects[0].accuracy}. Bu derste tamamlanmamış bir konudan 10–15 soruluk kısa test çöz.`
-    : incomplete[0]
-      ? `Öncelik: ${incomplete[0].subject} · ${incomplete[0].topic}. Konuyu tamamla ve ardından kısa test çöz.`
-      : 'Konu takibi ve soru kayıtları düzenli görünüyor. Karma deneme ile genel seviyeyi ölç.';
+  const totalQuestions=practice.reduce((n,p)=>n+p.correct+p.wrong+p.blank,0);
+  const suggestion=totalQuestions<10
+    ? 'Kişisel öneri için henüz yeterli soru verisi yok. En az 10 soru çözüm kaydı girdikten sonra adaptif öneri üretilecek.'
+    : weakSubjects[0]
+      ? `Öncelik: ${weakSubjects[0].subject}. Son kayıtlarda doğruluk %${weakSubjects[0].accuracy}. Bu derste tamamlanmamış bir konudan 10–15 soruluk kısa test çöz.`
+      : incomplete[0]
+        ? `Öncelik: ${incomplete[0].subject} · ${incomplete[0].topic}. Konuyu tamamla ve ardından kısa test çöz.`
+        : 'Konu takibi ve soru kayıtları düzenli görünüyor. Karma deneme ile genel seviyeyi ölç.';
   return {subjects,weakSubjects,incomplete,target,exam,alerts,suggestion};
 }
 
 export async function refreshCoachAlerts(studentId:string){
   const insights=await buildStudentInsights(studentId);
   const activeKeys=new Set<string>();
+  if(insights.subjects.reduce((n,s)=>n+s.questions,0)<10) return insights;
   for(const s of insights.weakSubjects){
     const key='WEAK_SUBJECT:'+s.subject; activeKeys.add(key);
     const existing=await db.coachAlert.findFirst({where:{studentId,kind:key,resolved:false}});
