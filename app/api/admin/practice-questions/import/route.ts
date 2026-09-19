@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
+import { writeAudit } from '@/lib/audit';
 
 const item=z.object({
  examType:z.string().min(2),subject:z.string().min(2),topic:z.string().min(2),prompt:z.string().min(5),
@@ -11,9 +12,10 @@ const item=z.object({
 const schema=z.object({items:z.array(item).min(1).max(500)});
 
 export async function POST(req:Request){
- await requireRole(['ADMIN']);
+ const admin=await requireRole(['ADMIN']);
  const input=schema.parse(await req.json());
  const rows=[];
- for(const x of input.items) rows.push(await db.questionBankItem.create({data:x}));
+ for(const x of input.items) rows.push(await db.questionBankItem.create({data:{...x,active:false,reviewStatus:'PENDING'}}));
+ await writeAudit({actorUserId:admin.id,action:'QUESTION_BANK_IMPORT',entityType:'QuestionBankItem',summary:rows.length+' soru onay bekleyen olarak içe aktarıldı.',metadata:{count:rows.length}});
  return NextResponse.json({ok:true,count:rows.length});
 }
