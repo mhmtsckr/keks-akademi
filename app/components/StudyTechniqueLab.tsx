@@ -298,19 +298,20 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
   const t=TECHNIQUES[key];
 
   return <div className="stack">
-    <div className="card">
+    <div className="card techniqueSelectorCard">
+      <div className="moduleEyebrow">TEKNİĞİNİ SEÇ</div>
       <h2>Ders Çalışma Teknikleri Uygulama Alanı</h2>
       <p className="muted">Bir teknik seç. Nasıl uygulanacağını gör ve aynı ekranda hemen kullanmaya başla. Sekmeden veya uygulamadan ayrılırsan aktif oturum otomatik durdurulur ve gerçek süre kaydedilir.</p>
-      <div className="grid">
-        {Object.entries(TECHNIQUES).map(([k,v]:any)=><button key={k} className="card" onClick={()=>chooseTechnique(k)} style={{textAlign:'left',borderColor:key===k?'var(--brand)':'var(--line)'}}>
+      <div className="techniqueChoiceGrid">
+        {Object.entries(TECHNIQUES).map(([k,v]:any)=><button key={k} className={'techniqueChoice '+(key===k?'active':'')} onClick={()=>chooseTechnique(k)} >
           <strong>{v.name}</strong><p className="muted">{v.short}</p>
         </button>)}
       </div>
     </div>
 
-    <div className="card">
-      <span className="pill">{t.name}</span>
-      <h2>Nasıl Uygulanır?</h2>
+    <div className="card techniqueHowCard">
+      <div className="moduleEyebrow">NASIL UYGULANIR?</div>
+      <div className="moduleHeaderRow"><div><span className="pill">{t.name}</span><h2>{t.name} adımları</h2></div><span className="moduleIcon">→</span></div>
       <ol>{t.how.map((x:string,i:number)=><li key={i} style={{margin:'8px 0'}}>{x}</li>)}</ol>
     </div>
 
