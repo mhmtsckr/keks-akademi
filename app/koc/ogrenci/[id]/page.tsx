@@ -10,6 +10,7 @@ import { CoachTrendSummary } from '@/app/components/CoachTrendSummary';
 import { ContentStudio } from '@/app/components/ContentStudio';
 import { ContentProgressSummary } from '@/app/components/ContentProgressSummary';
 import { TechniqueUsageSummary } from '@/app/components/TechniqueUsageSummary';
+import { PortalShell } from '@/app/components/PortalShell';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -36,9 +37,14 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   if(!student) return notFound();
   const goalProgress=await computeGoalProgress(student.id);
 
-  return <main className="shell">
-    <nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a><div className="navlinks"><a href="/koc">← Öğrencilerim</a></div></nav>
-    <section className="section student-header"><div><span className="pill">Koç Öğrenci Çalışma Alanı</span><h1>{student.fullName}</h1><div className="meta"><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.goal&&<span>Hedef tanımlı</span>}</div></div></section>
+  return <PortalShell
+    active="koc"
+    eyebrow="KOÇ ÖĞRENCİ ÇALIŞMA ALANI"
+    title={student.fullName}
+    description="Program, hedef, deneme, içerik, teknik ve veli erişimini tek öğrenci çalışma alanından yönetin."
+    meta={<><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.goal&&<span>Hedef tanımlı</span>}<a className="btn" href="/koc">← Öğrencilerim</a></>}
+    wide
+  >
     <nav className="tabs no-print">
       <a href="#genel">Genel Bakış</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
@@ -69,5 +75,5 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     </div></section>
     <section id="hedef" className="section section-anchor"><TargetManager studentId={student.id} initial={student.targets[0]||null}/></section>
     <section id="veli" className="section section-anchor"><div className="card"><h2>Veli Erişimi</h2><p className="muted">Aktif veli erişimi: {student.parentProfiles.length}</p><p>Yeni veya yenilenmiş veli giriş kodunu yukarıdaki “Veli Girişi Oluştur” bölümünden oluşturabilirsiniz.</p></div></section>
-  </main>;
+  </PortalShell>;
 }
