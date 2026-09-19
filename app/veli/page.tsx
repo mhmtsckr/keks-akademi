@@ -1,6 +1,7 @@
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { ParentLoginForm } from '@/app/components/AuthForms';
+import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -10,8 +11,32 @@ function pretty(v: unknown) {
 
 export default async function ParentPage() {
   const user=await currentUser();
+
   if(!user || user.role!=='PARENT' || !user.parentProfile) {
-    return <main className="shell"><nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a></nav><section className="section" style={{maxWidth:520}}><div className="card"><h1>Veli Girişi</h1><p className="muted">Koç tarafından verilen öğrenci kodu ve KEKS Akademi veli giriş kodu ile giriş yapın.</p><ParentLoginForm/></div></section></main>;
+    return <PortalShell
+      active="veli"
+      eyebrow="VELİ GİRİŞİ"
+      title="Öğrencinin gelişimini sade ve güvenli biçimde takip et."
+      description="Haftalık özet, hedef durumu, denemeler ve koç raporları tek panelde."
+    >
+      <section className="portalLoginGrid">
+        <div className="portalLoginIntro">
+          <span className="portalEyebrow">VELİ GELİŞİM PANELİ</span>
+          <h2>Teknik ayrıntıya boğulmadan anlamlı gelişim özetleri.</h2>
+          <p>Koçun paylaştığı bilgiler, haftalık çalışma verileri ve öğrenciye açık raporlar sade bir görünümde sunulur.</p>
+          <div className="portalLoginBullets">
+            <span>Haftalık çalışma ve soru özeti</span>
+            <span>Hedef ve konu ilerleme durumu</span>
+            <span>Koç raporları ve paylaşılan içerikler</span>
+          </div>
+        </div>
+        <div className="card">
+          <h2>Veli Girişi</h2>
+          <p className="muted">Koç tarafından verilen öğrenci kodu ve KEKS Akademi veli giriş kodu ile giriş yapın.</p>
+          <ParentLoginForm/>
+        </div>
+      </section>
+    </PortalShell>;
   }
 
   const student=await db.student.findUnique({
@@ -27,31 +52,53 @@ export default async function ParentPage() {
       generatedContent:{where:{visibleToParent:true},orderBy:{createdAt:'desc'},take:30},
     }
   });
-  if(!student) return <main className="shell"><div className="card">Öğrenci kaydı bulunamadı.</div></main>;
+  if(!student) return null;
+
   const week=student.practiceLogs.reduce((a,x)=>({c:a.c+x.correct,w:a.w+x.wrong,b:a.b+x.blank,n:a.n+x.net}),{c:0,w:0,b:0,n:0});
   const completedTopics=student.topicProgress.filter(x=>x.completed).length;
   const totalTopics=student.topicProgress.length;
   const progressRate=totalTopics?Math.round((completedTopics/totalTopics)*100):0;
 
-  return <main className="shell">
-    <nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a><div className="navlinks"><a href="/">Ana Sayfa</a></div></nav>
-    <section className="section"><span className="pill">Veli Paneli</span><h1>{student.fullName}</h1><p className="muted">Öğrenci kodu: {student.studentCode}{student.gradeLevel?' · '+student.gradeLevel:''}</p></section>
-    <section className="grid">
-      <div className="card"><div className="kpi">%{progressRate}</div><div className="muted">Konu ilerleme oranı</div></div>
-      <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Aktif program</div></div>
-      <div className="card"><div className="kpi">{student.dailyLogs.length}</div><div className="muted">Son çalışma kaydı</div></div>
-      <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme kaydı</div></div>
+  return <PortalShell
+    active="veli"
+    eyebrow="VELİ PANELİ"
+    title={student.fullName+' · Gelişim Özeti'}
+    description="Öğrencinin güncel çalışma durumu, hedefi ve koç değerlendirmeleri."
+    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}<span>%{progressRate} konu ilerleme</span></>}
+    wide
+  >
+    <section className="section">
+      <div className="grid">
+        <div className="card"><div className="kpi">%{progressRate}</div><div className="muted">Konu ilerleme oranı</div></div>
+        <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Aktif program</div></div>
+        <div className="card"><div className="kpi">{student.dailyLogs.length}</div><div className="muted">Son çalışma kaydı</div></div>
+        <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme kaydı</div></div>
+      </div>
     </section>
-    <section className="section"><div className="card"><h2>Son 7 Gün Özeti</h2><div className="row"><span className="pill">Doğru {week.c}</span><span className="pill">Yanlış {week.w}</span><span className="pill">Boş {week.b}</span><span className="pill">Toplam Net {Number(week.n.toFixed(2))}</span></div></div></section>
+
+    <section className="section">
+      <PortalSectionTitle eyebrow="HAFTALIK ÖZET" title="Son 7 gün"/>
+      <div className="card"><div className="row"><span className="pill">Doğru {week.c}</span><span className="pill">Yanlış {week.w}</span><span className="pill">Boş {week.b}</span><span className="pill">Toplam Net {Number(week.n.toFixed(2))}</span></div></div>
+    </section>
+
     <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
       <div className="card"><h2>Hedef ve Genel Durum</h2><p>{student.goal||'Henüz hedef bilgisi eklenmedi.'}</p>{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
       <div className="card"><h2>Uygulanan Teknikler</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik yok.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:10}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
     </div></section>
+
     <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
       <div className="card"><h2>Programlar</h2>{student.plans.length===0?<p className="muted">Henüz program yok.</p>:student.plans.map(p=><div key={p.id} style={{marginBottom:12}}><strong>{p.title}</strong><div className="muted">{pretty(p.payload)}</div></div>)}</div>
       <div className="card"><h2>Denemeler</h2>{student.examResults.length===0?<p className="muted">Henüz deneme yok.</p>:student.examResults.map(x=><div key={x.id} style={{marginBottom:12}}><strong>{x.examType}</strong><div className="muted">{pretty(x.payload)}</div></div>)}</div>
     </div></section>
-    <section className="section"><div className="card"><h2>Öğrenme İçerikleri</h2>{student.generatedContent.length===0?<p className="muted">Henüz veliye açılmış içerik yok.</p>:<div className="grid">{student.generatedContent.map(x=><a className="card" key={x.id} href={'/icerik/'+x.id}><span className="pill">{x.type}</span><h3>{x.title}</h3><p className="muted">Kalite: {x.qualityScore??'—'} / 100</p></a>)}</div>}</div></section>
-    <section className="section"><div className="card"><h2>Koç Raporları</h2>{student.reports.length===0?<p className="muted">Henüz veliye açık rapor yayınlanmadı.</p>:student.reports.map(r=><article key={r.id} style={{padding:'14px 0',borderBottom:'1px solid var(--line)'}}><strong>{r.title}</strong>{r.summary&&<p className="muted">{r.summary}</p>}<p>{r.content}</p></article>)}</div></section>
-  </main>;
+
+    <section className="section">
+      <PortalSectionTitle eyebrow="PAYLAŞILAN İÇERİK" title="Öğrenme İçerikleri"/>
+      <div className="card">{student.generatedContent.length===0?<p className="muted">Henüz veliye açılmış içerik yok.</p>:<div className="grid">{student.generatedContent.map(x=><a className="card" key={x.id} href={'/icerik/'+x.id}><span className="pill">{x.type}</span><h3>{x.title}</h3><p className="muted">Kalite: {x.qualityScore??'—'} / 100</p></a>)}</div>}</div>
+    </section>
+
+    <section className="section">
+      <PortalSectionTitle eyebrow="KOÇ DEĞERLENDİRMESİ" title="Raporlar"/>
+      <div className="card">{student.reports.length===0?<p className="muted">Henüz veliye açık rapor yayınlanmadı.</p>:student.reports.map(r=><article key={r.id} style={{padding:'14px 0',borderBottom:'1px solid rgba(255,255,255,.08)'}}><strong>{r.title}</strong>{r.summary&&<p className="muted">{r.summary}</p>}<p>{r.content}</p></article>)}</div>
+    </section>
+  </PortalShell>;
 }
