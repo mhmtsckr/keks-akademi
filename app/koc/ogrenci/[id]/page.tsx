@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { StudentWorkspaceForms } from '@/app/components/StudentWorkspaceForms';
 import { TargetManager } from '@/app/components/TargetManager';
 import { CoachAlerts } from '@/app/components/CoachAlerts';
+import { CoachSmartPlan } from '@/app/components/CoachSmartPlan';
+import { computeGoalProgress } from '@/lib/smartCoach';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -25,6 +27,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     }
   });
   if(!student) return notFound();
+  const goalProgress=await computeGoalProgress(student.id);
 
   return <main className="shell">
     <nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a><div className="navlinks"><a href="/koc">← Öğrencilerim</a></div></nav>
@@ -32,6 +35,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     <nav className="tabs no-print">
       <a href="#genel">Genel Bakış</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
+    <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
     <section id="genel" className="grid section-anchor">
       <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Program</div></div>
