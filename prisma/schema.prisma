@@ -273,6 +273,8 @@ model StudentTarget {
   benchmarkNets   Json?
   active          Boolean  @default(true)
   syncedAt        DateTime?
+  syncStatus      String   @default("PENDING")
+  sourceSnapshot  Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
