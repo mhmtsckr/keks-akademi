@@ -35,25 +35,56 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
 
   const completedCount=useMemo(()=>progress.filter(x=>x.examType===exam&&x.completed).length,[progress,exam]);
   const totalCount=useMemo(()=>Object.values(EXAM_CATALOG[exam]).reduce((a:any,b:any)=>a+b.length,0),[exam]);
+  const pct=totalCount?Math.round((completedCount/totalCount)*100):0;
 
-  return <div className="stack">
-    {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`}>{msg}</div>}
-    <div className="card">
-      <h2>Konu İlerleme Takibi</h2>
-      <div className="row"><div className="field" style={{flex:1}}><label>Sınav</label><select value={exam} onChange={e=>changeExam(e.target.value as ExamType)}>{allowedExams.map(x=><option key={x}>{x}</option>)}</select></div><div className="field" style={{flex:2}}><label>Ders</label><select value={subject} onChange={e=>setSubject(e.target.value)}>{subjects.map(x=><option key={x}>{x}</option>)}</select></div></div>
-      <p className="muted">{exam} genel ilerleme: {completedCount}/{totalCount} konu</p>
-      <div className="stack">{topics.map((topic:string)=>{const done=progress.some(x=>x.examType===exam&&x.subject===subject&&x.topic===topic&&x.completed);return <label key={topic} className="card" style={{padding:12,display:'flex',gap:10,alignItems:'center'}}><input type="checkbox" checked={done} onChange={e=>toggle(topic,e.target.checked)}/><span>{topic}</span></label>})}</div>
+  return <div className="studentProgressLayout">
+    {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
+
+    <div className="card topicProgressCard">
+      <div className="moduleHeaderRow">
+        <div><div className="moduleEyebrow">KONU İLERLEMESİ</div><h2>{exam} · {subject}</h2></div>
+        <div className="progressRing"><strong>%{pct}</strong><span>{completedCount}/{totalCount}</span></div>
+      </div>
+      <div className="row">
+        <div className="field" style={{flex:1}}><label>Sınav</label><select value={exam} onChange={e=>changeExam(e.target.value as ExamType)}>{allowedExams.map(x=><option key={x}>{x}</option>)}</select></div>
+        <div className="field" style={{flex:2}}><label>Ders</label><select value={subject} onChange={e=>setSubject(e.target.value)}>{subjects.map(x=><option key={x}>{x}</option>)}</select></div>
+      </div>
+      <div className="topicChecklist">
+        {topics.map((topic:string)=>{
+          const done=progress.some(x=>x.examType===exam&&x.subject===subject&&x.topic===topic&&x.completed);
+          return <label key={topic} className={'topicCheck '+(done?'done':'')}>
+            <input type="checkbox" checked={done} onChange={e=>toggle(topic,e.target.checked)}/>
+            <span className="topicCheckMark">{done?'✓':'○'}</span>
+            <span>{topic}</span>
+          </label>
+        })}
+      </div>
     </div>
 
-    <div className="card">
-      <h2>Soru Çözüm Kaydı</h2>
-      <form className="form" onSubmit={addPractice}>
-        <div className="field"><label>Konu</label><select name="topic"><option value="">Genel / Karma</option>{topics.map((x:string)=><option key={x}>{x}</option>)}</select></div>
-        <div className="row"><div className="field" style={{flex:1}}><label>Doğru</label><input name="correct" type="number" min="0" required/></div><div className="field" style={{flex:1}}><label>Yanlış</label><input name="wrong" type="number" min="0" required/></div><div className="field" style={{flex:1}}><label>Boş</label><input name="blank" type="number" min="0" required/></div></div>
-        <button className="btn primary">Kaydet ve Neti Hesapla</button>
-      </form>
-    </div>
+    <div className="studentPracticeColumn">
+      <div className="card practiceEntryCard">
+        <div className="moduleEyebrow">SORU ÇÖZÜMÜ</div>
+        <h2>Bugünkü soru kaydını ekle</h2>
+        <form className="form" onSubmit={addPractice}>
+          <div className="field"><label>Konu</label><select name="topic"><option value="">Genel / Karma</option>{topics.map((x:string)=><option key={x}>{x}</option>)}</select></div>
+          <div className="scoreInputs">
+            <div className="field"><label>Doğru</label><input name="correct" type="number" min="0" required/></div>
+            <div className="field"><label>Yanlış</label><input name="wrong" type="number" min="0" required/></div>
+            <div className="field"><label>Boş</label><input name="blank" type="number" min="0" required/></div>
+          </div>
+          <button className="btn primary">Kaydet ve Neti Hesapla</button>
+        </form>
+      </div>
 
-    <div className="card"><h2>Son Soru Kayıtlarım</h2>{practice.length===0?<p className="muted">Henüz kayıt yok.</p>:practice.slice(0,12).map(p=><div key={p.id} style={{padding:'10px 0',borderBottom:'1px solid var(--line)'}}><strong>{p.examType} · {p.subject}</strong><div className="muted">{p.topic||'Karma'} · D {p.correct} / Y {p.wrong} / B {p.blank} · Net {p.net}</div></div>)}</div>
+      <div className="card recentPracticeCard">
+        <div className="moduleEyebrow">SON KAYITLAR</div>
+        <h2>Son soru çözümlerim</h2>
+        {practice.length===0?<p className="muted">Henüz kayıt yok.</p>:practice.slice(0,8).map(p=><div key={p.id} className="practiceRow">
+          <div><strong>{p.subject}</strong><span>{p.topic||'Karma'}</span></div>
+          <div className="practiceScore"><b>{p.net}</b><span>net</span></div>
+          <div className="practiceMeta">D {p.correct} · Y {p.wrong} · B {p.blank}</div>
+        </div>)}
+      </div>
+    </div>
   </div>;
 }
