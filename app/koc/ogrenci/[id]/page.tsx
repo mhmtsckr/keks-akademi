@@ -7,6 +7,7 @@ import { CoachAlerts } from '@/app/components/CoachAlerts';
 import { CoachSmartPlan } from '@/app/components/CoachSmartPlan';
 import { computeGoalProgress } from '@/lib/smartCoach';
 import { CoachTrendSummary } from '@/app/components/CoachTrendSummary';
+import { ContentStudio } from '@/app/components/ContentStudio';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -25,7 +26,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
       practiceLogs:{orderBy:{date:'desc'},take:30},
       topicProgress:{},
-      reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}}
+      reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}},
+      generatedContent:{orderBy:{createdAt:'desc'},take:30}
     }
   });
   if(!student) return notFound();
@@ -35,7 +37,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     <nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a><div className="navlinks"><a href="/koc">← Öğrencilerim</a></div></nav>
     <section className="section student-header"><div><span className="pill">Koç Öğrenci Çalışma Alanı</span><h1>{student.fullName}</h1><div className="meta"><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.goal&&<span>Hedef tanımlı</span>}</div></div></section>
     <nav className="tabs no-print">
-      <a href="#genel">Genel Bakış</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
+      <a href="#genel">Genel Bakış</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
@@ -46,6 +48,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       <div className="card"><div className="kpi">{student.reports.length}</div><div className="muted">Rapor</div></div>
       <div className="card"><div className="kpi">{student.practiceLogs.length}</div><div className="muted">Soru çözüm kaydı</div></div>
     </section>
+    <section id="icerik" className="section section-anchor"><ContentStudio studentId={student.id} canPublish existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></section>
     <section id="program" className="section section-anchor"><StudentWorkspaceForms studentId={student.id}/></section>
 
     <section id="calisma" className="section section-anchor"><h2>Mevcut Kayıtlar</h2>
