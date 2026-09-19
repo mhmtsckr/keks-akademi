@@ -357,7 +357,6 @@ model PracticeQuiz {
   attempts        PracticeQuizAttempt[]
 
   @@index([studentId, createdAt])
-  @@unique([studentId, clientSessionId])
 }
 
 model PracticeQuizAttempt {
@@ -515,4 +514,5 @@ model TechniquePracticeSession {
   createdAt       DateTime @default(now())
 
   @@index([studentId, createdAt])
+  @@unique([studentId, clientSessionId])
 }
