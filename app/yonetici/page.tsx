@@ -1,6 +1,6 @@
 import { currentUser } from '@/lib/auth';
 import { AccountLoginForm } from '@/app/components/AuthForms';
-import { AdminActions } from '@/app/components/AdminActions';
+import { AdminConsole } from '@/app/components/AdminConsole';
 import { PortalShell } from '@/app/components/PortalShell';
 
 export default async function AdminPage() {
@@ -41,8 +41,6 @@ export default async function AdminPage() {
     meta={<><span>{user.name}</span><span>ADMIN</span><span>Sistem kontrolü</span></>}
     wide
   >
-    <section className="section">
-      <AdminActions/>
-    </section>
+    <section className="section"><AdminConsole/></section>
   </PortalShell>;
 }
