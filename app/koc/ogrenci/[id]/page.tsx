@@ -9,6 +9,7 @@ import { computeGoalProgress } from '@/lib/smartCoach';
 import { CoachTrendSummary } from '@/app/components/CoachTrendSummary';
 import { ContentStudio } from '@/app/components/ContentStudio';
 import { ContentProgressSummary } from '@/app/components/ContentProgressSummary';
+import { TechniqueUsageSummary } from '@/app/components/TechniqueUsageSummary';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -21,6 +22,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       dailyLogs:{orderBy:{date:'desc'},take:10},
       examResults:{orderBy:{createdAt:'desc'},take:10},
       studyTechniques:{orderBy:{createdAt:'desc'},take:10},
+      techniqueSessions:{orderBy:{createdAt:'desc'},take:30},
       reports:{orderBy:{createdAt:'desc'},take:10},
       libraryItems:{orderBy:{createdAt:'desc'},take:20},
       parentProfiles:{where:{active:true},select:{id:true,codeHint:true,createdAt:true}},
@@ -52,6 +54,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     <section id="icerik" className="section section-anchor"><div className="stack"><ContentProgressSummary items={student.generatedContent}/><ContentStudio studentId={student.id} canPublish existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></div></section>
     <section id="program" className="section section-anchor"><StudentWorkspaceForms studentId={student.id}/></section>
 
+    <section className="section"><TechniqueUsageSummary sessions={student.techniqueSessions}/></section>
     <section id="calisma" className="section section-anchor"><h2>Mevcut Kayıtlar</h2>
       <div className="grid">
         <div className="card"><h3>Programlar</h3>{student.plans.map(p=><div key={p.id} style={{marginBottom:10}}><strong>{p.title}</strong><div className="muted">{JSON.stringify(p.payload)}</div></div>)}</div>
