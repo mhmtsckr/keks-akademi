@@ -20,7 +20,10 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "resend": "^4.5.0",
-    "zod": "^3.24.4"
+    "zod": "^3.24.4",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.9.1",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
