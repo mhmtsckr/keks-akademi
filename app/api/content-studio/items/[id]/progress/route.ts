@@ -31,5 +31,18 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     create:{contentId:id,studentId:user.student.id,state:input.state,score:input.score,completed:input.completed,completedAt:input.completed?new Date():null,lastOpenedAt:new Date()},
     update:{state:input.state,score:input.score,completed:input.completed,completedAt:input.completed?new Date():null,lastOpenedAt:new Date()}
   });
+  if(input.completed && typeof input.score==='number' && item.type==='QUIZ' && input.score<60){
+    const kind='CONTENT_QUIZ_LOW:'+item.id;
+    const existing=await db.coachAlert.findFirst({where:{studentId:user.student.id,kind,resolved:false}});
+    if(!existing){
+      await db.coachAlert.create({data:{
+        studentId:user.student.id,
+        kind,
+        severity:input.score<40?'HIGH':'MEDIUM',
+        title:'İçerik testinde düşük performans',
+        message:item.title+' içeriğinde öğrenci %'+input.score+' puan aldı. Konu tekrarı ve kısa bir telafi testi önerilir.'
+      }});
+    }
+  }
   return NextResponse.json({ok:true,row:{id:row.id,score:row.score,completed:row.completed,state:row.state}});
 }
