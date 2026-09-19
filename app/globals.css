@@ -268,3 +268,52 @@ radial-gradient(circle at 5% 28%,rgba(46,111,171,.10),transparent 25%),
 .techniqueHowCard li:before{content:counter(step);position:absolute;left:13px;top:11px;width:23px;height:23px;border-radius:50%;display:grid;place-items:center;background:rgba(224,173,63,.12);color:#e9c364;font-size:11px;font-weight:900}
 @media(max-width:900px){.techniqueChoiceGrid{grid-template-columns:repeat(2,1fr)}.contentTypeGrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.techniqueChoiceGrid,.contentTypeGrid,.techniqueHowCard ol{grid-template-columns:1fr}}
+
+/* Full KEKS banner composition for every inner page */
+.portalHeaderBanner{background:
+radial-gradient(circle at 65% 14%,rgba(245,197,88,.13),transparent 22%),
+radial-gradient(circle at 18% 44%,rgba(226,174,67,.11),transparent 18%),
+linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
+.portalBanner{display:grid;grid-template-columns:84px 235px minmax(0,1fr) 300px;gap:24px;align-items:center;min-height:360px;padding:22px 0 42px;position:relative;z-index:1}
+.portalSideWords{display:grid;gap:7px;color:#687b91;font-size:10px;letter-spacing:.23em;text-align:center;align-content:center}
+.portalSideWords i{height:2px;width:28px;background:#b98529;margin:8px auto 0}
+.portalRobot{filter:drop-shadow(0 28px 30px rgba(0,0,0,.32))}
+.portalRobot svg{width:100%;height:auto}
+.portalBannerCenter{position:relative;text-align:center}
+.portalBannerCenter .portalEyebrow{justify-content:center;margin-bottom:8px}
+.portalWordmark{position:relative;display:flex;justify-content:center;align-items:center;font-size:clamp(76px,7.2vw,118px);font-weight:1000;line-height:.82;letter-spacing:-.07em}
+.portalGoldLetter{background:linear-gradient(135deg,#ffe5a0,#bd8020 52%,#f4cc70);-webkit-background-clip:text;background-clip:text;color:transparent}
+.portalWordmarkArrow{position:absolute;width:140px;right:10%;top:-52px;filter:drop-shadow(0 0 11px rgba(255,216,117,.25))}
+.portalAcademy{font-size:clamp(28px,3vw,48px);font-weight:850;letter-spacing:.28em;margin-top:8px;color:#fff}
+.portalPageTitle{margin:20px auto 0;max-width:820px}
+.portalPageTitle h1{font-size:clamp(30px,3.6vw,50px);line-height:1.05;letter-spacing:-.03em;margin:0 0 11px}
+.portalPageTitle p{color:#9fb0c1;font-size:15px;line-height:1.65;margin:0 auto;max-width:760px}
+.portalBanner .portalMeta{justify-content:center}
+.portalMountain{align-self:end;filter:drop-shadow(0 28px 28px rgba(0,0,0,.26))}
+.portalMountain svg{width:100%;height:auto}
+.portalSideWordsRight{margin-top:-14px}
+.portal-ogrenci .portalHeaderBanner{background:radial-gradient(circle at 60% 12%,rgba(241,193,79,.14),transparent 22%),linear-gradient(135deg,#06182d,#0b2b4d 58%,#0a1d32)}
+.portal-koc .portalHeaderBanner{background:radial-gradient(circle at 62% 12%,rgba(227,172,61,.13),transparent 22%),linear-gradient(135deg,#07182b,#0a2947 58%,#0a1b2e)}
+.portal-veli .portalHeaderBanner{background:radial-gradient(circle at 62% 12%,rgba(233,184,72,.12),transparent 22%),linear-gradient(135deg,#071a2f,#0a2948 58%,#0b2036)}
+.portal-yonetici .portalHeaderBanner{background:radial-gradient(circle at 62% 12%,rgba(219,161,49,.11),transparent 22%),linear-gradient(135deg,#061526,#0a223b 58%,#091a2c)}
+.portal-sistem .portalHeaderBanner,.portal-ozellikler .portalHeaderBanner{background:radial-gradient(circle at 62% 12%,rgba(241,194,82,.13),transparent 22%),linear-gradient(135deg,#06182c,#0b2949 58%,#0a1c31)}
+@media(max-width:1180px){
+  .portalBanner{grid-template-columns:60px 190px minmax(0,1fr) 230px}
+  .portalWordmark{font-size:82px}
+  .portalWordmarkArrow{width:115px;right:5%;top:-42px}
+}
+@media(max-width:900px){
+  .portalBanner{grid-template-columns:180px minmax(0,1fr);grid-template-areas:"robot center";padding-top:16px}
+  .portalRobot{grid-area:robot}
+  .portalBannerCenter{grid-area:center}
+  .portalSideWords,.portalMountain{display:none}
+  .portalWordmark{font-size:76px}
+}
+@media(max-width:650px){
+  .portalBanner{grid-template-columns:1fr;grid-template-areas:"robot" "center";text-align:center;min-height:auto}
+  .portalRobot{max-width:180px;margin:0 auto}
+  .portalWordmark{font-size:68px}
+  .portalAcademy{font-size:28px}
+  .portalWordmarkArrow{display:none}
+  .portalPageTitle h1{font-size:34px}
+}
