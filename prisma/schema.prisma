@@ -94,6 +94,7 @@ model Student {
   practiceQuizzes  PracticeQuiz[]
   quizAttempts     PracticeQuizAttempt[]
   coachAlerts      CoachAlert[]
+  reviewQueue      ReviewQueueItem[]
 }
 
 model StudyPlan {
