@@ -93,6 +93,7 @@ model Student {
   practiceLogs     PracticeLog[]
   practiceQuizzes  PracticeQuiz[]
   quizAttempts     PracticeQuizAttempt[]
+  coachAlerts      CoachAlert[]
 }
 
 model StudyPlan {
@@ -363,4 +364,20 @@ model PracticeQuizAttempt {
   createdAt DateTime     @default(now())
 
   @@index([studentId, createdAt])
+}
+
+
+model CoachAlert {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  kind       String
+  severity   String
+  title      String
+  message    String
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([studentId, resolved])
 }
