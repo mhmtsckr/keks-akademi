@@ -30,8 +30,13 @@ export async function computeGoalProgress(studentId:string){
     }
     const nets=(target.benchmarkNets||{}) as Record<string,number>;
     if(Object.keys(nets).length){
-      const current:Record<string,number>={};
-      for(const x of practice) current[x.subject]=(current[x.subject]||0)+x.net;
+      const examNets=(p.subjectNets||{}) as Record<string,number>;
+      const current:Record<string,number>={...examNets};
+      if(!Object.keys(current).length){
+        const grouped=new Map<string,number[]>();
+        for(const x of practice){const arr=grouped.get(x.subject)||[];arr.push(x.net);grouped.set(x.subject,arr);}
+        for(const [subject,arr] of grouped) current[subject]=arr.slice(0,3).reduce((a,b)=>a+b,0)/Math.max(1,arr.slice(0,3).length);
+      }
       const vals=Object.entries(nets).map(([s,t])=>t>0?clamp(((current[s]||0)/t)*100):100);
       if(vals.length){const pct=vals.reduce((a,b)=>a+b,0)/vals.length;scores.push(pct);details.push('Hedef net yaklaşımı %'+Math.round(pct));}
     }
