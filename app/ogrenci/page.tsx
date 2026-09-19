@@ -2,6 +2,7 @@ import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForms';
 import { StudentActions } from '@/app/components/StudentActions';
+import { StudentProgressTools } from '@/app/components/StudentProgressTools';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -30,11 +31,17 @@ export default async function StudentPage() {
       studyTechniques:{where:{active:true},orderBy:{createdAt:'desc'}},
       reports:{where:{visibleToStudent:true},orderBy:{createdAt:'desc'}},
       libraryItems:{orderBy:{createdAt:'desc'}},
-      testAccesses:{where:{status:'READY'},orderBy:{createdAt:'asc'},take:1}
+      testAccesses:{where:{status:'READY'},orderBy:{createdAt:'asc'},take:1},
+      targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
+      topicProgress:{},
+      practiceLogs:{orderBy:{date:'desc'},take:30}
     }
   });
   if (!student) return null;
   const access = student.testAccesses[0];
+  const activeTarget = student.targets[0];
+  const grade=(student.gradeLevel||'').toLowerCase();
+  const allowedExams=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
 
   return <main className="shell">
     <nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a><div className="navlinks"><a href="/">Ana Sayfa</a></div></nav>
@@ -47,7 +54,7 @@ export default async function StudentPage() {
     </section>
 
     <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
-      <div className="card"><h2>Hedefim</h2><p>{student.goal || 'Koçunuz henüz hedef bilgisi eklemedi.'}</p>{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
+      <div className="card"><h2>Hedefim</h2><p>{student.goal || 'Koçunuz henüz hedef bilgisi eklemedi.'}</p>{activeTarget&&<div className="notice"><strong>{activeTarget.institutionName}</strong>{activeTarget.departmentName?' · '+activeTarget.departmentName:''}<br/><span className="muted">{activeTarget.source} · {activeTarget.dataYear||'Yıl belirtilmedi'} · Puan {activeTarget.score??'—'} · Sıra {activeTarget.ranking??'—'} · Yüzdelik {activeTarget.percentile??'—'}</span></div>}{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
       <div className="card"><h2>Çalışma Tekniklerim</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik atanmadı.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:12}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
     </div></section>
 
@@ -62,6 +69,8 @@ export default async function StudentPage() {
       <div className="card"><h2>Koç Raporlarım</h2>{student.reports.length===0?<p className="muted">Henüz rapor yayınlanmadı.</p>:student.reports.map(r=><article key={r.id} style={{padding:'12px 0',borderBottom:'1px solid var(--line)'}}><strong>{r.title}</strong>{r.summary&&<p className="muted">{r.summary}</p>}<p>{r.content}</p></article>)}</div>
       <div className="card"><h2>Kütüphanem</h2>{student.libraryItems.length===0?<p className="muted">Henüz not veya dosya yok.</p>:student.libraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
     </div></section>
+
+    <section className="section"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><h2>Konu ve Soru Takibi</h2><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString()}))}/></section>
 
     <section className="section"><h2>KEKS Eğilim Taraması</h2><StudentActions hasAccess={Boolean(access)}/></section>
   </main>;
