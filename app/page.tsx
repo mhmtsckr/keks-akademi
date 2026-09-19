@@ -10,8 +10,8 @@ export default function Home() {
           <span><strong>KEKS</strong><small>AKADEMİ</small></span>
         </a>
         <div className="homeNavLinks">
-          <a href="#sistem">Sistem</a>
-          <a href="#ozellikler">Özellikler</a>
+          <a href="/sistem">Sistem</a>
+          <a href="/ozellikler">Özellikler</a>
           <a href="/ogrenci">Öğrenci</a>
           <a href="/koc">Koç</a>
           <a href="/veli">Veli</a>
