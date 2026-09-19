@@ -4,6 +4,7 @@ import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForm
 import { StudentActions } from '@/app/components/StudentActions';
 import { StudentProgressTools } from '@/app/components/StudentProgressTools';
 import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation';
+import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -72,6 +73,7 @@ export default async function StudentPage() {
     </div></section>
 
     <section className="section"><AdaptiveRecommendation/></section>
+    <section className="section"><SmartCoachDashboard/></section>
 
     <section className="section"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><h2>Konu ve Soru Takibi</h2><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString()}))}/></section>
 
