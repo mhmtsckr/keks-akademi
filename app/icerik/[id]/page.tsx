@@ -23,7 +23,7 @@ export default async function GeneratedContentPage({params}:{params:Promise<{id:
       <span className="pill">{item.type}</span>
       <h1>{item.title}</h1>
       <p className="muted">Kaynak: {item.upload.fileName} · Kalite skoru: {item.qualityScore??'—'} / 100</p>
-      <ContentViewer type={item.type} payload={item.payload}/>
+      <ContentViewer type={item.type} payload={item.payload} contentId={item.id} canTrack={user.role==='STUDENT'&&user.student?.id===item.studentId}/>
     </section>
   </main>;
 }
