@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
+import { writeAudit } from '@/lib/audit';
 
 const schema = z.object({
   userId: z.string().min(1),
@@ -19,10 +20,11 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  await requireRole(['ADMIN']);
+  const admin = await requireRole(['ADMIN']);
   const input = schema.parse(await req.json());
   const coach = await db.user.findFirst({ where: { id: input.userId, role: 'COACH' } });
   if (!coach) return NextResponse.json({ error: 'Koç bulunamadı.' }, { status: 404 });
   const updated = await db.user.update({ where: { id: coach.id }, data: { status: input.status } });
+  await writeAudit({actorUserId:admin.id,action:'COACH_STATUS_UPDATE',entityType:'User',entityId:updated.id,summary:updated.name+' koç hesabı '+updated.status+' durumuna alındı.',metadata:{before:coach.status,after:updated.status}});
   return NextResponse.json({ ok: true, coach: { id: updated.id, status: updated.status } });
 }
