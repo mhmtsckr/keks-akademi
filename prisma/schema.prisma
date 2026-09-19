@@ -357,6 +357,7 @@ model PracticeQuiz {
   attempts        PracticeQuizAttempt[]
 
   @@index([studentId, createdAt])
+  @@unique([studentId, clientSessionId])
 }
 
 model PracticeQuizAttempt {
@@ -505,6 +506,9 @@ model TechniquePracticeSession {
   config          Json     @default("{}")
   result          Json     @default("{}")
   durationMinutes Int      @default(0)
+  activeSeconds   Int      @default(0)
+  clientSessionId String?
+  interruptedReason String?
   completed       Boolean  @default(true)
   startedAt       DateTime @default(now())
   completedAt     DateTime?
