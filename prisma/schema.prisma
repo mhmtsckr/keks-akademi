@@ -88,6 +88,11 @@ model Student {
   reports          StudentReport[]
   libraryItems     LibraryItem[]
   parentProfiles   ParentProfile[]
+  targets          StudentTarget[]
+  topicProgress    TopicProgress[]
+  practiceLogs     PracticeLog[]
+  practiceQuizzes  PracticeQuiz[]
+  quizAttempts     PracticeQuizAttempt[]
 }
 
 model StudyPlan {
@@ -248,4 +253,112 @@ model ParentProfile {
   updatedAt      DateTime @updatedAt
 
   @@index([studentId])
+}
+
+
+model StudentTarget {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examLevel       String
+  institutionName String
+  departmentName  String?
+  programCode     String?
+  source          String
+  sourceUrl       String?
+  dataYear        Int?
+  score           Float?
+  ranking         Int?
+  percentile      Float?
+  benchmarkNets   Json?
+  active          Boolean  @default(true)
+  syncedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([studentId, active])
+}
+
+model TopicProgress {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examType    String
+  subject     String
+  topic       String
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, examType, subject, topic])
+  @@index([studentId, examType])
+}
+
+model PracticeLog {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examType  String
+  subject   String
+  topic     String?
+  correct   Int
+  wrong     Int
+  blank     Int
+  total     Int
+  net       Float
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([studentId, date])
+}
+
+model QuestionBankItem {
+  id                String   @id @default(cuid())
+  examType          String
+  subject           String
+  topic             String
+  prompt            String
+  options           Json
+  correctAnswer     String
+  explanation       String?
+  sourceKind        String   @default("ORIGINAL")
+  sourceYear        Int?
+  officialSourceUrl String?
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  @@index([examType, subject, topic, active])
+}
+
+model PracticeQuiz {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title           String
+  examType        String
+  subject         String
+  topic           String?
+  questionIds     Json
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  attempts        PracticeQuizAttempt[]
+
+  @@index([studentId, createdAt])
+}
+
+model PracticeQuizAttempt {
+  id        String       @id @default(cuid())
+  quizId    String
+  quiz      PracticeQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers   Json
+  correct   Int
+  wrong     Int
+  blank     Int
+  net       Float
+  createdAt DateTime     @default(now())
+
+  @@index([studentId, createdAt])
 }
