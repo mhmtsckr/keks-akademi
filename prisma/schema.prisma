@@ -94,7 +94,6 @@ model Student {
   practiceQuizzes  PracticeQuiz[]
   quizAttempts     PracticeQuizAttempt[]
   coachAlerts      CoachAlert[]
-  reviewQueue      ReviewQueueItem[]
 }
 
 model StudyPlan {
@@ -331,6 +330,7 @@ model QuestionBankItem {
   officialSourceUrl String?
   active            Boolean  @default(true)
   createdAt         DateTime @default(now())
+  reviewQueue       ReviewQueueItem[]
 
   @@index([examType, subject, topic, active])
 }
@@ -347,7 +347,6 @@ model PracticeQuiz {
   createdByUserId String?
   createdAt       DateTime @default(now())
   attempts        PracticeQuizAttempt[]
-  reviewQueue     ReviewQueueItem[]
 
   @@index([studentId, createdAt])
 }
@@ -364,6 +363,7 @@ model PracticeQuizAttempt {
   blank     Int
   net       Float
   createdAt DateTime     @default(now())
+  reviewQueue ReviewQueueItem[]
 
   @@index([studentId, createdAt])
 }
@@ -382,4 +382,25 @@ model CoachAlert {
   resolvedAt DateTime?
 
   @@index([studentId, resolved])
+}
+
+
+model ReviewQueueItem {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionId      String
+  question        QuestionBankItem @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  sourceAttemptId String?
+  sourceAttempt   PracticeQuizAttempt? @relation(fields: [sourceAttemptId], references: [id], onDelete: SetNull)
+  stepIndex       Int      @default(0)
+  dueAt           DateTime
+  status          String   @default("DUE")
+  lastCorrect     Boolean?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([studentId, questionId])
+  @@index([studentId, dueAt])
 }
