@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForms';
 import { StudentActions } from '@/app/components/StudentActions';
 import { StudentProgressTools } from '@/app/components/StudentProgressTools';
+import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -69,6 +70,8 @@ export default async function StudentPage() {
       <div className="card"><h2>Koç Raporlarım</h2>{student.reports.length===0?<p className="muted">Henüz rapor yayınlanmadı.</p>:student.reports.map(r=><article key={r.id} style={{padding:'12px 0',borderBottom:'1px solid var(--line)'}}><strong>{r.title}</strong>{r.summary&&<p className="muted">{r.summary}</p>}<p>{r.content}</p></article>)}</div>
       <div className="card"><h2>Kütüphanem</h2>{student.libraryItems.length===0?<p className="muted">Henüz not veya dosya yok.</p>:student.libraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
     </div></section>
+
+    <section className="section"><AdaptiveRecommendation/></section>
 
     <section className="section"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><h2>Konu ve Soru Takibi</h2><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString()}))}/></section>
 
