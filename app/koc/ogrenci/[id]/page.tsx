@@ -3,6 +3,7 @@ import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { StudentWorkspaceForms } from '@/app/components/StudentWorkspaceForms';
 import { TargetManager } from '@/app/components/TargetManager';
+import { CoachAlerts } from '@/app/components/CoachAlerts';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -31,6 +32,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     <nav className="tabs no-print">
       <a href="#genel">Genel Bakış</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
+    <section className="section"><CoachAlerts studentId={student.id}/></section>
     <section id="genel" className="grid section-anchor">
       <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Program</div></div>
       <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme</div></div>
