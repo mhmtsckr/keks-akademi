@@ -317,3 +317,69 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .portalWordmarkArrow{display:none}
   .portalPageTitle h1{font-size:34px}
 }
+
+/* Admin governance console */
+.adminConsole{display:grid;gap:18px}
+.adminTabs{display:flex;gap:8px;flex-wrap:wrap;padding:7px;background:#081d34;border:1px solid rgba(255,255,255,.08);border-radius:16px;position:sticky;top:10px;z-index:12;box-shadow:0 16px 34px rgba(0,0,0,.18)}
+.adminTabs button{appearance:none;border:1px solid transparent;background:transparent;color:#8fa3b7;padding:11px 15px;border-radius:11px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.adminTabs button:hover{color:#e9eef4;background:rgba(255,255,255,.04)}
+.adminTabs button.active{color:#09203a;background:linear-gradient(135deg,#c98d25,#efce78);box-shadow:0 8px 18px rgba(207,154,48,.18)}
+.adminPanelSection{display:grid;gap:18px}
+.adminKpiGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.adminKpi{display:flex;align-items:center;gap:14px;min-height:126px}
+.adminKpi .kpi{font-size:32px;line-height:1.05}
+.adminKpi p{margin:4px 0 0;color:#8095aa;font-size:12px}
+.adminKpi.warn{border-color:rgba(235,181,66,.34)!important;background:radial-gradient(circle at 90% 0%,rgba(226,175,65,.14),transparent 35%),linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.025))!important}
+.adminOverviewSplit{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.adminActivityRows{display:grid;margin-top:12px}
+.adminMetricLine{display:flex;justify-content:space-between;gap:18px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07);color:#9aabbc}
+.adminMetricLine strong{color:#efcb70;font-size:18px}
+.adminFilterBar{display:grid;grid-template-columns:minmax(220px,1fr) 180px auto;gap:12px;align-items:end}
+.adminTableCard{overflow:auto}
+.adminStatus{display:inline-flex;align-items:center;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900;letter-spacing:.06em;border:1px solid rgba(255,255,255,.12);color:#aebdca;background:rgba(255,255,255,.04)}
+.adminStatus.active,.adminStatus.approved,.adminStatus.paid{color:#aee8d1;border-color:rgba(68,178,138,.28);background:rgba(38,139,105,.10)}
+.adminStatus.pending{color:#f0cc75;border-color:rgba(229,180,70,.30);background:rgba(201,148,37,.09)}
+.adminStatus.suspended,.adminStatus.rejected,.adminStatus.failed{color:#ffb8b0;border-color:rgba(231,102,90,.28);background:rgba(161,45,36,.10)}
+.adminStatus.refunded{color:#c6b9ec;border-color:rgba(151,125,205,.28);background:rgba(110,82,164,.10)}
+.adminQuestionStats{display:flex;gap:8px;flex-wrap:wrap}
+.adminQuestionList{display:grid;gap:13px}
+.adminQuestionCard{position:relative}
+.adminQuestionCard h3{font-size:18px;line-height:1.5;margin-top:12px}
+.adminQuestionOptions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.adminQuestionOptions>div{padding:11px 12px;background:#091f38;border:1px solid rgba(255,255,255,.06);border-radius:11px;color:#9eafbf;font-size:13px}
+.adminQuestionOptions>div.correct{border-color:rgba(66,178,136,.26);background:rgba(38,137,104,.09);color:#bce8d7}
+.adminPaymentStats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.adminPaymentStats .kpi{font-size:34px}
+.adminAccessGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.adminSimpleRow{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.adminSimpleRow>div{display:grid;gap:3px}
+.adminSimpleRow span{color:#71869b;font-size:11px}
+.adminHealthGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.adminHealthCard{display:flex;align-items:center;gap:12px;min-height:92px}
+.adminHealthCard p{margin:4px 0 0;color:#8094a8;font-size:12px}
+.adminHealthDot{width:12px;height:12px;border-radius:50%;background:#6b7b8b;box-shadow:0 0 0 5px rgba(255,255,255,.03)}
+.adminHealthCard.ok .adminHealthDot{background:#55c69d;box-shadow:0 0 0 5px rgba(85,198,157,.08)}
+.adminHealthCard.bad .adminHealthDot{background:#e36e61;box-shadow:0 0 0 5px rgba(227,110,97,.08)}
+.adminAuditCard{overflow:hidden}
+.adminAuditList{display:grid}
+.adminAuditRow{display:grid;grid-template-columns:18px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.adminAuditDot{width:9px;height:9px;border-radius:50%;margin-top:6px;background:#d6a443;box-shadow:0 0 0 5px rgba(214,164,67,.08)}
+.adminAuditRow strong{color:#eef3f8}
+.adminAuditRow p{margin:4px 0;color:#8fa1b4;font-size:12px}
+.adminAuditRow span{color:#61768c;font-size:11px}
+.portal .adminPanelSection select{background:#0b213b;border:1px solid rgba(255,255,255,.12);color:#f4f7fa;border-radius:10px;padding:10px}
+@media(max-width:1050px){
+  .adminKpiGrid{grid-template-columns:repeat(2,1fr)}
+  .adminHealthGrid{grid-template-columns:repeat(2,1fr)}
+  .adminPaymentStats{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:760px){
+  .adminOverviewSplit,.adminAccessGrid{grid-template-columns:1fr}
+  .adminFilterBar{grid-template-columns:1fr}
+  .adminQuestionOptions{grid-template-columns:1fr}
+  .adminTabs{position:static}
+}
+@media(max-width:540px){
+  .adminKpiGrid,.adminHealthGrid,.adminPaymentStats{grid-template-columns:1fr}
+  .adminTabs button{flex:1 1 140px}
+}
