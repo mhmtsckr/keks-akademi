@@ -114,6 +114,23 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
     };
   }
 
+  function heartbeatPayload(){
+    if(!sessionActiveRef.current||!sessionIdRef.current) return null;
+    const liveSeconds=activeSecondsRef.current+(segmentStartedRef.current?Math.max(0,Math.floor((Date.now()-segmentStartedRef.current)/1000)):0);
+    return {
+      action:'session',
+      techniqueKey:keyRef.current,
+      title:currentTitle(),
+      config:keyRef.current==='POMODORO'?configRef.current:{},
+      result:{...formRef.current,round:roundRef.current,mode:modeRef.current,autoSaved:true},
+      durationMinutes:Math.floor(liveSeconds/60),
+      activeSeconds:liveSeconds,
+      completed:false,
+      clientSessionId:sessionIdRef.current,
+      interruptedReason:'HEARTBEAT'
+    };
+  }
+
   function autosaveInterruption(reason:string){
     if(!sessionActiveRef.current||autosavedRef.current||!sessionIdRef.current) return;
     const payload=interruptionPayload(reason);
@@ -137,15 +154,27 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
   }
 
   useEffect(()=>{
+    const heartbeat=setInterval(()=>{
+      const payload=heartbeatPayload();
+      if(!payload||document.visibilityState!=='visible') return;
+      fetch('/api/student/techniques',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});
+    },20000);
+    return()=>clearInterval(heartbeat);
+  },[]);
+
+  useEffect(()=>{
     const onVisibility=()=>{if(document.visibilityState==='hidden') autosaveInterruption('TAB_HIDDEN')};
     const onPageHide=()=>autosaveInterruption('PAGE_EXIT');
+    const onBeforeUnload=()=>autosaveInterruption('PAGE_EXIT');
     const onBlur=()=>autosaveInterruption('WINDOW_BLUR');
     document.addEventListener('visibilitychange',onVisibility);
     window.addEventListener('pagehide',onPageHide);
+    window.addEventListener('beforeunload',onBeforeUnload);
     window.addEventListener('blur',onBlur);
     return()=>{
       document.removeEventListener('visibilitychange',onVisibility);
       window.removeEventListener('pagehide',onPageHide);
+      window.removeEventListener('beforeunload',onBeforeUnload);
       window.removeEventListener('blur',onBlur);
     };
   },[]);
