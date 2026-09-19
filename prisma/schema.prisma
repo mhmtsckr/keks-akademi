@@ -54,6 +54,7 @@ model User {
   parentProfile ParentProfile?
   contentUploads ContentUpload[] @relation("ContentUploadOwner")
   generatedContent GeneratedContent[] @relation("GeneratedContentCreator")
+  auditLogs AuditLog[]
 }
 
 model CoachProfile {
@@ -337,6 +338,10 @@ model QuestionBankItem {
   sourceYear        Int?
   officialSourceUrl String?
   active            Boolean  @default(true)
+  reviewStatus      String   @default("APPROVED")
+  reviewedAt        DateTime?
+  reviewedByUserId  String?
+  reviewNote        String?
   createdAt         DateTime @default(now())
   reviewQueue       ReviewQueueItem[]
 
@@ -515,4 +520,20 @@ model TechniquePracticeSession {
 
   @@index([studentId, createdAt])
   @@unique([studentId, clientSessionId])
+}
+
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  action      String
+  entityType  String
+  entityId    String?
+  summary     String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
 }
