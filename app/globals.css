@@ -159,3 +159,93 @@ radial-gradient(circle at 5% 28%,rgba(46,111,171,.10),transparent 25%),
 .portalFooter span:first-child{color:#e8c15f;font-weight:900;letter-spacing:.12em}
 @media(max-width:980px){.portalHero{grid-template-columns:1fr 190px}.portalHeroSymbol{width:190px}.portalFlow{grid-template-columns:repeat(2,1fr)}.portalFeatureGrid{grid-template-columns:repeat(2,1fr)}.portalLoginGrid{grid-template-columns:1fr}.portalNav{height:auto;padding:16px 0;align-items:flex-start;flex-direction:column}}
 @media(max-width:650px){.portalWrap,.portalWrapWide{width:min(100% - 28px,1380px)}.portalNavLinks{gap:2px}.portalNavLinks a{padding:7px 8px;font-size:12px}.portalHero{grid-template-columns:1fr;min-height:auto;padding:30px 0}.portalHeroSymbol{display:none}.portalHero h1{font-size:40px}.portalFlow,.portalFeatureGrid{grid-template-columns:1fr}.portalFooter>div{flex-direction:column;align-items:flex-start;justify-content:center}.portal .grid{grid-template-columns:1fr!important}}
+
+/* Role-specific KEKS module system */
+.moduleEyebrow{color:#d6a642;font-size:10px;font-weight:900;letter-spacing:.17em;margin-bottom:8px}
+.moduleHeaderRow{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.moduleHeaderRow h2,.moduleHeaderRow h3{margin-bottom:6px}
+.moduleIcon{width:46px;height:46px;min-width:46px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#e2ad45,#986217);color:#071a30;font-weight:900;font-size:21px;box-shadow:0 10px 22px rgba(208,154,45,.14)}
+.goldProgress{height:9px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden;margin-top:16px}
+.goldProgress i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#a96d16,#f1cf76);box-shadow:0 0 14px rgba(238,194,89,.28)}
+.studentFocusCard{background:radial-gradient(circle at 92% 0%,rgba(231,183,73,.17),transparent 32%),linear-gradient(145deg,#0b2746,#091d34)!important}
+.focusRecommendation{border-left:3px solid #d9a640;background:rgba(255,255,255,.025);padding:17px 18px;margin:16px 0;border-radius:0 14px 14px 0}
+.focusRecommendation strong{font-size:20px;color:#f3d17a}
+.focusRecommendation p{color:#c0ccd8;line-height:1.65}
+.focusRecommendation span{font-size:12px;color:#8195aa}
+.smartCoachTop{display:grid;grid-template-columns:1.1fr 1.5fr .8fr;gap:16px}
+.goalCard,.planActionCard,.dueReviewCard{min-height:210px}
+.goalCard{background:radial-gradient(circle at 90% 10%,rgba(224,176,65,.18),transparent 32%),linear-gradient(145deg,#0b2949,#091e36)!important}
+.goalCardMain{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.goalCard .kpi{font-size:48px}
+.goalDetails{display:grid;gap:4px;margin-top:12px;color:#7f94a9;font-size:12px}
+.planActionCard{display:flex;flex-direction:column}
+.planActionCard .btn{margin-top:auto;align-self:flex-start}
+.dueReviewCard .kpi{font-size:54px}
+.weeklyPlanCard{overflow:hidden}
+.weeklyPlanGrid{display:grid;grid-template-columns:repeat(7,minmax(135px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px}
+.dayPlan{min-width:135px;padding:15px;border-radius:15px;background:#091f38;border:1px solid rgba(255,255,255,.07)}
+.dayPlan>strong{text-transform:capitalize;color:#f2cc70}
+.dayDate{display:block;color:#71859b;font-size:11px;margin-top:2px}
+.dayTask{display:grid;gap:4px;margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+.dayTask span{font-size:9px;color:#c59a3e;font-weight:900;letter-spacing:.1em}
+.dayTask b{font-size:13px;line-height:1.35}
+.dayTask small{color:#75899f}
+.trendCard,.coachTrendCard{overflow:hidden}
+.trendList{display:grid;gap:18px}
+.trendRow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:end}
+.trendLabel{display:grid;gap:3px}
+.trendLabel span{color:#71869b;font-size:12px}
+.trendBars{height:78px;display:flex;align-items:flex-end;gap:5px;border-bottom:1px solid rgba(255,255,255,.08);padding:0 4px}
+.trendBars i{flex:1;max-width:28px;min-width:6px;background:linear-gradient(180deg,#f0ce76,#a66b15);border-radius:5px 5px 0 0;opacity:.9}
+.reviewList{display:grid;gap:10px}
+.reviewItem{padding:18px;border:1px solid rgba(255,255,255,.07);background:#091f38;border-radius:15px}
+.reviewItemHead{display:flex;justify-content:space-between;gap:12px}
+.reviewItemHead>div{display:grid;gap:4px}
+.reviewItemHead span{color:#71869b;font-size:12px}
+.answerGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.answerGrid .btn{text-align:left}
+.studentProgressLayout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.85fr);gap:16px}
+.studentPracticeColumn{display:grid;gap:16px;align-content:start}
+.topicProgressCard{min-height:540px}
+.progressRing{width:80px;height:80px;border-radius:50%;border:7px solid rgba(225,174,66,.17);box-shadow:inset 0 0 0 2px rgba(226,176,69,.12);display:grid;place-items:center;align-content:center}
+.progressRing strong{font-size:19px;color:#efcb71}
+.progressRing span{font-size:10px;color:#778da4}
+.topicChecklist{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:18px;max-height:380px;overflow:auto;padding-right:3px}
+.topicCheck{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;background:#091f38;border:1px solid rgba(255,255,255,.06);cursor:pointer;font-size:13px}
+.topicCheck input{display:none}
+.topicCheckMark{color:#61778e;font-weight:900}
+.topicCheck.done{border-color:rgba(222,174,66,.26);background:rgba(215,168,62,.08);color:#f1d181}
+.topicCheck.done .topicCheckMark{color:#e8bd5a}
+.scoreInputs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.practiceRow{display:grid;grid-template-columns:minmax(0,1fr) 58px auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.practiceRow>div:first-child{display:grid;gap:3px}
+.practiceRow>div:first-child span,.practiceMeta{color:#75899f;font-size:11px}
+.practiceScore{display:grid;text-align:center}
+.practiceScore b{font-size:18px;color:#ebc96e}
+.practiceScore span{font-size:9px;color:#70859b}
+.coachCreateCard{background:radial-gradient(circle at 90% 5%,rgba(227,176,66,.12),transparent 30%),linear-gradient(145deg,#0b263f,#091d34)!important}
+.coachSmartGrid{display:grid;grid-template-columns:.8fr 1.2fr;gap:22px;align-items:center}
+.coachSmartAction{padding-left:22px;border-left:1px solid rgba(255,255,255,.08)}
+.coachAlertCard{border-color:rgba(219,171,63,.16)!important}
+.coachAllClear{display:grid;gap:4px;padding:18px;border-radius:14px;background:rgba(32,151,111,.10);border:1px solid rgba(58,178,137,.20)}
+.coachAllClear strong{color:#b8ebda}
+.coachAllClear span{color:#789a8f;font-size:12px}
+.coachAlertList{display:grid;gap:10px}
+.coachAlertItem{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:15px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:#091f38}
+.coachAlertItem p{margin:5px 0 0;color:#92a5b8;font-size:13px}
+.coachAlertItem.high{border-color:rgba(235,99,89,.28);background:rgba(161,37,31,.10)}
+.coachAlertItem.medium{border-color:rgba(222,174,65,.24)}
+.coachNextStep{margin-top:16px;padding:15px;border-left:3px solid #d8a43d;background:rgba(215,164,56,.06)}
+.coachNextStep span{font-size:9px;letter-spacing:.13em;color:#d3a344;font-weight:900}
+.coachNextStep p{margin:5px 0 0;color:#c2ced9}
+.coachAnalyticsGrid{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,.7fr);gap:16px}
+.coachReviewLoad .kpi{font-size:58px;margin-top:20px}
+.adminOverviewGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.adminStatCard{display:flex;gap:16px;align-items:center}
+.adminStatCard .kpi{font-size:38px}
+.adminStatCard p{margin:2px 0 0;color:#8398ad}
+.adminOpsGrid{display:grid;grid-template-columns:1fr 1.4fr;gap:16px}
+.adminOperationCard{min-height:260px}
+.adminCoachTable{overflow:auto}
+@media(max-width:1050px){.smartCoachTop{grid-template-columns:1fr 1fr}.dueReviewCard{grid-column:span 2}.studentProgressLayout,.coachAnalyticsGrid{grid-template-columns:1fr}.adminOpsGrid{grid-template-columns:1fr}.weeklyPlanGrid{grid-template-columns:repeat(7,145px)}}
+@media(max-width:720px){.smartCoachTop,.adminOverviewGrid{grid-template-columns:1fr}.dueReviewCard{grid-column:auto}.topicChecklist{grid-template-columns:1fr}.trendRow{grid-template-columns:1fr}.answerGrid{grid-template-columns:1fr}.coachSmartGrid{grid-template-columns:1fr}.coachSmartAction{padding-left:0;padding-top:16px;border-left:0;border-top:1px solid rgba(255,255,255,.08)}}
