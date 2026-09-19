@@ -39,18 +39,18 @@ export function ContentStudio({studentId,canPublish=false,existing=[]}:{studentI
   }
 
   return <div className="stack">
-    <div className="card">
-      <h2>Akıllı İçerik Stüdyosu</h2>
-      <p className="muted">PDF, DOCX, PPTX veya metin yükleyin. Aynı kaynağın tekrar yüklenmesi ve aynı çıktının yeniden oluşturulması otomatik engellenir.</p>
+    <div className="card contentStudioUpload">
+      <div className="moduleEyebrow">1 · KAYNAK</div>
+      <div className="moduleHeaderRow"><div><h2>Dosyayı yükle ve analiz et</h2><p className="muted">PDF, DOCX, PPTX veya metin yükleyin. Aynı kaynak tekrar yüklenirse mevcut kayıt kullanılır.</p></div><span className="moduleIcon">⇧</span></div>
       <form className="form" onSubmit={uploadFile}>
         <div className="field"><label>Kaynak dosya</label><input name="file" type="file" accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp" required/></div>
         <button className="btn primary">Dosyayı Yükle ve Analiz Et</button>
       </form>
     </div>
 
-    {analysis&&<div className="card"><h3>Kaynak Analizi</h3><p><strong>{analysis.title}</strong></p><div className="row"><span className="pill">{analysis.questionCount} soru işareti</span><span className="pill">{analysis.keyTerms?.length||0} ana kavram</span>{analysis.isQuestionSource&&<span className="pill">Soru kaynağı</span>}</div><h4>Üretilecek içerikler</h4><div className="grid">{ALL.map(t=><label className="card" key={t} style={{padding:12}}><input type="checkbox" checked={types.includes(t)} onChange={e=>setTypes(x=>e.target.checked?[...x,t]:x.filter(v=>v!==t))}/> <strong>{LABELS[t]}</strong></label>)}</div><button className="btn primary" disabled={!types.length} onClick={generate}>Seçilen İçerikleri Üret</button></div>}
+    {analysis&&<div className="card contentStudioAnalysis"><div className="moduleEyebrow">2 · ANALİZ</div><h3>Kaynak Analizi</h3><p><strong>{analysis.title}</strong></p><div className="row"><span className="pill">{analysis.questionCount} soru işareti</span><span className="pill">{analysis.keyTerms?.length||0} ana kavram</span>{analysis.isQuestionSource&&<span className="pill">Soru kaynağı</span>}</div><h4>Üretilecek içerikleri seç</h4><div className="contentTypeGrid">{ALL.map(t=><label className="card" key={t} style={{padding:12}}><input type="checkbox" checked={types.includes(t)} onChange={e=>setTypes(x=>e.target.checked?[...x,t]:x.filter(v=>v!==t))}/> <strong>{LABELS[t]}</strong></label>)}</div><button className="btn primary" disabled={!types.length} onClick={generate}>Seçilen İçerikleri Üret</button></div>}
 
-    {items.length>0&&<div className="card"><h2>Üretilen İçerikler</h2><div className="stack">{items.map((x:any)=><div className="card" key={x.id}><div className="row" style={{justifyContent:'space-between'}}><div><span className="pill">{LABELS[x.type]||x.type}</span><h3>{x.title}</h3><p className="muted">Kalite: {x.qualityScore??'—'} / 100 · {x.reused?'Mevcut en iyi sürüm kullanıldı':x.status||'DRAFT'}</p></div><a className="btn primary" href={'/icerik/'+x.id}>Aç</a></div>{canPublish&&<div className="row"><button className="btn" onClick={()=>publish(x.id,true,false)}>Öğrenciye Yayınla</button><button className="btn" onClick={()=>publish(x.id,true,true)}>Öğrenci + Veliye Yayınla</button><button className="btn" onClick={()=>publish(x.id,false,false)}>Taslağa Al</button></div>}</div>)}</div></div>}
+    {items.length>0&&<div className="card contentStudioResults"><div className="moduleEyebrow">3 · ÜRETİM</div><h2>Üretilen İçerikler</h2><div className="stack">{items.map((x:any)=><div className="card" key={x.id}><div className="row" style={{justifyContent:'space-between'}}><div><span className="pill">{LABELS[x.type]||x.type}</span><h3>{x.title}</h3><p className="muted">Kalite: {x.qualityScore??'—'} / 100 · {x.reused?'Mevcut en iyi sürüm kullanıldı':x.status||'DRAFT'}</p></div><a className="btn primary" href={'/icerik/'+x.id}>Aç</a></div>{canPublish&&<div className="row"><button className="btn" onClick={()=>publish(x.id,true,false)}>Öğrenciye Yayınla</button><button className="btn" onClick={()=>publish(x.id,true,true)}>Öğrenci + Veliye Yayınla</button><button className="btn" onClick={()=>publish(x.id,false,false)}>Taslağa Al</button></div>}</div>)}</div></div>}
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
   </div>;
 }
