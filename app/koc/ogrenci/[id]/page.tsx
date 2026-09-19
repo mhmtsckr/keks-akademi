@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { StudentWorkspaceForms } from '@/app/components/StudentWorkspaceForms';
+import { TargetManager } from '@/app/components/TargetManager';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -16,7 +17,10 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       studyTechniques:{orderBy:{createdAt:'desc'},take:10},
       reports:{orderBy:{createdAt:'desc'},take:10},
       libraryItems:{orderBy:{createdAt:'desc'},take:20},
-      parentProfiles:{where:{active:true},select:{id:true,codeHint:true,createdAt:true}}
+      parentProfiles:{where:{active:true},select:{id:true,codeHint:true,createdAt:true}},
+      targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
+      practiceLogs:{orderBy:{date:'desc'},take:30},
+      topicProgress:{}
     }
   });
   if(!student) return notFound();
@@ -31,6 +35,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Program</div></div>
       <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme</div></div>
       <div className="card"><div className="kpi">{student.reports.length}</div><div className="muted">Rapor</div></div>
+      <div className="card"><div className="kpi">{student.practiceLogs.length}</div><div className="muted">Soru çözüm kaydı</div></div>
     </section>
     <section id="program" className="section section-anchor"><StudentWorkspaceForms studentId={student.id}/></section>
 
@@ -46,7 +51,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       <div className="card"><h2>Raporlar</h2>{student.reports.length===0?<p className="muted">Henüz rapor yok.</p>:student.reports.map(r=><article key={r.id} style={{padding:'12px 0',borderBottom:'1px solid var(--line)'}}><strong>{r.title}</strong><p className="muted">{r.summary}</p><p>{r.content}</p><a className="btn" href={'/koc/ogrenci/'+student.id+'/rapor/'+r.id}>Raporu Yazdır</a></article>)}</div>
       <div id="kutuphane" className="card section-anchor"><h2>Kütüphane</h2>{student.libraryItems.length===0?<p className="muted">Henüz kayıt yok.</p>:student.libraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
     </div></section>
-    <section id="hedef" className="section section-anchor"><div className="card"><h2>Hedef ve Profil</h2><p>{student.goal||'Henüz hedef eklenmemiş.'}</p>{student.profile&&<p className="muted">{JSON.stringify(student.profile)}</p>}</div></section>
+    <section id="hedef" className="section section-anchor"><TargetManager studentId={student.id} initial={student.targets[0]||null}/></section>
     <section id="veli" className="section section-anchor"><div className="card"><h2>Veli Erişimi</h2><p className="muted">Aktif veli erişimi: {student.parentProfiles.length}</p><p>Yeni veya yenilenmiş veli giriş kodunu yukarıdaki “Veli Girişi Oluştur” bölümünden oluşturabilirsiniz.</p></div></section>
   </main>;
 }
