@@ -6,6 +6,7 @@ import { StudentProgressTools } from '@/app/components/StudentProgressTools';
 import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation';
 import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
 import { ContentStudio } from '@/app/components/ContentStudio';
+import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -32,6 +33,7 @@ export default async function StudentPage() {
       dailyLogs:{orderBy:{date:'desc'},take:20},
       examResults:{orderBy:{createdAt:'desc'},take:20},
       studyTechniques:{where:{active:true},orderBy:{createdAt:'desc'}},
+      techniquePreferences:{},
       reports:{where:{visibleToStudent:true},orderBy:{createdAt:'desc'}},
       libraryItems:{orderBy:{createdAt:'desc'}},
       testAccesses:{where:{status:'READY'},orderBy:{createdAt:'asc'},take:1},
@@ -56,6 +58,8 @@ export default async function StudentPage() {
       <div className="card"><div className="kpi">{student.studyTechniques.length}</div><div className="muted">Çalışma tekniği</div></div>
       <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme kaydı</div></div>
     </section>
+
+    <section className="section"><StudyTechniqueLab initialPreferences={student.techniquePreferences}/></section>
 
     <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
       <div className="card"><h2>Hedefim</h2><p>{student.goal || 'Koçunuz henüz hedef bilgisi eklemedi.'}</p>{activeTarget&&<div className="notice"><strong>{activeTarget.institutionName}</strong>{activeTarget.departmentName?' · '+activeTarget.departmentName:''}<br/><span className="muted">{activeTarget.source} · {activeTarget.dataYear||'Yıl belirtilmedi'} · Puan {activeTarget.score??'—'} · Sıra {activeTarget.ranking??'—'} · Yüzdelik {activeTarget.percentile??'—'}</span></div>}{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
