@@ -19,7 +19,12 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
       if(action==='plan') body={action,title:fd.get('title'),payload:{details:fd.get('details')}};
       if(action==='log') body={action,date:fd.get('date'),payload:{duration:fd.get('duration'),details:fd.get('details')}};
       if(action==='technique') body={action,title:fd.get('title'),description:fd.get('description')};
-      if(action==='exam') body={action,examType:fd.get('examType'),payload:{score:fd.get('score'),net:fd.get('net'),ranking:fd.get('ranking'),percentile:fd.get('percentile'),note:fd.get('note')}};
+      if(action==='exam') {
+        let subjectNets:any={};
+        const raw=String(fd.get('subjectNets')||'').trim();
+        if(raw){try{subjectNets=JSON.parse(raw)}catch{throw new Error('Ders netleri JSON biçiminde olmalı. Örn: {"Matematik":25,"Türkçe":30}');}}
+        body={action,examType:fd.get('examType'),payload:{score:fd.get('score'),net:fd.get('net'),ranking:fd.get('ranking'),percentile:fd.get('percentile'),subjectNets,note:fd.get('note')}};
+      }
       if(action==='profile') body={action,goal:fd.get('goal'),profile:{school:fd.get('school'),target:fd.get('target'),notes:fd.get('notes')}};
       if(action==='report') body={action,title:fd.get('title'),summary:fd.get('summary'),content:fd.get('content'),visibleToStudent:true,visibleToParent:true};
       const j=await postJson(studentId,body);
@@ -59,7 +64,7 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
 
     <details className="card"><summary><strong>Ders Çalışma Tekniği</strong></summary><form className="form" onSubmit={e=>handle(e,'technique')} style={{marginTop:12}}><div className="field"><label>Teknik</label><input name="title" required placeholder="Aktif Hatırlama, Pomodoro, Cornell..."/></div><div className="field"><label>Nasıl uygulanacak?</label><textarea name="description" rows={4}/></div><button className="btn primary">Tekniği Ata</button></form></details>
 
-    <details className="card"><summary><strong>Deneme Sonucu</strong></summary><form className="form" onSubmit={e=>handle(e,'exam')} style={{marginTop:12}}><div className="field"><label>Deneme türü</label><input name="examType" required placeholder="TYT Genel Deneme"/></div><div className="row"><div className="field" style={{flex:1}}><label>Net</label><input name="net"/></div><div className="field" style={{flex:1}}><label>Puan</label><input name="score"/></div></div><div className="row"><div className="field" style={{flex:1}}><label>Başarı sırası (YKS)</label><input name="ranking" type="number"/></div><div className="field" style={{flex:1}}><label>Yüzdelik dilim (LGS)</label><input name="percentile" type="number" step="0.01"/></div></div><div className="field"><label>Koç notu</label><textarea name="note"/></div><button className="btn primary">Denemeyi Kaydet</button></form></details>
+    <details className="card"><summary><strong>Deneme Sonucu</strong></summary><form className="form" onSubmit={e=>handle(e,'exam')} style={{marginTop:12}}><div className="field"><label>Deneme türü</label><input name="examType" required placeholder="TYT Genel Deneme"/></div><div className="row"><div className="field" style={{flex:1}}><label>Net</label><input name="net"/></div><div className="field" style={{flex:1}}><label>Puan</label><input name="score"/></div></div><div className="row"><div className="field" style={{flex:1}}><label>Başarı sırası (YKS)</label><input name="ranking" type="number"/></div><div className="field" style={{flex:1}}><label>Yüzdelik dilim (LGS)</label><input name="percentile" type="number" step="0.01"/></div></div><div className="field"><label>Ders bazlı netler (JSON)</label><textarea name="subjectNets" rows={3} placeholder='{"Matematik":25.5,"Türkçe":31.25}'/></div><div className="field"><label>Koç notu</label><textarea name="note"/></div><button className="btn primary">Denemeyi Kaydet</button></form></details>
 
     <details className="card"><summary><strong>Hedef ve Öğrenci Bilgileri</strong></summary><form className="form" onSubmit={e=>handle(e,'profile')} style={{marginTop:12}}><div className="field"><label>Ana hedef</label><textarea name="goal" rows={3}/></div><div className="field"><label>Okul / kurum</label><input name="school"/></div><div className="field"><label>Hedef bölüm / sınav</label><input name="target"/></div><div className="field"><label>Bilgiler ve notlar</label><textarea name="notes" rows={4}/></div><button className="btn primary">Bilgileri Güncelle</button></form></details>
 
