@@ -100,6 +100,8 @@ model Student {
   contentUploads   ContentUpload[]
   generatedContent GeneratedContent[]
   contentProgress ContentProgress[]
+  techniquePreferences TechniquePreference[]
+  techniqueSessions TechniquePracticeSession[]
 }
 
 model StudyPlan {
@@ -479,4 +481,34 @@ model ContentProgress {
 
   @@unique([contentId, studentId])
   @@index([studentId, updatedAt])
+}
+
+
+model TechniquePreference {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  techniqueKey String
+  config       Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([studentId, techniqueKey])
+}
+
+model TechniquePracticeSession {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  techniqueKey    String
+  title           String
+  config          Json     @default("{}")
+  result          Json     @default("{}")
+  durationMinutes Int      @default(0)
+  completed       Boolean  @default(true)
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([studentId, createdAt])
 }
