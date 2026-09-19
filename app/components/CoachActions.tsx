@@ -13,10 +13,14 @@ export function CoachActions() {
     setMsg(`Öğrenci oluşturuldu. Kod: ${j.student.studentCode} · Giriş anahtarı: ${j.accessKey}`);
     e.currentTarget.reset();
   }
-  return <div className="card"><h3>Yeni Öğrenci</h3><form className="form" onSubmit={create}>
-    <div className="field"><label>Ad soyad</label><input name="fullName" required/></div>
-    <div className="field"><label>Sınıf / sınav grubu</label><input name="gradeLevel" placeholder="Örn. 11. Sınıf / YKS"/></div>
-    <button className="btn primary">Öğrenci Oluştur</button>
-    {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`}>{msg}</div>}
-  </form></div>;
+  return <div className="card coachCreateCard">
+    <div className="moduleEyebrow">YENİ KAYIT</div>
+    <div className="moduleHeaderRow"><div><h3>Öğrenci Ekle</h3><p className="muted">Yeni öğrenciyi koç hesabına bağlayın.</p></div><span className="moduleIcon">＋</span></div>
+    <form className="form" onSubmit={create}>
+      <div className="field"><label>Ad soyad</label><input name="fullName" required/></div>
+      <div className="field"><label>Sınıf / sınav grubu</label><input name="gradeLevel" placeholder="Örn. 11. Sınıf / YKS"/></div>
+      <button className="btn primary">Öğrenci Oluştur</button>
+      {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`}>{msg}</div>}
+    </form>
+  </div>;
 }
