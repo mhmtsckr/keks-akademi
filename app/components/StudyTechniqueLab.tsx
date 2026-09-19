@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect,useMemo,useRef,useState } from 'react';
+import { useEffect,useRef,useState } from 'react';
 
 const TECHNIQUES:any={
   POMODORO:{
@@ -30,7 +30,15 @@ const TECHNIQUES:any={
   },
 };
 
-function mmss(sec:number){const m=Math.floor(sec/60).toString().padStart(2,'0');const s=(sec%60).toString().padStart(2,'0');return m+':'+s}
+function mmss(sec:number){
+  const m=Math.floor(sec/60).toString().padStart(2,'0');
+  const s=(sec%60).toString().padStart(2,'0');
+  return m+':'+s;
+}
+function newSessionId(){
+  if(typeof crypto!=='undefined'&&'randomUUID' in crypto) return crypto.randomUUID();
+  return 'sess_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+}
 
 export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:any[]}){
   const prefMap=Object.fromEntries(initialPreferences.map((x:any)=>[x.techniqueKey,x.config]));
@@ -42,24 +50,129 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
   const [round,setRound]=useState(1);
   const [seconds,setSeconds]=useState((prefMap.POMODORO?.focus||25)*60);
   const [running,setRunning]=useState(false);
-  const startedAt=useRef<number|null>(null);
+
+  const sessionIdRef=useRef('');
+  const sessionActiveRef=useRef(false);
+  const segmentStartedRef=useRef<number|null>(null);
+  const activeSecondsRef=useRef(0);
+  const autosavedRef=useRef(false);
+  const keyRef=useRef(key);
+  const formRef=useRef(form);
+  const configRef=useRef(config);
+  const modeRef=useRef(mode);
+  const roundRef=useRef(round);
+
+  useEffect(()=>{keyRef.current=key},[key]);
+  useEffect(()=>{formRef.current=form},[form]);
+  useEffect(()=>{configRef.current=config},[config]);
+  useEffect(()=>{modeRef.current=mode},[mode]);
+  useEffect(()=>{roundRef.current=round},[round]);
+
+  function beginTracking(){
+    if(sessionActiveRef.current) return;
+    sessionIdRef.current=newSessionId();
+    activeSecondsRef.current=0;
+    segmentStartedRef.current=Date.now();
+    sessionActiveRef.current=true;
+    autosavedRef.current=false;
+  }
+
+  function closeActiveSegment(){
+    if(segmentStartedRef.current){
+      activeSecondsRef.current+=Math.max(0,Math.floor((Date.now()-segmentStartedRef.current)/1000));
+      segmentStartedRef.current=null;
+    }
+  }
+
+  function currentTitle(){
+    const k=keyRef.current;
+    if(k==='POMODORO') return 'Pomodoro Odak Oturumu';
+    if(k==='ACTIVE_RECALL') return 'Aktif Hatırlama';
+    if(k==='FEYNMAN') return 'Feynman Tekniği';
+    if(k==='CORNELL') return 'Cornell Not Sistemi';
+    return 'SQ3R';
+  }
+
+  function interruptionPayload(reason:string){
+    closeActiveSegment();
+    return {
+      action:'session',
+      techniqueKey:keyRef.current,
+      title:currentTitle(),
+      config:keyRef.current==='POMODORO'?configRef.current:{},
+      result:{
+        ...formRef.current,
+        round:roundRef.current,
+        mode:modeRef.current,
+        autoSaved:true
+      },
+      durationMinutes:Math.floor(activeSecondsRef.current/60),
+      activeSeconds:activeSecondsRef.current,
+      completed:false,
+      clientSessionId:sessionIdRef.current,
+      interruptedReason:reason
+    };
+  }
+
+  function autosaveInterruption(reason:string){
+    if(!sessionActiveRef.current||autosavedRef.current||!sessionIdRef.current) return;
+    const payload=interruptionPayload(reason);
+    autosavedRef.current=true;
+    sessionActiveRef.current=false;
+    setRunning(false);
+
+    const body=JSON.stringify(payload);
+    try{
+      if(typeof navigator!=='undefined'&&navigator.sendBeacon){
+        const ok=navigator.sendBeacon('/api/student/techniques',new Blob([body],{type:'application/json'}));
+        if(ok) return;
+      }
+    }catch{}
+    fetch('/api/student/techniques',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body,
+      keepalive:true
+    }).catch(()=>{});
+  }
+
+  useEffect(()=>{
+    const onVisibility=()=>{if(document.visibilityState==='hidden') autosaveInterruption('TAB_HIDDEN')};
+    const onPageHide=()=>autosaveInterruption('PAGE_EXIT');
+    const onBlur=()=>autosaveInterruption('WINDOW_BLUR');
+    document.addEventListener('visibilitychange',onVisibility);
+    window.addEventListener('pagehide',onPageHide);
+    window.addEventListener('blur',onBlur);
+    return()=>{
+      document.removeEventListener('visibilitychange',onVisibility);
+      window.removeEventListener('pagehide',onPageHide);
+      window.removeEventListener('blur',onBlur);
+    };
+  },[]);
 
   useEffect(()=>{
     if(!running)return;
-    const id=setInterval(()=>setSeconds(s=>Math.max(0,s-1)),1000);
+    const id=setInterval(()=>{
+      if(document.visibilityState!=='visible') return;
+      setSeconds(s=>Math.max(0,s-1));
+    },1000);
     return()=>clearInterval(id);
   },[running]);
 
   useEffect(()=>{
     if(seconds!==0||!running)return;
+    closeActiveSegment();
     setRunning(false);
     if(mode==='focus'){
       if(round>=config.rounds){setMode('long');setSeconds(config.longBreak*60)}
       else{setMode('short');setSeconds(config.shortBreak*60)}
     }else{
       if(mode==='short')setRound(r=>r+1);
-      setMode('focus');setSeconds(config.focus*60);
+      setMode('focus');
+      setSeconds(config.focus*60);
     }
+    segmentStartedRef.current=Date.now();
+    setRunning(true);
   },[seconds,running,mode,round,config]);
 
   useEffect(()=>{
@@ -67,26 +180,90 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
       const value=mode==='focus'?config.focus:mode==='short'?config.shortBreak:config.longBreak;
       setSeconds(value*60);
     }
-  },[config,mode]);
+  },[config,mode,running]);
 
   async function savePreference(){
-    const r=await fetch('/api/student/techniques',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'preference',techniqueKey:'POMODORO',config})});
-    const j=await r.json(); setMsg(r.ok?'Pomodoro ayarların kaydedildi.':'Hata: '+(j.error||'Kaydedilemedi.'));
+    const r=await fetch('/api/student/techniques',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({action:'preference',techniqueKey:'POMODORO',config})
+    });
+    const j=await r.json();
+    setMsg(r.ok?'Pomodoro ayarların kaydedildi.':'Hata: '+(j.error||'Kaydedilemedi.'));
   }
 
-  async function saveSession(techniqueKey:string,title:string,result:any,duration:number){
-    const r=await fetch('/api/student/techniques',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'session',techniqueKey,title,config:techniqueKey==='POMODORO'?config:{},result,durationMinutes:Math.max(0,Math.round(duration)),completed:true})});
-    const j=await r.json();setMsg(r.ok?'Çalışma oturumu kaydedildi ve koç paneline yansıdı.':'Hata: '+(j.error||'Oturum kaydedilemedi.'));
+  async function saveCompletedSession(techniqueKey:string,title:string,result:any){
+    if(!sessionActiveRef.current) beginTracking();
+    closeActiveSegment();
+    const clientSessionId=sessionIdRef.current;
+    const activeSeconds=activeSecondsRef.current;
+    sessionActiveRef.current=false;
+    autosavedRef.current=true;
+
+    const r=await fetch('/api/student/techniques',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({
+        action:'session',
+        techniqueKey,
+        title,
+        config:techniqueKey==='POMODORO'?config:{},
+        result,
+        durationMinutes:Math.floor(activeSeconds/60),
+        activeSeconds,
+        completed:true,
+        clientSessionId,
+        interruptedReason:undefined
+      })
+    });
+    const j=await r.json();
+    setMsg(r.ok?'Çalışma oturumu gerçek aktif süreyle kaydedildi ve koç paneline yansıdı.':'Hata: '+(j.error||'Oturum kaydedilemedi.'));
+    sessionIdRef.current='';
+    activeSecondsRef.current=0;
+    segmentStartedRef.current=null;
   }
 
-  function startPomodoro(){if(!startedAt.current)startedAt.current=Date.now();setRunning(true)}
-  function pausePomodoro(){setRunning(false)}
-  function resetPomodoro(){setRunning(false);startedAt.current=null;setMode('focus');setRound(1);setSeconds(config.focus*60)}
-  async function finishPomodoro(){
+  function updateForm(next:any){
+    beginTracking();
+    setForm(next);
+  }
+
+  function startPomodoro(){
+    beginTracking();
+    segmentStartedRef.current=Date.now();
+    setRunning(true);
+  }
+  function pausePomodoro(){
+    closeActiveSegment();
     setRunning(false);
-    const minutes=startedAt.current?Math.max(1,(Date.now()-startedAt.current)/60000):config.focus;
-    await saveSession('POMODORO','Pomodoro Odak Oturumu',{round,mode,task:form.task||'',note:form.note||''},minutes);
-    startedAt.current=null;
+  }
+  function resetPomodoro(){
+    setRunning(false);
+    sessionActiveRef.current=false;
+    autosavedRef.current=true;
+    sessionIdRef.current='';
+    activeSecondsRef.current=0;
+    segmentStartedRef.current=null;
+    setMode('focus');
+    setRound(1);
+    setSeconds(config.focus*60);
+  }
+  async function finishPomodoro(){
+    closeActiveSegment();
+    setRunning(false);
+    await saveCompletedSession('POMODORO','Pomodoro Odak Oturumu',{
+      round,
+      mode,
+      task:form.task||'',
+      note:form.note||''
+    });
+  }
+
+  function chooseTechnique(k:string){
+    if(sessionActiveRef.current) autosaveInterruption('TECHNIQUE_CHANGED');
+    setKey(k);
+    setForm({});
+    setMsg('');
   }
 
   const t=TECHNIQUES[key];
@@ -94,9 +271,9 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
   return <div className="stack">
     <div className="card">
       <h2>Ders Çalışma Teknikleri Uygulama Alanı</h2>
-      <p className="muted">Bir teknik seç. Nasıl uygulanacağını gör ve aynı ekranda hemen kullanmaya başla.</p>
+      <p className="muted">Bir teknik seç. Nasıl uygulanacağını gör ve aynı ekranda hemen kullanmaya başla. Sekmeden veya uygulamadan ayrılırsan aktif oturum otomatik durdurulur ve gerçek süre kaydedilir.</p>
       <div className="grid">
-        {Object.entries(TECHNIQUES).map(([k,v]:any)=><button key={k} className="card" onClick={()=>{setKey(k);setMsg('')}} style={{textAlign:'left',borderColor:key===k?'var(--brand)':'var(--line)'}}>
+        {Object.entries(TECHNIQUES).map(([k,v]:any)=><button key={k} className="card" onClick={()=>chooseTechnique(k)} style={{textAlign:'left',borderColor:key===k?'var(--brand)':'var(--line)'}}>
           <strong>{v.name}</strong><p className="muted">{v.short}</p>
         </button>)}
       </div>
@@ -116,7 +293,7 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
         <div className="field"><label>Uzun mola (dk)</label><input type="number" min="5" max="60" value={config.longBreak} onChange={e=>setConfig({...config,longBreak:Number(e.target.value)})}/></div>
         <div className="field"><label>Uzun mola öncesi tur</label><input type="number" min="1" max="8" value={config.rounds} onChange={e=>setConfig({...config,rounds:Number(e.target.value)})}/></div>
       </div>
-      <div className="field" style={{marginTop:12}}><label>Bu oturumda ne çalışacaksın?</label><input value={form.task||''} onChange={e=>setForm({...form,task:e.target.value})} placeholder="Örn. TYT Matematik Problemler"/></div>
+      <div className="field" style={{marginTop:12}}><label>Bu oturumda ne çalışacaksın?</label><input value={form.task||''} onChange={e=>updateForm({...form,task:e.target.value})} placeholder="Örn. TYT Matematik Problemler"/></div>
       <button className="btn" onClick={savePreference} style={{marginTop:10}}>Ayarlarımı Kaydet</button>
       <div style={{textAlign:'center',padding:'28px 0'}}>
         <div className="pill">{mode==='focus'?'Çalışma':mode==='short'?'Kısa Mola':'Uzun Mola'} · Tur {round}/{config.rounds}</div>
@@ -127,24 +304,24 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
           <button className="btn" onClick={finishPomodoro}>Oturumu Bitir ve Kaydet</button>
         </div>
       </div>
-      <div className="field"><label>Oturum notu</label><textarea value={form.note||''} onChange={e=>setForm({...form,note:e.target.value})} rows={3} placeholder="Nasıl geçti? Nerede zorlandın?"/></div>
+      <div className="field"><label>Oturum notu</label><textarea value={form.note||''} onChange={e=>updateForm({...form,note:e.target.value})} rows={3} placeholder="Nasıl geçti? Nerede zorlandın?"/></div>
     </div>}
 
     {key==='ACTIVE_RECALL'&&<TechniqueForm title="Aktif Hatırlama Uygulaması" fields={[
       ['topic','Çalıştığın konu'],['questions','Kendine sorduğun sorular'],['recall','Kaynağa bakmadan hatırladıkların'],['gaps','Eksik kalan noktalar']
-    ]} form={form} setForm={setForm} onSave={()=>saveSession(key,'Aktif Hatırlama',form,20)}/>}
+    ]} form={form} setForm={updateForm} onSave={()=>saveCompletedSession(key,'Aktif Hatırlama',form)}/>}
 
     {key==='FEYNMAN'&&<TechniqueForm title="Feynman Uygulaması" fields={[
       ['topic','Kavram / konu'],['simple','Bir öğrenciye anlatır gibi sade anlatımın'],['gaps','Anlatırken takıldığın noktalar'],['final','Düzeltilmiş ve sadeleştirilmiş son anlatım']
-    ]} form={form} setForm={setForm} onSave={()=>saveSession(key,'Feynman Tekniği',form,25)}/>}
+    ]} form={form} setForm={updateForm} onSave={()=>saveCompletedSession(key,'Feynman Tekniği',form)}/>}
 
     {key==='CORNELL'&&<TechniqueForm title="Cornell Not Uygulaması" fields={[
       ['topic','Konu başlığı'],['notes','Ana notlar'],['cues','Anahtar kelimeler / sorular'],['summary','Kendi cümlelerinle kısa özet']
-    ]} form={form} setForm={setForm} onSave={()=>saveSession(key,'Cornell Not Sistemi',form,30)}/>}
+    ]} form={form} setForm={updateForm} onSave={()=>saveCompletedSession(key,'Cornell Not Sistemi',form)}/>}
 
     {key==='SQ3R'&&<TechniqueForm title="SQ3R Uygulaması" fields={[
       ['survey','Survey — bölümde ilk fark ettiklerin'],['questions','Question — cevaplamak istediğin sorular'],['read','Read — önemli bilgiler'],['recite','Recite — kaynağa bakmadan anlattıkların'],['review','Review — son tekrar özeti']
-    ]} form={form} setForm={setForm} onSave={()=>saveSession(key,'SQ3R',form,35)}/>}
+    ]} form={form} setForm={updateForm} onSave={()=>saveCompletedSession(key,'SQ3R',form)}/>}
 
     {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`}>{msg}</div>}
   </div>;
