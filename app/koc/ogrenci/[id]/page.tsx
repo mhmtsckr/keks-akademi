@@ -6,6 +6,7 @@ import { TargetManager } from '@/app/components/TargetManager';
 import { CoachAlerts } from '@/app/components/CoachAlerts';
 import { CoachSmartPlan } from '@/app/components/CoachSmartPlan';
 import { computeGoalProgress } from '@/lib/smartCoach';
+import { CoachTrendSummary } from '@/app/components/CoachTrendSummary';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -23,7 +24,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       parentProfiles:{where:{active:true},select:{id:true,codeHint:true,createdAt:true}},
       targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
       practiceLogs:{orderBy:{date:'desc'},take:30},
-      topicProgress:{}
+      topicProgress:{},
+      reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}}
     }
   });
   if(!student) return notFound();
@@ -37,6 +39,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     </nav>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
+    <section className="section"><CoachTrendSummary exams={student.examResults.slice().reverse().map(x=>({createdAt:x.createdAt.toISOString(),examType:x.examType,payload:x.payload}))} reviewDue={student.reviewQueue.filter(x=>x.dueAt<=new Date()).length}/></section>
     <section id="genel" className="grid section-anchor">
       <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Program</div></div>
       <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme</div></div>
