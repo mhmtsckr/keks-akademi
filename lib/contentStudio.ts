@@ -135,7 +135,19 @@ function videoLesson(text:string,deep=false){
 function similarQuestions(text:string,deep=false){
   const qs=questionCandidates(text);
   const base=qs.length?qs:keySentences(text,deep?10:6);
-  const items=base.slice(0,deep?10:6).map((q,i)=>({sourceStyle:q,generated:`Benzer kazanım sorusu ${i+1}: ${q.replace(/^\d+[.)]\s*/,'').replace(/\?$/,'')} ifadesindeki temel ilkeyi farklı bir örnek üzerinde uygulayın.`,difficulty:i%3===0?'kolay':i%3===1?'orta':'zor',note:'Kaynak soru kopyalanmamış; aynı kazanımı ölçen yeni bir taslak oluşturulmuştur.'}));
+  const keyTerms=terms(text);
+  const items=base.slice(0,deep?10:6).map((q,i)=>{
+    const concept=keyTerms[i%Math.max(1,keyTerms.length)]||'temel kavram';
+    const difficulty=i%3===0?'kolay':i%3===1?'orta':'zor';
+    return {
+      sourceStyle:q,
+      measuredConcept:concept,
+      difficulty,
+      generated:`Benzer kazanım sorusu ${i+1}: ${concept} bilgisini, kaynak sorudaki çözüm mantığına benzeyen fakat farklı bağlam ve veriler içeren yeni bir örnekte uygulayın. Soru düzeyi: ${difficulty}.`,
+      generationRule:'Aynı kazanım + farklı bağlam + farklı veri + özgün ifade',
+      note:'Kaynak soru kopyalanmamış; yalnız ölçme mantığı ve kazanım örnek alınmıştır.'
+    };
+  });
   return {mode:deep?'varied':'focused',items};
 }
 
