@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { calcNet } from '@/lib/performance';
+import { REVIEW_DAYS } from '@/lib/smartCoach';
 
 const schema=z.object({answers:z.record(z.string(),z.string().nullable())});
 
@@ -16,12 +17,21 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
  const ids=Array.isArray(quiz.questionIds)?quiz.questionIds.map(String):[];
  const qs=await db.questionBankItem.findMany({where:{id:{in:ids}}});
  let correct=0,wrong=0,blank=0;
+ const wrongIds:string[]=[];
  for(const q of qs){
    const ans=input.answers[q.id];
-   if(!ans) blank++; else if(ans===q.correctAnswer) correct++; else wrong++;
+   if(!ans) blank++; else if(ans===q.correctAnswer) correct++; else { wrong++; wrongIds.push(q.id); }
  }
  const net=calcNet(correct,wrong);
  const attempt=await db.practiceQuizAttempt.create({data:{quizId:quiz.id,studentId:user.student.id,answers:input.answers,correct,wrong,blank,net}});
+ for(const questionId of wrongIds){
+   const dueAt=new Date(); dueAt.setDate(dueAt.getDate()+REVIEW_DAYS[0]);
+   await db.reviewQueueItem.upsert({
+     where:{studentId_questionId:{studentId:user.student.id,questionId}},
+     create:{studentId:user.student.id,questionId,sourceAttemptId:attempt.id,stepIndex:0,dueAt,status:'DUE',lastCorrect:false},
+     update:{sourceAttemptId:attempt.id,stepIndex:0,dueAt,status:'DUE',lastCorrect:false,completedAt:null}
+   });
+ }
  await db.practiceLog.create({data:{studentId:user.student.id,examType:quiz.examType,subject:quiz.subject,topic:quiz.topic,correct,wrong,blank,total:correct+wrong+blank,net}});
  const report=await db.studentReport.create({data:{
    studentId:user.student.id,
@@ -32,5 +42,5 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
    visibleToStudent:true,
    visibleToParent:true
  }});
- return NextResponse.json({ok:true,attempt:{id:attempt.id,correct,wrong,blank,net},reportId:report.id});
+ return NextResponse.json({ok:true,attempt:{id:attempt.id,correct,wrong,blank,net},reportId:report.id,reviewAdded:wrongIds.length});
 }
