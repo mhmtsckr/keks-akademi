@@ -11,9 +11,22 @@ export function CoachSmartPlan({studentId,goalPercent,goalLabel}:{studentId:stri
     setMsg('Program oluşturuldu ve öğrenci paneline kaydedildi.');
     setTimeout(()=>location.reload(),700);
   }
-  return <div className="card">
-    <h2>Akıllı Eğitim Koçu</h2>
-    <div className="row"><div><div className="kpi">{goalPercent==null?'—':'%'+goalPercent}</div><div className="muted">{goalLabel}</div></div><button className="btn primary" onClick={create}>Akıllı Haftalık Program Oluştur</button></div>
+  const pct=goalPercent==null?0:Math.max(0,Math.min(100,goalPercent));
+  return <div className="card coachSmartCard">
+    <div className="moduleEyebrow">AKILLI KOÇ</div>
+    <div className="coachSmartGrid">
+      <div>
+        <h2>Hedefe Yaklaşma</h2>
+        <div className="kpi">{goalPercent==null?'—':'%'+goalPercent}</div>
+        <div className="muted">{goalLabel}</div>
+        <div className="goldProgress"><i style={{width:pct+'%'}}/></div>
+      </div>
+      <div className="coachSmartAction">
+        <h3>Bu haftayı yeniden planla</h3>
+        <p className="muted">Zayıf ders, konu açığı ve tekrar yüküne göre 7 günlük plan üretir.</p>
+        <button className="btn primary" onClick={create}>Akıllı Haftalık Program Oluştur</button>
+      </div>
+    </div>
     {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`} style={{marginTop:12}}>{msg}</div>}
   </div>;
 }
