@@ -39,73 +39,59 @@ export function AdminActions(){
       const text=await file.text();
       const json=JSON.parse(text);
       if(!json || !Array.isArray(json.students)) throw new Error('students dizisi bulunamadı');
-      setLegacyBackup(json);
-      setLegacyFileName(file.name);
+      setLegacyBackup(json);setLegacyFileName(file.name);
       setMsg('Eski KEKS yedeği okundu. Kaynak ve hedef kodlarını kontrol edip aktarımı başlatın.');
-    }catch(err){
-      setLegacyBackup(null);
-      setLegacyFileName('');
+    }catch{
+      setLegacyBackup(null);setLegacyFileName('');
       setMsg('Hata: Geçerli bir KEKS JSON yedeği seçilmedi.');
     }
   }
 
   async function importLegacy(){
     if(!legacyBackup)return setMsg('Hata: Önce eski KEKS JSON yedeğini seçin.');
-    setLegacyBusy(true); setMsg('Aktarım başlatıldı…');
+    setLegacyBusy(true);setMsg('Aktarım başlatıldı…');
     try{
-      const r=await fetch('/api/admin/legacy-import',{
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body:JSON.stringify({
-          sourceStudentCode:'211',
-          targetStudentCode:'256090',
-          targetName:'Elif Koçak',
-          targetGradeLevel:'12. Sınıf/YKS',
-          backup:legacyBackup
-        })
-      });
+      const r=await fetch('/api/admin/legacy-import',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sourceStudentCode:'211',targetStudentCode:'256090',targetName:'Elif Koçak',targetGradeLevel:'12. Sınıf/YKS',backup:legacyBackup})});
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Aktarım başarısız.'));return}
       const i=j.imported||{};
-      setMsg(
-        'Aktarım tamamlandı: '+j.targetName+' ('+j.targetStudentCode+'). '+
-        'Program '+(i.schedule||0)+', aktivite '+(i.activities||0)+', çalışma oturumu '+(i.studySessions||0)+
-        ', net '+(i.nets||0)+', sınav '+(i.exams||0)+', test '+(i.tests||0)+
-        '. Diğer eski veriler tam arşiv olarak da saklandı.'
-      );
-    }catch{
-      setMsg('Hata: Aktarım isteği tamamlanamadı.');
-    }finally{
-      setLegacyBusy(false);
-    }
+      setMsg('Aktarım tamamlandı: '+j.targetName+' ('+j.targetStudentCode+'). Program '+(i.schedule||0)+', aktivite '+(i.activities||0)+', çalışma oturumu '+(i.studySessions||0)+', net '+(i.nets||0)+', sınav '+(i.exams||0)+', test '+(i.tests||0)+'.');
+    }catch{setMsg('Hata: Aktarım isteği tamamlanamadı.')}
+    finally{setLegacyBusy(false)}
   }
 
+  const active=coaches.filter(c=>c.status==='ACTIVE').length;
+  const pending=coaches.filter(c=>c.status!=='ACTIVE').length;
+
   return <div className="stack">
-    <div className="card">
-      <div className="row"><h3 style={{margin:0}}>KEKS Akademi Kodu</h3><button className="btn primary" onClick={makeCode}>Tek Kullanımlık Kod Oluştur</button></div>
-      {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`} style={{marginTop:12}}>{msg}</div>}
+    <div className="adminOverviewGrid">
+      <div className="card adminStatCard"><span className="moduleIcon">◎</span><div><div className="kpi">{coaches.length}</div><p>Toplam koç hesabı</p></div></div>
+      <div className="card adminStatCard"><span className="moduleIcon">✓</span><div><div className="kpi">{active}</div><p>Aktif koç</p></div></div>
+      <div className="card adminStatCard"><span className="moduleIcon">!</span><div><div className="kpi">{pending}</div><p>İşlem bekleyen / pasif</p></div></div>
     </div>
 
-    <div className="card">
-      <h3>Eski KEKS Öğrenci Verisini Aktar</h3>
-      <p className="muted">Eski sistem yedeğindeki öğrenci kodu <strong>211</strong> verileri, yeni sistemde <strong>Elif Koçak · 256090 · 12. Sınıf/YKS</strong> kaydına aktarılır. Hedef öğrencinin mevcut kayıtları silinmez.</p>
-      <div className="form">
-        <div className="field">
-          <label>Eski KEKS JSON yedeği</label>
-          <input type="file" accept=".json,application/json" onChange={chooseLegacyFile}/>
-          {legacyFileName&&<div className="muted">Seçilen dosya: {legacyFileName}</div>}
+    {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
+
+    <div className="adminOpsGrid">
+      <div className="card adminOperationCard">
+        <div className="moduleEyebrow">ERİŞİM YÖNETİMİ</div>
+        <div className="moduleHeaderRow"><div><h2>KEKS Akademi Kodu</h2><p className="muted">Tek kullanımlık öğrenci/test erişim kodu oluşturun.</p></div><span className="moduleIcon">#</span></div>
+        <button className="btn primary" onClick={makeCode}>Tek Kullanımlık Kod Oluştur</button>
+      </div>
+
+      <div className="card adminOperationCard">
+        <div className="moduleEyebrow">VERİ AKTARIMI</div>
+        <div className="moduleHeaderRow"><div><h2>Eski KEKS Verisini Aktar</h2><p className="muted">Eski JSON yedeğini seçip hedef öğrenciye ekleyin; mevcut kayıtlar silinmez.</p></div><span className="moduleIcon">⇄</span></div>
+        <div className="form">
+          <div className="field"><label>Eski KEKS JSON yedeği</label><input type="file" accept=".json,application/json" onChange={chooseLegacyFile}/>{legacyFileName&&<div className="muted">Seçilen: {legacyFileName}</div>}</div>
+          <button className="btn primary" disabled={!legacyBackup||legacyBusy} onClick={importLegacy}>{legacyBusy?'Aktarılıyor…':'211 → Elif Koçak (256090) Aktar'}</button>
         </div>
-        <button className="btn primary" disabled={!legacyBackup||legacyBusy} onClick={importLegacy}>
-          {legacyBusy?'Aktarılıyor…':'211 → Elif Koçak (256090) Aktar'}
-        </button>
       </div>
     </div>
 
-    <div className="card">
-      <h3>Koç Onayları</h3>
-      {coaches.length===0?<p className="muted">Bekleyen koç hesabı yok.</p>:
-        <table className="table"><thead><tr><th>Koç</th><th>Durum</th><th>İşlem</th></tr></thead>
-        <tbody>{coaches.map(c=><tr key={c.id}><td>{c.name}<div className="muted">{c.email}</div></td><td>{c.status}</td><td className="row"><button className="btn" onClick={()=>setStatus(c.id,'ACTIVE')}>Aktif Et</button><button className="btn danger" onClick={()=>setStatus(c.id,'SUSPENDED')}>Durdur</button></td></tr>)}</tbody></table>}
+    <div className="card adminCoachTable">
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">KOÇ HESAPLARI</div><h2>Onay ve hesap durumu</h2></div><span className="moduleIcon">♟</span></div>
+      {coaches.length===0?<p className="muted">Koç hesabı yok.</p>:<table className="table"><thead><tr><th>Koç</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>{coaches.map(c=><tr key={c.id}><td><strong>{c.name}</strong><div className="muted">{c.email}</div></td><td><span className="pill">{c.status}</span></td><td className="row"><button className="btn" onClick={()=>setStatus(c.id,'ACTIVE')}>Aktif Et</button><button className="btn danger" onClick={()=>setStatus(c.id,'SUSPENDED')}>Durdur</button></td></tr>)}</tbody></table>}
     </div>
   </div>;
 }
