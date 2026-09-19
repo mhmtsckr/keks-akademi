@@ -24,6 +24,7 @@ export default async function ParentPage() {
       reports:{where:{visibleToParent:true},orderBy:{createdAt:'desc'}},
       practiceLogs:{where:{date:{gte:new Date(Date.now()-7*24*60*60*1000)}},orderBy:{date:'desc'}},
       topicProgress:{},
+      generatedContent:{where:{visibleToParent:true},orderBy:{createdAt:'desc'},take:30},
     }
   });
   if(!student) return <main className="shell"><div className="card">Öğrenci kaydı bulunamadı.</div></main>;
@@ -50,6 +51,7 @@ export default async function ParentPage() {
       <div className="card"><h2>Programlar</h2>{student.plans.length===0?<p className="muted">Henüz program yok.</p>:student.plans.map(p=><div key={p.id} style={{marginBottom:12}}><strong>{p.title}</strong><div className="muted">{pretty(p.payload)}</div></div>)}</div>
       <div className="card"><h2>Denemeler</h2>{student.examResults.length===0?<p className="muted">Henüz deneme yok.</p>:student.examResults.map(x=><div key={x.id} style={{marginBottom:12}}><strong>{x.examType}</strong><div className="muted">{pretty(x.payload)}</div></div>)}</div>
     </div></section>
+    <section className="section"><div className="card"><h2>Öğrenme İçerikleri</h2>{student.generatedContent.length===0?<p className="muted">Henüz veliye açılmış içerik yok.</p>:<div className="grid">{student.generatedContent.map(x=><a className="card" key={x.id} href={'/icerik/'+x.id}><span className="pill">{x.type}</span><h3>{x.title}</h3><p className="muted">Kalite: {x.qualityScore??'—'} / 100</p></a>)}</div>}</div></section>
     <section className="section"><div className="card"><h2>Koç Raporları</h2>{student.reports.length===0?<p className="muted">Henüz veliye açık rapor yayınlanmadı.</p>:student.reports.map(r=><article key={r.id} style={{padding:'14px 0',borderBottom:'1px solid var(--line)'}}><strong>{r.title}</strong>{r.summary&&<p className="muted">{r.summary}</p>}<p>{r.content}</p></article>)}</div></section>
   </main>;
 }
