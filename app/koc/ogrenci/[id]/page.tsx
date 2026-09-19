@@ -8,6 +8,7 @@ import { CoachSmartPlan } from '@/app/components/CoachSmartPlan';
 import { computeGoalProgress } from '@/lib/smartCoach';
 import { CoachTrendSummary } from '@/app/components/CoachTrendSummary';
 import { ContentStudio } from '@/app/components/ContentStudio';
+import { ContentProgressSummary } from '@/app/components/ContentProgressSummary';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -27,7 +28,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       practiceLogs:{orderBy:{date:'desc'},take:30},
       topicProgress:{},
       reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}},
-      generatedContent:{orderBy:{createdAt:'desc'},take:30}
+      generatedContent:{orderBy:{createdAt:'desc'},take:30,include:{progress:{where:{studentId:id},take:1}}}
     }
   });
   if(!student) return notFound();
@@ -48,7 +49,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       <div className="card"><div className="kpi">{student.reports.length}</div><div className="muted">Rapor</div></div>
       <div className="card"><div className="kpi">{student.practiceLogs.length}</div><div className="muted">Soru çözüm kaydı</div></div>
     </section>
-    <section id="icerik" className="section section-anchor"><ContentStudio studentId={student.id} canPublish existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></section>
+    <section id="icerik" className="section section-anchor"><div className="stack"><ContentProgressSummary items={student.generatedContent}/><ContentStudio studentId={student.id} canPublish existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></div></section>
     <section id="program" className="section section-anchor"><StudentWorkspaceForms studentId={student.id}/></section>
 
     <section id="calisma" className="section section-anchor"><h2>Mevcut Kayıtlar</h2>
