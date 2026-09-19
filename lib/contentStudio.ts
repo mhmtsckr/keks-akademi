@@ -91,16 +91,25 @@ function chooseBest(candidates:any[]){return candidates.map(payload=>({payload,s
 
 function flashcards(text:string,deep=false){
   const ks=keySentences(text,deep?18:12), ts=terms(text);
-  const items=ks.slice(0,deep?14:9).map((s,i)=>({front:i<ts.length?ts[i].replace(/^./,c=>c.toLocaleUpperCase('tr-TR'))+' nedir / neden önemlidir?':'Bu bilgiyi açıklayın.',back:s}));
+  const items=ks.slice(0,deep?14:9).map((s,i)=>({front:i<ts.length?ts[i].replace(/^./,c=>c.toLocaleUpperCase('tr-TR'))+' nedir / neden önemlidir?':'Bu bilgiyi açıklayın.',back:s,difficulty:i%3===0?'kolay':i%3===1?'orta':'zor'}));
   return {mode:deep?'comprehensive':'concise',items};
 }
 function quiz(text:string,deep=false){
-  const ks=keySentences(text,deep?20:12);
+  const ks=keySentences(text,deep?22:14);
   const ts=terms(text);
+  const pool=[...ks];
   const items=ks.slice(0,deep?12:8).map((s,i)=>{
-    const answer=s;
     const key=ts[i%Math.max(ts.length,1)]||'kavram';
-    return {prompt:`Aşağıdaki açıklamalardan hangisi “${key}” ile en doğrudan ilişkilidir?`,options:{A:answer,B:'Bu kavram metinde farklı bir bağlamda ele alınmıştır.',C:'Bu ifade verilen içerikle doğrudan desteklenmemektedir.',D:'Bu seçenekte konu dışı bir genelleme yapılmıştır.'},correctAnswer:'A',explanation:answer};
+    const distractors=pool.filter(x=>x!==s).slice((i+1)%Math.max(1,pool.length-1)).concat(pool.filter(x=>x!==s)).slice(0,3);
+    while(distractors.length<3)distractors.push('Bu açıklama verilen içerikte doğrudan desteklenmemektedir.');
+    return {
+      prompt:`Metne göre “${key}” kavramını en doğru açıklayan seçenek hangisidir?`,
+      options:{A:s,B:distractors[0],C:distractors[1],D:distractors[2]},
+      correctAnswer:'A',
+      explanation:s,
+      concept:key,
+      difficulty:i%3===0?'kolay':i%3===1?'orta':'zor'
+    };
   });
   return {mode:deep?'comprehensive':'concise',items};
 }
