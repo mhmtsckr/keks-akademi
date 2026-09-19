@@ -52,6 +52,8 @@ model User {
   coachProfile CoachProfile?
   student      Student?
   parentProfile ParentProfile?
+  contentUploads ContentUpload[] @relation("ContentUploadOwner")
+  generatedContent GeneratedContent[] @relation("GeneratedContentCreator")
 }
 
 model CoachProfile {
@@ -95,6 +97,8 @@ model Student {
   quizAttempts     PracticeQuizAttempt[]
   coachAlerts      CoachAlert[]
   reviewQueue      ReviewQueueItem[]
+  contentUploads   ContentUpload[]
+  generatedContent GeneratedContent[]
 }
 
 model StudyPlan {
@@ -404,4 +408,51 @@ model ReviewQueueItem {
 
   @@unique([studentId, questionId])
   @@index([studentId, dueAt])
+}
+
+
+model ContentUpload {
+  id               String   @id @default(cuid())
+  studentId        String?
+  student          Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  ownerUserId      String
+  owner            User     @relation("ContentUploadOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  fileName         String
+  mimeType         String
+  fileSize         Int
+  fileData         Bytes
+  sha256           String
+  extractedText    String?
+  category         String   @default("AUTO")
+  isQuestionSource Boolean  @default(false)
+  status           String   @default("UPLOADED")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  generated        GeneratedContent[]
+
+  @@index([studentId, createdAt])
+  @@index([ownerUserId, createdAt])
+}
+
+model GeneratedContent {
+  id               String   @id @default(cuid())
+  uploadId         String
+  upload           ContentUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  studentId        String?
+  student          Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdByUserId  String
+  createdBy        User     @relation("GeneratedContentCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  type             String
+  title            String
+  payload          Json
+  fingerprint      String   @unique
+  status           String   @default("DRAFT")
+  qualityScore     Float?
+  visibleToStudent Boolean  @default(false)
+  visibleToParent  Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([studentId, status])
+  @@index([uploadId, type])
 }
