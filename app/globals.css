@@ -249,3 +249,22 @@ radial-gradient(circle at 5% 28%,rgba(46,111,171,.10),transparent 25%),
 .adminCoachTable{overflow:auto}
 @media(max-width:1050px){.smartCoachTop{grid-template-columns:1fr 1fr}.dueReviewCard{grid-column:span 2}.studentProgressLayout,.coachAnalyticsGrid{grid-template-columns:1fr}.adminOpsGrid{grid-template-columns:1fr}.weeklyPlanGrid{grid-template-columns:repeat(7,145px)}}
 @media(max-width:720px){.smartCoachTop,.adminOverviewGrid{grid-template-columns:1fr}.dueReviewCard{grid-column:auto}.topicChecklist{grid-template-columns:1fr}.trendRow{grid-template-columns:1fr}.answerGrid{grid-template-columns:1fr}.coachSmartGrid{grid-template-columns:1fr}.coachSmartAction{padding-left:0;padding-top:16px;border-left:0;border-top:1px solid rgba(255,255,255,.08)}}
+
+.contentStudioUpload,.contentStudioAnalysis,.contentStudioResults{position:relative;overflow:hidden}
+.contentStudioUpload:before,.contentStudioAnalysis:before,.contentStudioResults:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(#f1cf76,#a86d16)}
+.contentTypeGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0 16px}
+.contentTypeGrid .card{padding:12px!important;min-height:64px;display:flex;align-items:center;gap:8px;box-shadow:none}
+.contentTypeGrid .card:has(input:checked){border-color:rgba(236,190,81,.45);background:rgba(216,164,58,.09)}
+.techniqueSelectorCard{background:radial-gradient(circle at 90% 0%,rgba(224,174,64,.12),transparent 34%),linear-gradient(145deg,#0b2745,#091d34)!important}
+.techniqueChoiceGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}
+.techniqueChoice{appearance:none;border:1px solid rgba(255,255,255,.08);background:#091f38;color:#e7edf3;border-radius:15px;padding:16px;text-align:left;cursor:pointer;min-height:112px;transition:.18s ease;font:inherit}
+.techniqueChoice strong{display:block;color:#eef3f8;margin-bottom:7px}
+.techniqueChoice p{font-size:12px;line-height:1.45;margin:0}
+.techniqueChoice:hover{transform:translateY(-2px);border-color:rgba(221,172,65,.28)}
+.techniqueChoice.active{border-color:rgba(239,193,83,.55);background:linear-gradient(145deg,rgba(217,166,59,.15),rgba(255,255,255,.03));box-shadow:0 12px 24px rgba(0,0,0,.12)}
+.techniqueChoice.active strong{color:#f0cc70}
+.techniqueHowCard ol{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;list-style:none;padding:0;counter-reset:step}
+.techniqueHowCard li{counter-increment:step;margin:0!important;padding:13px 14px 13px 45px!important;border-radius:12px;background:#091f38;border:1px solid rgba(255,255,255,.06);position:relative;color:#b9c7d5}
+.techniqueHowCard li:before{content:counter(step);position:absolute;left:13px;top:11px;width:23px;height:23px;border-radius:50%;display:grid;place-items:center;background:rgba(224,173,63,.12);color:#e9c364;font-size:11px;font-weight:900}
+@media(max-width:900px){.techniqueChoiceGrid{grid-template-columns:repeat(2,1fr)}.contentTypeGrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.techniqueChoiceGrid,.contentTypeGrid,.techniqueHowCard ol{grid-template-columns:1fr}}
