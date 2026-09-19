@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { writeAudit } from '@/lib/audit';
 
 const item = z.object({
   formVersion: z.string().min(1).max(50),
@@ -15,7 +16,7 @@ const item = z.object({
 const schema = z.object({ questions: z.array(item).min(1).max(500) });
 
 export async function POST(req: Request) {
-  await requireRole(['ADMIN']);
+  const admin=await requireRole(['ADMIN']);
   const input = schema.parse(await req.json());
   for (const q of input.questions) {
     await db.testQuestion.upsert({
@@ -24,5 +25,6 @@ export async function POST(req: Request) {
       create: q,
     });
   }
+  await writeAudit({actorUserId:admin.id,action:'SCREENING_QUESTION_IMPORT',entityType:'TestQuestion',summary:input.questions.length+' tarama sorusu içe aktarıldı.',metadata:{count:input.questions.length}});
   return NextResponse.json({ ok: true, imported: input.questions.length });
 }
