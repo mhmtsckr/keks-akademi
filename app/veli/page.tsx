@@ -22,18 +22,26 @@ export default async function ParentPage() {
       examResults:{orderBy:{createdAt:'desc'},take:10},
       studyTechniques:{where:{active:true},orderBy:{createdAt:'desc'}},
       reports:{where:{visibleToParent:true},orderBy:{createdAt:'desc'}},
+      practiceLogs:{where:{date:{gte:new Date(Date.now()-7*24*60*60*1000)}},orderBy:{date:'desc'}},
+      topicProgress:{},
     }
   });
   if(!student) return <main className="shell"><div className="card">Öğrenci kaydı bulunamadı.</div></main>;
+  const week=student.practiceLogs.reduce((a,x)=>({c:a.c+x.correct,w:a.w+x.wrong,b:a.b+x.blank,n:a.n+x.net}),{c:0,w:0,b:0,n:0});
+  const completedTopics=student.topicProgress.filter(x=>x.completed).length;
+  const totalTopics=student.topicProgress.length;
+  const progressRate=totalTopics?Math.round((completedTopics/totalTopics)*100):0;
 
   return <main className="shell">
     <nav className="nav"><a className="brand" href="/">KEKS AKADEMİ</a><div className="navlinks"><a href="/">Ana Sayfa</a></div></nav>
     <section className="section"><span className="pill">Veli Paneli</span><h1>{student.fullName}</h1><p className="muted">Öğrenci kodu: {student.studentCode}{student.gradeLevel?' · '+student.gradeLevel:''}</p></section>
     <section className="grid">
+      <div className="card"><div className="kpi">%{progressRate}</div><div className="muted">Konu ilerleme oranı</div></div>
       <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Aktif program</div></div>
       <div className="card"><div className="kpi">{student.dailyLogs.length}</div><div className="muted">Son çalışma kaydı</div></div>
       <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme kaydı</div></div>
     </section>
+    <section className="section"><div className="card"><h2>Son 7 Gün Özeti</h2><div className="row"><span className="pill">Doğru {week.c}</span><span className="pill">Yanlış {week.w}</span><span className="pill">Boş {week.b}</span><span className="pill">Toplam Net {Number(week.n.toFixed(2))}</span></div></div></section>
     <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
       <div className="card"><h2>Hedef ve Genel Durum</h2><p>{student.goal||'Henüz hedef bilgisi eklenmedi.'}</p>{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
       <div className="card"><h2>Uygulanan Teknikler</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik yok.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:10}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
