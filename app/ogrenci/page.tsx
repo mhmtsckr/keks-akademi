@@ -5,6 +5,7 @@ import { StudentActions } from '@/app/components/StudentActions';
 import { StudentProgressTools } from '@/app/components/StudentProgressTools';
 import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation';
 import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
+import { ContentStudio } from '@/app/components/ContentStudio';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -36,7 +37,8 @@ export default async function StudentPage() {
       testAccesses:{where:{status:'READY'},orderBy:{createdAt:'asc'},take:1},
       targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
       topicProgress:{},
-      practiceLogs:{orderBy:{date:'desc'},take:30}
+      practiceLogs:{orderBy:{date:'desc'},take:30},
+      generatedContent:{where:{visibleToStudent:true},orderBy:{createdAt:'desc'},take:30}
     }
   });
   if (!student) return null;
@@ -76,6 +78,8 @@ export default async function StudentPage() {
     <section className="section"><SmartCoachDashboard/></section>
 
     <section className="section"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><h2>Konu ve Soru Takibi</h2><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString()}))}/></section>
+
+    <section className="section"><ContentStudio studentId={student.id} existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></section>
 
     <section className="section"><h2>KEKS Eğilim Taraması</h2><StudentActions hasAccess={Boolean(access)}/></section>
   </main>;
