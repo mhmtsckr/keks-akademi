@@ -30,11 +30,11 @@ export function SmartCoachDashboard(){
     setPlan(j.plan);setMsg('Akıllı haftalık program kaydedildi.');
   }
 
-  async function review(id:string,correct:boolean){
-    const r=await fetch('/api/student/reviews',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,correct})});
+  async function review(id:string,answer:string){
+    const r=await fetch('/api/student/reviews',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,answer})});
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Tekrar güncellenemedi.'));return}
-    setMsg(correct?'Doğru: bir sonraki tekrar tarihi planlandı.':'Yanlış: tekrar döngüsü 0. güne alındı.');
+    setMsg(j.correct?'Doğru: bir sonraki tekrar tarihi planlandı.':'Yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:''));
     load();
   }
 
@@ -98,7 +98,7 @@ export function SmartCoachDashboard(){
         <strong>{x.question.subject} · {x.question.topic}</strong>
         <p>{x.question.prompt}</p>
         <div className="muted">Aşama: {x.stepIndex} · Tekrar tarihi: {new Date(x.dueAt).toLocaleDateString('tr-TR')}</div>
-        {new Date(x.dueAt)<=new Date()&&<div className="row" style={{marginTop:8}}><button className="btn primary" onClick={()=>review(x.id,true)}>Doğru Hatırladım</button><button className="btn" onClick={()=>review(x.id,false)}>Yanlış / Unuttum</button></div>}
+        {new Date(x.dueAt)<=new Date()&&<div className="stack" style={{marginTop:10}}>{Object.entries(x.question.options||{}).map(([key,val]:any)=><button key={key} className="btn" style={{textAlign:'left'}} onClick={()=>review(x.id,key)}><strong>{key})</strong> {val}</button>)}</div>}
       </article>)}
     </div>
     {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`}>{msg}</div>}
