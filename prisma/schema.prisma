@@ -94,6 +94,7 @@ model Student {
   practiceQuizzes  PracticeQuiz[]
   quizAttempts     PracticeQuizAttempt[]
   coachAlerts      CoachAlert[]
+  reviewQueue      ReviewQueueItem[]
 }
 
 model StudyPlan {
@@ -346,6 +347,7 @@ model PracticeQuiz {
   createdByUserId String?
   createdAt       DateTime @default(now())
   attempts        PracticeQuizAttempt[]
+  reviewQueue     ReviewQueueItem[]
 
   @@index([studentId, createdAt])
 }
