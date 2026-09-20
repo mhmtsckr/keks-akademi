@@ -428,3 +428,10 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .connectionsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.connectionTile{display:grid;gap:7px;padding:11px;border-radius:11px;background:#081e36;border:1px solid rgba(255,255,255,.06)}
 .gameResult{padding:13px;border-radius:12px;background:rgba(45,152,113,.10);border:1px solid rgba(77,190,150,.22)}.gameResult strong{color:#b9ead8}.gameResult p{color:#b7c5d3;line-height:1.5}
 @media(max-width:560px){.connectionsGrid{grid-template-columns:1fr}.matchTarget{display:grid}}
+
+.gameAnalyticsTable{display:grid;gap:0;margin-top:14px;overflow-x:auto}
+.gameAnalyticsHead,.gameAnalyticsRow{display:grid;grid-template-columns:110px minmax(180px,1.4fr) 70px 80px 90px 60px;gap:10px;align-items:center;min-width:680px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.gameAnalyticsHead{color:#70869c;font-size:10px;font-weight:900;letter-spacing:.08em}
+.gameAnalyticsRow{font-size:12px;color:#aebdcb}
+.gameAnalyticsRow strong{color:#e7edf3}
+.riskText{color:#ff9e94!important;font-weight:900}
