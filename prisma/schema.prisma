@@ -122,6 +122,7 @@ model Student {
   xpLedger XpLedger[]
   coachTasks CoachTask[]
   preInterviewAttempts PreInterviewAttempt[]
+  preInterviewAssignments PreInterviewAssignment[]
 }
 
 model StudyPlan {
@@ -849,6 +850,7 @@ model PreInterviewForm {
   active    Boolean  @default(true)
   questions PreInterviewQuestion[]
   attempts  PreInterviewAttempt[]
+  assignments PreInterviewAssignment[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -879,7 +881,32 @@ model PreInterviewAttempt {
   answers       Json
   scores        Json
   report        Json
+  assignmentId  String? @unique
+  assignment    PreInterviewAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  reviewStatus  String   @default("PENDING")
+  publishedAt   DateTime?
   completedAt   DateTime @default(now())
 
   @@index([studentId, completedAt])
+}
+
+
+model PreInterviewAssignment {
+  id               String   @id @default(cuid())
+  studentId        String
+  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  formId           String
+  form             PreInterviewForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  coachId          String
+  coach            CoachProfile @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  status           String   @default("ASSIGNED")
+  assignedAt       DateTime @default(now())
+  completedAt      DateTime?
+  approvedAt       DateTime?
+  approvedByUserId String?
+  revokedAt        DateTime?
+  attempt          PreInterviewAttempt?
+
+  @@index([studentId, status])
+  @@index([coachId, status])
 }
