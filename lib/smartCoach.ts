@@ -22,10 +22,18 @@ export async function computeGoalProgress(studentId:string){
       const pct=clamp((target.percentile/num(p.percentile)!)*100);scores.push(pct);details.push('Yüzdelik yaklaşımı %'+Math.round(pct));
     }
   }else{
-    if(target.score!=null && num(p.score)!=null){
+    const effectiveScore=target.examLevel==='KPSS'
+      ? (target.officialMinScore??target.score)
+      : target.examLevel==='AGS_OBAT'
+        ? (target.officialEligibilityScore??target.score)
+        : target.score;
+    if(effectiveScore!=null && num(p.score)!=null){
+      const pct=clamp((num(p.score)!/effectiveScore)*100);scores.push(pct);details.push((target.examLevel==='KPSS'?'Resmî yerleşme puanına':target.examLevel==='AGS_OBAT'?'Resmî başvuru eşiğine':'Puan hedefine')+' yaklaşım %'+Math.round(pct));
+    }
+    if(target.examLevel!=='KPSS'&&target.examLevel!=='AGS_OBAT'&&target.score!=null && num(p.score)!=null){
       const pct=clamp((num(p.score)!/target.score)*100);scores.push(pct);details.push('Puan yaklaşımı %'+Math.round(pct));
     }
-    if(target.ranking!=null && num(p.ranking)!=null && num(p.ranking)!>0){
+    if(target.examLevel!=='KPSS'&&target.examLevel!=='AGS_OBAT'&&target.ranking!=null && num(p.ranking)!=null && num(p.ranking)!>0){
       const pct=clamp((target.ranking/num(p.ranking)!)*100);scores.push(pct);details.push('Sıralama yaklaşımı %'+Math.round(pct));
     }
     const nets=(target.benchmarkNets||{}) as Record<string,number>;
