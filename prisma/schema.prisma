@@ -956,6 +956,7 @@ model TaskReschedule {
   sourceAction    CoachingAction @relation("TaskRescheduleSource", fields: [sourceActionId], references: [id], onDelete: Cascade)
   createdActionId String?  @unique
   createdAction   CoachingAction? @relation("TaskRescheduleCreated", fields: [createdActionId], references: [id], onDelete: SetNull)
+  createdActionIds Json     @default("[]")
   originalDate    DateTime
   newDate         DateTime
   movedTarget     Float
