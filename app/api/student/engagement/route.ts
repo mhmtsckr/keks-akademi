@@ -3,12 +3,14 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { awardXp } from '@/lib/gamification';
+import { chooseWeakTopic,generateMicroGame } from '@/lib/microGameGenerator';
 
 const actionSchema=z.object({action:z.literal('progress'),id:z.string(),currentValue:z.number().min(0)});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
 const gameSchema=z.object({action:z.literal('game_attempt'),gameContentId:z.string(),score:z.number().int().min(0),maxScore:z.number().int().positive(),durationSeconds:z.number().int().min(0),mistakes:z.any().optional()});
 const forumSchema=z.object({action:z.literal('forum_post'),cohortId:z.string(),body:z.string().min(2).max(2000)});
-const schema=z.discriminatedUnion('action',[actionSchema,gameSchema,analyticSchema,forumSchema]);
+const generateGameSchema=z.object({action:z.literal('generate_game')});
+const schema=z.discriminatedUnion('action',[actionSchema,gameSchema,analyticSchema,forumSchema,generateGameSchema]);
 
 export async function GET(){
   const user=await requireRole(['STUDENT']);
@@ -20,7 +22,7 @@ export async function GET(){
     db.coachingAction.findMany({where:{studentId:id,status:'ACTIVE'},orderBy:{periodEnd:'asc'}}),
     db.studentGamification.findUnique({where:{studentId:id}}),
     db.badgeAward.findMany({where:{studentId:id},orderBy:{awardedAt:'desc'}}),
-    db.gameContent.findMany({where:{active:true},orderBy:{createdAt:'desc'},take:100}),
+    db.gameContent.findMany({where:{active:true,OR:[{studentId:null},{studentId:id}]},orderBy:{createdAt:'desc'},take:100}),
     db.coachingSession.findMany({where:{studentId:id,startsAt:{gte:new Date()}},orderBy:{startsAt:'asc'},take:10}),
     db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:weekStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20}),
     db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:monthStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20}),
@@ -43,6 +45,21 @@ export async function POST(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const input=schema.parse(await req.json());
+  if(input.action==='generate_game'){
+    const weak=await chooseWeakTopic(user.student.id);
+    if(!weak)return NextResponse.json({error:'Otomatik oyun üretmek için ders/konu verisi bulunamadı. Önce bir görev, konu veya soru çözüm kaydı oluşturun.'},{status:400});
+    const student=await db.student.findUnique({where:{id:user.student.id},select:{gradeLevel:true}});
+    const game=await generateMicroGame({
+      studentId:user.student.id,
+      createdByUserId:user.id,
+      examType:weak.examType,
+      subject:weak.subject,
+      topic:weak.topic,
+      gradeLevel:student?.gradeLevel||null
+    });
+    return NextResponse.json({ok:true,game,focus:{subject:weak.subject,topic:weak.topic,accuracy:Math.round((weak as any).accuracy*100)||0}});
+  }
+
   if(input.action==='progress'){
     const row=await db.coachingAction.findFirst({where:{id:input.id,studentId:user.student.id}});
     if(!row)return NextResponse.json({error:'Aksiyon bulunamadı.'},{status:404});
