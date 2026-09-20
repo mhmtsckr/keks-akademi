@@ -15,21 +15,22 @@ export async function GET(){
   const id=user.student.id;
   const weekStart=new Date(Date.now()-7*24*60*60*1000);
   const monthStart=new Date(Date.now()-30*24*60*60*1000);
-  const [actions,gamification,badges,games,sessions,weeklyLedger,monthlyLedger]=await Promise.all([
+  const [actions,gamification,badges,games,sessions,weeklyLedger,monthlyLedger,cohorts]=await Promise.all([
     db.coachingAction.findMany({where:{studentId:id,status:'ACTIVE'},orderBy:{periodEnd:'asc'}}),
     db.studentGamification.findUnique({where:{studentId:id}}),
     db.badgeAward.findMany({where:{studentId:id},orderBy:{awardedAt:'desc'}}),
     db.gameContent.findMany({where:{active:true},orderBy:{createdAt:'desc'},take:30}),
     db.coachingSession.findMany({where:{studentId:id,startsAt:{gte:new Date()}},orderBy:{startsAt:'asc'},take:10}),
     db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:weekStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20}),
-    db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:monthStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20})
+    db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:monthStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20}),
+    db.cohortMember.findMany({where:{studentId:id},include:{cohort:{include:{posts:{orderBy:{createdAt:'desc'},take:30,include:{student:{select:{fullName:true}}}}}}}})
   ]);
   const ids=[...new Set([...weeklyLedger.map(x=>x.studentId),...monthlyLedger.map(x=>x.studentId)])];
   const students=ids.length?await db.student.findMany({where:{id:{in:ids}},select:{id:true,fullName:true,studentCode:true}}):[];
   const map=new Map(students.map(x=>[x.id,x]));
   const weeklyLeaderboard=weeklyLedger.map(x=>({studentId:x.studentId,xp:x._sum.xp||0,student:map.get(x.studentId)}));
   const monthlyLeaderboard=monthlyLedger.map(x=>({studentId:x.studentId,xp:x._sum.xp||0,student:map.get(x.studentId)}));
-  return NextResponse.json({ok:true,actions,gamification,badges,games,weeklyLeaderboard,monthlyLeaderboard,sessions});
+  return NextResponse.json({ok:true,actions,gamification,badges,games,weeklyLeaderboard,monthlyLeaderboard,sessions,cohorts});
 }
 
 export async function POST(req:Request){
@@ -44,6 +45,13 @@ export async function POST(req:Request){
     const updated=await db.coachingAction.update({where:{id:row.id},data:{currentValue:current,status:completed?'COMPLETED':'ACTIVE'}});
     if(completed) await awardXp(user.student.id,'ACTION',row.id,60);
     return NextResponse.json({ok:true,row:updated});
+  }
+
+  if(input.action==='forum_post'){
+    const member=await db.cohortMember.findFirst({where:{cohortId:input.cohortId,studentId:user.student.id}});
+    if(!member)return NextResponse.json({error:'Bu kohorta erişiminiz yok.'},{status:403});
+    const row=await db.forumPost.create({data:{cohortId:input.cohortId,studentId:user.student.id,authorUserId:user.id,body:input.body}});
+    return NextResponse.json({ok:true,row});
   }
 
   if(input.action==='analytics'){
