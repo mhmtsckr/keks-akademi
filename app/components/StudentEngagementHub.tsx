@@ -1,30 +1,35 @@
 'use client';
 
-import { FormEvent,useEffect,useState } from 'react';
+import { FormEvent,useEffect,useMemo,useState } from 'react';
 
 export function StudentEngagementHub(){
   const [data,setData]=useState<any>(null);
   const [msg,setMsg]=useState('');
   const [chat,setChat]=useState<Array<{role:string,content:string}>>([]);
   const [busy,setBusy]=useState(false);
+  const [leaderMode,setLeaderMode]=useState<'weekly'|'monthly'>('weekly');
 
   async function load(){const r=await fetch('/api/student/engagement');const j=await r.json();if(j.ok)setData(j)}
   useEffect(()=>{load()},[]);
 
-  async function progress(id:string,currentValue:number){
-    const r=await fetch('/api/student/engagement',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'progress',id,currentValue})});
-    const j=await r.json();if(!r.ok){setMsg('Hata: '+(j.error||'Güncellenemedi.'));return}setMsg('Aksiyon ilerlemesi güncellendi.');load();
+  async function api(body:any){
+    const r=await fetch('/api/student/engagement',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json();
+    if(!r.ok){setMsg('Hata: '+(j.error||'İşlem başarısız.'));return null}await load();return j;
   }
+  async function progress(id:string,currentValue:number){const j=await api({action:'progress',id,currentValue});if(j)setMsg('Aksiyon ilerlemesi güncellendi.')}
+  async function analytics(e:FormEvent<HTMLFormElement>){e.preventDefault();const fd=new FormData(e.currentTarget);const j=await api({action:'analytics',examType:fd.get('examType'),subject:fd.get('subject'),topic:fd.get('topic'),questionType:fd.get('questionType')||'GENEL',correct:Number(fd.get('correct')),wrong:Number(fd.get('wrong')),blank:Number(fd.get('blank')),avgSeconds:fd.get('avgSeconds')?Number(fd.get('avgSeconds')):undefined,examDate:fd.get('examDate')||undefined});if(j){setMsg('Test/deneme analitiği kaydedildi.');e.currentTarget.reset()}}
+  async function forum(e:FormEvent<HTMLFormElement>,cohortId:string){e.preventDefault();const fd=new FormData(e.currentTarget);const body=String(fd.get('body')||'');const j=await api({action:'forum_post',cohortId,body});if(j){setMsg('Kohort mesajı gönderildi.');e.currentTarget.reset()}}
 
   async function chatSubmit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();const fd=new FormData(e.currentTarget);const message=String(fd.get('message')||'').trim();if(!message)return;
-    setChat(x=>[...x,{role:'user',content:message}]);setBusy(true);(e.currentTarget as HTMLFormElement).reset();
+    setChat(x=>[...x,{role:'user',content:message}]);setBusy(true);e.currentTarget.reset();
     const r=await fetch('/api/student/coachbot',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message})});const j=await r.json();setBusy(false);
     setChat(x=>[...x,{role:'assistant',content:r.ok?j.reply:'Yanıt oluşturulamadı.'}]);
   }
 
   if(!data)return <div className="card"><p className="muted">Koçluk ve oyunlaştırma verileri yükleniyor…</p></div>;
   const xp=data.gamification?.xp||0,level=data.gamification?.level||1;
+  const leaderboard=leaderMode==='weekly'?data.weeklyLeaderboard:data.monthlyLeaderboard;
 
   return <div className="stack">
     {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`}>{msg}</div>}
@@ -38,21 +43,34 @@ export function StudentEngagementHub(){
 
     <div className="engagementGrid">
       <div className="card coachBotCard"><div className="moduleEyebrow">KEKS REHBER</div><h2>Seans dışı çalışma asistanı</h2><div className="chatBox">{chat.length===0&&<p className="muted">“Bu hafta nasıl çalışmalıyım?”, “Son çalışmalarımı özetle” veya “Bugün ne yapayım?” diye sorabilirsiniz.</p>}{chat.map((x,i)=><div key={i} className={'chatBubble '+x.role}>{x.content}</div>)}{busy&&<div className="chatBubble assistant">Yanıt hazırlanıyor…</div>}</div><form className="row" onSubmit={chatSubmit}><input name="message" placeholder="Rehbere sor…" required style={{flex:1}}/><button className="btn primary">Gönder</button></form></div>
-      <div className="card leaderboardCard"><div className="moduleEyebrow">LİDERLİK TABLOSU</div><h2>XP Sıralaması</h2>{data.leaderboard.slice(0,10).map((x:any,i:number)=><div className="leaderRow" key={x.studentId}><b>{i+1}</b><span>{x.student.fullName}</span><strong>{x.xp} XP</strong></div>)}</div>
+      <div className="card leaderboardCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">LİDERLİK TABLOSU</div><h2>XP Sıralaması</h2></div><div className="row"><button className={'btn '+(leaderMode==='weekly'?'primary':'')} onClick={()=>setLeaderMode('weekly')}>Haftalık</button><button className={'btn '+(leaderMode==='monthly'?'primary':'')} onClick={()=>setLeaderMode('monthly')}>Aylık</button></div></div>{leaderboard.slice(0,10).map((x:any,i:number)=><div className="leaderRow" key={x.studentId}><b>{i+1}</b><span>{x.student?.fullName||'Öğrenci'}</span><strong>{x.xp} XP</strong></div>)}</div>
     </div>
 
-    <div className="card"><div className="moduleEyebrow">EĞİTSEL OYUNLAR</div><h2>Mikro tekrar alanı</h2>{data.games.length===0?<p className="muted">Yönetici henüz oyun içeriği yayınlamadı.</p>:<div className="gameGrid">{data.games.map((g:any)=><GameCard key={g.id} game={g} onDone={async(score,maxScore,durationSeconds,mistakes)=>{const r=await fetch('/api/student/engagement',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'game_attempt',gameContentId:g.id,score,maxScore,durationSeconds,mistakes})});const j=await r.json();if(r.ok){setMsg('+'+j.xp+' XP kazandınız.');load()}}}/>)}</div>}</div>
+    <div className="card"><div className="moduleEyebrow">TEST / DENEME ANALİTİĞİ</div><h2>Eksik haritasına veri ekle</h2><form className="analyticsEntryForm" onSubmit={analytics}><input name="examType" placeholder="TYT / AYT / LGS" required/><input name="subject" placeholder="Ders" required/><input name="topic" placeholder="Konu" required/><input name="questionType" placeholder="Soru tipi"/><input name="correct" type="number" min="0" placeholder="Doğru" required/><input name="wrong" type="number" min="0" placeholder="Yanlış" required/><input name="blank" type="number" min="0" placeholder="Boş" required/><input name="avgSeconds" type="number" min="0" placeholder="Ort. sn"/><input name="examDate" type="date"/><button className="btn primary">Kaydet</button></form></div>
+
+    <div className="card"><div className="moduleEyebrow">EĞİTSEL OYUNLAR</div><h2>Mikro tekrar alanı</h2>{data.games.length===0?<p className="muted">Yönetici henüz oyun içeriği yayınlamadı.</p>:<div className="gameGrid">{data.games.map((g:any)=><GameCard key={g.id} game={g} onDone={async(score,maxScore,durationSeconds,mistakes)=>{const j=await api({action:'game_attempt',gameContentId:g.id,score,maxScore,durationSeconds,mistakes});if(j)setMsg('+'+j.xp+' XP kazandınız.')}}/>)}</div>}</div>
+
+    {data.cohorts.length>0&&<div className="card"><div className="moduleEyebrow">KAPALI KOHORT FORUMU</div><h2>Birbirinizi motive edin</h2><div className="cohortGrid">{data.cohorts.map((m:any)=><div className="cohortCard" key={m.cohort.id}><h3>{m.cohort.name}</h3><p className="muted">{m.cohort.description}</p><div className="forumFeed">{m.cohort.posts.slice().reverse().map((p:any)=><div className="forumPost" key={p.id}><strong>{p.student?.fullName||'Koç'}</strong><span>{new Date(p.createdAt).toLocaleString('tr-TR')}</span><p>{p.body}</p></div>)}</div><form className="row" onSubmit={e=>forum(e,m.cohort.id)}><input name="body" placeholder="Kohorta mesaj yaz…" required style={{flex:1}}/><button className="btn primary">Gönder</button></form></div>)}</div></div>}
   </div>;
 }
 
 function GameCard({game,onDone}:{game:any;onDone:(score:number,max:number,duration:number,mistakes:any)=>void}){
-  const [open,setOpen]=useState(false);const [answer,setAnswer]=useState('');const [started,setStarted]=useState(0);const payload=game.payload||{};
-  function start(){setOpen(true);setStarted(Date.now())}
+  const [open,setOpen]=useState(false);const [started,setStarted]=useState(0);const [word,setWord]=useState('');const [values,setValues]=useState<Record<string,string>>({});const payload=game.payload||{};
+  function start(){setOpen(true);setStarted(Date.now());setValues({});setWord('')}
+  function finish(score:number,max:number,mistakes:any){onDone(score,max,Math.max(1,Math.round((Date.now()-started)/1000)),mistakes);setOpen(false)}
   function submit(){
-    let score=0,max=1,mistakes:any[]=[];
-    if(game.gameType==='WORD'){score=answer.trim().toLocaleLowerCase('tr-TR')===String(payload.answer||'').trim().toLocaleLowerCase('tr-TR')?1:0;if(!score)mistakes=[answer]}
-    else {score=1}
-    onDone(score,max,Math.max(1,Math.round((Date.now()-started)/1000)),mistakes);setOpen(false);setAnswer('');
+    if(game.gameType==='WORD'){const ok=word.trim().toLocaleLowerCase('tr-TR')===String(payload.answer||'').trim().toLocaleLowerCase('tr-TR');finish(ok?1:0,1,ok?[]:[word]);return}
+    if(game.gameType==='CROSSWORD'){const clues=payload.clues||[];let score=0;const mistakes:any[]=[];clues.forEach((x:any,i:number)=>{const v=values[String(i)]||'';if(v.trim().toLocaleLowerCase('tr-TR')===String(x.answer||'').trim().toLocaleLowerCase('tr-TR'))score++;else mistakes.push({clue:x.clue,answer:v})});finish(score,Math.max(1,clues.length),mistakes);return}
+    if(game.gameType==='MATCH'){const pairs=payload.pairs||[];let score=0;const mistakes:any[]=[];pairs.forEach((x:any,i:number)=>{if(values[String(i)]===String(x.right))score++;else mistakes.push({left:x.left,answer:values[String(i)]})});finish(score,Math.max(1,pairs.length),mistakes);return}
+    const items=payload.items||[];let score=0;const mistakes:any[]=[];items.forEach((x:any,i:number)=>{if(values[String(i)]===String(x.group))score++;else mistakes.push({label:x.label,answer:values[String(i)]})});finish(score,Math.max(1,items.length),mistakes);
   }
-  return <div className="gameCard"><span className="pill">{game.gameType}</span><h3>{game.title}</h3><p>{game.subject} · {game.topic}</p>{!open?<button className="btn primary" onClick={start}>Oyunu Başlat</button>:<div className="gamePlay">{game.gameType==='WORD'?<><p>{payload.clue||'İpucunu kullanarak kavramı bul.'}</p><input value={answer} onChange={e=>setAnswer(e.target.value)} maxLength={20} placeholder="Cevap"/></>:<p>{payload.instructions||'Görevi tamamlayın ve sonucu kaydedin.'}</p>}<button className="btn primary" onClick={submit}>Tamamla</button></div>}</div>;
+  const matchOptions=useMemo(()=>game.gameType==='MATCH'?(payload.pairs||[]).map((x:any)=>String(x.right)).sort():[],[game.gameType,game.payload]);
+  const connectionGroups=useMemo(()=>[...new Set((payload.items||[]).map((x:any)=>String(x.group)))],[game.payload]);
+  return <div className="gameCard"><span className="pill">{game.gameType}</span><h3>{game.title}</h3><p>{game.subject} · {game.topic}</p>{!open?<button className="btn primary" onClick={start}>Oyunu Başlat</button>:<div className="gamePlay">
+    {game.gameType==='WORD'&&<><p>{payload.clue||'İpucunu kullanarak kavramı bul.'}</p><div className="wordCells">{String(payload.answer||'').split('').map((_:string,i:number)=><span key={i}>{word[i]||''}</span>)}</div><input value={word} onChange={e=>setWord(e.target.value.toLocaleUpperCase('tr-TR'))} maxLength={String(payload.answer||'').length||6} placeholder="Tahmin"/></>}
+    {game.gameType==='CROSSWORD'&&(payload.clues||[]).map((x:any,i:number)=><div className="gameQuestion" key={i}><span>{i+1}. {x.clue}</span><input value={values[String(i)]||''} onChange={e=>setValues(v=>({...v,[String(i)]:e.target.value}))}/></div>)}
+    {game.gameType==='MATCH'&&(payload.pairs||[]).map((x:any,i:number)=><div className="gameQuestion" key={i}><strong>{x.left}</strong><select value={values[String(i)]||''} onChange={e=>setValues(v=>({...v,[String(i)]:e.target.value}))}><option value="">Eşini seç</option>{matchOptions.map((o:string)=><option key={o}>{o}</option>)}</select></div>)}
+    {game.gameType==='CONNECTIONS'&&(payload.items||[]).map((x:any,i:number)=><div className="gameQuestion" key={i}><strong>{x.label}</strong><select value={values[String(i)]||''} onChange={e=>setValues(v=>({...v,[String(i)]:e.target.value}))}><option value="">Grup seç</option>{connectionGroups.map((o:any)=><option key={String(o)}>{String(o)}</option>)}</select></div>)}
+    <button className="btn primary" onClick={submit}>Kontrol Et ve XP Kazan</button>
+  </div>}</div>;
 }
