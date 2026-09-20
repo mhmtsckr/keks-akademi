@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
-import { hashSecret, randomCode } from '@/lib/security';
+import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
+import { writeAudit } from '@/lib/audit';
 
 const createSchema = z.object({
   fullName: z.string().min(2).max(120),
@@ -35,20 +36,46 @@ export async function POST(req: Request) {
   const studentCode = await uniqueStudentCode();
   const accessKey = randomCode('STD');
 
-  const student = await db.student.create({
-    data: {
-      studentCode,
-      accessKeyHash: await hashSecret(accessKey),
-      fullName: input.fullName,
-      gradeLevel: input.gradeLevel || null,
-      coachId: user.coachProfile.id,
-    },
+  const monthlyCode = randomCode('KEKS');
+  const student = await db.$transaction(async tx => {
+    const created = await tx.student.create({
+      data: {
+        studentCode,
+        accessKeyHash: await hashSecret(accessKey),
+        fullName: input.fullName,
+        gradeLevel: input.gradeLevel || null,
+        coachId: user.coachProfile!.id,
+      },
+    });
+    await tx.academyCode.create({
+      data:{
+        codeHash:await hashSecret(monthlyCode),
+        codeHint:monthlyCode.slice(-4),
+        codeCiphertext:encryptPrivateCode(monthlyCode),
+        assignedStudentId:created.id,
+        maxUses:1,
+        useCount:0,
+        active:true,
+        monthlyRecurring:true,
+        createdByUserId:user.id
+      }
+    });
+    return created;
+  });
+
+  await writeAudit({
+    actorUserId:user.id,
+    action:'STUDENT_CREATE',
+    entityType:'Student',
+    entityId:student.id,
+    summary:student.fullName+' öğrencisi oluşturuldu; aylık KEKS test kodu yönetici erişimine kaydedildi.',
+    metadata:{studentCode:student.studentCode,gradeLevel:student.gradeLevel}
   });
 
   return NextResponse.json({
     ok: true,
     student: { id: student.id, fullName: student.fullName, studentCode },
     accessKey,
-    warning: 'Giriş anahtarı yalnızca bu yanıtta açık olarak gösterilir. Öğrenciye güvenli biçimde iletin.',
+    warning: 'Koça yalnız öğrenci kodu ve giriş anahtarı gösterilir. Aylık KEKS test kodu yalnız yönetici panelinde görüntülenir.',
   });
 }
