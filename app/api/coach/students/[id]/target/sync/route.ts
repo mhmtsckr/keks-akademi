@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
+import { syncOfficialTarget } from '@/lib/officialTargetSync';
 
 function firstNumber(html:string, patterns:RegExp[]){
   for(const re of patterns){const m=html.match(re);if(m){const n=Number(m[1].replace(/\./g,'').replace(',','.'));if(Number.isFinite(n))return n}}
@@ -15,6 +16,19 @@ export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){
  if(!student) return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
  const target=await db.studentTarget.findFirst({where:{studentId:id,active:true},orderBy:{createdAt:'desc'}});
  if(!target) return NextResponse.json({error:'Aktif hedef yok.'},{status:400});
+
+ if(target.examLevel==='KPSS'||target.examLevel==='AGS_OBAT'){
+   try{
+     const updated=await syncOfficialTarget(target.id);
+     const message=updated.syncStatus==='SYNCED'
+       ? 'Resmî ÖSYM/MEB hedef verileri güncellendi.'
+       : 'Resmî kaynak kontrol edildi; hedef için kesin eşleşme doğrulama bekliyor.';
+     return NextResponse.json({ok:true,target:updated,message});
+   }catch{
+     const updated=await db.studentTarget.update({where:{id:target.id},data:{syncStatus:'SYNC_ERROR',syncedAt:new Date()}});
+     return NextResponse.json({ok:true,target:updated,message:'Resmî kaynak şu anda otomatik okunamadı. Kayıt korundu; yeniden senkronlanabilir.'});
+   }
+ }
 
  let url=target.sourceUrl||'';
  if(!url && target.source==='YOKATLAS' && target.programCode) url='https://yokatlas.yok.gov.tr/lisans.php?y='+encodeURIComponent(target.programCode);
