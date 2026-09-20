@@ -62,6 +62,9 @@ model CoachProfile {
   userId    String    @unique
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   students  Student[]
+  calendarConnections CalendarConnection[]
+  coachingSessions CoachingSession[]
+  cohorts Cohort[]
   createdAt DateTime  @default(now())
 }
 
@@ -103,6 +106,16 @@ model Student {
   contentProgress ContentProgress[]
   techniquePreferences TechniquePreference[]
   techniqueSessions TechniquePracticeSession[]
+  coachingSessions CoachingSession[]
+  coachingActions CoachingAction[]
+  coachBotMessages CoachBotMessage[]
+  examAnalytics ExamAnalyticsRecord[]
+  gamification StudentGamification?
+  gameAttempts GameAttempt[]
+  badges BadgeAward[]
+  cohortMemberships CohortMember[]
+  forumPosts ForumPost[]
+  progressShares ProgressShare[]
 }
 
 model StudyPlan {
@@ -540,4 +553,213 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([actorUserId, createdAt])
+}
+
+
+model CalendarConnection {
+  id                     String   @id @default(cuid())
+  coachId                String
+  coach                  CoachProfile @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  provider               String
+  accountEmail           String?
+  calendarId             String?
+  timeZone               String   @default("Europe/Istanbul")
+  accessTokenCiphertext  String?
+  refreshTokenCiphertext String?
+  expiresAt              DateTime?
+  syncToken              String?
+  active                 Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([coachId, provider])
+}
+
+model CoachingSession {
+  id                String   @id @default(cuid())
+  coachId           String
+  coach             CoachProfile @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  studentId         String
+  student           Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title             String
+  startsAt          DateTime
+  endsAt            DateTime
+  timeZone          String   @default("Europe/Istanbul")
+  status            String   @default("SCHEDULED")
+  calendarProvider  String?
+  externalEventId   String?
+  meetingProvider   String?
+  meetingUrl        String?
+  notes             String?
+  createdByUserId   String?
+  syncStatus        String   @default("LOCAL")
+  actions           CoachingAction[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([coachId, startsAt])
+  @@index([studentId, startsAt])
+}
+
+model CoachingAction {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sessionId       String?
+  session         CoachingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdByUserId String?
+  title           String
+  description     String?
+  metricType      String   @default("COUNT")
+  targetValue     Float    @default(1)
+  currentValue    Float    @default(0)
+  cadence         String   @default("WEEKLY")
+  periodStart     DateTime
+  periodEnd       DateTime
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([studentId, periodStart, periodEnd])
+}
+
+model CoachBotMessage {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  role      String
+  content   String
+  intent    String?
+  createdAt DateTime @default(now())
+
+  @@index([studentId, createdAt])
+}
+
+model ExamAnalyticsRecord {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examType     String
+  subject      String
+  topic        String
+  questionType String   @default("GENEL")
+  correct      Int      @default(0)
+  wrong        Int      @default(0)
+  blank        Int      @default(0)
+  avgSeconds   Float?
+  examDate     DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([studentId, examDate])
+}
+
+model StudentGamification {
+  id           String   @id @default(cuid())
+  studentId    String   @unique
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  streak       Int      @default(0)
+  lastPlayedAt DateTime?
+  updatedAt    DateTime @updatedAt
+}
+
+model GameContent {
+  id              String   @id @default(cuid())
+  gameType        String
+  examType        String?
+  subject         String
+  topic           String
+  title           String
+  payload         Json
+  difficulty      String   @default("ORTA")
+  active          Boolean  @default(true)
+  createdByUserId String?
+  attempts        GameAttempt[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([subject, topic, active])
+}
+
+model GameAttempt {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  gameContentId   String
+  gameContent     GameContent @relation(fields: [gameContentId], references: [id], onDelete: Cascade)
+  score           Int
+  maxScore        Int
+  durationSeconds Int      @default(0)
+  xpEarned        Int      @default(0)
+  mistakes        Json?
+  completedAt     DateTime @default(now())
+
+  @@index([studentId, completedAt])
+}
+
+model BadgeAward {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  badgeKey    String
+  title       String
+  description String?
+  awardedAt   DateTime @default(now())
+
+  @@unique([studentId, badgeKey])
+}
+
+model Cohort {
+  id          String   @id @default(cuid())
+  coachId     String
+  coach       CoachProfile @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  members     CohortMember[]
+  posts       ForumPost[]
+  createdAt   DateTime @default(now())
+}
+
+model CohortMember {
+  id        String   @id @default(cuid())
+  cohortId  String
+  cohort    Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime @default(now())
+
+  @@unique([cohortId, studentId])
+}
+
+model ForumPost {
+  id           String   @id @default(cuid())
+  cohortId     String
+  cohort       Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  studentId    String?
+  student      Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  authorUserId String?
+  parentId     String?
+  parent       ForumPost? @relation("ForumReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      ForumPost[] @relation("ForumReplies")
+  body         String
+  createdAt    DateTime @default(now())
+
+  @@index([cohortId, createdAt])
+}
+
+model ProgressShare {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdByUserId String?
+  recipientLabel  String
+  scope           Json     @default("{}")
+  tokenHash       String   @unique
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([studentId, createdAt])
 }
