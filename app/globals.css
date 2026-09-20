@@ -391,3 +391,32 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .deleteModal .field{margin-top:16px}
 
 .adminPrivateCode{display:inline-block;margin-top:7px;padding:7px 10px;border-radius:9px;background:#06172a;border:1px solid rgba(238,190,79,.22);color:#f0cc72;font-size:12px;font-weight:800;letter-spacing:.08em;user-select:all}
+
+/* Coaching operations, analytics, gamification and community */
+.coachOpsGrid,.engagementGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.integrationCard{background:radial-gradient(circle at 92% 0%,rgba(226,174,65,.12),transparent 34%),linear-gradient(145deg,#0b2745,#091d34)!important}
+.providerGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.providerCard{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:#091f38}
+.providerCard>div{display:grid;gap:4px}.providerCard span{font-size:11px;color:#7d92a8}
+.connectionStatus{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.analyticsEntryForm{display:grid!important;grid-template-columns:repeat(5,minmax(100px,1fr));gap:8px}
+.portal .analyticsEntryForm input,.portal .coachBotCard input,.portal .actionControls input,.portal .gamePlay input,.portal .gamePlay select,.portal .cohortCard input{background:#0b213b;border:1px solid rgba(255,255,255,.12);color:#f4f7fa;border-radius:10px;padding:10px;font:inherit}
+.weaknessMap{display:grid;gap:9px;margin-top:18px}
+.weaknessItem{display:grid;grid-template-columns:180px minmax(0,1fr) 55px 85px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.weaknessItem>div:first-child{display:grid}.weaknessItem span{font-size:11px;color:#75899f}.weaknessItem>b{color:#efca6d;text-align:right}.weaknessItem small{color:#70859b;text-align:right}
+.weaknessBar{height:8px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}.weaknessBar i{display:block;height:100%;background:linear-gradient(90deg,#a76b16,#efcb70);border-radius:999px}
+.sessionRow{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.sessionRow>div:first-child{display:grid;gap:4px}.sessionRow span{font-size:11px;color:#74899f}
+.actionProgress{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}.actionProgress>div:first-child{display:flex;justify-content:space-between;gap:12px}.actionProgress span{font-size:11px;color:#75899f}
+.engagementTop{display:grid;grid-template-columns:1.1fr 1fr .7fr;gap:14px}
+.xpCard{background:radial-gradient(circle at 90% 10%,rgba(231,181,68,.16),transparent 35%),linear-gradient(145deg,#0b2949,#091d34)!important}.xpMain{display:flex;justify-content:space-between;align-items:center}.xpMain .kpi{font-size:44px}
+.actionGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.actionStudentCard{padding:15px;border:1px solid rgba(255,255,255,.07);background:#091f38;border-radius:14px}.actionStudentCard>div:first-child{display:flex;justify-content:space-between;gap:8px}.actionStudentCard span{font-size:10px;color:#71879d}.actionControls{display:grid;grid-template-columns:100px auto 50px;gap:8px;align-items:center;margin-top:10px}.actionControls b{color:#efca6d;text-align:right}
+.chatBox{min-height:220px;max-height:360px;overflow:auto;display:grid;gap:9px;align-content:start;margin:12px 0;padding:10px;background:#081d34;border:1px solid rgba(255,255,255,.06);border-radius:14px}
+.chatBubble{max-width:84%;padding:10px 12px;border-radius:13px;line-height:1.5;font-size:13px}.chatBubble.user{justify-self:end;background:linear-gradient(135deg,#bd8120,#e7bf63);color:#081b30}.chatBubble.assistant{justify-self:start;background:#0d2947;color:#dbe5ef}
+.leaderRow{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}.leaderRow>b{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:rgba(221,172,65,.12);color:#e8bf60}.leaderRow strong{color:#efca6d}
+.gameGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.gameCard{padding:17px;border:1px solid rgba(255,255,255,.08);background:#091f38;border-radius:16px}.gameCard h3{margin:10px 0 6px}.gameCard>p{color:#788da3;font-size:12px}.gamePlay{display:grid;gap:9px;margin-top:12px}.gameQuestion{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.7fr);gap:10px;align-items:center}.wordCells{display:flex;gap:5px;flex-wrap:wrap}.wordCells span{width:34px;height:38px;border-radius:8px;display:grid;place-items:center;border:1px solid rgba(233,187,79,.25);background:#071b31;color:#f0cd72;font-weight:900}
+.cohortGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.cohortCard{padding:16px;border:1px solid rgba(255,255,255,.07);background:#091f38;border-radius:15px}.forumFeed{display:grid;gap:8px;max-height:320px;overflow:auto;margin:12px 0}.forumPost{padding:10px;border-radius:11px;background:#0b2541;border:1px solid rgba(255,255,255,.05)}.forumPost strong{display:block}.forumPost span{font-size:10px;color:#657b91}.forumPost p{margin:6px 0 0;color:#b8c5d2;line-height:1.5;font-size:13px}
+.adminPrivateCode{display:inline-block;margin-top:7px;padding:7px 10px;border-radius:9px;background:#06172a;border:1px solid rgba(238,190,79,.22);color:#f0cc72;font-size:12px;font-weight:800;letter-spacing:.08em;user-select:all}
+@media(max-width:1100px){.analyticsEntryForm{grid-template-columns:repeat(3,1fr)}.gameGrid{grid-template-columns:repeat(2,1fr)}.engagementTop{grid-template-columns:1fr 1fr}.engagementTop>div:last-child{grid-column:span 2}}
+@media(max-width:800px){.coachOpsGrid,.engagementGrid,.cohortGrid{grid-template-columns:1fr}.providerGrid{grid-template-columns:1fr}.actionGrid{grid-template-columns:1fr}.weaknessItem{grid-template-columns:1fr}.weaknessItem>b,.weaknessItem small{text-align:left}.analyticsEntryForm{grid-template-columns:1fr 1fr}.gameGrid{grid-template-columns:1fr}.engagementTop{grid-template-columns:1fr}.engagementTop>div:last-child{grid-column:auto}.gameQuestion{grid-template-columns:1fr}}
+@media(max-width:520px){.analyticsEntryForm{grid-template-columns:1fr}.actionControls{grid-template-columns:1fr 1fr}.actionControls b{grid-column:span 2;text-align:left}}
