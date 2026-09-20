@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 
 function Message({value}:{value:string}) {
   if (!value) return null;
@@ -63,20 +63,50 @@ export function CoachRegisterForm() {
 
 export function StudentRegisterForm() {
   const [msg,setMsg]=useState('');
+  const [coaches,setCoaches]=useState<Array<{id:string;name:string;studentCount:number}>>([]);
+  const [loadingCoaches,setLoadingCoaches]=useState(true);
+
+  async function loadCoaches(){
+    setLoadingCoaches(true);
+    try{
+      const r=await fetch('/api/public/coaches');
+      const j=await r.json();
+      if(r.ok&&j.ok)setCoaches(j.coaches||[]);
+    }finally{setLoadingCoaches(false)}
+  }
+
+  useEffect(()=>{void loadCoaches()},[]);
+
   async function submit(e:FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg('');
     const fd=new FormData(e.currentTarget);
-    const r=await fetch('/api/auth/student-register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({studentCode:fd.get('studentCode'),accessKey:fd.get('accessKey'),email:fd.get('email'),password:fd.get('password')})});
+    const r=await fetch('/api/auth/student-register',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({
+        fullName:fd.get('fullName'),
+        email:fd.get('email'),
+        gradeLevel:fd.get('gradeLevel'),
+        coachId:fd.get('coachId')
+      })
+    });
     const j=await r.json();
-    if(!r.ok) return setMsg('Hata: '+(j.error||'Kayıt başarısız.'));
-    location.href='/ogrenci';
+    if(!r.ok) return setMsg('Hata: '+(j.error||'Başvuru oluşturulamadı.'));
+    e.currentTarget.reset();
+    setMsg(j.message||'Başvurunuz alınmıştır. Giriş bilgileriniz Gmail adresinize gönderildi.');
   }
+
   return <form className="form" onSubmit={submit}>
-    <div className="field"><label>Öğrenci kodu</label><input name="studentCode" required/></div>
-    <div className="field"><label>Koçun verdiği giriş anahtarı</label><input name="accessKey" type="password" required/></div>
-    <div className="field"><label>E-posta</label><input name="email" type="email" required/></div>
-    <div className="field"><label>Yeni şifre</label><input name="password" type="password" minLength={8} required/></div>
-    <button className="btn" type="submit">Öğrenci Hesabı Oluştur</button><Message value={msg}/>
+    <div className="field"><label>Ad soyad</label><input name="fullName" required/></div>
+    <div className="field"><label>Gmail adresi</label><input name="email" type="email" placeholder="ornek@gmail.com" required/></div>
+    <div className="field"><label>Eğitim düzeyi / sınav grubu</label><input name="gradeLevel" placeholder="Örn. 11. Sınıf / YKS, Mezun / KPSS" required/></div>
+    <div className="field"><label>Koçunu seç</label><select name="coachId" required defaultValue="">
+      <option value="">{loadingCoaches?'Koçlar yükleniyor…':'Koç seçiniz'}</option>
+      {coaches.map(c=><option value={c.id} key={c.id}>{c.name} · {c.studentCount} öğrenci</option>)}
+    </select></div>
+    <div className="notice">Başvurunuz tamamlandığında öğrenci kodunuz ve özel giriş anahtarınız yalnızca bu Gmail adresine gönderilir. Seçtiğiniz koçun “Öğrencilerim” paneline otomatik eklenirsiniz.</div>
+    <button className="btn" type="submit" disabled={loadingCoaches||coaches.length===0}>Başvuruyu Gönder</button>
+    <Message value={msg}/>
   </form>;
 }
 
