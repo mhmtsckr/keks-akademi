@@ -94,7 +94,7 @@ export async function syncOfficialTarget(targetId:string){
       officialNets:null,officialNetsStatus:'NOT_PUBLISHED'
     };
     if(row){
-      Object.assign(update,row,{score:row.officialEligibilityScore,syncStatus:'SYNCED',
+      Object.assign(update,row,{syncStatus:'SYNCED',
         sourceSnapshot:{authority:'MEB Personel Genel Müdürlüğü',period:'Ocak 2026',url:AGS_PDF,row,note:'Bu değer alan kontenjanı ve başvuru için gerekli resmî MEB-AGS eşik puanıdır; fiilî son yerleşen aday puanı yayımlanırsa ayrıca senkronlanmalıdır.',nets:'MEB duyurusunda yerleşen adayın AGS/ÖABT test bazlı netleri yayımlanmamaktadır.'}});
     }else{
       Object.assign(update,{syncStatus:'NEEDS_VERIFICATION',
