@@ -19,8 +19,9 @@ export function StudentPreInterview(){
     const fd=new FormData(e.currentTarget);
     const answers:Record<string,unknown>={};
     for(const q of data.form.questions)answers[q.id]=fd.get('q_'+q.id);
+    const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand);
     const r=await fetch('/api/student/pre-interview',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-      academicTrack:fd.get('academicTrack'),
+      academicTrack:requiresTrack?fd.get('academicTrack'):'GENERAL',
       answers
     })});
     const j=await r.json();setBusy(false);
@@ -57,7 +58,8 @@ export function StudentPreInterview(){
       <span className="pill">{data.form.version}</span>
     </div>
     <form className="form preInterviewForm" onSubmit={submit}>
-      <div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>
+      {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
+      <div className="notice"><strong>Nasıl cevaplamalısınız?</strong> 1 = Bana hiç uymuyor · 2 = Az uyuyor · 3 = Kısmen uyuyor · 4 = Çoğunlukla uyuyor · 5 = Bana çok uyuyor. Doğru/yanlış cevap yoktur; gerçek çalışma davranışınızı işaretleyin.</div>
       <div className="preInterviewQuestions">{data.form.questions.map((q:any)=><div className="preInterviewQuestion" key={q.id}>
         <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
         <div><strong>{q.prompt}</strong>
