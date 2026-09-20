@@ -194,7 +194,19 @@ export function AdminConsole(){
       <div className="adminPaymentStats">{paymentTotals.map((x:any)=><div className="card" key={x.status}><div className="moduleEyebrow">{x.status}</div><div className="kpi">{x._count._all}</div><div className="muted">{money(x._sum.amountKurus||0)}</div></div>)}</div>
       <div className="card adminTableCard"><h3>Son Ödemeler</h3><table className="table"><thead><tr><th>Öğrenci</th><th>İşlem</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>{payments.map(p=><tr key={p.id}><td><strong>{p.student.fullName}</strong><div className="muted">{p.student.studentCode}</div></td><td>{p.merchantOid}<div className="muted">{dt(p.createdAt)}</div></td><td>{money(p.amountKurus)}</td><td><span className={'adminStatus '+p.status.toLowerCase()}>{p.status}</span></td><td><div className="row"><button className="btn" onClick={()=>setPayment(p.id,'PENDING')}>Bekleyen</button><button className="btn danger" onClick={()=>setPayment(p.id,'FAILED')}>Başarısız</button><button className="btn" onClick={()=>setPayment(p.id,'REFUNDED')}>İade</button></div></td></tr>)}</tbody></table></div>
       <div className="adminAccessGrid">
-        <div className="card"><h3>Akademi Kodları</h3>{codes.slice(0,20).map(c=><div className="adminSimpleRow" key={c.id}><div><strong>•••• {c.codeHint}</strong><span>{c.active?'Aktif':'Pasif'} · {c.useCount}/{c.maxUses} kullanım</span></div><span>{dt(c.createdAt)}</span></div>)}</div>
+        <div className="card">
+          <div className="moduleEyebrow">AYLIK KEKS TEST KODLARI</div>
+          <h3>Öğrenciye Özel Kodlar</h3>
+          <p className="muted">Bu kodların açık hali yalnız yönetici panelinde gösterilir. Her takvim ayında bir test erişimi açar.</p>
+          {codes.slice(0,40).map(c=><div className="adminSimpleRow" key={c.id}>
+            <div>
+              <strong>{c.student?.fullName||'Atanmamış kod'} {c.student?.studentCode?'· '+c.student.studentCode:''}</strong>
+              <span>{c.monthlyRecurring?'Aylık tekrar eden':'Tek kullanımlık'} · {c.currentMonthStatus==='AVAILABLE'?'Bu ay hazır':'Bu ay '+c.currentMonthStatus}</span>
+              <code className="adminPrivateCode">{c.code||('•••• '+c.codeHint)}</code>
+            </div>
+            <span>{c.currentMonthActivatedAt?dt(c.currentMonthActivatedAt):dt(c.createdAt)}</span>
+          </div>)}
+        </div>
         <div className="card"><h3>Son Test Erişimleri</h3>{accesses.slice(0,20).map(a=><div className="adminSimpleRow" key={a.id}><div><strong>{a.student.fullName}</strong><span>{a.source} · {a.status}</span></div><span>{dt(a.createdAt)}</span></div>)}</div>
       </div>
     </section>}
