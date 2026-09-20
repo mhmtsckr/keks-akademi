@@ -149,6 +149,10 @@ model AcademyCode {
   createdByUserId   String
   createdAt         DateTime @default(now())
   usedAt            DateTime?
+  monthlyRecurring  Boolean  @default(false)
+  codeCiphertext    String?
+
+  @@index([assignedStudentId, monthlyRecurring, active])
 }
 
 model TestAccess {
