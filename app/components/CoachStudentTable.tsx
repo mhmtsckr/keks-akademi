@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo,useState } from 'react';
 
 type StudentRow={
   id:string;
   fullName:string;
   studentCode:string;
   gradeLevel:string|null;
+  riskLevel?:'HIGH'|'MEDIUM'|'LOW';
+  riskScore?:number;
+  lastActivity?:string|null;
+  overdueActions?:number;
 };
 
 export function CoachStudentTable({students}:{students:StudentRow[]}){
@@ -14,6 +18,13 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
   const [code,setCode]=useState('');
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState('');
+  const [search,setSearch]=useState('');
+  const [risk,setRisk]=useState<'ALL'|'HIGH'|'MEDIUM'|'LOW'>('ALL');
+  const visible=useMemo(()=>students.filter(s=>{
+    const q=search.trim().toLocaleLowerCase('tr-TR');
+    const match=!q||s.fullName.toLocaleLowerCase('tr-TR').includes(q)||s.studentCode.toLocaleLowerCase('tr-TR').includes(q)||(s.gradeLevel||'').toLocaleLowerCase('tr-TR').includes(q);
+    return match&&(risk==='ALL'||s.riskLevel===risk);
+  }),[students,search,risk]);
 
   async function remove(){
     if(!deleting)return;
@@ -39,13 +50,22 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
   if(students.length===0)return <p className="muted">Henüz öğrenci eklenmemiş.</p>;
 
   return <>
+    <div className="studentTableTools">
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Öğrenci, kod veya sınıf ara…"/>
+      <select value={risk} onChange={e=>setRisk(e.target.value as any)}>
+        <option value="ALL">Tüm öncelikler</option><option value="HIGH">Acil</option><option value="MEDIUM">İzlem</option><option value="LOW">Normal</option>
+      </select>
+      <span className="pill">{visible.length} öğrenci</span>
+    </div>
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')} style={{marginBottom:12}}>{msg}</div>}
     <table className="table">
-      <thead><tr><th>Kod</th><th>Öğrenci</th><th>Grup</th><th>İşlem</th></tr></thead>
-      <tbody>{students.map(s=><tr key={s.id}>
+      <thead><tr><th>Öncelik</th><th>Kod</th><th>Öğrenci</th><th>Grup</th><th>Son Aktivite</th><th>İşlem</th></tr></thead>
+      <tbody>{visible.map(s=><tr key={s.id}>
+        <td>{s.riskLevel?<span className={'riskBadge '+s.riskLevel.toLowerCase()}>{s.riskLevel==='HIGH'?'ACİL':s.riskLevel==='MEDIUM'?'İZLEM':'NORMAL'}{s.riskScore!=null?' · '+s.riskScore:''}</span>:<span className="muted">—</span>}</td>
         <td>{s.studentCode}</td>
         <td><a href={'/koc/ogrenci/'+s.id}><strong>{s.fullName}</strong></a></td>
         <td>{s.gradeLevel||'—'}</td>
+        <td>{s.lastActivity?new Date(s.lastActivity).toLocaleDateString('tr-TR'):<span className="muted">Kayıt yok</span>}{s.overdueActions? <div className="riskText">{s.overdueActions} gecikmiş</div>:null}</td>
         <td><div className="row">
           <a className="btn" href={'/koc/ogrenci/'+s.id}>Aç</a>
           <button className="btn danger" onClick={()=>{setDeleting(s);setCode('');setMsg('')}}>Sil</button>
