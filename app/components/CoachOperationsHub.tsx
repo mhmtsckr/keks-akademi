@@ -135,6 +135,22 @@ export function CoachOperationsHub({studentId}:{studentId:string}){
     </div>
 
     <div className="card">
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">GÖREV TESLİM ANALİTİĞİ</div><h2>Günlük görev sonuçları</h2><p className="muted">23.00 sonrası girişler kırmızı alarm olarak işaretlenir.</p></div><span className="moduleIcon">!</span></div>
+      {!data.taskSubmissions?.length?<p className="muted">Henüz görev sonucu gönderilmedi.</p>:<div className="taskCoachTable">
+        <div className="taskCoachHead"><span>Görev</span><span>Soru</span><span>D/Y/B</span><span>Net</span><span>Doğruluk</span><span>Hedef</span><span>Durum</span></div>
+        {data.taskSubmissions.slice(0,20).map((x:any)=><div className={'taskCoachRow '+(x.late?'late':'')} key={x.id}>
+          <div><strong>{x.action.title}</strong><small>{x.subject}{x.topic?' · '+x.topic:''}</small></div>
+          <span>{x.totalQuestions}</span>
+          <span>{x.correct}/{x.wrong}/{x.blank}</span>
+          <span>{x.net}</span>
+          <span>%{x.accuracy}</span>
+          <span>%{x.completionRate}</span>
+          <span>{x.late?<b className="lateAlarm">KIRMIZI ALARM</b>:x.alarmLevel==='HIGH'?<b className="riskText">MÜDAHALE</b>:x.alarmLevel==='MEDIUM'?<b>İZLEM</b>:<b className="doneBadge">NORMAL</b>}</span>
+        </div>)}
+      </div>}
+    </div>
+
+    <div className="card">
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">OYUN & KAVRAM ANALİTİĞİ</div><h2>Mikro tekrar performansı</h2><p className="muted">Başarı oranı düşük olan kavramlar üstte gösterilir.</p></div><span className="moduleIcon">★</span></div>
       {gameStats.length===0?<p className="muted">Henüz tamamlanmış oyun yok.</p>:<div className="gameAnalyticsTable">
         <div className="gameAnalyticsHead"><span>Oyun</span><span>Ders / Konu</span><span>Deneme</span><span>Başarı</span><span>Ort. Süre</span><span>Hata</span></div>
