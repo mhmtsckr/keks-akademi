@@ -1,22 +1,6 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
-import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
-import { writeAudit } from '@/lib/audit';
-
-const createSchema = z.object({
-  fullName: z.string().min(2).max(120),
-  gradeLevel: z.string().max(80).optional(),
-});
-
-async function uniqueStudentCode() {
-  for (let i = 0; i < 20; i++) {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    if (!(await db.student.findUnique({ where: { studentCode: code } }))) return code;
-  }
-  throw new Error('STUDENT_CODE_EXHAUSTED');
-}
 
 export async function GET() {
   const user = await requireRole(['COACH', 'ADMIN']);
