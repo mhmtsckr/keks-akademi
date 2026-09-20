@@ -27,8 +27,8 @@ export async function computeGoalProgress(studentId:string){
       : target.examLevel==='AGS_OBAT'
         ? (target.officialEligibilityScore??target.score)
         : target.score;
-    if(effectiveScore!=null && num(p.score)!=null){
-      const pct=clamp((num(p.score)!/effectiveScore)*100);scores.push(pct);details.push((target.examLevel==='KPSS'?'Resmî yerleşme puanına':target.examLevel==='AGS_OBAT'?'Resmî başvuru eşiğine':'Puan hedefine')+' yaklaşım %'+Math.round(pct));
+    if((target.examLevel==='KPSS'||target.examLevel==='AGS_OBAT')&&effectiveScore!=null && num(p.score)!=null){
+      const pct=clamp((num(p.score)!/effectiveScore)*100);scores.push(pct);details.push((target.examLevel==='KPSS'?'Resmî yerleşme puanına':'Resmî başvuru eşiğine')+' yaklaşım %'+Math.round(pct));
     }
     if(target.examLevel!=='KPSS'&&target.examLevel!=='AGS_OBAT'&&target.score!=null && num(p.score)!=null){
       const pct=clamp((num(p.score)!/target.score)*100);scores.push(pct);details.push('Puan yaklaşımı %'+Math.round(pct));
