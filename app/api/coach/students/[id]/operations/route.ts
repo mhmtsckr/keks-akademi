@@ -30,16 +30,17 @@ export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   const {id}=await params;
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile?.id}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  const [sessions,actions,analytics,connections,cohorts,gameAttempts,badges]=await Promise.all([
+  const [sessions,actions,analytics,connections,cohorts,gameAttempts,badges,taskSubmissions]=await Promise.all([
     db.coachingSession.findMany({where:{studentId:id},orderBy:{startsAt:'desc'},take:40}),
     db.coachingAction.findMany({where:{studentId:id},orderBy:{createdAt:'desc'},take:50}),
     db.examAnalyticsRecord.findMany({where:{studentId:id},orderBy:{examDate:'desc'},take:200}),
     db.calendarConnection.findMany({where:{coachId:user.coachProfile!.id,active:true},select:{provider:true,accountEmail:true,timeZone:true}}),
     db.cohort.findMany({where:{coachId:user.coachProfile!.id,active:true},include:{members:{select:{studentId:true}}},orderBy:{createdAt:'desc'}}),
     db.gameAttempt.findMany({where:{studentId:id},orderBy:{completedAt:'desc'},take:150,include:{gameContent:{select:{gameType:true,subject:true,topic:true,title:true}}}}),
-    db.badgeAward.findMany({where:{studentId:id},orderBy:{awardedAt:'desc'}})
+    db.badgeAward.findMany({where:{studentId:id},orderBy:{awardedAt:'desc'}}),
+    db.taskSubmission.findMany({where:{studentId:id},include:{action:{select:{title:true,subject:true,topic:true,targetValue:true,taskDate:true}}},orderBy:{submittedAt:'desc'},take:50})
   ]);
-  return NextResponse.json({ok:true,sessions,actions,analytics,connections,cohorts,gameAttempts,badges});
+  return NextResponse.json({ok:true,sessions,actions,analytics,connections,cohorts,gameAttempts,badges,taskSubmissions});
 }
 
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
