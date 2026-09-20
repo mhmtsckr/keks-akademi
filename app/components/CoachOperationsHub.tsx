@@ -44,7 +44,19 @@ export function CoachOperationsHub({studentId}:{studentId:string}){
   }
   function action(e:FormEvent<HTMLFormElement>){
     e.preventDefault();const fd=new FormData(e.currentTarget);
-    post({action:'coaching_action',title:fd.get('title'),description:fd.get('description'),metricType:fd.get('metricType'),targetValue:Number(fd.get('targetValue')),cadence:fd.get('cadence'),periodStart:fd.get('periodStart'),periodEnd:fd.get('periodEnd')});
+    post({
+      action:'coaching_action',
+      title:fd.get('title'),
+      description:fd.get('description'),
+      metricType:fd.get('metricType'),
+      targetValue:Number(fd.get('targetValue')),
+      cadence:fd.get('cadence'),
+      periodStart:fd.get('periodStart'),
+      periodEnd:fd.get('periodEnd'),
+      subject:fd.get('subject'),
+      topic:fd.get('topic'),
+      taskDate:fd.get('taskDate')
+    });
   }
   function analytics(e:FormEvent<HTMLFormElement>){
     e.preventDefault();const fd=new FormData(e.currentTarget);
@@ -103,10 +115,12 @@ export function CoachOperationsHub({studentId}:{studentId:string}){
       <div className="card">
         <div className="moduleEyebrow">AKSİYON TAKİBİ</div><h2>Haftalık / Aylık Hedef Ata</h2>
         <form className="form" onSubmit={action}>
-          <div className="field"><label>Aksiyon</label><input name="title" placeholder="Örn. 400 soru çöz" required/></div>
+          <div className="field"><label>Aksiyon</label><input name="title" placeholder="Örn. Matematik 40 soru çöz" required/></div>
+          <div className="row"><div className="field" style={{flex:1}}><label>Ders</label><input name="subject" placeholder="Matematik" required/></div><div className="field" style={{flex:1}}><label>Konu</label><input name="topic" placeholder="Problemler"/></div></div>
           <div className="field"><label>Açıklama</label><textarea name="description" rows={2}/></div>
-          <div className="row"><div className="field" style={{flex:1}}><label>Ölçüm</label><select name="metricType"><option value="QUESTIONS">Soru</option><option value="MINUTES">Dakika</option><option value="PAGES">Sayfa</option><option value="COUNT">Adet</option></select></div><div className="field" style={{flex:1}}><label>Hedef</label><input name="targetValue" type="number" min="1" required/></div></div>
-          <div className="row"><div className="field" style={{flex:1}}><label>Döngü</label><select name="cadence"><option value="WEEKLY">Haftalık</option><option value="MONTHLY">Aylık</option></select></div><div className="field" style={{flex:1}}><label>Başlangıç</label><input name="periodStart" type="date" required/></div><div className="field" style={{flex:1}}><label>Bitiş</label><input name="periodEnd" type="date" required/></div></div>
+          <div className="row"><div className="field" style={{flex:1}}><label>Ölçüm</label><select name="metricType" defaultValue="QUESTIONS"><option value="QUESTIONS">Soru</option><option value="MINUTES">Dakika</option><option value="PAGES">Sayfa</option><option value="COUNT">Adet</option></select></div><div className="field" style={{flex:1}}><label>Hedef</label><input name="targetValue" type="number" min="1" required/></div></div>
+          <div className="row"><div className="field" style={{flex:1}}><label>Görev günü</label><input name="taskDate" type="date" required/></div><div className="field" style={{flex:1}}><label>Döngü</label><select name="cadence" defaultValue="DAILY"><option value="DAILY">Günlük</option><option value="WEEKLY">Haftalık</option><option value="MONTHLY">Aylık</option></select></div></div>
+          <div className="row"><div className="field" style={{flex:1}}><label>Başlangıç</label><input name="periodStart" type="date" required/></div><div className="field" style={{flex:1}}><label>Bitiş</label><input name="periodEnd" type="date" required/></div></div>
           <button className="btn primary">Aksiyon Ata</button>
         </form>
       </div>
