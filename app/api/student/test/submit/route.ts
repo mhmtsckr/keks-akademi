@@ -3,13 +3,25 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { buildReport, scoreAssessment } from '@/lib/scoring';
 import { sendAssessmentReport } from '@/lib/mailer';
+import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 
 export async function POST(req: Request) {
   const user = await requireRole(['STUDENT']);
   if (!user.student) return NextResponse.json({ error: 'Öğrenci profili yok.' }, { status: 400 });
   const body = await req.json();
-  const access = await db.testAccess.findFirst({ where: { studentId: user.student.id, status: 'READY' }, orderBy: { createdAt: 'asc' } });
-  if (!access) return NextResponse.json({ error: 'Aktif test erişimi bulunmuyor.' }, { status: 403 });
+  const month=turkeyMonthWindow();
+  const access = await db.testAccess.findFirst({
+    where:{
+      studentId:user.student.id,
+      status:'READY',
+      OR:[
+        {source:{not:'ACADEMY_CODE'}},
+        {source:'ACADEMY_CODE',createdAt:{gte:month.start,lt:month.end}}
+      ]
+    },
+    orderBy:{createdAt:'asc'}
+  });
+  if (!access) return NextResponse.json({ error: 'Bu ay için aktif test erişimi bulunmuyor. Aylık KEKS Akademi kodunuzu kullanın.' }, { status: 403 });
   const questions = await db.testQuestion.findMany({ where: { formVersion: body.formVersion, ageBand: body.ageBand, active: true }, orderBy: { orderNo: 'asc' } });
   if (!questions.length) return NextResponse.json({ error: 'Bu form için soru bulunamadı.' }, { status: 400 });
   if (body.answers.length !== questions.length) return NextResponse.json({ error: 'Tüm sorular cevaplanmalıdır.' }, { status: 400 });
