@@ -7,7 +7,19 @@ import { createGoogleCalendarEvent,createOutlookEvent,createZoomMeeting } from '
 import { awardXp } from '@/lib/gamification';
 
 const sessionSchema=z.object({action:z.literal('session'),title:z.string().min(2),startsAt:z.string(),endsAt:z.string(),timeZone:z.string().default('Europe/Istanbul'),calendarProvider:z.enum(['LOCAL','GOOGLE','OUTLOOK']).default('LOCAL'),meetingProvider:z.enum(['NONE','GOOGLE_MEET','ZOOM']).default('NONE'),notes:z.string().optional()});
-const actionSchema=z.object({action:z.literal('coaching_action'),title:z.string().min(2),description:z.string().optional(),metricType:z.enum(['COUNT','MINUTES','PAGES','QUESTIONS']).default('COUNT'),targetValue:z.number().positive(),cadence:z.enum(['WEEKLY','MONTHLY']).default('WEEKLY'),periodStart:z.string(),periodEnd:z.string()});
+const actionSchema=z.object({
+  action:z.literal('coaching_action'),
+  title:z.string().min(2),
+  description:z.string().optional(),
+  metricType:z.enum(['COUNT','MINUTES','PAGES','QUESTIONS']).default('QUESTIONS'),
+  targetValue:z.number().positive(),
+  cadence:z.enum(['DAILY','WEEKLY','MONTHLY']).default('DAILY'),
+  periodStart:z.string(),
+  periodEnd:z.string(),
+  subject:z.string().min(1),
+  topic:z.string().optional(),
+  taskDate:z.string()
+});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
 const sessionStatusSchema=z.object({action:z.literal('session_status'),sessionId:z.string(),status:z.enum(['SCHEDULED','COMPLETED','CANCELED'])});
 const cohortSchema=z.object({action:z.literal('cohort'),cohortId:z.string().optional(),name:z.string().min(2).optional(),description:z.string().optional()});
@@ -98,7 +110,14 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   }
 
   if(input.action==='coaching_action'){
-    const row=await db.coachingAction.create({data:{studentId:id,createdByUserId:user.id,title:input.title,description:input.description||null,metricType:input.metricType,targetValue:input.targetValue,cadence:input.cadence,periodStart:new Date(input.periodStart),periodEnd:new Date(input.periodEnd)}});
+    const row=await db.coachingAction.create({data:{
+      studentId:id,createdByUserId:user.id,title:input.title,description:input.description||null,
+      metricType:input.metricType,targetValue:input.targetValue,cadence:input.cadence,
+      periodStart:new Date(input.periodStart),periodEnd:new Date(input.periodEnd),
+      subject:input.subject,topic:input.topic||null,
+      taskDate:new Date(input.taskDate+'T00:00:00+03:00'),
+      planSource:'COACH'
+    }});
     return NextResponse.json({ok:true,row});
   }
 
