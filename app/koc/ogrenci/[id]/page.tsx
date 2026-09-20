@@ -13,6 +13,7 @@ import { TechniqueUsageSummary } from '@/app/components/TechniqueUsageSummary';
 import { PortalShell } from '@/app/components/PortalShell';
 import { CoachOperationsHub } from '@/app/components/CoachOperationsHub';
 import { CoachSessionWorkflow } from '@/app/components/CoachSessionWorkflow';
+import { CoachPreInterviewSummary } from '@/app/components/CoachPreInterviewSummary';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -33,7 +34,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       practiceLogs:{orderBy:{date:'desc'},take:30},
       topicProgress:{},
       reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}},
-      generatedContent:{orderBy:{createdAt:'desc'},take:30,include:{progress:{where:{studentId:id},take:1}}}
+      generatedContent:{orderBy:{createdAt:'desc'},take:30,include:{progress:{where:{studentId:id},take:1}}},
+      preInterviewAttempts:{orderBy:{completedAt:'desc'},take:3,include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}}}}
     }
   });
   if(!student) return notFound();
@@ -48,11 +50,12 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     wide
   >
     <nav className="tabs no-print">
-      <a href="#genel">Genel Bakış</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
+      <a href="#genel">Genel Bakış</a><a href="#ongorusme">Ön Görüşme</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
     <section className="section"><CoachTrendSummary exams={student.examResults.slice().reverse().map(x=>({createdAt:x.createdAt.toISOString(),examType:x.examType,payload:x.payload}))} reviewDue={student.reviewQueue.filter(x=>x.dueAt<=new Date()).length}/></section>
+    <section id="ongorusme" className="section section-anchor"><CoachPreInterviewSummary attempts={student.preInterviewAttempts}/></section>
     <section id="seans-akisi" className="section section-anchor"><CoachSessionWorkflow studentId={student.id}/></section>
     <section id="operasyon" className="section section-anchor"><CoachOperationsHub studentId={student.id}/></section>
     <section id="genel" className="grid section-anchor">
