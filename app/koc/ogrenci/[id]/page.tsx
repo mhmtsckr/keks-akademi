@@ -12,6 +12,7 @@ import { ContentProgressSummary } from '@/app/components/ContentProgressSummary'
 import { TechniqueUsageSummary } from '@/app/components/TechniqueUsageSummary';
 import { PortalShell } from '@/app/components/PortalShell';
 import { CoachOperationsHub } from '@/app/components/CoachOperationsHub';
+import { CoachSessionWorkflow } from '@/app/components/CoachSessionWorkflow';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -47,11 +48,12 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     wide
   >
     <nav className="tabs no-print">
-      <a href="#genel">Genel Bakış</a><a href="#operasyon">Seans & Aksiyon</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
+      <a href="#genel">Genel Bakış</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
     <section className="section"><CoachTrendSummary exams={student.examResults.slice().reverse().map(x=>({createdAt:x.createdAt.toISOString(),examType:x.examType,payload:x.payload}))} reviewDue={student.reviewQueue.filter(x=>x.dueAt<=new Date()).length}/></section>
+    <section id="seans-akisi" className="section section-anchor"><CoachSessionWorkflow studentId={student.id}/></section>
     <section id="operasyon" className="section section-anchor"><CoachOperationsHub studentId={student.id}/></section>
     <section id="genel" className="grid section-anchor">
       <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Program</div></div>
