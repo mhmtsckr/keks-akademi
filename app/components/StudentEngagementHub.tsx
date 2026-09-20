@@ -29,12 +29,13 @@ export function StudentEngagementHub(){
 
   if(!data)return <div className="card"><p className="muted">Koçluk ve oyunlaştırma verileri yükleniyor…</p></div>;
   const xp=data.gamification?.xp||0,level=data.gamification?.level||1;
+  const levelLabel=level<=1?'Başlangıç':level===2?'Gelişen':level===3?'İleri':level===4?'Uzman':'Usta';
   const leaderboard=leaderMode==='weekly'?data.weeklyLeaderboard:data.monthlyLeaderboard;
 
   return <div className="stack">
     {msg&&<div className={`notice ${msg.startsWith('Hata:')?'error':''}`}>{msg}</div>}
     <div className="engagementTop">
-      <div className="card xpCard"><div className="moduleEyebrow">KONU HAKİMİYETİ</div><div className="xpMain"><div><div className="kpi">{xp} XP</div><strong>Seviye {level}</strong></div><span className="moduleIcon">★</span></div><div className="goldProgress"><i style={{width:Math.min(100,(xp%500)/5)+'%'}}/></div><p className="muted">Sonraki seviye için {500-(xp%500)} XP.</p></div>
+      <div className="card xpCard"><div className="moduleEyebrow">KONU HAKİMİYETİ</div><div className="xpMain"><div><div className="kpi">{xp} XP</div><strong>{levelLabel}</strong></div><span className="moduleIcon">★</span></div><div className="goldProgress"><i style={{width:Math.min(100,(xp%500)/5)+'%'}}/></div><p className="muted">Bir sonraki gelişim aşaması için {500-(xp%500)} XP.</p></div>
       <div className="card"><div className="moduleEyebrow">YAKLAŞAN GÖRÜŞME</div><h2>{data.sessions[0]?.title||'Planlanmış seans yok'}</h2>{data.sessions[0]&&<><p>{new Date(data.sessions[0].startsAt).toLocaleString('tr-TR')}</p>{data.sessions[0].meetingUrl&&<a className="btn primary" href={data.sessions[0].meetingUrl} target="_blank">Görüşmeye Katıl</a>}</>}</div>
       <div className="card"><div className="moduleEyebrow">ROZETLER</div><h2>{data.badges.length}</h2><p className="muted">{data.badges.slice(0,3).map((x:any)=>x.title).join(' · ')||'Henüz rozet yok.'}</p></div>
     </div>
