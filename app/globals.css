@@ -435,3 +435,25 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .gameAnalyticsRow{font-size:12px;color:#aebdcb}
 .gameAnalyticsRow strong{color:#e7edf3}
 .riskText{color:#ff9e94!important;font-weight:900}
+
+/* Coach command center and session workflow */
+.coachCommandKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.coachCommandGrid{display:grid;grid-template-columns:1.35fr .9fr;gap:16px}
+.priorityQueue{display:grid;gap:8px;margin-top:14px}
+.priorityStudent{display:grid;grid-template-columns:12px minmax(0,1fr) 58px;gap:12px;align-items:center;padding:13px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:#091f38;text-decoration:none;color:inherit;transition:.18s ease}
+.priorityStudent:hover{transform:translateY(-1px);border-color:rgba(230,184,72,.2);background:#0b2541}
+.riskDot{width:9px;height:9px;border-radius:50%}.riskDot.high{background:#ff7268;box-shadow:0 0 0 5px rgba(255,114,104,.08)}.riskDot.medium{background:#e7b64f;box-shadow:0 0 0 5px rgba(231,182,79,.08)}.riskDot.low{background:#56b892;box-shadow:0 0 0 5px rgba(86,184,146,.07)}
+.priorityStudentMain{display:grid;gap:3px}.priorityStudentMain>span{font-size:11px;color:#7d91a7}.priorityStudentMain>small{color:#9eb0c1;font-size:11px}
+.priorityScore{display:grid;text-align:right}.priorityScore b{font-size:22px;color:#efca6d}.priorityScore span{font-size:9px;color:#71869c;text-transform:uppercase}
+.agendaList{display:grid;gap:8px;margin-top:12px}.agendaItem{display:grid;grid-template-columns:65px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}.agendaItem>div:nth-child(2){display:grid;gap:3px}.agendaItem>div:nth-child(2) span{font-size:11px;color:#71869b}
+.agendaTime{display:grid}.agendaTime b{color:#e9c467}.agendaTime span{font-size:11px;color:#8294a7}
+.coachTaskRow{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}.coachTaskRow>div{display:grid;gap:3px}.coachTaskRow span{font-size:10px;color:#75889c}.coachTaskRow.overdue strong{color:#ff9e94}
+.taskCheck{appearance:none;width:28px;height:28px;border-radius:9px;border:1px solid rgba(99,200,159,.2);background:rgba(51,156,116,.08);color:#74d3ae;cursor:pointer;font-weight:900}
+.priority-high{border-color:rgba(255,114,104,.2)!important;color:#ff9e94!important}.priority-medium{border-color:rgba(231,182,79,.2)!important;color:#efca6d!important}.priority-low{border-color:rgba(86,184,146,.2)!important;color:#91d8bc!important}
+.coachSessionFlow{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.briefingGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0}.briefMetric{display:grid;gap:3px;padding:12px;border-radius:12px;background:#081d34;border:1px solid rgba(255,255,255,.06)}.briefMetric b{font-size:24px;color:#edc869}.briefMetric span{font-size:10px;color:#74899d}
+.briefAgenda{display:grid;gap:7px}.briefAgenda>div{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:start;padding:9px;border-radius:11px;background:#091f38}.briefAgenda>div>span{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:rgba(225,176,63,.12);color:#e7bd5d;font-weight:900;font-size:11px}.briefAgenda p{margin:1px 0 0;color:#c3ced9;line-height:1.45;font-size:12px}
+.studentTableTools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px}.studentTableTools input,.studentTableTools select{background:#091f38;border:1px solid rgba(255,255,255,.1);color:#e9eff5;border-radius:10px;padding:9px 10px;font:inherit}.studentTableTools input{min-width:260px;flex:1}
+.riskBadge{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:.05em}.riskBadge.high{background:rgba(255,114,104,.11);color:#ff9e94;border:1px solid rgba(255,114,104,.2)}.riskBadge.medium{background:rgba(231,182,79,.10);color:#efca6d;border:1px solid rgba(231,182,79,.18)}.riskBadge.low{background:rgba(86,184,146,.09);color:#91d8bc;border:1px solid rgba(86,184,146,.17)}
+@media(max-width:1100px){.coachCommandKpis{grid-template-columns:repeat(2,1fr)}.coachCommandGrid,.coachSessionFlow{grid-template-columns:1fr}.briefingGrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.coachCommandKpis{grid-template-columns:1fr 1fr}.agendaItem{grid-template-columns:55px minmax(0,1fr)}.agendaItem>.row{grid-column:2}.briefingGrid{grid-template-columns:1fr 1fr}.studentTableTools input{min-width:100%;width:100%}}
