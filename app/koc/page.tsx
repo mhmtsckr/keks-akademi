@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { AccountLoginForm, CoachRegisterForm } from '@/app/components/AuthForms';
 import { CoachActions } from '@/app/components/CoachActions';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
+import { CoachStudentTable } from '@/app/components/CoachStudentTable';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -53,10 +54,7 @@ export default async function CoachPage() {
         <CoachActions/>
         <div className="card">
           <h2>Öğrenciler ({students.length})</h2>
-          {students.length===0?<p className="muted">Henüz öğrenci eklenmemiş.</p>:<table className="table">
-            <thead><tr><th>Kod</th><th>Öğrenci</th><th>Grup</th></tr></thead>
-            <tbody>{students.map(s=><tr key={s.id}><td>{s.studentCode}</td><td><a href={'/koc/ogrenci/'+s.id}><strong>{s.fullName}</strong></a></td><td>{s.gradeLevel||'—'}</td></tr>)}</tbody>
-          </table>}
+          <CoachStudentTable students={students}/>
         </div>
       </div>
     </section>
