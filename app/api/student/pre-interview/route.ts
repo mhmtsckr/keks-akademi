@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { scoreInterview,buildInterviewReport,buildTrackPlans } from '@/lib/taskEvaluation';
 
 const submitSchema=z.object({
-  academicTrack:z.enum(['SAYISAL','ESIT_AGIRLIK','SOZEL']),
+  academicTrack:z.enum(['GENERAL','SAYISAL','ESIT_AGIRLIK','SOZEL']),
   answers:z.record(z.string(),z.unknown())
 });
 
@@ -51,14 +51,17 @@ export async function POST(req:Request){
   }
 
   const scores=scoreInterview(form.questions.map(q=>({id:q.id,dimension:q.dimension,reverse:q.reverse})),input.answers);
-  const report=buildInterviewReport(scores,input.academicTrack);
-  const plans=buildTrackPlans(input.academicTrack,scores,new Date());
+  const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
+  const academicTrack=requiresTrack?input.academicTrack:'GENERAL';
+  if(requiresTrack&&academicTrack==='GENERAL')return NextResponse.json({error:'Hazırlık alanınızı seçin.'},{status:400});
+  const report=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any);
+  const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores);
 
   const attempt=await db.preInterviewAttempt.create({data:{
     studentId:user.student.id,
     formId:form.id,
     assignmentId:assignment.id,
-    academicTrack:input.academicTrack,
+    academicTrack,
     answers:input.answers as any,
     scores:scores as any,
     report:report as any,
@@ -66,7 +69,7 @@ export async function POST(req:Request){
   }});
   await db.preInterviewAssignment.update({where:{id:assignment.id},data:{status:'COMPLETED',completedAt:new Date()}});
 
-  await db.student.update({where:{id:user.student.id},data:{academicTrack:input.academicTrack}});
+  await db.student.update({where:{id:user.student.id},data:{academicTrack}});
 
   // Plan taslağı bu aşamada yalnız koç incelemesi için hesaplanır.
   // Öğrenciye görev olarak aktarım koç onayından sonra yapılır.
@@ -74,7 +77,7 @@ export async function POST(req:Request){
   const answerLines=form.questions.map(q=>'S'+q.orderNo+' — '+q.prompt+'\nCevap: '+String(input.answers[q.id]??'')).join('\n\n');
   const scoreLines=Object.entries(scores).map(([k,v])=>k+': '+v+'/5').join('\n');
   const reportText=[
-    'Alan: '+input.academicTrack.replace('_',' '),
+    'Program alanı: '+academicTrack.replace('_',' '),
     '',
     'BOYUT PUANLARI',
     scoreLines,
@@ -92,7 +95,7 @@ export async function POST(req:Request){
   await db.studentReport.create({data:{
     studentId:user.student.id,
     title:'Ön Görüşme Değerlendirme Raporu',
-    summary:'Alan: '+input.academicTrack.replace('_',' ')+' · Gelişim öncelikleri: '+report.weakest.map(x=>x.dimension).join(', '),
+    summary:'Program alanı: '+academicTrack.replace('_',' ')+' · Programlama öncelikleri: '+report.weakest.map(x=>x.dimension).join(', '),
     content:reportText,
     createdByUserId:user.id,
     visibleToStudent:false,
