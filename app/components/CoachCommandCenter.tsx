@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent,useMemo,useState } from 'react';
+import { useMemo,useState } from 'react';
 
 type PriorityStudent={
   id:string;fullName:string;studentCode:string;gradeLevel:string|null;
@@ -19,15 +19,6 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
   const openTasks=tasks.filter(t=>t.status==='OPEN');
   const overdueTasks=openTasks.filter(t=>t.dueAt&&new Date(t.dueAt)<new Date());
 
-  async function createTask(e:FormEvent<HTMLFormElement>){
-    e.preventDefault();setMsg('');
-    const fd=new FormData(e.currentTarget);
-    const body={title:fd.get('title'),studentId:fd.get('studentId')||undefined,priority:fd.get('priority'),dueAt:fd.get('dueAt')||undefined,description:fd.get('description')||undefined};
-    const r=await fetch('/api/coach/tasks',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    const j=await r.json();if(!r.ok)return setMsg('Hata: '+(j.error||'Görev eklenemedi.'));
-    const reload=await fetch('/api/coach/tasks');const data=await reload.json();if(data.ok)setTasks(data.tasks);
-    e.currentTarget.reset();setMsg('Takip görevi eklendi.');
-  }
   async function complete(id:string){
     const r=await fetch('/api/coach/tasks',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'COMPLETED'})});
     if(r.ok)setTasks(x=>x.map(t=>t.id===id?{...t,status:'COMPLETED'}:t));
@@ -62,26 +53,13 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
       </div>
     </div>
 
-    <div className="coachCommandGrid">
-      <div className="card">
-        <div className="moduleEyebrow">KOÇ GÖREV KUTUSU</div><h2>Bekleyen İşler</h2>
+    <div className="card">
+        <div className="moduleEyebrow">KOÇ TAKİP KUTUSU</div><h2>Bekleyen İşler</h2>
         {openTasks.length===0?<p className="muted">Açık koç görevi yok.</p>:openTasks.slice(0,12).map(t=><div className={'coachTaskRow '+(t.dueAt&&new Date(t.dueAt)<new Date()?'overdue':'')} key={t.id}>
           <button className="taskCheck" onClick={()=>complete(t.id)} aria-label="Görevi tamamla">✓</button>
           <div><strong>{t.title}</strong><span>{t.student?.fullName||'Genel görev'}{t.dueAt?' · '+new Date(t.dueAt).toLocaleString('tr-TR'):''}</span></div>
           <span className={'pill priority-'+t.priority.toLowerCase()}>{t.priority}</span>
         </div>)}
       </div>
-      <div className="card">
-        <div className="moduleEyebrow">YENİ TAKİP</div><h2>Koç Görevi Ekle</h2>
-        <form className="form" onSubmit={createTask}>
-          <input name="title" placeholder="Örn. Veliye haftalık özet gönder" required/>
-          <select name="studentId"><option value="">Genel görev</option>{students.map(s=><option value={s.id} key={s.id}>{s.fullName}</option>)}</select>
-          <div className="row"><select name="priority" defaultValue="MEDIUM"><option value="LOW">Düşük</option><option value="MEDIUM">Orta</option><option value="HIGH">Yüksek</option></select><input name="dueAt" type="datetime-local"/></div>
-          <textarea name="description" rows={2} placeholder="Not / açıklama"/>
-          <button className="btn primary">Görev Ekle</button>
-          {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
-        </form>
-      </div>
-    </div>
   </div>;
 }
