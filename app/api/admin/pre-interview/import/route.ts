@@ -33,7 +33,7 @@ export async function POST(req:Request){
   await db.preInterviewQuestion.deleteMany({where:{formId:form.id}});
   await db.preInterviewQuestion.createMany({data:input.questions.map(q=>({
     formId:form.id,orderNo:q.orderNo,dimension:q.dimension,prompt:q.prompt,
-    responseType:q.responseType,options:q.options??undefined,reverse:q.reverse,required:q.required
+    responseType:q.responseType,options:(q.options??undefined) as any,reverse:q.reverse,required:q.required
   }))});
 
   return NextResponse.json({ok:true,formId:form.id,count:input.questions.length,importedBy:user.id});
