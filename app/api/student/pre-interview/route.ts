@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { scoreInterview,buildInterviewReport,buildTrackPlans } from '@/lib/taskEvaluation';
+import { scoreInterview,scoreMotivationSignals,buildInterviewReport,buildTrackPlans } from '@/lib/taskEvaluation';
 
 const submitSchema=z.object({
   academicTrack:z.enum(['GENERAL','SAYISAL','ESIT_AGIRLIK','SOZEL']),
@@ -51,11 +51,12 @@ export async function POST(req:Request){
   }
 
   const scores=scoreInterview(form.questions.map(q=>({id:q.id,dimension:q.dimension,reverse:q.reverse})),input.answers);
+  const motivationSignals=scoreMotivationSignals(form.questions.map(q=>({id:q.id,motivationKey:q.motivationKey,reverse:q.reverse})),input.answers);
   const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
   const academicTrack=requiresTrack?input.academicTrack:'GENERAL';
   if(requiresTrack&&academicTrack==='GENERAL')return NextResponse.json({error:'Hazırlık alanınızı seçin.'},{status:400});
-  const report=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any);
-  const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores);
+  const report=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any,motivationSignals);
+  const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores,motivationSignals);
 
   const attempt=await db.preInterviewAttempt.create({data:{
     studentId:user.student.id,
