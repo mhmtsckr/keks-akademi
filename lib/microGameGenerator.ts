@@ -103,7 +103,8 @@ async function aiGame(input:{subject:string;topic:string;examType?:string|null;g
           {role:'user',content:JSON.stringify({
             examType:input.examType,gradeLevel:input.gradeLevel,subject:input.subject,topic:input.topic,
             gameType:input.gameType,requiredShape,
-            sources:input.source.map((q:any)=>({prompt:q.prompt,correct:optionText(q.options,q.correctAnswer),explanation:q.explanation}))
+            sources:input.source.map((q:any)=>({prompt:q.prompt,correct:optionText(q.options,q.correctAnswer),explanation:q.explanation})),
+            instruction:input.source.length?'Yalnız bu kaynak maddelerden yararlan.':'Bu ders ve konu için temel, yaygın ve müfredata uygun bilgileri kullan; emin olmadığın ayrıntıyı üretme.'
           })}
         ]
       })
@@ -162,22 +163,20 @@ export async function generateMicroGame(input:{
     orderBy:{createdAt:'desc'},take:16
   });
 
-  const ai=questions.length>=2?await aiGame({
+  const ai=await aiGame({
     subject:input.subject,topic:input.topic,examType:input.examType,gradeLevel:input.gradeLevel,gameType:type,source:questions
-  }):null;
+  });
 
   let generated:any;
   if(ai)generated={gameType:type,title:input.subject+' · '+input.topic+' Mikro Tekrar',payload:ai};
-  else{
-    const source=questions.length?questions:[{
-      id:'fallback',prompt:input.topic+' konusu için temel kavramı hatırla.',
-      options:{A:input.topic},correctAnswer:'A',
-      explanation:input.topic+' konusu '+input.subject+' dersi kapsamında tekrar edilmelidir.'
-    }];
-    generated=type==='WORD'?makeWord(source,input.subject,input.topic):
-      type==='CONNECTIONS'?makeConnections(source,input.subject,input.topic):
-      type==='CROSSWORD'?makeCrossword(source,input.subject,input.topic):
-      makeMatch(source,input.subject,input.topic);
+  else if(questions.length>=2){
+    const safeType:GameType=(type==='CONNECTIONS'&&questions.length<8)?'MATCH':(type==='CROSSWORD'&&questions.length<4)?'WORD':type;
+    generated=safeType==='WORD'?makeWord(questions,input.subject,input.topic):
+      safeType==='CONNECTIONS'?makeConnections(questions,input.subject,input.topic):
+      safeType==='CROSSWORD'?makeCrossword(questions,input.subject,input.topic):
+      makeMatch(questions,input.subject,input.topic);
+  }else{
+    throw new Error('Bu ders ve konu için otomatik oyun oluşturacak yeterli doğrulanmış içerik bulunamadı.');
   }
 
   return db.gameContent.create({data:{
