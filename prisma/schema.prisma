@@ -80,6 +80,7 @@ model Student {
   fullName         String
   gradeLevel       String?
   goal             String?
+  academicTrack    String?
   profile          Json?
   legacyExternalId String?         @unique
   createdAt        DateTime        @default(now())
@@ -109,6 +110,7 @@ model Student {
   techniqueSessions TechniquePracticeSession[]
   coachingSessions CoachingSession[]
   coachingActions CoachingAction[]
+  taskSubmissions TaskSubmission[]
   coachBotMessages CoachBotMessage[]
   examAnalytics ExamAnalyticsRecord[]
   gamification StudentGamification?
@@ -119,6 +121,7 @@ model Student {
   progressShares ProgressShare[]
   xpLedger XpLedger[]
   coachTasks CoachTask[]
+  preInterviewAttempts PreInterviewAttempt[]
 }
 
 model StudyPlan {
@@ -626,6 +629,11 @@ model CoachingAction {
   periodStart     DateTime
   periodEnd       DateTime
   status          String   @default("ACTIVE")
+  subject         String?
+  topic           String?
+  taskDate        DateTime?
+  planSource      String   @default("COACH")
+  submission      TaskSubmission?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -805,4 +813,73 @@ model CoachTask {
 
   @@index([coachId, status, dueAt])
   @@index([studentId, status])
+}
+
+
+model TaskSubmission {
+  id             String   @id @default(cuid())
+  actionId       String   @unique
+  action         CoachingAction @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  studentId      String
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject        String
+  topic          String?
+  totalQuestions Int
+  correct        Int
+  wrong          Int
+  blank          Int
+  net            Float
+  accuracy       Float
+  completionRate Float
+  submittedAt    DateTime @default(now())
+  late           Boolean  @default(false)
+  alarmLevel     String   @default("NORMAL")
+  evaluation     Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([studentId, submittedAt])
+}
+
+model PreInterviewForm {
+  id        String   @id @default(cuid())
+  title     String
+  version   String   @unique
+  sourceUrl String?
+  active    Boolean  @default(true)
+  questions PreInterviewQuestion[]
+  attempts  PreInterviewAttempt[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PreInterviewQuestion {
+  id           String   @id @default(cuid())
+  formId       String
+  form         PreInterviewForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  orderNo      Int
+  dimension    String
+  prompt       String
+  responseType String   @default("LIKERT")
+  options      Json?
+  reverse      Boolean  @default(false)
+  required     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@unique([formId, orderNo])
+}
+
+model PreInterviewAttempt {
+  id            String   @id @default(cuid())
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  formId        String
+  form          PreInterviewForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  academicTrack String
+  answers       Json
+  scores        Json
+  report        Json
+  completedAt   DateTime @default(now())
+
+  @@index([studentId, completedAt])
 }
