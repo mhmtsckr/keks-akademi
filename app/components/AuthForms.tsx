@@ -46,11 +46,12 @@ export function CoachRegisterForm() {
   const [msg,setMsg]=useState('');
   async function submit(e:FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg('');
-    const fd=new FormData(e.currentTarget);
+    const form=e.currentTarget;
+    const fd=new FormData(form);
     const r=await fetch('/api/auth/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:fd.get('name'),email:fd.get('email'),password:fd.get('password')})});
     const j=await r.json();
     if(!r.ok) return setMsg('Hata: '+(j.error||'Kayıt başarısız.'));
-    e.currentTarget.reset(); setMsg('Koç hesabı oluşturuldu. Yönetici onayından sonra giriş yapabilirsiniz.');
+    form.reset(); setMsg('Koç hesabı oluşturuldu. Yönetici onayından sonra giriş yapabilirsiniz.');
   }
   return <form className="form" onSubmit={submit}>
     <div className="field"><label>Ad soyad</label><input name="name" required/></div>
@@ -79,7 +80,8 @@ export function StudentRegisterForm() {
 
   async function submit(e:FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg('');
-    const fd=new FormData(e.currentTarget);
+    const form=e.currentTarget;
+    const fd=new FormData(form);
     const r=await fetch('/api/auth/student-register',{
       method:'POST',
       headers:{'content-type':'application/json'},
@@ -92,7 +94,7 @@ export function StudentRegisterForm() {
     });
     const j=await r.json();
     if(!r.ok) return setMsg('Hata: '+(j.error||'Başvuru oluşturulamadı.'));
-    e.currentTarget.reset();
+    form.reset();
     setMsg(j.message||'Başvurunuz alınmıştır. Giriş bilgileriniz Gmail adresinize gönderildi.');
   }
 
