@@ -72,7 +72,7 @@ export function buildTrackPlans(track:string,scores:Record<string,number>,start=
   const subjects=TRACK_SUBJECTS[track]||TRACK_SUBJECTS.SAYISAL;
   const weak=Object.entries(scores).sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0]);
   const daily:any[]=[];
-  for(let i=0;i<7;i++){
+  for(let i=0;i<28;i++){
     const d=new Date(start);d.setDate(d.getDate()+i);
     const subject=subjects[i%subjects.length];
     const support=weak[i%Math.max(1,weak.length)]||'Süreklilik';
@@ -92,10 +92,10 @@ export function buildTrackPlans(track:string,scores:Record<string,number>,start=
     track,
     goals:[
       subjects.slice(0,4).map(s=>s+' için en az 2 çalışma bloğu').join('; '),
-      '1 süreli deneme + yanlış analizi',
-      '0–1–3–7 tekrar döngüsüne göre tekrar'
+      'Haftada 1 süreli deneme + yanlış analizi',
+      '0–1–3–7–14–28 tekrar döngüsüne göre tekrar'
     ],
-    days:daily
+    weeks:[0,1,2,3].map(w=>({week:w+1,days:daily.slice(w*7,w*7+7)}))
   };
   const monthly={
     title:'Alan Odaklı Aylık Plan',
