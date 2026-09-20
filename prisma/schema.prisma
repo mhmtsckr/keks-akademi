@@ -100,6 +100,8 @@ model Student {
   targets          StudentTarget[]
   topicProgress    TopicProgress[]
   practiceLogs     PracticeLog[]
+  weeklyReflections WeeklyReflection[]
+  taskReschedules  TaskReschedule[]
   practiceQuizzes  PracticeQuiz[]
   quizAttempts     PracticeQuizAttempt[]
   coachAlerts      CoachAlert[]
@@ -354,6 +356,7 @@ model PracticeLog {
   blank     Int
   total     Int
   net       Float
+  errorReason String?
   date      DateTime @default(now())
   createdAt DateTime @default(now())
 
@@ -646,6 +649,8 @@ model CoachingAction {
   taskDate        DateTime?
   planSource      String   @default("COACH")
   submission      TaskSubmission?
+  rescheduleSource TaskReschedule? @relation("TaskRescheduleSource")
+  rescheduleCreated TaskReschedule? @relation("TaskRescheduleCreated")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -922,4 +927,40 @@ model PreInterviewAssignment {
 
   @@index([studentId, status])
   @@index([coachId, status])
+}
+
+
+model WeeklyReflection {
+  id               String   @id @default(cuid())
+  studentId        String
+  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  weekStart        DateTime
+  selfRating       Int
+  bestThing        String?
+  biggestChallenge String?
+  repeatedDelay    String?
+  nextWeekChange   String?
+  systemSnapshot   Json     @default("{}")
+  comparison       Json     @default("{}")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([studentId, weekStart])
+}
+
+model TaskReschedule {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sourceActionId  String   @unique
+  sourceAction    CoachingAction @relation("TaskRescheduleSource", fields: [sourceActionId], references: [id], onDelete: Cascade)
+  createdActionId String?  @unique
+  createdAction   CoachingAction? @relation("TaskRescheduleCreated", fields: [createdActionId], references: [id], onDelete: SetNull)
+  originalDate    DateTime
+  newDate         DateTime
+  movedTarget     Float
+  reason          String   @default("AUTO_MISSED")
+  createdAt       DateTime @default(now())
+
+  @@index([studentId, createdAt])
 }
