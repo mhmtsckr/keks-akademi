@@ -78,6 +78,10 @@ model Student {
   coach            CoachProfile?   @relation(fields: [coachId], references: [id], onDelete: SetNull)
   studentCode      String          @unique
   accessKeyHash    String
+  accessKeyCiphertext String?
+  credentialsDeliveryStatus String @default("PENDING")
+  credentialsEmailedAt DateTime?
+  credentialEmailAttempts Int @default(0)
   fullName         String
   gradeLevel       String?
   goal             String?
