@@ -26,11 +26,12 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
 
   async function addPractice(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setMsg('');
-    const fd=new FormData(e.currentTarget);
+    const form=e.currentTarget;
+    const fd=new FormData(form);
     const body={action:'practice',examType:exam,subject,topic:String(fd.get('topic')||''),correct:Number(fd.get('correct')||0),wrong:Number(fd.get('wrong')||0),blank:Number(fd.get('blank')||0),errorReason:String(fd.get('errorReason')||'')||undefined};
     const r=await fetch('/api/student/progress',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json(); if(!r.ok){setMsg('Hata: '+(j.error||'Kaydedilemedi.'));return}
-    setPractice(p=>[j.row,...p]); setMsg('Soru çözüm kaydı eklendi. Net: '+j.row.net); e.currentTarget.reset();
+    setPractice(p=>[j.row,...p]); setMsg('Soru çözüm kaydı eklendi. Net: '+j.row.net); form.reset();
   }
 
   const completedCount=useMemo(()=>progress.filter(x=>x.examType===exam&&x.completed).length,[progress,exam]);
