@@ -59,17 +59,17 @@ export async function POST(req:Request){
     studentId:user.student.id,
     formId:form.id,
     academicTrack:input.academicTrack,
-    answers:input.answers,
-    scores,
-    report
+    answers:input.answers as any,
+    scores:scores as any,
+    report:report as any
   }});
 
   await db.student.update({where:{id:user.student.id},data:{academicTrack:input.academicTrack}});
 
   await db.studyPlan.createMany({data:[
-    {studentId:user.student.id,title:'Ön Görüşme · Günlük Plan',payload:{track:input.academicTrack,days:plans.daily},active:true},
-    {studentId:user.student.id,title:'Ön Görüşme · Haftalık Plan',payload:plans.weekly,active:true},
-    {studentId:user.student.id,title:'Ön Görüşme · Aylık Plan',payload:plans.monthly,active:true}
+    {studentId:user.student.id,title:'Ön Görüşme · Günlük Plan',payload:{track:input.academicTrack,days:plans.daily} as any,active:true},
+    {studentId:user.student.id,title:'Ön Görüşme · Haftalık Plan',payload:plans.weekly as any,active:true},
+    {studentId:user.student.id,title:'Ön Görüşme · Aylık Plan',payload:plans.monthly as any,active:true}
   ]});
 
   for(const item of plans.daily){
