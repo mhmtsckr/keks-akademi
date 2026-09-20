@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { buildTrackPlans,detectEducationBand } from '@/lib/taskEvaluation';
+import { buildTrackPlans,detectEducationBand,scoreMotivationSignals } from '@/lib/taskEvaluation';
 
 const schema=z.discriminatedUnion('action',[
   z.object({action:z.literal('assign')}),
@@ -59,7 +59,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
 
   const assignment=await db.preInterviewAssignment.findFirst({
     where:{id:input.assignmentId,studentId:id,coachId:user.coachProfile.id},
-    include:{attempt:true,form:true}
+    include:{attempt:true,form:{include:{questions:{orderBy:{orderNo:'asc'}}}}}
   });
   if(!assignment)return NextResponse.json({error:'Atama bulunamadı.'},{status:404});
 
@@ -80,12 +80,17 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
 
   const scores=assignment.attempt.scores as Record<string,number>;
   const assessment=await db.assessment.findFirst({where:{studentId:id},orderBy:{completedAt:'desc'}});
+  const motivationSignals=scoreMotivationSignals(
+    assignment.form.questions.map(q=>({id:q.id,motivationKey:q.motivationKey,reverse:q.reverse})),
+    assignment.attempt.answers as Record<string,unknown>
+  );
   const plans=buildTrackPlans(
     assignment.attempt.academicTrack,
     scores,
     new Date(),
     assignment.form.educationBand as any,
-    assessment?.scores
+    assessment?.scores,
+    motivationSignals
   );
 
   await db.$transaction(async tx=>{
