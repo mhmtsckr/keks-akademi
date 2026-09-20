@@ -8,7 +8,8 @@ export function AdminGameCMS(){
   useEffect(()=>{load()},[]);
   async function add(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setMsg('');
-    const fd=new FormData(e.currentTarget);
+    const form=e.currentTarget;
+    const fd=new FormData(form);
     const body={
       gameType:fd.get('gameType')||undefined,
       examType:fd.get('examType')||undefined,
@@ -19,7 +20,7 @@ export function AdminGameCMS(){
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Oyun oluşturulamadı.'));
     setMsg((j.game?.subject||body.subject)+' · '+(j.game?.topic||body.topic)+' için '+(j.game?.gameType||'mikro tekrar')+' oyunu otomatik oluşturuldu.');
-    e.currentTarget.reset();
+    form.reset();
     load();
   }
   function parseCsv(text:string){
