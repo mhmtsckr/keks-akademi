@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { buildTrackPlans } from '@/lib/taskEvaluation';
+import { buildTrackPlans,detectEducationBand } from '@/lib/taskEvaluation';
 
 const schema=z.discriminatedUnion('action',[
   z.object({action:z.literal('assign')}),
@@ -21,30 +21,32 @@ export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
-  const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id},select:{id:true,fullName:true}});
+  const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id},select:{id:true,fullName:true,gradeLevel:true}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
+  const educationBand=detectEducationBand(student.gradeLevel);
   const [activeForm,assignments]=await Promise.all([
-    db.preInterviewForm.findFirst({where:{active:true},orderBy:{createdAt:'desc'},include:{questions:{orderBy:{orderNo:'asc'}}}}),
+    db.preInterviewForm.findFirst({where:{active:true,educationBand},orderBy:{createdAt:'desc'},include:{questions:{orderBy:{orderNo:'asc'}}}}),
     db.preInterviewAssignment.findMany({
       where:{studentId:id,coachId:user.coachProfile.id},
       orderBy:{assignedAt:'desc'},
       include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}},attempt:true}
     })
   ]);
-  return NextResponse.json({ok:true,student,activeForm,assignments});
+  return NextResponse.json({ok:true,student,educationBand,activeForm,assignments});
 }
 
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
-  const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id},select:{id:true,fullName:true}});
+  const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id},select:{id:true,fullName:true,gradeLevel:true}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
   const input=schema.parse(await req.json());
+  const educationBand=detectEducationBand(student.gradeLevel);
 
   if(input.action==='assign'){
-    const form=await db.preInterviewForm.findFirst({where:{active:true},orderBy:{createdAt:'desc'}});
-    if(!form)return NextResponse.json({error:'Aktif ön görüşme formu yok. Önce yönetici formu yüklemeli.'},{status:400});
+    const form=await db.preInterviewForm.findFirst({where:{active:true,educationBand},orderBy:{createdAt:'desc'}});
+    if(!form)return NextResponse.json({error:'Bu eğitim düzeyi için aktif ön görüşme formu bulunamadı.'},{status:400});
     await db.preInterviewAssignment.updateMany({
       where:{studentId:id,coachId:user.coachProfile.id,status:{in:['ASSIGNED','COMPLETED']},revokedAt:null},
       data:{status:'REVOKED',revokedAt:new Date()}
@@ -77,7 +79,14 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   if(assignment.status==='APPROVED')return NextResponse.json({ok:true,alreadyApproved:true});
 
   const scores=assignment.attempt.scores as Record<string,number>;
-  const plans=buildTrackPlans(assignment.attempt.academicTrack,scores,new Date());
+  const assessment=await db.assessment.findFirst({where:{studentId:id},orderBy:{completedAt:'desc'}});
+  const plans=buildTrackPlans(
+    assignment.attempt.academicTrack,
+    scores,
+    new Date(),
+    assignment.form.educationBand as any,
+    assessment?.scores
+  );
 
   await db.$transaction(async tx=>{
     await tx.studyPlan.createMany({data:[
