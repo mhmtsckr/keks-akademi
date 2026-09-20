@@ -55,22 +55,103 @@ export function StudentEngagementHub(){
 }
 
 function GameCard({game,onDone}:{game:any;onDone:(score:number,max:number,duration:number,mistakes:any)=>void}){
-  const [open,setOpen]=useState(false);const [started,setStarted]=useState(0);const [word,setWord]=useState('');const [values,setValues]=useState<Record<string,string>>({});const payload=game.payload||{};
-  function start(){setOpen(true);setStarted(Date.now());setValues({});setWord('')}
-  function finish(score:number,max:number,mistakes:any){onDone(score,max,Math.max(1,Math.round((Date.now()-started)/1000)),mistakes);setOpen(false)}
-  function submit(){
-    if(game.gameType==='WORD'){const ok=word.trim().toLocaleLowerCase('tr-TR')===String(payload.answer||'').trim().toLocaleLowerCase('tr-TR');finish(ok?1:0,1,ok?[]:[word]);return}
-    if(game.gameType==='CROSSWORD'){const clues=payload.clues||[];let score=0;const mistakes:any[]=[];clues.forEach((x:any,i:number)=>{const v=values[String(i)]||'';if(v.trim().toLocaleLowerCase('tr-TR')===String(x.answer||'').trim().toLocaleLowerCase('tr-TR'))score++;else mistakes.push({clue:x.clue,answer:v})});finish(score,Math.max(1,clues.length),mistakes);return}
-    if(game.gameType==='MATCH'){const pairs=payload.pairs||[];let score=0;const mistakes:any[]=[];pairs.forEach((x:any,i:number)=>{if(values[String(i)]===String(x.right))score++;else mistakes.push({left:x.left,answer:values[String(i)]})});finish(score,Math.max(1,pairs.length),mistakes);return}
-    const items=payload.items||[];let score=0;const mistakes:any[]=[];items.forEach((x:any,i:number)=>{if(values[String(i)]===String(x.group))score++;else mistakes.push({label:x.label,answer:values[String(i)]})});finish(score,Math.max(1,items.length),mistakes);
+  const [open,setOpen]=useState(false);
+  const [started,setStarted]=useState(0);
+  const [word,setWord]=useState('');
+  const [values,setValues]=useState<Record<string,string>>({});
+  const [selectedOption,setSelectedOption]=useState('');
+  const [dragged,setDragged]=useState('');
+  const [result,setResult]=useState<{score:number;max:number}|null>(null);
+  const payload=game.payload||{};
+
+  function startGame(){
+    setOpen(true);setStarted(Date.now());setValues({});setWord('');setResult(null);setSelectedOption('');setDragged('');
   }
+  function finish(score:number,max:number,mistakes:any){
+    if(result)return;
+    onDone(score,max,Math.max(1,Math.round((Date.now()-started)/1000)),mistakes);
+    setResult({score,max});
+  }
+  function submit(){
+    if(game.gameType==='WORD'){
+      const ok=word.trim().toLocaleLowerCase('tr-TR')===String(payload.answer||'').trim().toLocaleLowerCase('tr-TR');
+      finish(ok?1:0,1,ok?[]:[word]);return;
+    }
+    if(game.gameType==='CROSSWORD'){
+      const clues=payload.clues||[];let score=0;const mistakes:any[]=[];
+      clues.forEach((x:any,i:number)=>{const v=values[String(i)]||'';if(v.trim().toLocaleLowerCase('tr-TR')===String(x.answer||'').trim().toLocaleLowerCase('tr-TR'))score++;else mistakes.push({clue:x.clue,answer:v,correct:x.answer})});
+      finish(score,Math.max(1,clues.length),mistakes);return;
+    }
+    if(game.gameType==='MATCH'){
+      const pairs=payload.pairs||[];let score=0;const mistakes:any[]=[];
+      pairs.forEach((x:any,i:number)=>{if(values[String(i)]===String(x.right))score++;else mistakes.push({left:x.left,answer:values[String(i)],correct:x.right})});
+      finish(score,Math.max(1,pairs.length),mistakes);return;
+    }
+    const items=payload.items||[];let score=0;const mistakes:any[]=[];
+    items.forEach((x:any,i:number)=>{if(values[String(i)]===String(x.group))score++;else mistakes.push({label:x.label,answer:values[String(i)],correct:x.group})});
+    finish(score,Math.max(1,items.length),mistakes);
+  }
+
   const matchOptions=useMemo(()=>game.gameType==='MATCH'?(payload.pairs||[]).map((x:any)=>String(x.right)).sort():[],[game.gameType,game.payload]);
   const connectionGroups=useMemo(()=>[...new Set((payload.items||[]).map((x:any)=>String(x.group)))],[game.payload]);
-  return <div className="gameCard"><span className="pill">{game.gameType}</span><h3>{game.title}</h3><p>{game.subject} · {game.topic}</p>{!open?<button className="btn primary" onClick={start}>Oyunu Başlat</button>:<div className="gamePlay">
-    {game.gameType==='WORD'&&<><p>{payload.clue||'İpucunu kullanarak kavramı bul.'}</p><div className="wordCells">{String(payload.answer||'').split('').map((_:string,i:number)=><span key={i}>{word[i]||''}</span>)}</div><input value={word} onChange={e=>setWord(e.target.value.toLocaleUpperCase('tr-TR'))} maxLength={String(payload.answer||'').length||6} placeholder="Tahmin"/></>}
-    {game.gameType==='CROSSWORD'&&(payload.clues||[]).map((x:any,i:number)=><div className="gameQuestion" key={i}><span>{i+1}. {x.clue}</span><input value={values[String(i)]||''} onChange={e=>setValues(v=>({...v,[String(i)]:e.target.value}))}/></div>)}
-    {game.gameType==='MATCH'&&(payload.pairs||[]).map((x:any,i:number)=><div className="gameQuestion" key={i}><strong>{x.left}</strong><select value={values[String(i)]||''} onChange={e=>setValues(v=>({...v,[String(i)]:e.target.value}))}><option value="">Eşini seç</option>{matchOptions.map((o:string)=><option key={o}>{o}</option>)}</select></div>)}
-    {game.gameType==='CONNECTIONS'&&(payload.items||[]).map((x:any,i:number)=><div className="gameQuestion" key={i}><strong>{x.label}</strong><select value={values[String(i)]||''} onChange={e=>setValues(v=>({...v,[String(i)]:e.target.value}))}><option value="">Grup seç</option>{connectionGroups.map((o:any)=><option key={String(o)}>{String(o)}</option>)}</select></div>)}
-    <button className="btn primary" onClick={submit}>Kontrol Et ve XP Kazan</button>
-  </div>}</div>;
+
+  function assignMatch(index:number,value:string){
+    if(!value)return;
+    setValues(v=>({...v,[String(index)]:value}));
+    setSelectedOption('');
+  }
+
+  return <div className="gameCard">
+    <span className="pill">{game.gameType}</span>
+    <h3>{game.title}</h3>
+    <p>{game.subject} · {game.topic}</p>
+    {!open?<button className="btn primary" onClick={startGame}>Oyunu Başlat</button>:<div className="gamePlay">
+      {game.gameType==='WORD'&&<>
+        <p>{payload.clue||'İpucunu kullanarak kavramı bul.'}</p>
+        <div className="wordCells">{String(payload.answer||'').split('').map((_:string,i:number)=><span key={i}>{word[i]||''}</span>)}</div>
+        <input value={word} disabled={Boolean(result)} onChange={e=>setWord(e.target.value.toLocaleUpperCase('tr-TR'))} maxLength={String(payload.answer||'').length||6} placeholder="Tahmin"/>
+      </>}
+
+      {game.gameType==='CROSSWORD'&&<div className="crosswordQuestions">{(payload.clues||[]).map((x:any,i:number)=><div className="gameQuestion" key={i}>
+        <span>{i+1}. {x.clue}</span>
+        <input disabled={Boolean(result)} value={values[String(i)]||''} onChange={e=>setValues(v=>({...v,[String(i)]:e.target.value.toLocaleUpperCase('tr-TR')}))}/>
+      </div>)}</div>}
+
+      {game.gameType==='MATCH'&&<>
+        <p className="muted">Masaüstünde cevapları sürükleyip karşılığının üzerine bırakın. Telefonda cevaba, ardından eşleştireceğiniz karta dokunun.</p>
+        <div className="matchOptions">{matchOptions.map((o:string)=><button
+          type="button"
+          className={'matchChip '+(selectedOption===o?'selected':'')}
+          draggable={!result}
+          onDragStart={()=>setDragged(o)}
+          onClick={()=>!result&&setSelectedOption(o)}
+          key={o}>{o}</button>)}</div>
+        <div className="matchTargets">{(payload.pairs||[]).map((x:any,i:number)=><button
+          type="button"
+          key={i}
+          className="matchTarget"
+          disabled={Boolean(result)}
+          onDragOver={e=>e.preventDefault()}
+          onDrop={e=>{e.preventDefault();assignMatch(i,dragged)}}
+          onClick={()=>assignMatch(i,selectedOption)}>
+          <strong>{x.left}</strong><span>{values[String(i)]||'Eşini buraya bırak / seç'}</span>
+        </button>)}</div>
+      </>}
+
+      {game.gameType==='CONNECTIONS'&&<div className="connectionsGrid">{(payload.items||[]).map((x:any,i:number)=><div className="connectionTile" key={i}>
+        <strong>{x.label}</strong>
+        <select disabled={Boolean(result)} value={values[String(i)]||''} onChange={e=>setValues(v=>({...v,[String(i)]:e.target.value}))}>
+          <option value="">Grup seç</option>{connectionGroups.map((o:any)=><option key={String(o)}>{String(o)}</option>)}
+        </select>
+      </div>)}</div>}
+
+      {!result?<button className="btn primary" onClick={submit}>Kontrol Et ve XP Kazan</button>:<div className="gameResult">
+        <strong>Sonuç: {result.score}/{result.max}</strong>
+        {game.gameType==='WORD'&&<p>Doğru cevap: <b>{String(payload.answer||'').toLocaleUpperCase('tr-TR')}</b></p>}
+        {payload.explanation&&<p>{payload.explanation}</p>}
+        <button className="btn" onClick={()=>setOpen(false)}>Kapat</button>
+      </div>}
+    </div>}
+  </div>;
 }
+
