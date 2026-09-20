@@ -4,6 +4,7 @@ import { AccountLoginForm, CoachRegisterForm } from '@/app/components/AuthForms'
 import { CoachActions } from '@/app/components/CoachActions';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { CoachStudentTable } from '@/app/components/CoachStudentTable';
+import { CoachCommandCenter } from '@/app/components/CoachCommandCenter';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -34,11 +35,58 @@ export default async function CoachPage() {
     </PortalShell>;
   }
 
+  const now=new Date();
+  const sevenDaysAgo=new Date(now.getTime()-7*24*60*60*1000);
+  const sevenDaysAhead=new Date(now.getTime()+7*24*60*60*1000);
   const students = await db.student.findMany({
     where:{coachId:user.coachProfile.id},
-    select:{id:true,fullName:true,studentCode:true,gradeLevel:true,createdAt:true},
+    select:{
+      id:true,fullName:true,studentCode:true,gradeLevel:true,createdAt:true,
+      coachAlerts:{where:{resolved:false},select:{severity:true,title:true}},
+      coachingActions:{where:{status:'ACTIVE'},select:{periodEnd:true,title:true,currentValue:true,targetValue:true}},
+      coachingSessions:{where:{startsAt:{gte:now,lte:sevenDaysAhead},status:'SCHEDULED'},select:{id:true,title:true,startsAt:true,endsAt:true,meetingUrl:true},orderBy:{startsAt:'asc'}},
+      practiceLogs:{orderBy:{date:'desc'},take:1,select:{date:true}},
+      dailyLogs:{orderBy:{date:'desc'},take:1,select:{date:true}},
+      examResults:{orderBy:{createdAt:'desc'},take:1,select:{createdAt:true}},
+      reviewQueue:{where:{status:{in:['DUE','PENDING']},dueAt:{lte:now}},select:{id:true}}
+    },
     orderBy:{createdAt:'desc'}
   });
+  const coachTasks=await db.coachTask.findMany({
+    where:{coachId:user.coachProfile.id,status:{in:['OPEN','COMPLETED']}},
+    include:{student:{select:{id:true,fullName:true}}},
+    orderBy:[{status:'asc'},{dueAt:'asc'},{createdAt:'desc'}],
+    take:80
+  });
+  const priorityStudents=students.map(s=>{
+    const overdue=s.coachingActions.filter(a=>a.periodEnd<now).length;
+    const high=s.coachAlerts.filter(a=>a.severity==='HIGH').length;
+    const medium=s.coachAlerts.filter(a=>a.severity==='MEDIUM').length;
+    const lastDates=[
+      s.practiceLogs[0]?.date,
+      s.dailyLogs[0]?.date,
+      s.examResults[0]?.createdAt
+    ].filter(Boolean).map(x=>new Date(x as Date).getTime());
+    const lastActivity=lastDates.length?new Date(Math.max(...lastDates)):null;
+    const inactive=lastActivity?lastActivity<sevenDaysAgo:true;
+    const dueReviews=s.reviewQueue.length;
+    const riskScore=Math.min(100,high*30+medium*12+Math.min(overdue,3)*15+(inactive?20:0)+Math.min(dueReviews,10)*2);
+    const reasons:string[]=[];
+    if(high)reasons.push(high+' yüksek uyarı');
+    if(overdue)reasons.push(overdue+' geciken aksiyon');
+    if(inactive)reasons.push('7+ gündür düşük aktivite');
+    if(dueReviews)reasons.push(dueReviews+' yanlış tekrar');
+    return {
+      id:s.id,fullName:s.fullName,studentCode:s.studentCode,gradeLevel:s.gradeLevel,
+      riskScore,riskLevel:(riskScore>=50?'HIGH':riskScore>=20?'MEDIUM':'LOW') as 'HIGH'|'MEDIUM'|'LOW',
+      reasons,overdueActions:overdue,openAlerts:s.coachAlerts.length,dueReviews,
+      lastActivity:lastActivity?lastActivity.toISOString():null
+    };
+  }).sort((a,b)=>b.riskScore-a.riskScore);
+  const agenda=students.flatMap(s=>s.coachingSessions.map(x=>({
+    id:x.id,studentId:s.id,studentName:s.fullName,title:x.title,
+    startsAt:x.startsAt.toISOString(),endsAt:x.endsAt.toISOString(),meetingUrl:x.meetingUrl
+  }))).sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
 
   return <PortalShell
     active="koc"
@@ -48,6 +96,15 @@ export default async function CoachPage() {
     meta={<><span>{students.length} öğrenci</span><span>Kişisel takip</span><span>Akıllı uyarılar</span></>}
     wide
   >
+    <section className="section">
+      <PortalSectionTitle eyebrow="KOÇ KOMUTA MERKEZİ" title="Bugün neye müdahale etmeliyim?" description="Seanslar, risk sinyalleri, geciken aksiyonlar ve kişisel takip görevleriniz tek ekranda."/>
+      <CoachCommandCenter
+        students={priorityStudents}
+        agenda={agenda}
+        initialTasks={coachTasks.map(t=>({id:t.id,title:t.title,description:t.description,priority:t.priority,status:t.status,dueAt:t.dueAt?.toISOString()||null,student:t.student}))}
+      />
+    </section>
+
     <section className="section">
       <PortalSectionTitle eyebrow="ÖĞRENCİ YÖNETİMİ" title="Öğrencilerim" description="Bir öğrencinin adına dokunarak detaylı koç çalışma alanını açabilirsiniz."/>
       <div className="grid" style={{gridTemplateColumns:'minmax(280px,.8fr) minmax(0,2fr)'}}>
