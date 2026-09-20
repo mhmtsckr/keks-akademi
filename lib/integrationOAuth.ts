@@ -1,7 +1,11 @@
 import crypto from 'node:crypto';
 
 function secret(){return process.env.AUTH_SECRET||''}
-export function appBaseUrl(){return process.env.APP_URL||process.env.VERCEL_PROJECT_PRODUCTION_URL||process.env.VERCEL_URL?((process.env.APP_URL||'https://'+(process.env.VERCEL_PROJECT_PRODUCTION_URL||process.env.VERCEL_URL))):'http://localhost:3000'}
+export function appBaseUrl(){
+  if(process.env.APP_URL) return process.env.APP_URL;
+  const host=process.env.VERCEL_PROJECT_PRODUCTION_URL||process.env.VERCEL_URL;
+  return host ? 'https://'+host : 'http://localhost:3000';
+}
 export function makeOAuthState(userId:string,provider:string){
   const ts=Date.now().toString();
   const payload=[userId,provider,ts].join('|');
