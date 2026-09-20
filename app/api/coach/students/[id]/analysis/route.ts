@@ -25,9 +25,14 @@ export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){
    subjectNets[p.subject]=(subjectNets[p.subject]||0)+p.net;
  }
  const targetNets=(target.benchmarkNets||{}) as Record<string,number>;
+ const officialTargetScore=target.examLevel==='KPSS'
+   ? (target.officialMinScore??target.score)
+   : target.examLevel==='AGS_OBAT'
+     ? (target.officialEligibilityScore??target.score)
+     : target.score;
  const gap=summarizeGap({
    examType:target.examLevel,
-   targetScore:target.score,
+   targetScore:officialTargetScore,
    targetRanking:target.ranking,
    targetPercentile:target.percentile,
    targetNets,
@@ -41,8 +46,20 @@ export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){
  const accuracyBase=student.practiceLogs.reduce((a,p)=>({c:a.c+p.correct,w:a.w+p.wrong,b:a.b+p.blank}),{c:0,w:0,b:0});
  const totalQ=accuracyBase.c+accuracyBase.w+accuracyBase.b;
  const accuracy=totalQ?Math.round((accuracyBase.c/totalQ)*100):0;
+ const officialLines:string[]=[];
+ if(target.examLevel==='KPSS'){
+   officialLines.push('Resmî dönem: '+(target.officialPeriod||'—'));
+   officialLines.push('Kontenjan: '+(target.appointmentCount??'—')+' · Yerleşen: '+(target.placedCount??'—'));
+   officialLines.push('En düşük puan: '+(target.officialMinScore??'—')+' · En yüksek puan: '+(target.officialMaxScore??'—'));
+ }
+ if(target.examLevel==='AGS_OBAT'){
+   officialLines.push('Resmî dönem: '+(target.officialPeriod||'—'));
+   officialLines.push('Alan kontenjanı: '+(target.appointmentCount??'—')+' · MEB-AGS puan türü: '+(target.officialScoreType||'—'));
+   officialLines.push('Resmî başvuru eşiği: '+(target.officialEligibilityScore??'—')+' puan');
+ }
+ if(target.officialNetsStatus==='NOT_PUBLISHED')officialLines.push('Atanan/kabul edilen adayların test bazlı netleri resmî kaynakta yayımlanmamıştır.');
  const summary=`${gap.status}. Konu ilerleme: ${completed}/${totalTopics}. Son soru performansı doğruluk oranı: %${accuracy}.`;
- const content=`Hedef: ${target.institutionName}${target.departmentName?' / '+target.departmentName:''}\nKaynak: ${target.source}${target.dataYear?' · '+target.dataYear:''}\n\nHedefe uzaklık: ${gap.text}\n\nKonu ilerleme: ${completed}/${totalTopics}\nToplam soru: ${totalQ} · Doğru: ${accuracyBase.c} · Yanlış: ${accuracyBase.w} · Boş: ${accuracyBase.b} · Doğruluk: %${accuracy}\n\nKoç önerisi: Hedef net açığı görülen dersler ve tamamlanmamış konular önceliklendirilmelidir. Sonraki denemede aynı metrikler yeniden karşılaştırılmalıdır.`;
+ const content=`Hedef: ${target.institutionName}${target.departmentName?' / '+target.departmentName:''}\nKaynak: ${target.source}${target.dataYear?' · '+target.dataYear:''}\n${officialLines.length?'\nRESMÎ HEDEF VERİSİ\n'+officialLines.join('\n')+'\n':''}\nHedefe uzaklık: ${gap.text}\n\nKonu ilerleme: ${completed}/${totalTopics}\nToplam soru: ${totalQ} · Doğru: ${accuracyBase.c} · Yanlış: ${accuracyBase.w} · Boş: ${accuracyBase.b} · Doğruluk: %${accuracy}\n\nKoç önerisi: Hedef puan ve performans farkı ile tamamlanmamış konular birlikte önceliklendirilmelidir. Resmî net verisi bulunmuyorsa yapay bir net hedefi resmî veri gibi gösterilmemelidir.`;
  const report=await db.studentReport.create({data:{studentId:id,title:'Otomatik Performans ve Hedef Raporu',summary,content,createdByUserId:user.id,visibleToStudent:true,visibleToParent:true}});
  return NextResponse.json({ok:true,report,gap,metrics:{completed,totalTopics,totalQ,accuracy}});
 }
