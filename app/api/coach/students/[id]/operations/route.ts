@@ -10,20 +10,22 @@ const sessionSchema=z.object({action:z.literal('session'),title:z.string().min(2
 const actionSchema=z.object({action:z.literal('coaching_action'),title:z.string().min(2),description:z.string().optional(),metricType:z.enum(['COUNT','MINUTES','PAGES','QUESTIONS']).default('COUNT'),targetValue:z.number().positive(),cadence:z.enum(['WEEKLY','MONTHLY']).default('WEEKLY'),periodStart:z.string(),periodEnd:z.string()});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
 const sessionStatusSchema=z.object({action:z.literal('session_status'),sessionId:z.string(),status:z.enum(['SCHEDULED','COMPLETED','CANCELED'])});
-const schema=z.discriminatedUnion('action',[sessionSchema,actionSchema,analyticSchema,sessionStatusSchema]);
+const cohortSchema=z.object({action:z.literal('cohort'),cohortId:z.string().optional(),name:z.string().min(2).optional(),description:z.string().optional()});
+const schema=z.discriminatedUnion('action',[sessionSchema,actionSchema,analyticSchema,sessionStatusSchema,cohortSchema]);
 
 export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   const {id}=await params;
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile?.id}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  const [sessions,actions,analytics,connections]=await Promise.all([
+  const [sessions,actions,analytics,connections,cohorts]=await Promise.all([
     db.coachingSession.findMany({where:{studentId:id},orderBy:{startsAt:'desc'},take:40}),
     db.coachingAction.findMany({where:{studentId:id},orderBy:{createdAt:'desc'},take:50}),
     db.examAnalyticsRecord.findMany({where:{studentId:id},orderBy:{examDate:'desc'},take:200}),
-    db.calendarConnection.findMany({where:{coachId:user.coachProfile!.id,active:true},select:{provider:true,accountEmail:true,timeZone:true}})
+    db.calendarConnection.findMany({where:{coachId:user.coachProfile!.id,active:true},select:{provider:true,accountEmail:true,timeZone:true}}),
+    db.cohort.findMany({where:{coachId:user.coachProfile!.id,active:true},include:{members:{select:{studentId:true}}},orderBy:{createdAt:'desc'}})
   ]);
-  return NextResponse.json({ok:true,sessions,actions,analytics,connections});
+  return NextResponse.json({ok:true,sessions,actions,analytics,connections,cohorts});
 }
 
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
@@ -33,6 +35,20 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
   const input=schema.parse(await req.json());
+
+  if(input.action==='cohort'){
+    let cohortId=input.cohortId;
+    if(!cohortId){
+      if(!input.name)return NextResponse.json({error:'Kohort adı gerekli.'},{status:400});
+      const cohort=await db.cohort.create({data:{coachId:user.coachProfile.id,name:input.name,description:input.description||null}});
+      cohortId=cohort.id;
+    }else{
+      const cohort=await db.cohort.findFirst({where:{id:cohortId,coachId:user.coachProfile.id}});
+      if(!cohort)return NextResponse.json({error:'Kohort bulunamadı.'},{status:404});
+    }
+    await db.cohortMember.upsert({where:{cohortId_studentId:{cohortId,studentId:id}},create:{cohortId,studentId:id},update:{}});
+    return NextResponse.json({ok:true,cohortId});
+  }
 
   if(input.action==='session'){
     const startsAt=new Date(input.startsAt),endsAt=new Date(input.endsAt);
