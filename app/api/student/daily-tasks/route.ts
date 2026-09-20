@@ -10,7 +10,8 @@ export async function GET(){
   const actions=await db.coachingAction.findMany({
     where:{
       studentId:user.student.id,
-      taskDate:{not:null,gte:from,lte:to}
+      taskDate:{not:null,gte:from,lte:to},
+      status:{in:['ACTIVE','COMPLETED']}
     },
     include:{submission:true},
     orderBy:[{taskDate:'asc'},{createdAt:'asc'}]
