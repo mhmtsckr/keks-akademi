@@ -306,6 +306,16 @@ model StudentTarget {
   ranking         Int?
   percentile      Float?
   benchmarkNets   Json?
+  qualificationLevel      String?
+  appointmentCount        Int?
+  placedCount             Int?
+  officialMinScore        Float?
+  officialMaxScore        Float?
+  officialEligibilityScore Float?
+  officialScoreType       String?
+  officialNets            Json?
+  officialNetsStatus      String   @default("NOT_CHECKED")
+  officialPeriod          String?
   active          Boolean  @default(true)
   syncedAt        DateTime?
   syncStatus      String   @default("PENDING")
