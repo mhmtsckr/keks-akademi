@@ -115,7 +115,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
       metricType:input.metricType,targetValue:input.targetValue,cadence:input.cadence,
       periodStart:new Date(input.periodStart),periodEnd:new Date(input.periodEnd),
       subject:input.subject,topic:input.topic||null,
-      taskDate:new Date(input.taskDate+'T00:00:00+03:00'),
+      taskDate:new Date(input.taskDate+'T00:00:00Z'),
       planSource:'COACH'
     }});
     return NextResponse.json({ok:true,row});
