@@ -12,7 +12,6 @@ type Task={id:string;title:string;description:string|null;priority:string;status
 
 export function CoachCommandCenter({students,agenda,initialTasks}:{students:PriorityStudent[];agenda:AgendaItem[];initialTasks:Task[]}){
   const [tasks,setTasks]=useState(initialTasks);
-  const [msg,setMsg]=useState('');
   const [filter,setFilter]=useState<'ALL'|'HIGH'|'MEDIUM'>('ALL');
 
   const visible=useMemo(()=>students.filter(s=>filter==='ALL'||s.riskLevel===filter),[students,filter]);
