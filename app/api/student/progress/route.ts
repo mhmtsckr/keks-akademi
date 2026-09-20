@@ -6,7 +6,7 @@ import { calcNet } from '@/lib/performance';
 
 const schema=z.discriminatedUnion('action',[
  z.object({action:z.literal('topic'),examType:z.string().min(2),subject:z.string().min(2),topic:z.string().min(2),completed:z.boolean()}),
- z.object({action:z.literal('practice'),examType:z.string().min(2),subject:z.string().min(2),topic:z.string().optional(),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0)}),
+ z.object({action:z.literal('practice'),examType:z.string().min(2),subject:z.string().min(2),topic:z.string().optional(),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),errorReason:z.enum(['BILGI_EKSIKLIGI','DIKKAT','ISLEM_HATASI','SURE','SORUYU_ANLAMA','STRATEJI','DIGER']).optional()}),
 ]);
 
 export async function POST(req:Request){
@@ -23,6 +23,6 @@ export async function POST(req:Request){
  }
  const total=input.correct+input.wrong+input.blank;
  const net=calcNet(input.correct,input.wrong);
- const row=await db.practiceLog.create({data:{studentId:user.student.id,examType:input.examType,subject:input.subject,topic:input.topic||null,correct:input.correct,wrong:input.wrong,blank:input.blank,total,net}});
+ const row=await db.practiceLog.create({data:{studentId:user.student.id,examType:input.examType,subject:input.subject,topic:input.topic||null,correct:input.correct,wrong:input.wrong,blank:input.blank,total,net,errorReason:input.errorReason||null}});
  return NextResponse.json({ok:true,row});
 }
