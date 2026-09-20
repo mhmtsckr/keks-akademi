@@ -19,6 +19,12 @@ export function StudentEngagementHub(){
   async function progress(id:string,currentValue:number){const j=await api({action:'progress',id,currentValue});if(j)setMsg('Aksiyon ilerlemesi güncellendi.')}
   async function analytics(e:FormEvent<HTMLFormElement>){e.preventDefault();const fd=new FormData(e.currentTarget);const j=await api({action:'analytics',examType:fd.get('examType'),subject:fd.get('subject'),topic:fd.get('topic'),questionType:fd.get('questionType')||'GENEL',correct:Number(fd.get('correct')),wrong:Number(fd.get('wrong')),blank:Number(fd.get('blank')),avgSeconds:fd.get('avgSeconds')?Number(fd.get('avgSeconds')):undefined,examDate:fd.get('examDate')||undefined});if(j){setMsg('Test/deneme analitiği kaydedildi.');e.currentTarget.reset()}}
   async function forum(e:FormEvent<HTMLFormElement>,cohortId:string){e.preventDefault();const fd=new FormData(e.currentTarget);const body=String(fd.get('body')||'');const j=await api({action:'forum_post',cohortId,body});if(j){setMsg('Kohort mesajı gönderildi.');e.currentTarget.reset()}}
+  async function generateGame(){
+    setBusy(true);setMsg('');
+    const j=await api({action:'generate_game'});
+    setBusy(false);
+    if(j)setMsg((j.focus?.subject||'Ders')+' · '+(j.focus?.topic||'Konu')+' için yeni mikro tekrar oyunu hazırlandı.');
+  }
 
   async function chatSubmit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();const fd=new FormData(e.currentTarget);const message=String(fd.get('message')||'').trim();if(!message)return;
@@ -49,7 +55,10 @@ export function StudentEngagementHub(){
 
     <div className="card"><div className="moduleEyebrow">TEST / DENEME ANALİTİĞİ</div><h2>Eksik haritasına veri ekle</h2><form className="analyticsEntryForm" onSubmit={analytics}><input name="examType" placeholder="TYT / AYT / LGS" required/><input name="subject" placeholder="Ders" required/><input name="topic" placeholder="Konu" required/><input name="questionType" placeholder="Soru tipi"/><input name="correct" type="number" min="0" placeholder="Doğru" required/><input name="wrong" type="number" min="0" placeholder="Yanlış" required/><input name="blank" type="number" min="0" placeholder="Boş" required/><input name="avgSeconds" type="number" min="0" placeholder="Ort. sn"/><input name="examDate" type="date"/><button className="btn primary">Kaydet</button></form></div>
 
-    <div className="card"><div className="moduleEyebrow">EĞİTSEL OYUNLAR</div><h2>Mikro tekrar alanı</h2>{data.games.length===0?<p className="muted">Yönetici henüz oyun içeriği yayınlamadı.</p>:<div className="gameGrid">{data.games.map((g:any)=><GameCard key={g.id} game={g} onDone={async(score,maxScore,durationSeconds,mistakes)=>{const j=await api({action:'game_attempt',gameContentId:g.id,score,maxScore,durationSeconds,mistakes});if(j)setMsg('+'+j.xp+' XP kazandınız.')}}/>)}</div>}</div>
+    <div className="card">
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">EĞİTSEL OYUNLAR</div><h2>Dersime Göre Mikro Tekrar</h2><p className="muted">Sistem zayıf olduğunuz ders/konuyu seçer ve ders bilgisinden otomatik oyun oluşturur.</p></div><button className="btn primary" disabled={busy} onClick={generateGame}>{busy?'Hazırlanıyor…':'Dersime Göre Oyun Oluştur'}</button></div>
+      {data.games.length===0?<p className="muted">Henüz oyun yok. İlk kişisel mikro tekrar oyununu oluşturabilirsiniz.</p>:<div className="gameGrid">{data.games.map((g:any)=><GameCard key={g.id} game={g} onDone={async(score,maxScore,durationSeconds,mistakes)=>{const j=await api({action:'game_attempt',gameContentId:g.id,score,maxScore,durationSeconds,mistakes});if(j)setMsg('+'+j.xp+' XP kazandınız.')}}/>)}</div>}
+    </div>
 
     {data.cohorts.length>0&&<div className="card"><div className="moduleEyebrow">KAPALI KOHORT FORUMU</div><h2>Birbirinizi motive edin</h2><div className="cohortGrid">{data.cohorts.map((m:any)=><div className="cohortCard" key={m.cohort.id}><h3>{m.cohort.name}</h3><p className="muted">{m.cohort.description}</p><div className="forumFeed">{m.cohort.posts.slice().reverse().map((p:any)=><div className="forumPost" key={p.id}><strong>{p.student?.fullName||'Koç'}</strong><span>{new Date(p.createdAt).toLocaleString('tr-TR')}</span><p>{p.body}</p></div>)}</div><form className="row" onSubmit={e=>forum(e,m.cohort.id)}><input name="body" placeholder="Kohorta mesaj yaz…" required style={{flex:1}}/><button className="btn primary">Gönder</button></form></div>)}</div></div>}
   </div>;
