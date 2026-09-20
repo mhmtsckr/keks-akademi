@@ -486,3 +486,10 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .coachApprovalBox{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-top:18px;padding:15px;border-radius:14px;background:linear-gradient(135deg,rgba(205,141,28,.11),rgba(236,194,91,.05));border:1px solid rgba(232,185,72,.22)}
 .coachApprovalBox p{margin:5px 0 0;color:#9eb0c0;font-size:12px;line-height:1.5}
 @media(max-width:760px){.coachApprovalBox{display:grid}.coachApprovalBox .row{display:grid;grid-template-columns:1fr}.coachApprovalBox .btn{width:100%}}
+
+.programParameterGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0}
+.programParameterGrid>div{display:grid;gap:4px;padding:13px;border-radius:12px;background:#081d34;border:1px solid rgba(255,255,255,.06)}
+.programParameterGrid b{font-size:18px;color:#edc869}
+.programParameterGrid span{font-size:10px;color:#788da2;line-height:1.35}
+@media(max-width:900px){.programParameterGrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.programParameterGrid{grid-template-columns:1fr}}
