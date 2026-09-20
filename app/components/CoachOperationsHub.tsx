@@ -55,6 +55,17 @@ export function CoachOperationsHub({studentId}:{studentId:string}){
     post(existing?{action:'cohort',cohortId:existing}:{action:'cohort',name:fd.get('name'),description:fd.get('description')});
   }
 
+  const gameStats=useMemo(()=>{
+    const map:any={};
+    for(const a of data?.gameAttempts||[]){
+      const g=a.gameContent;const key=g.gameType+'|'+g.subject+'|'+g.topic;
+      if(!map[key])map[key]={gameType:g.gameType,subject:g.subject,topic:g.topic,count:0,score:0,max:0,duration:0,mistakes:0};
+      const x=map[key];x.count++;x.score+=a.score;x.max+=a.maxScore;x.duration+=a.durationSeconds;
+      if(Array.isArray(a.mistakes))x.mistakes+=a.mistakes.length;
+    }
+    return Object.values(map).map((x:any)=>({...x,success:x.max?Math.round(x.score/x.max*100):0,avgSeconds:x.count?Math.round(x.duration/x.count):0})).sort((a:any,b:any)=>a.success-b.success);
+  },[data]);
+
   const weakness=useMemo(()=>{
     const rows=data?.analytics||[];const map:any={};
     for(const x of rows){const k=x.subject+' · '+x.topic;const total=x.correct+x.wrong+x.blank;if(!map[k])map[k]={subject:x.subject,topic:x.topic,total:0,correct:0,seconds:[]};map[k].total+=total;map[k].correct+=x.correct;if(x.avgSeconds!=null)map[k].seconds.push(x.avgSeconds)}
@@ -107,6 +118,15 @@ export function CoachOperationsHub({studentId}:{studentId:string}){
         <input name="examType" placeholder="TYT / AYT / LGS" required/><input name="subject" placeholder="Ders" required/><input name="topic" placeholder="Konu" required/><input name="questionType" placeholder="Soru tipi"/><input name="correct" type="number" min="0" placeholder="Doğru" required/><input name="wrong" type="number" min="0" placeholder="Yanlış" required/><input name="blank" type="number" min="0" placeholder="Boş" required/><input name="avgSeconds" type="number" min="0" placeholder="Ort. sn"/><input name="examDate" type="date"/><button className="btn primary">Analize Ekle</button>
       </form>
       <div className="weaknessMap">{weakness.map((x:any)=><div className="weaknessItem" key={x.subject+x.topic}><div><strong>{x.subject}</strong><span>{x.topic}</span></div><div className="weaknessBar"><i style={{width:x.accuracy+'%'}}/></div><b>%{x.accuracy}</b>{x.avgSeconds!=null&&<small>{x.avgSeconds} sn/soru</small>}</div>)}</div>
+    </div>
+
+    <div className="card">
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">OYUN & KAVRAM ANALİTİĞİ</div><h2>Mikro tekrar performansı</h2><p className="muted">Başarı oranı düşük olan kavramlar üstte gösterilir.</p></div><span className="moduleIcon">★</span></div>
+      {gameStats.length===0?<p className="muted">Henüz tamamlanmış oyun yok.</p>:<div className="gameAnalyticsTable">
+        <div className="gameAnalyticsHead"><span>Oyun</span><span>Ders / Konu</span><span>Deneme</span><span>Başarı</span><span>Ort. Süre</span><span>Hata</span></div>
+        {gameStats.slice(0,20).map((x:any)=><div className="gameAnalyticsRow" key={x.gameType+x.subject+x.topic}><span className="pill">{x.gameType}</span><strong>{x.subject} · {x.topic}</strong><span>{x.count}</span><span className={x.success<60?'riskText':''}>%{x.success}</span><span>{x.avgSeconds} sn</span><span>{x.mistakes}</span></div>)}
+      </div>}
+      {data.badges?.length>0&&<div className="row" style={{marginTop:14,flexWrap:'wrap'}}>{data.badges.slice(0,8).map((b:any)=><span className="pill" key={b.id}>🏅 {b.title}</span>)}</div>}
     </div>
 
     <div className="coachOpsGrid">
