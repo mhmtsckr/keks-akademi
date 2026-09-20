@@ -55,7 +55,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
     <section className="section"><CoachTrendSummary exams={student.examResults.slice().reverse().map(x=>({createdAt:x.createdAt.toISOString(),examType:x.examType,payload:x.payload}))} reviewDue={student.reviewQueue.filter(x=>x.dueAt<=new Date()).length}/></section>
-    <section id="ongorusme" className="section section-anchor"><CoachPreInterviewSummary attempts={student.preInterviewAttempts}/></section>
+    <section id="ongorusme" className="section section-anchor"><CoachPreInterviewSummary studentId={student.id}/></section>
     <section id="seans-akisi" className="section section-anchor"><CoachSessionWorkflow studentId={student.id}/></section>
     <section id="operasyon" className="section section-anchor"><CoachOperationsHub studentId={student.id}/></section>
     <section id="genel" className="grid section-anchor">
