@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
+import { createSession } from '@/lib/auth';
 import { sendStudentCredentials } from '@/lib/mailer';
 import { writeAudit } from '@/lib/audit';
 
@@ -50,6 +51,9 @@ export async function POST(req:Request){
         userId:user.id,
         studentCode,
         accessKeyHash:await hashSecret(accessKey),
+        accessKeyCiphertext:encryptPrivateCode(accessKey),
+        credentialsDeliveryStatus:'PENDING',
+        credentialEmailAttempts:0,
         fullName:input.fullName,
         gradeLevel:input.gradeLevel,
         coachId:coach.id
@@ -71,23 +75,28 @@ export async function POST(req:Request){
     return {user,student};
   });
 
-  const mail:any=await sendStudentCredentials({
-    email,
-    studentName:input.fullName,
-    studentCode,
-    accessKey,
-    coachName:coach.user.name
-  });
-
-  const mailFailed=Boolean(mail?.skipped||mail?.error);
-  if(mailFailed){
-    await db.$transaction(async tx=>{
-      await tx.academyCode.updateMany({where:{assignedStudentId:created.student.id},data:{assignedStudentId:null,active:false}});
-      await tx.student.delete({where:{id:created.student.id}});
-      await tx.user.delete({where:{id:created.user.id}});
+  let mailSent=false;
+  try{
+    const mail:any=await sendStudentCredentials({
+      email,
+      studentName:input.fullName,
+      studentCode,
+      accessKey,
+      coachName:coach.user.name
     });
-    return NextResponse.json({error:'Giriş bilgileri Gmail adresinize gönderilemedi. Lütfen daha sonra tekrar deneyin.'},{status:503});
+    mailSent=!Boolean(mail?.skipped||mail?.error);
+  }catch{
+    mailSent=false;
   }
+
+  await db.student.update({
+    where:{id:created.student.id},
+    data:{
+      credentialsDeliveryStatus:mailSent?'SENT':'PENDING',
+      credentialsEmailedAt:mailSent?new Date():null,
+      credentialEmailAttempts:{increment:1}
+    }
+  });
 
   await writeAudit({
     actorUserId:created.user.id,
@@ -98,8 +107,13 @@ export async function POST(req:Request){
     metadata:{coachId:coach.id,gradeLevel:input.gradeLevel,email}
   });
 
+  await createSession(created.user.id);
+
   return NextResponse.json({
     ok:true,
-    message:'Başvurunuz alınmıştır. Öğrenci kodunuz ve giriş anahtarınız Gmail adresinize gönderildi. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.'
+    emailStatus:mailSent?'SENT':'PENDING',
+    message:mailSent
+      ? 'Başvurunuz alınmıştır. Öğrenci kodunuz ve giriş anahtarınız Gmail adresinize gönderildi. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.'
+      : 'Başvurunuz alınmıştır ve seçtiğiniz koça bağlandınız. Gmail gönderimi şu anda bekliyor; bilgileriniz sistemde güvenli biçimde saklandı ve tekrar gönderilebilir.'
   });
 }
