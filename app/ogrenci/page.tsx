@@ -10,6 +10,8 @@ import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 import { StudentEngagementHub } from '@/app/components/StudentEngagementHub';
+import { StudentDailyTasks } from '@/app/components/StudentDailyTasks';
+import { StudentPreInterview } from '@/app/components/StudentPreInterview';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -87,6 +89,7 @@ export default async function StudentPage() {
       </div>
     </section>
 
+    <section className="section"><PortalSectionTitle eyebrow="BUGÜN" title="Günlük Görevlerim" description="Koçunuzun verdiği görevleri en geç 23.00'a kadar soru sonuçlarıyla birlikte kaydedin."/><StudentDailyTasks/></section>
     <section className="section"><AdaptiveRecommendation/></section>
     <section className="section"><SmartCoachDashboard/></section>
     <section className="section"><PortalSectionTitle eyebrow="KOÇLUK & OYUNLAŞTIRMA" title="Aksiyonlar, seanslar, XP ve mikro tekrar"/><StudentEngagementHub/></section>
@@ -118,5 +121,6 @@ export default async function StudentPage() {
     <section className="section"><PortalSectionTitle eyebrow="ÜRET" title="Akıllı İçerik Stüdyosu"/><ContentStudio studentId={student.id} existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></section>
 
     <section className="section"><PortalSectionTitle eyebrow="TARAMA" title="KEKS Eğilim Taraması"/><StudentActions hasAccess={Boolean(access)}/></section>
+    <section className="section"><PortalSectionTitle eyebrow="ÖN GÖRÜŞME" title="Çalışma Davranışı ve Planlama Formu" description="Kişilik/eğilim taramasını tamamladıktan sonra bu form açılır. Yanıtlarınız koçunuza ayrıntılı rapor olarak iletilir."/><StudentPreInterview/></section>
   </PortalShell>;
 }
