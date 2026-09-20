@@ -66,6 +66,7 @@ model CoachProfile {
   coachingSessions CoachingSession[]
   cohorts Cohort[]
   coachTasks CoachTask[]
+  preInterviewAssignments PreInterviewAssignment[]
   createdAt DateTime  @default(now())
 }
 
