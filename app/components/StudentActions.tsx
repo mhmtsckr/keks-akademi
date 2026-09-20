@@ -19,9 +19,9 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}) {
     if(!r.ok) return setMsg('Hata: '+(j.error||'Ödeme başlatılamadı.'));
     location.href=j.iframeUrl;
   }
-  if(hasAccess) return <div className="notice"><strong>KEKS erişiminiz hazır.</strong><div className="muted">Soru havuzu yöneticiniz tarafından yüklendiğinde test burada açılır.</div></div>;
+  if(hasAccess) return <div className="notice"><strong>Bu ayki KEKS test erişiminiz hazır.</strong><div className="muted">Bu erişim bu takvim ayı içinde bir kez test çözmek için kullanılabilir. Test tamamlandığında erişim kapanır; yeni ayda aylık KEKS kodunuz yeniden kullanılabilir olur.</div></div>;
   return <div className="stack">
-    <div className="card"><h3>KEKS Akademi Kodum Var</h3><form className="form" onSubmit={code}><div className="field"><label>KEKS Akademi kodu</label><input name="code" required placeholder="KEKS-…"/></div><button className="btn primary">Kodu Kullan</button></form></div>
+    <div className="card"><h3>Aylık KEKS Akademi Kodum Var</h3><p className="muted">Öğrenciye özel KEKS kodu her takvim ayında bir kez test erişimi açar. Aynı ay ikinci kez kullanılamaz; yeni ayda otomatik olarak tekrar kullanılabilir.</p><form className="form" onSubmit={code}><div className="field"><label>KEKS Akademi kodu</label><input name="code" required placeholder="KEKS-…"/></div><button className="btn primary">Kodu Kullan</button></form></div>
     <div className="card"><h3>350 TL ile Test Erişimi</h3><p className="muted">Ödeme PayTR üzerinden doğrulandıktan sonra test erişimi otomatik açılır.</p><form className="form" onSubmit={pay}>
       <div className="field"><label>E-posta</label><input name="email" type="email" required/></div>
       <div className="field"><label>Ad soyad</label><input name="userName" required/></div>
