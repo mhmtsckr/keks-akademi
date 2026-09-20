@@ -1,0 +1,22 @@
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { requireRole } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { writeAudit } from '@/lib/audit';
+
+const item=z.object({gameType:z.enum(['WORD','CROSSWORD','CONNECTIONS','MATCH']),examType:z.string().optional(),subject:z.string(),topic:z.string(),title:z.string(),payload:z.any(),difficulty:z.string().default('ORTA')});
+const schema=z.object({items:z.array(item).min(1).max(500)});
+
+export async function GET(){
+  await requireRole(['ADMIN']);
+  const items=await db.gameContent.findMany({orderBy:{createdAt:'desc'},take:300});
+  return NextResponse.json({ok:true,items});
+}
+export async function POST(req:Request){
+  const user=await requireRole(['ADMIN']);
+  const input=schema.parse(await req.json());
+  const rows=[];
+  for(const x of input.items)rows.push(await db.gameContent.create({data:{...x,createdByUserId:user.id}}));
+  await writeAudit({actorUserId:user.id,action:'GAME_CONTENT_IMPORT',entityType:'GameContent',summary:rows.length+' oyun içeriği eklendi.',metadata:{count:rows.length}});
+  return NextResponse.json({ok:true,count:rows.length});
+}
