@@ -383,3 +383,9 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .adminKpiGrid,.adminHealthGrid,.adminPaymentStats{grid-template-columns:1fr}
   .adminTabs button{flex:1 1 140px}
 }
+
+.deleteModalBackdrop{position:fixed;inset:0;z-index:80;background:rgba(2,10,18,.78);backdrop-filter:blur(7px);display:grid;place-items:center;padding:20px}
+.deleteModal{width:min(560px,100%);background:linear-gradient(145deg,#0b243f,#081a2f);border:1px solid rgba(239,111,98,.24);border-radius:20px;padding:26px;box-shadow:0 28px 80px rgba(0,0,0,.45)}
+.deleteModal h2{margin:5px 0 12px;color:#fff}
+.deleteModal p{color:#9fb0c1;line-height:1.65}
+.deleteModal .field{margin-top:16px}
