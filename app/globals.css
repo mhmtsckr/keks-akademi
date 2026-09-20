@@ -389,3 +389,5 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .deleteModal h2{margin:5px 0 12px;color:#fff}
 .deleteModal p{color:#9fb0c1;line-height:1.65}
 .deleteModal .field{margin-top:16px}
+
+.adminPrivateCode{display:inline-block;margin-top:7px;padding:7px 10px;border-radius:9px;background:#06172a;border:1px solid rgba(238,190,79,.22);color:#f0cc72;font-size:12px;font-weight:800;letter-spacing:.08em;user-select:all}
