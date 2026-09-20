@@ -43,7 +43,7 @@ export default async function StudentPage() {
         </div>
         <div className="stack">
           <div className="card"><h2>Öğrenci Girişi</h2><p className="muted">Öğrenci kodu ve özel giriş anahtarıyla giriş yapabilirsiniz.</p><StudentLoginForm/></div>
-          <div className="card"><h2>Öğrenci Hesabı Oluştur</h2><p className="muted">Koçunuzun verdiği öğrenci kodu ve giriş anahtarıyla e-posta/şifrenizi oluşturun.</p><StudentRegisterForm/></div>
+          <div className="card"><h2>Öğrenci Başvurusu</h2><p className="muted">Bilgilerinizi girin, aktif koçlardan birini seçin. Başvurunuz tamamlanınca öğrenci kodunuz ve giriş anahtarınız Gmail adresinize gönderilir.</p><StudentRegisterForm/></div>
         </div>
       </section>
     </PortalShell>;
