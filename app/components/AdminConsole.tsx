@@ -223,8 +223,8 @@ export function AdminConsole(){
         <HealthCard label="Uygulama URL" ok={health.appUrl} detail={health.appUrl?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="Son 24 saat audit" ok={true} detail={String(health.recentAudit)+' kayıt'}/>
       </div>}
-      <div className="card adminFilterBar"><div className="field"><label>Audit log ara</label><input value={auditQ} onChange={e=>setAuditQ(e.target.value)} placeholder="İşlem, varlık veya açıklama"/></div><button className="btn primary" onClick={loadSecurity}>Ara</button></div>
-      <div className="card adminAuditCard"><h3>Audit Log</h3>{logs.length===0?<p className="muted">Henüz kayıt yok.</p>:<div className="adminAuditList">{logs.map(l=><div className="adminAuditRow" key={l.id}><span className="adminAuditDot"/><div><strong>{l.summary}</strong><p>{l.action} · {l.entityType}{l.entityId?' · '+l.entityId:''}</p><span>{l.actor?.name||'Sistem'}{l.actor?.email?' · '+l.actor.email:''} · {dt(l.createdAt)}</span></div></div>)}</div>}</div>
+      <div className="card adminFilterBar"><div className="field"><label>İşlem geçmişinde ara</label><input value={auditQ} onChange={e=>setAuditQ(e.target.value)} placeholder="Açıklama veya kullanıcı adı"/></div><button className="btn primary" onClick={loadSecurity}>Ara</button></div>
+      <div className="card adminAuditCard"><h3>İşlem Geçmişi</h3>{logs.length===0?<p className="muted">Henüz kayıt yok.</p>:<div className="adminAuditList">{logs.map(l=><div className="adminAuditRow" key={l.id}><span className="adminAuditDot"/><div><strong>{l.summary}</strong><span>{l.actor?.name||'Sistem'}{l.actor?.email?' · '+l.actor.email:''} · {dt(l.createdAt)}</span></div></div>)}</div>}</div>
     </section>}
   </div>;
 }
