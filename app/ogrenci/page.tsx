@@ -9,6 +9,7 @@ import { ContentStudio } from '@/app/components/ContentStudio';
 import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
+import { StudentEngagementHub } from '@/app/components/StudentEngagementHub';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -88,6 +89,7 @@ export default async function StudentPage() {
 
     <section className="section"><AdaptiveRecommendation/></section>
     <section className="section"><SmartCoachDashboard/></section>
+    <section className="section"><PortalSectionTitle eyebrow="KOÇLUK & OYUNLAŞTIRMA" title="Aksiyonlar, seanslar, XP ve mikro tekrar"/><StudentEngagementHub/></section>
 
     <section className="section">
       <PortalSectionTitle eyebrow="UYGULA" title="Ders Çalışma Teknikleri" description="Tekniği seç, nasıl uygulanacağını gör ve aynı ekranda hemen çalışmaya başla."/>
