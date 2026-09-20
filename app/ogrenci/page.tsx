@@ -8,6 +8,7 @@ import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
 import { ContentStudio } from '@/app/components/ContentStudio';
 import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
+import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -44,6 +45,7 @@ export default async function StudentPage() {
     </PortalShell>;
   }
 
+  const month=turkeyMonthWindow();
   const student = await db.student.findUnique({
     where:{id:user.student.id},
     include:{
@@ -54,7 +56,7 @@ export default async function StudentPage() {
       techniquePreferences:{},
       reports:{where:{visibleToStudent:true},orderBy:{createdAt:'desc'}},
       libraryItems:{orderBy:{createdAt:'desc'}},
-      testAccesses:{where:{status:'READY'},orderBy:{createdAt:'asc'},take:1},
+      testAccesses:{where:{status:'READY',OR:[{source:{not:'ACADEMY_CODE'}},{createdAt:{gte:month.start,lt:month.end}}]},orderBy:{createdAt:'asc'},take:1},
       targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
       topicProgress:{},
       practiceLogs:{orderBy:{date:'desc'},take:30},
