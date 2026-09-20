@@ -68,7 +68,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
         <td>{s.lastActivity?new Date(s.lastActivity).toLocaleDateString('tr-TR'):<span className="muted">Kayıt yok</span>}{s.overdueActions? <div className="riskText">{s.overdueActions} gecikmiş</div>:null}</td>
         <td><div className="row">
           <a className="btn" href={'/koc/ogrenci/'+s.id}>Aç</a>
-          <button className="btn danger" onClick={()=>{setDeleting(s);setCode('');setMsg('')}}>Sil</button>
+          <button className="btn danger" title="Öğrenci kaydını kalıcı olarak sil" onClick={()=>{setDeleting(s);setCode('');setMsg('')}}>Kaydı Sil</button>
         </div></td>
       </tr>)}</tbody>
     </table>
@@ -77,7 +77,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
       <div className="deleteModal" role="dialog" aria-modal="true" aria-labelledby="delete-student-title">
         <div className="moduleEyebrow">KALICI SİLME</div>
         <h2 id="delete-student-title">{deleting.fullName} öğrencisini sil?</h2>
-        <p>Bu işlem öğrencinin programlarını, denemelerini, raporlarını, çalışma kayıtlarını, testlerini ve bağlı hesaplarını kalıcı olarak siler.</p>
+        <p>Bu işlem öğrencinin programlarını, görevlerini, denemelerini, raporlarını, testlerini, ön görüşmelerini, çalışma kayıtlarını ve bağlı öğrenci/veli hesaplarını kalıcı olarak siler.</p>
         <div className="notice error"><strong>Bu işlem geri alınamaz.</strong></div>
         <div className="field">
           <label>Onaylamak için öğrenci kodunu yaz: <strong>{deleting.studentCode}</strong></label>
