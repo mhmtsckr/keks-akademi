@@ -116,6 +116,7 @@ model Student {
   cohortMemberships CohortMember[]
   forumPosts ForumPost[]
   progressShares ProgressShare[]
+  xpLedger XpLedger[]
 }
 
 model StudyPlan {
@@ -760,6 +761,19 @@ model ProgressShare {
   expiresAt       DateTime?
   revokedAt       DateTime?
   createdAt       DateTime @default(now())
+
+  @@index([studentId, createdAt])
+}
+
+
+model XpLedger {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  source    String
+  sourceId  String?
+  xp        Int
+  createdAt DateTime @default(now())
 
   @@index([studentId, createdAt])
 }
