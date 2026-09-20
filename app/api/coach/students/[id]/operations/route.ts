@@ -18,14 +18,16 @@ export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   const {id}=await params;
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile?.id}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  const [sessions,actions,analytics,connections,cohorts]=await Promise.all([
+  const [sessions,actions,analytics,connections,cohorts,gameAttempts,badges]=await Promise.all([
     db.coachingSession.findMany({where:{studentId:id},orderBy:{startsAt:'desc'},take:40}),
     db.coachingAction.findMany({where:{studentId:id},orderBy:{createdAt:'desc'},take:50}),
     db.examAnalyticsRecord.findMany({where:{studentId:id},orderBy:{examDate:'desc'},take:200}),
     db.calendarConnection.findMany({where:{coachId:user.coachProfile!.id,active:true},select:{provider:true,accountEmail:true,timeZone:true}}),
-    db.cohort.findMany({where:{coachId:user.coachProfile!.id,active:true},include:{members:{select:{studentId:true}}},orderBy:{createdAt:'desc'}})
+    db.cohort.findMany({where:{coachId:user.coachProfile!.id,active:true},include:{members:{select:{studentId:true}}},orderBy:{createdAt:'desc'}}),
+    db.gameAttempt.findMany({where:{studentId:id},orderBy:{completedAt:'desc'},take:150,include:{gameContent:{select:{gameType:true,subject:true,topic:true,title:true}}}}),
+    db.badgeAward.findMany({where:{studentId:id},orderBy:{awardedAt:'desc'}})
   ]);
-  return NextResponse.json({ok:true,sessions,actions,analytics,connections,cohorts});
+  return NextResponse.json({ok:true,sessions,actions,analytics,connections,cohorts,gameAttempts,badges});
 }
 
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
@@ -88,7 +90,10 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     const session=await db.coachingSession.findFirst({where:{id:input.sessionId,studentId:id,coachId:user.coachProfile.id}});
     if(!session)return NextResponse.json({error:'Seans bulunamadı.'},{status:404});
     const row=await db.coachingSession.update({where:{id:session.id},data:{status:input.status}});
-    if(input.status==='COMPLETED')await awardXp(id,'SESSION',session.id,80);
+    if(input.status==='COMPLETED'){
+      await awardXp(id,'SESSION',session.id,80);
+      await db.badgeAward.upsert({where:{studentId_badgeKey:{studentId:id,badgeKey:'FIRST_SESSION'}},create:{studentId:id,badgeKey:'FIRST_SESSION',title:'İlk Seans Tamamlandı',description:'İlk koçluk görüşmesini tamamladı.'},update:{}});
+    }
     return NextResponse.json({ok:true,row});
   }
 
