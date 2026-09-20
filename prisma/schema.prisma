@@ -65,6 +65,7 @@ model CoachProfile {
   calendarConnections CalendarConnection[]
   coachingSessions CoachingSession[]
   cohorts Cohort[]
+  coachTasks CoachTask[]
   createdAt DateTime  @default(now())
 }
 
@@ -117,6 +118,7 @@ model Student {
   forumPosts ForumPost[]
   progressShares ProgressShare[]
   xpLedger XpLedger[]
+  coachTasks CoachTask[]
 }
 
 model StudyPlan {
@@ -594,6 +596,12 @@ model CoachingSession {
   notes             String?
   createdByUserId   String?
   syncStatus        String   @default("LOCAL")
+  prepSummary       Json?
+  outcome           String?
+  decisions         Json?
+  nextStep          String?
+  followUpAt        DateTime?
+  completedAt       DateTime?
   actions           CoachingAction[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -776,4 +784,25 @@ model XpLedger {
   createdAt DateTime @default(now())
 
   @@index([studentId, createdAt])
+}
+
+
+model CoachTask {
+  id          String   @id @default(cuid())
+  coachId     String
+  coach       CoachProfile @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  studentId   String?
+  student     Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  priority    String   @default("MEDIUM")
+  status      String   @default("OPEN")
+  dueAt       DateTime?
+  sourceType  String?
+  sourceId    String?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([coachId, status, dueAt])
+  @@index([studentId, status])
 }
