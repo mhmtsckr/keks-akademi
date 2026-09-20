@@ -17,8 +17,8 @@ export function StudentEngagementHub(){
     if(!r.ok){setMsg('Hata: '+(j.error||'İşlem başarısız.'));return null}await load();return j;
   }
   async function progress(id:string,currentValue:number){const j=await api({action:'progress',id,currentValue});if(j)setMsg('Aksiyon ilerlemesi güncellendi.')}
-  async function analytics(e:FormEvent<HTMLFormElement>){e.preventDefault();const fd=new FormData(e.currentTarget);const j=await api({action:'analytics',examType:fd.get('examType'),subject:fd.get('subject'),topic:fd.get('topic'),questionType:fd.get('questionType')||'GENEL',correct:Number(fd.get('correct')),wrong:Number(fd.get('wrong')),blank:Number(fd.get('blank')),avgSeconds:fd.get('avgSeconds')?Number(fd.get('avgSeconds')):undefined,examDate:fd.get('examDate')||undefined});if(j){setMsg('Test/deneme analitiği kaydedildi.');e.currentTarget.reset()}}
-  async function forum(e:FormEvent<HTMLFormElement>,cohortId:string){e.preventDefault();const fd=new FormData(e.currentTarget);const body=String(fd.get('body')||'');const j=await api({action:'forum_post',cohortId,body});if(j){setMsg('Kohort mesajı gönderildi.');e.currentTarget.reset()}}
+  async function analytics(e:FormEvent<HTMLFormElement>){e.preventDefault();const form=e.currentTarget;const fd=new FormData(form);const j=await api({action:'analytics',examType:fd.get('examType'),subject:fd.get('subject'),topic:fd.get('topic'),questionType:fd.get('questionType')||'GENEL',correct:Number(fd.get('correct')),wrong:Number(fd.get('wrong')),blank:Number(fd.get('blank')),avgSeconds:fd.get('avgSeconds')?Number(fd.get('avgSeconds')):undefined,examDate:fd.get('examDate')||undefined});if(j){setMsg('Test/deneme analitiği kaydedildi.');form.reset()}}
+  async function forum(e:FormEvent<HTMLFormElement>,cohortId:string){e.preventDefault();const form=e.currentTarget;const fd=new FormData(form);const body=String(fd.get('body')||'');const j=await api({action:'forum_post',cohortId,body});if(j){setMsg('Kohort mesajı gönderildi.');form.reset()}}
   async function generateGame(){
     setBusy(true);setMsg('');
     const j=await api({action:'generate_game'});
