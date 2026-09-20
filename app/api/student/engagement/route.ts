@@ -7,7 +7,8 @@ import { awardXp } from '@/lib/gamification';
 const actionSchema=z.object({action:z.literal('progress'),id:z.string(),currentValue:z.number().min(0)});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
 const gameSchema=z.object({action:z.literal('game_attempt'),gameContentId:z.string(),score:z.number().int().min(0),maxScore:z.number().int().positive(),durationSeconds:z.number().int().min(0),mistakes:z.any().optional()});
-const schema=z.discriminatedUnion('action',[actionSchema,gameSchema,analyticSchema]);
+const forumSchema=z.object({action:z.literal('forum_post'),cohortId:z.string(),body:z.string().min(2).max(2000)});
+const schema=z.discriminatedUnion('action',[actionSchema,gameSchema,analyticSchema,forumSchema]);
 
 export async function GET(){
   const user=await requireRole(['STUDENT']);
