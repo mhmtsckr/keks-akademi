@@ -35,7 +35,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       topicProgress:{},
       reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}},
       generatedContent:{orderBy:{createdAt:'desc'},take:30,include:{progress:{where:{studentId:id},take:1}}},
-      preInterviewAttempts:{orderBy:{completedAt:'desc'},take:3,include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}}}}
+      preInterviewAttempts:{orderBy:{completedAt:'desc'},take:3,include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}}}},
+      assessments:{orderBy:{completedAt:'desc'},take:5}
     }
   });
   if(!student) return notFound();
@@ -50,11 +51,43 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     wide
   >
     <nav className="tabs no-print">
-      <a href="#genel">Genel Bakış</a><a href="#ongorusme">Ön Görüşme</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
+      <a href="#genel">Genel Bakış</a><a href="#egilim-taramasi">Eğilim Taraması</a><a href="#ongorusme">Ön Görüşme</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
     <section className="section"><CoachTrendSummary exams={student.examResults.slice().reverse().map(x=>({createdAt:x.createdAt.toISOString(),examType:x.examType,payload:x.payload}))} reviewDue={student.reviewQueue.filter(x=>x.dueAt<=new Date()).length}/></section>
+    <section id="egilim-taramasi" className="section section-anchor">
+      <div className="stack">
+        <div>
+          <div className="moduleEyebrow">KOÇA ÖZEL</div>
+          <h2>KEKS Eğilim Taraması Sonuçları</h2>
+          <p className="muted">Öğrencinin tarama cevapları ve ayrıntılı eğilim sonuçları yalnız bu koç çalışma alanında gösterilir.</p>
+        </div>
+        {student.assessments.length===0?<div className="card"><p className="muted">Henüz tamamlanmış KEKS eğilim taraması yok.</p></div>:student.assessments.map(a=>{
+          const scores=(a.scores||{}) as Record<string,number>;
+          const report=(a.report||{}) as any;
+          return <article className="card" key={a.id}>
+            <div className="moduleHeaderRow">
+              <div><div className="moduleEyebrow">TARAMA KAYDI</div><h3>{report.title||'KEKS Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması'}</h3><p className="muted">{new Date(a.completedAt).toLocaleString('tr-TR')} · {a.formVersion}</p></div>
+              <span className="pill">KOÇA ÖZEL</span>
+            </div>
+            <div className="interviewScoreGrid">
+              {Object.entries(scores).sort((x,y)=>Number(y[1])-Number(x[1])).map(([name,value])=><div className="briefMetric" key={name}><b>{Number(value).toFixed(2)}</b><span>{name}</span></div>)}
+            </div>
+            {Array.isArray(report.leadingDimensions)&&report.leadingDimensions.length>0&&<div className="notice"><strong>Öne çıkan eğilimler:</strong> {report.leadingDimensions.map((x:any)=>x.name+' '+Number(x.score).toFixed(2)+'/5').join(' · ')}</div>}
+            {report.disclaimer&&<p className="muted">{String(report.disclaimer)}</p>}
+            <details style={{marginTop:12}}>
+              <summary><strong>Ayrıntılı sonuç verisini görüntüle</strong></summary>
+              <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify(report,null,2)}</pre>
+            </details>
+            <details style={{marginTop:10}}>
+              <summary><strong>Öğrencinin cevaplarını görüntüle</strong></summary>
+              <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify(a.answers,null,2)}</pre>
+            </details>
+          </article>
+        })}
+      </div>
+    </section>
     <section id="ongorusme" className="section section-anchor"><CoachPreInterviewSummary studentId={student.id}/></section>
     <section id="seans-akisi" className="section section-anchor"><CoachSessionWorkflow studentId={student.id}/></section>
     <section id="operasyon" className="section section-anchor"><CoachOperationsHub studentId={student.id}/></section>
