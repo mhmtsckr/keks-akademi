@@ -4,7 +4,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { EXAM_CATALOG, ExamType } from '@/lib/examCatalog';
 
 type Progress = {examType:string;subject:string;topic:string;completed:boolean};
-type Practice = {id:string;examType:string;subject:string;topic:string|null;correct:number;wrong:number;blank:number;net:number;date:string};
+type Practice = {id:string;examType:string;subject:string;topic:string|null;correct:number;wrong:number;blank:number;net:number;date:string;errorReason?:string|null};
 
 export function StudentProgressTools({allowedExams,initialProgress,initialPractice}:{allowedExams:ExamType[];initialProgress:Progress[];initialPractice:Practice[]}) {
   const [exam,setExam]=useState<ExamType>(allowedExams[0]||'TYT');
@@ -27,7 +27,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
   async function addPractice(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setMsg('');
     const fd=new FormData(e.currentTarget);
-    const body={action:'practice',examType:exam,subject,topic:String(fd.get('topic')||''),correct:Number(fd.get('correct')||0),wrong:Number(fd.get('wrong')||0),blank:Number(fd.get('blank')||0)};
+    const body={action:'practice',examType:exam,subject,topic:String(fd.get('topic')||''),correct:Number(fd.get('correct')||0),wrong:Number(fd.get('wrong')||0),blank:Number(fd.get('blank')||0),errorReason:String(fd.get('errorReason')||'')||undefined};
     const r=await fetch('/api/student/progress',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json(); if(!r.ok){setMsg('Hata: '+(j.error||'Kaydedilemedi.'));return}
     setPractice(p=>[j.row,...p]); setMsg('Soru çözüm kaydı eklendi. Net: '+j.row.net); e.currentTarget.reset();
@@ -72,6 +72,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
             <div className="field"><label>Yanlış</label><input name="wrong" type="number" min="0" required/></div>
             <div className="field"><label>Boş</label><input name="blank" type="number" min="0" required/></div>
           </div>
+          <div className="field"><label>Baskın hata nedeni</label><select name="errorReason"><option value="">Seçiniz</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="DIKKAT">Dikkat</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="SURE">Süre problemi</option><option value="SORUYU_ANLAMA">Soruyu anlama</option><option value="STRATEJI">Yanlış strateji</option><option value="DIGER">Diğer</option></select></div>
           <button className="btn primary">Kaydet ve Neti Hesapla</button>
         </form>
       </div>
@@ -82,7 +83,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
         {practice.length===0?<p className="muted">Henüz kayıt yok.</p>:practice.slice(0,8).map(p=><div key={p.id} className="practiceRow">
           <div><strong>{p.subject}</strong><span>{p.topic||'Karma'}</span></div>
           <div className="practiceScore"><b>{p.net}</b><span>net</span></div>
-          <div className="practiceMeta">D {p.correct} · Y {p.wrong} · B {p.blank}</div>
+          <div className="practiceMeta">D {p.correct} · Y {p.wrong} · B {p.blank}{p.errorReason?' · '+p.errorReason.replaceAll('_',' '):''}</div>
         </div>)}
       </div>
     </div>
