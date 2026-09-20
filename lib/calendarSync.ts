@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { decryptPrivateCode } from './security';
 
 type Connection={provider:string;calendarId:string|null;accessTokenCiphertext:string|null;refreshTokenCiphertext:string|null;expiresAt:Date|null};
