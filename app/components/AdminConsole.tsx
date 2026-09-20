@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect,useMemo,useState } from 'react';
+import { AdminGameCMS } from '@/app/components/AdminGameCMS';
 
 type Tab='overview'|'users'|'academic'|'payments'|'security';
 
@@ -179,6 +180,7 @@ export function AdminConsole(){
     {tab==='academic'&&<section className="adminPanelSection">
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">AKADEMİK KALİTE</div><h2>Soru Bankası Onay Merkezi</h2><p className="muted">Yeni veya incelenmesi gereken soruları yayınlanmadan önce kontrol et.</p></div><div className="row"><select value={questionStatus} onChange={e=>setQuestionStatus(e.target.value)}><option value="PENDING">Bekleyen</option><option value="APPROVED">Onaylı</option><option value="REJECTED">Reddedilen</option><option value="ALL">Tümü</option></select></div></div>
       <div className="adminQuestionStats">{questionCounts.map((x:any)=><span className="pill" key={x.reviewStatus}>{x.reviewStatus}: {x._count._all}</span>)}</div>
+      <AdminGameCMS/>
       <div className="adminQuestionList">
         {questions.length===0?<div className="card muted">Bu filtrede soru bulunmuyor.</div>:questions.map(q=><article className="card adminQuestionCard" key={q.id}>
           <div className="moduleHeaderRow"><div><span className="pill">{q.examType} · {q.subject} · {q.topic}</span><h3>{q.prompt}</h3></div><span className={'adminStatus '+q.reviewStatus.toLowerCase()}>{q.reviewStatus}</span></div>
