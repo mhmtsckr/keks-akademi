@@ -420,3 +420,11 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 @media(max-width:1100px){.analyticsEntryForm{grid-template-columns:repeat(3,1fr)}.gameGrid{grid-template-columns:repeat(2,1fr)}.engagementTop{grid-template-columns:1fr 1fr}.engagementTop>div:last-child{grid-column:span 2}}
 @media(max-width:800px){.coachOpsGrid,.engagementGrid,.cohortGrid{grid-template-columns:1fr}.providerGrid{grid-template-columns:1fr}.actionGrid{grid-template-columns:1fr}.weaknessItem{grid-template-columns:1fr}.weaknessItem>b,.weaknessItem small{text-align:left}.analyticsEntryForm{grid-template-columns:1fr 1fr}.gameGrid{grid-template-columns:1fr}.engagementTop{grid-template-columns:1fr}.engagementTop>div:last-child{grid-column:auto}.gameQuestion{grid-template-columns:1fr}}
 @media(max-width:520px){.analyticsEntryForm{grid-template-columns:1fr}.actionControls{grid-template-columns:1fr 1fr}.actionControls b{grid-column:span 2;text-align:left}}
+
+.matchOptions{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 12px}
+.matchChip{appearance:none;border:1px solid rgba(232,185,77,.22);background:#0b2541;color:#dce6ef;border-radius:999px;padding:8px 11px;cursor:grab;font:inherit;font-size:12px}
+.matchChip.selected{background:linear-gradient(135deg,#bf8321,#ebc86d);color:#081c31;border-color:transparent}
+.matchTargets{display:grid;gap:8px}.matchTarget{appearance:none;display:flex;justify-content:space-between;gap:10px;align-items:center;text-align:left;padding:12px;border-radius:12px;border:1px dashed rgba(232,185,77,.24);background:#071b31;color:#e8edf3;font:inherit;cursor:pointer}.matchTarget span{color:#d7ad4b;font-size:11px}
+.connectionsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.connectionTile{display:grid;gap:7px;padding:11px;border-radius:11px;background:#081e36;border:1px solid rgba(255,255,255,.06)}
+.gameResult{padding:13px;border-radius:12px;background:rgba(45,152,113,.10);border:1px solid rgba(77,190,150,.22)}.gameResult strong{color:#b9ead8}.gameResult p{color:#b7c5d3;line-height:1.5}
+@media(max-width:560px){.connectionsGrid{grid-template-columns:1fr}.matchTarget{display:grid}}
