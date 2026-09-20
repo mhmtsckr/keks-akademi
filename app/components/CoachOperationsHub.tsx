@@ -6,8 +6,12 @@ export function CoachOperationsHub({studentId}:{studentId:string}){
   const [data,setData]=useState<any>(null);
   const [msg,setMsg]=useState('');
   const [shareUrl,setShareUrl]=useState('');
+  const [timeZone,setTimeZone]=useState('Europe/Istanbul');
   async function load(){const r=await fetch('/api/coach/students/'+studentId+'/operations');const j=await r.json();if(j.ok)setData(j)}
-  useEffect(()=>{load()},[]);
+  useEffect(()=>{
+    load();
+    try{setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Istanbul')}catch{}
+  },[]);
 
   async function post(body:any){
     setMsg('');
@@ -34,7 +38,9 @@ export function CoachOperationsHub({studentId}:{studentId:string}){
 
   function session(e:FormEvent<HTMLFormElement>){
     e.preventDefault();const fd=new FormData(e.currentTarget);
-    post({action:'session',title:fd.get('title'),startsAt:fd.get('startsAt'),endsAt:fd.get('endsAt'),timeZone:fd.get('timeZone'),calendarProvider:fd.get('calendarProvider'),meetingProvider:fd.get('meetingProvider'),notes:fd.get('notes')});
+    const startsAt=new Date(String(fd.get('startsAt'))).toISOString();
+    const endsAt=new Date(String(fd.get('endsAt'))).toISOString();
+    post({action:'session',title:fd.get('title'),startsAt,endsAt,timeZone,calendarProvider:fd.get('calendarProvider'),meetingProvider:fd.get('meetingProvider'),notes:fd.get('notes')});
   }
   function action(e:FormEvent<HTMLFormElement>){
     e.preventDefault();const fd=new FormData(e.currentTarget);
@@ -75,7 +81,7 @@ export function CoachOperationsHub({studentId}:{studentId:string}){
         <form className="form" onSubmit={session}>
           <div className="field"><label>Başlık</label><input name="title" defaultValue="Koçluk Görüşmesi" required/></div>
           <div className="row"><div className="field" style={{flex:1}}><label>Başlangıç</label><input name="startsAt" type="datetime-local" required/></div><div className="field" style={{flex:1}}><label>Bitiş</label><input name="endsAt" type="datetime-local" required/></div></div>
-          <div className="row"><div className="field" style={{flex:1}}><label>Saat dilimi</label><select name="timeZone" defaultValue="Europe/Istanbul"><option>Europe/Istanbul</option><option>Europe/London</option><option>America/New_York</option><option>Asia/Dubai</option></select></div>
+          <div className="row"><div className="field" style={{flex:1}}><label>Saat dilimi</label><input name="timeZone" value={timeZone} onChange={e=>setTimeZone(e.target.value)}/><div className="muted">Cihazınızdan otomatik algılandı.</div></div>
           <div className="field" style={{flex:1}}><label>Takvim</label><select name="calendarProvider"><option value="LOCAL">KEKS</option><option value="GOOGLE">Google Calendar</option><option value="OUTLOOK">Outlook</option></select></div></div>
           <div className="field"><label>Görüşme bağlantısı</label><select name="meetingProvider"><option value="NONE">Bağlantı yok</option><option value="GOOGLE_MEET">Google Meet</option><option value="ZOOM">Zoom</option></select></div>
           <div className="field"><label>Seans notu</label><textarea name="notes" rows={3}/></div>
