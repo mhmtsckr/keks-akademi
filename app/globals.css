@@ -477,3 +477,12 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .taskCoachTable{display:grid;overflow-x:auto;margin-top:12px}.taskCoachHead,.taskCoachRow{display:grid;grid-template-columns:minmax(180px,1.5fr) 60px 80px 60px 85px 70px 110px;gap:10px;align-items:center;min-width:760px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}.taskCoachHead{font-size:10px;color:#72869a;font-weight:900;letter-spacing:.06em}.taskCoachRow{font-size:12px}.taskCoachRow.late{background:linear-gradient(90deg,rgba(127,25,30,.16),transparent)}.taskCoachRow>div{display:grid;gap:2px}.taskCoachRow small{color:#708398}
 @media(max-width:900px){.dailyTaskGrid{grid-template-columns:1fr}.taskSubmissionForm{grid-template-columns:repeat(2,1fr)}.taskSubmissionForm .btn{grid-column:1/-1}.interviewScoreGrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.preInterviewQuestion{grid-template-columns:1fr}.interviewAnswerRow{grid-template-columns:1fr}.taskResultSummary{grid-template-columns:repeat(2,1fr)}}
+
+/* Coach-controlled pre-interview publishing */
+.preInterviewPending{border-color:rgba(231,182,79,.22)!important;background:radial-gradient(circle at 92% 0%,rgba(228,180,69,.10),transparent 34%),#091f38!important}
+.preInterviewApproved{border-color:rgba(75,188,143,.22)!important;background:radial-gradient(circle at 92% 0%,rgba(66,174,133,.09),transparent 34%),#091f38!important}
+.interviewStatusBar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;padding:10px 12px;border-radius:12px;background:#081d34;color:#8699ac;font-size:11px}
+.interviewReviewCard.awaitingApproval{border-color:rgba(233,185,75,.28)!important;box-shadow:0 0 0 1px rgba(233,185,75,.05) inset}
+.coachApprovalBox{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-top:18px;padding:15px;border-radius:14px;background:linear-gradient(135deg,rgba(205,141,28,.11),rgba(236,194,91,.05));border:1px solid rgba(232,185,72,.22)}
+.coachApprovalBox p{margin:5px 0 0;color:#9eb0c0;font-size:12px;line-height:1.5}
+@media(max-width:760px){.coachApprovalBox{display:grid}.coachApprovalBox .row{display:grid;grid-template-columns:1fr}.coachApprovalBox .btn{width:100%}}
