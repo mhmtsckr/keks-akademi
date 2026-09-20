@@ -848,6 +848,7 @@ model PreInterviewForm {
   title     String
   version   String   @unique
   sourceUrl String?
+  educationBand String @default("GENERAL")
   active    Boolean  @default(true)
   questions PreInterviewQuestion[]
   attempts  PreInterviewAttempt[]
@@ -866,6 +867,7 @@ model PreInterviewQuestion {
   responseType String   @default("LIKERT")
   options      Json?
   reverse      Boolean  @default(false)
+  motivationKey String?
   required     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
