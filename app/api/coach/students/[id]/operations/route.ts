@@ -4,11 +4,13 @@ import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { writeAudit } from '@/lib/audit';
 import { createGoogleCalendarEvent,createOutlookEvent,createZoomMeeting } from '@/lib/calendarSync';
+import { awardXp } from '@/lib/gamification';
 
 const sessionSchema=z.object({action:z.literal('session'),title:z.string().min(2),startsAt:z.string(),endsAt:z.string(),timeZone:z.string().default('Europe/Istanbul'),calendarProvider:z.enum(['LOCAL','GOOGLE','OUTLOOK']).default('LOCAL'),meetingProvider:z.enum(['NONE','GOOGLE_MEET','ZOOM']).default('NONE'),notes:z.string().optional()});
 const actionSchema=z.object({action:z.literal('coaching_action'),title:z.string().min(2),description:z.string().optional(),metricType:z.enum(['COUNT','MINUTES','PAGES','QUESTIONS']).default('COUNT'),targetValue:z.number().positive(),cadence:z.enum(['WEEKLY','MONTHLY']).default('WEEKLY'),periodStart:z.string(),periodEnd:z.string()});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
-const schema=z.discriminatedUnion('action',[sessionSchema,actionSchema,analyticSchema]);
+const sessionStatusSchema=z.object({action:z.literal('session_status'),sessionId:z.string(),status:z.enum(['SCHEDULED','COMPLETED','CANCELED'])});
+const schema=z.discriminatedUnion('action',[sessionSchema,actionSchema,analyticSchema,sessionStatusSchema]);
 
 export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
@@ -55,6 +57,14 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     }catch{syncStatus='SYNC_ERROR'}
     const row=await db.coachingSession.create({data:{coachId:user.coachProfile.id,studentId:id,title:input.title,startsAt,endsAt,timeZone:input.timeZone,calendarProvider:input.calendarProvider==='LOCAL'?null:input.calendarProvider,externalEventId,meetingProvider:input.meetingProvider==='NONE'?null:input.meetingProvider,meetingUrl,notes:input.notes||null,createdByUserId:user.id,syncStatus}});
     await writeAudit({actorUserId:user.id,action:'COACHING_SESSION_CREATE',entityType:'CoachingSession',entityId:row.id,summary:student.fullName+' için koçluk seansı oluşturuldu.',metadata:{startsAt,endsAt,syncStatus}});
+    return NextResponse.json({ok:true,row});
+  }
+
+  if(input.action==='session_status'){
+    const session=await db.coachingSession.findFirst({where:{id:input.sessionId,studentId:id,coachId:user.coachProfile.id}});
+    if(!session)return NextResponse.json({error:'Seans bulunamadı.'},{status:404});
+    const row=await db.coachingSession.update({where:{id:session.id},data:{status:input.status}});
+    if(input.status==='COMPLETED')await awardXp(id,'SESSION',session.id,80);
     return NextResponse.json({ok:true,row});
   }
 
