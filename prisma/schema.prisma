@@ -118,6 +118,7 @@ model Student {
   examAnalytics ExamAnalyticsRecord[]
   gamification StudentGamification?
   gameAttempts GameAttempt[]
+  generatedGames GameContent[]
   badges BadgeAward[]
   cohortMemberships CohortMember[]
   forumPosts ForumPost[]
@@ -699,21 +700,26 @@ model StudentGamification {
 }
 
 model GameContent {
-  id              String   @id @default(cuid())
-  gameType        String
-  examType        String?
-  subject         String
-  topic           String
-  title           String
-  payload         Json
-  difficulty      String   @default("ORTA")
-  active          Boolean  @default(true)
-  createdByUserId String?
-  attempts        GameAttempt[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  gameType         String
+  examType         String?
+  subject          String
+  topic            String
+  title            String
+  payload          Json
+  difficulty       String   @default("ORTA")
+  active           Boolean  @default(true)
+  createdByUserId  String?
+  studentId        String?
+  student          Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  generationSource String   @default("MANUAL")
+  generationKey    String?  @unique
+  attempts         GameAttempt[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([subject, topic, active])
+  @@index([studentId, active, createdAt])
 }
 
 model GameAttempt {
