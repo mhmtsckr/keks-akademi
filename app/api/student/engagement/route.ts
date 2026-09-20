@@ -49,7 +49,10 @@ export async function POST(req:Request){
     const current=Math.min(input.currentValue,row.targetValue);
     const completed=current>=row.targetValue;
     const updated=await db.coachingAction.update({where:{id:row.id},data:{currentValue:current,status:completed?'COMPLETED':'ACTIVE'}});
-    if(completed) await awardXp(user.student.id,'ACTION',row.id,60);
+    if(completed){
+      await awardXp(user.student.id,'ACTION',row.id,60);
+      await db.badgeAward.upsert({where:{studentId_badgeKey:{studentId:user.student.id,badgeKey:'FIRST_ACTION'}},create:{studentId:user.student.id,badgeKey:'FIRST_ACTION',title:'İlk Aksiyon Tamamlandı',description:'Koçluk aksiyonlarından ilkini tamamladı.'},update:{}});
+    }
     return NextResponse.json({ok:true,row:updated});
   }
 
