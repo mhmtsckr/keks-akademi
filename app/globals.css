@@ -493,3 +493,15 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .programParameterGrid span{font-size:10px;color:#788da2;line-height:1.35}
 @media(max-width:900px){.programParameterGrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.programParameterGrid{grid-template-columns:1fr}}
+
+/* KPSS / AGS official target benchmarks */
+.officialTargetPanel{display:grid;gap:12px;margin:14px 0 18px}
+.officialTargetHero{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.officialTargetHero>div,.officialTargetMetrics>div{display:grid;gap:4px;padding:12px;border-radius:12px;background:#081d34;border:1px solid rgba(255,255,255,.06)}
+.officialTargetHero span,.officialTargetMetrics span{font-size:10px;color:#74899e}
+.officialTargetHero strong{font-size:13px;color:#e7edf3}
+.officialTargetMetrics{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
+.officialTargetMetrics b{font-size:19px;color:#edc869}
+.officialNetNotice{border-color:rgba(233,185,75,.18)!important}
+@media(max-width:1100px){.officialTargetMetrics{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.officialTargetHero{grid-template-columns:1fr}.officialTargetMetrics{grid-template-columns:repeat(2,1fr)}}
