@@ -111,7 +111,7 @@ export default async function CoachPage() {
         <CoachActions/>
         <div className="card">
           <h2>Öğrenciler ({students.length})</h2>
-          <CoachStudentTable students={students}/>
+          <CoachStudentTable students={priorityStudents}/>
         </div>
       </div>
     </section>
