@@ -1,7 +1,6 @@
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { AccountLoginForm, CoachRegisterForm } from '@/app/components/AuthForms';
-import { CoachActions } from '@/app/components/CoachActions';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { CoachStudentTable } from '@/app/components/CoachStudentTable';
 import { CoachCommandCenter } from '@/app/components/CoachCommandCenter';
@@ -107,8 +106,7 @@ export default async function CoachPage() {
 
     <section className="section">
       <PortalSectionTitle eyebrow="ÖĞRENCİ YÖNETİMİ" title="Öğrencilerim" description="Bir öğrencinin adına dokunarak detaylı koç çalışma alanını açabilirsiniz."/>
-      <div className="grid" style={{gridTemplateColumns:'minmax(280px,.8fr) minmax(0,2fr)'}}>
-        <CoachActions/>
+      <div className="grid">
         <div className="card">
           <h2>Öğrenciler ({students.length})</h2>
           <CoachStudentTable students={priorityStudents}/>
