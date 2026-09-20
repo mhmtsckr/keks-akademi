@@ -76,6 +76,35 @@ export function scoreInterview(questions:Array<{id:string;dimension:string;rever
   return scores;
 }
 
+export function scoreMotivationSignals(questions:Array<{id:string;motivationKey?:string|null;reverse:boolean}>,answers:Record<string,unknown>){
+  const buckets=new Map<string,number[]>();
+  for(const q of questions){
+    if(!q.motivationKey)continue;
+    const raw=Number(answers[q.id]);
+    if(!Number.isFinite(raw))continue;
+    const v=q.reverse?6-raw:raw;
+    const arr=buckets.get(q.motivationKey)||[];arr.push(v);buckets.set(q.motivationKey,arr);
+  }
+  return Object.fromEntries([...buckets.entries()].map(([k,a])=>[k,Number((a.reduce((x,y)=>x+y,0)/a.length).toFixed(2))]));
+}
+
+function motivationSignalSupports(raw:Record<string,number>|undefined){
+  if(!raw)return [] as string[];
+  const labels:Record<string,string>={
+    order:'Net ölçütler, kontrol listesi ve kalite standardı kullan.',
+    achievement:'Görünür hedef, puan ve ilerleme göstergeleri kullan.',
+    connection:'Kısa koç geri bildirimi ve destekleyici sosyal pekiştirme kullan.',
+    meaning:'Görevin kişisel anlamını ve seçim hakkını görünür kıl.',
+    mastery:'Derin öğrenme için kesintisiz odak blokları ve ön hazırlık ver.',
+    security:'Önceden belli rutin, net beklenti ve yedek plan kullan.',
+    novelty:'Görevlerde çeşitlilik, kısa bloklar ve dönüşümlü ders kullan.',
+    autonomy:'Seçenek sun; öğrenciye kontrollü karar alanı bırak.',
+    control:'Net meydan okuma, somut hedef ve öğrenciye sorumluluk alanı ver.',
+    harmony:'Düşük baskılı başlangıç, yumuşak geçiş ve küçük ilk görev kullan.'
+  };
+  return Object.entries(raw).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>labels[k]).filter(Boolean);
+}
+
 function assessmentMotivationSupports(raw:unknown){
   if(!raw||typeof raw!=='object')return [] as string[];
   const entries=Object.entries(raw as Record<string,unknown>)
@@ -99,7 +128,7 @@ function assessmentMotivationSupports(raw:unknown){
   return [...new Set(supports)];
 }
 
-export function buildInterviewReport(scores:Record<string,number>,track:string,assessmentScores?:unknown,educationBand:EducationBand='GENERAL'){
+export function buildInterviewReport(scores:Record<string,number>,track:string,assessmentScores?:unknown,educationBand:EducationBand='GENERAL',motivationSignals?:Record<string,number>){
   const sorted=Object.entries(scores).sort((a,b)=>a[1]-b[1]);
   const weakest=sorted.slice(0,3);
   const strongest=[...sorted].reverse().slice(0,2);
@@ -114,7 +143,7 @@ export function buildInterviewReport(scores:Record<string,number>,track:string,a
     if(d==='Sınav ve Zaman Yönetimi')recommendations.push('Süreli mini denemelerle başlayıp sınav grubuna göre deneme sıklığını kademeli artır; süre ve sıra stratejisini ayrıca izle.');
     if(d==='Koçluk Bağımsızlığı')recommendations.push('İlk haftalarda daha sık kısa koç kontrolü uygula; görev tamamlama istikrarı arttıkça kontrol sıklığını azalt.');
   }
-  const motivationSupports=assessmentMotivationSupports(assessmentScores);
+  const motivationSupports=[...new Set([...motivationSignalSupports(motivationSignals),...assessmentMotivationSupports(assessmentScores)])].slice(0,5);
   const blockMinutes=(scores['Odak ve Çalışma Ortamı']||3)<2.5?25:(scores['Odak ve Çalışma Ortamı']||3)<3.5?40:55;
   const checkIn=(scores['Koçluk Bağımsızlığı']||3)<2.5?'GÜNLÜK':(scores['Koçluk Bağımsızlığı']||3)<3.5?'HAFTADA_2':'HAFTALIK';
   const taskSize=(scores['Başlama ve Süreklilik']||3)<2.5?'KÜÇÜK':(scores['Başlama ve Süreklilik']||3)<3.5?'ORTA':'NORMAL';
@@ -155,10 +184,10 @@ function bandConfig(band:EducationBand,track:string){
   return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:30,minutes:60};
 }
 
-export function buildTrackPlans(track:string,scores:Record<string,number>,start=new Date(),educationBand:EducationBand='GENERAL',assessmentScores?:unknown){
+export function buildTrackPlans(track:string,scores:Record<string,number>,start=new Date(),educationBand:EducationBand='GENERAL',assessmentScores?:unknown,motivationSignals?:Record<string,number>){
   const config=bandConfig(educationBand,track);
   const weak=Object.entries(scores).sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0]);
-  const report=buildInterviewReport(scores,track,assessmentScores,educationBand);
+  const report=buildInterviewReport(scores,track,assessmentScores,educationBand,motivationSignals);
   const p=report.programParameters;
   const daily:any[]=[];
   for(let i=0;i<28;i++){
