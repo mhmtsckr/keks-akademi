@@ -58,8 +58,16 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
       if(input.meetingProvider==='ZOOM'){
         const zoom=await db.calendarConnection.findUnique({where:{coachId_provider:{coachId:user.coachProfile.id,provider:'ZOOM'}}});
         if(zoom){const z=await createZoomMeeting(zoom,{...input,startsAt,endsAt});meetingUrl=z.meetingUrl}
+        else syncStatus='NEEDS_CONNECTION';
       }
-      if(input.calendarProvider!=='LOCAL'){
+      if(input.meetingProvider==='GOOGLE_MEET' && input.calendarProvider!=='GOOGLE'){
+        const google=await db.calendarConnection.findUnique({where:{coachId_provider:{coachId:user.coachProfile.id,provider:'GOOGLE'}}});
+        if(google){
+          const g=await createGoogleCalendarEvent(google,{...input,meetingProvider:'GOOGLE_MEET',startsAt,endsAt});
+          externalEventId=g.externalEventId;meetingUrl=g.meetingUrl||undefined;syncStatus='SYNCED';
+        }else syncStatus='NEEDS_CONNECTION';
+      }
+      if(input.calendarProvider!=='LOCAL' && !(input.calendarProvider==='GOOGLE'&&externalEventId)){
         const conn=await db.calendarConnection.findUnique({where:{coachId_provider:{coachId:user.coachProfile.id,provider:input.calendarProvider}}});
         if(conn){
           const result=input.calendarProvider==='GOOGLE'
