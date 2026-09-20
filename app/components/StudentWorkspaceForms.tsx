@@ -13,7 +13,8 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
   const [msg,setMsg]=useState('');
   async function handle(e:FormEvent<HTMLFormElement>, action:string) {
     e.preventDefault(); setMsg('');
-    const fd=new FormData(e.currentTarget);
+    const form=e.currentTarget;
+    const fd=new FormData(form);
     try {
       let body:any={action};
       if(action==='plan') body={action,title:fd.get('title'),payload:{details:fd.get('details')}};
@@ -29,7 +30,7 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
       if(action==='report') body={action,title:fd.get('title'),summary:fd.get('summary'),content:fd.get('content'),visibleToStudent:true,visibleToParent:true};
       const j=await postJson(studentId,body);
       setMsg('Kayıt eklendi.');
-      e.currentTarget.reset();
+      form.reset();
       setTimeout(()=>location.reload(),500);
     } catch(err:any) { setMsg('Hata: '+err.message); }
   }
@@ -44,13 +45,14 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
 
   async function library(e:FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg('');
-    const fd=new FormData(e.currentTarget);
+    const form=e.currentTarget;
+    const fd=new FormData(form);
     try{
       const r=await fetch('/api/coach/students/'+studentId+'/library',{method:'POST',body:fd});
       const j=await r.json();
       if(!r.ok) throw new Error(j.error||'Dosya eklenemedi.');
       setMsg('Kütüphane kaydı eklendi.');
-      e.currentTarget.reset();
+      form.reset();
       setTimeout(()=>location.reload(),500);
     }catch(err:any){setMsg('Hata: '+err.message)}
   }
