@@ -1,26 +1,28 @@
 import type { EducationBand } from '@/lib/taskEvaluation';
+import { PROFESSIONAL_BASELINE_FORMS } from '@/lib/professionalScreeningData';
 
 export type ScreeningQuestion={id:string;orderNo:number;dimension:string;tendencyKey?:string;habitKey?:string;prompt:string;reverse:boolean;kind:'TENDENCY'|'HABIT'};
-export type ScreeningForm={title:string;version:string;educationBand:EducationBand;questions:ScreeningQuestion[];disclaimer:string};
+export type ScreeningForm={title:string;version:string;educationBand:EducationBand;questions:ScreeningQuestion[];disclaimer:string;instruction:string;scale:readonly string[]};
 
 export const SCREENING_DISCLAIMER='Bu uygulama öğrencinin çalışma, motivasyon ve öz-düzenleme eğilimlerini belirlemek amacıyla hazırlanmış bir tarama aracıdır. Psikolojik tanı koymaz ve kesin kişilik tipi belirlemez. Sonuçlar; öğrenci görüşmesi, gözlem ve akademik performans verileriyle birlikte değerlendirilmelidir.';
 
-export const TENDENCY_LABELS:Record<string,string>={"1":"Tip 1 — Düzen ve Standart Odaklı","2":"Tip 2 — İlişki ve Destek Odaklı","3":"Tip 3 — Başarı ve Sonuç Odaklı","4":"Tip 4 — Özgünlük ve Anlam Odaklı","5":"Tip 5 — Analiz ve Bilgi Odaklı","6":"Tip 6 — Güven ve Plan Odaklı","7":"Tip 7 — Çeşitlilik ve Keşif Odaklı","8":"Tip 8 — Özerklik ve Meydan Okuma Odaklı","9":"Tip 9 — Sakinlik ve İstikrar Odaklı"};
+export const SCREENING_INSTRUCTION='Ders, ödev, arkadaşlık ve günlük sorumluluklarında son iki ayı düşün. Sana en çok uyan seçeneği işaretle. Doğru ya da yanlış cevap yoktur; seni en iyi anlatan seçeneği işaretle.';
+export const SCREENING_SCALE=['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'] as const;
+
+export const TENDENCY_LABELS:Record<string,string>={"1":"Düzen ve Sorumluluk","2":"Destek ve İlişki","3":"Hedef ve Başarı Yönelimi","4":"Bireysellik ve Duygusal Farkındalık","5":"Merak ve Analiz","6":"Güven ve Hazırlık","7":"Yenilik ve Esneklik","8":"Kararlılık ve Kendini Ortaya Koyma","9":"Uyum ve Sakinlik"};
+export const TENDENCY_DIMENSION_KEYS:Record<string,string>=Object.fromEntries(Object.entries(TENDENCY_LABELS).map(([key,label])=>[label,key]));
 export const TENDENCY_PROFILES:Record<string,{name:string;motivation:string;strengths:string;risks:string;tasks:string;plan:string}>={"1":{"name":"Düzen ve Standart Odaklı","motivation":"Net ölçütler, kontrol listeleri, kalite hedefi, hata azaltma ve 'bugün dünden daha doğru' yaklaşımı.","strengths":"Disiplin, sorumluluk, hata fark etme, düzen, yüksek standart.","risks":"Mükemmeliyetçilik, hata korkusu, gereğinden fazla ayrıntıda kalma.","tasks":"Kural ve yapı içeren görevler; hata analizi, dil bilgisi, matematiksel işlem, planlama ve kalite kontrol türü çalışmalar.","plan":"Her blok için 1 net hedef yaz. Blok sonunda 3 dakikalık kontrol yap. Haftada iki kez yanlış defterini gözden geçir. 'Yeterince iyi' bitirme ölçütü koy."},"2":{"name":"İlişki ve Destek Odaklı","motivation":"Görülmek, katkı sağlamak, düzenli geri bildirim, birine anlatarak öğrenmek ve hesap verebilirlik.","strengths":"İletişim, empati, iş birliği, anlatma, sosyal destek oluşturma.","risks":"Başkalarını memnun etmeye fazla odaklanma, kendi hedefini geri plana atma.","tasks":"Anlatma, sunum, grup görevi, öğretme-öğrenme, sözel ifade ve iş birliği gerektiren çalışmalar.","plan":"Her gün bir konuyu 5 dakika birine anlat. Haftada 1 koç/veli kontrolü kullan. Çalışma hedefini başkasının beklentisinden değil kendi hedefinden türet."},"3":{"name":"Başarı ve Sonuç Odaklı","motivation":"Somut hedef, puan/net, süre, tamamlanan görevler, görünür ilerleme ve performans göstergeleri.","strengths":"Hedefe yönelme, hız, verimlilik, rekabet gücü, sonuç üretme.","risks":"Sadece puana odaklanma, yüzeysel öğrenme, başarısızlıkta motivasyon düşüşü.","tasks":"Zamanlı görevler, sınav performansı, sunum, yarışma, hedefli proje ve sonuç ölçümü olan çalışmalar.","plan":"Haftalık 3 ölçü belirle: doğru oranı, net/soru sayısı, tamamlanan konu. Hız kadar kavram kontrolü de yap. Her denemeden sonra tek bir gelişim hedefi seç."},"4":{"name":"Özgünlük ve Anlam Odaklı","motivation":"Kişisel anlam, özgün ifade, seçme hakkı, estetik/yaratıcı araçlar ve konunun hayatla bağlantısı.","strengths":"Yaratıcılık, özgün bakış, güçlü ifade, anlam kurma, estetik duyarlılık.","risks":"Ruh hâline bağlı çalışma, rutinden kopma, kendini başkalarıyla kıyaslama.","tasks":"Yaratıcı yazma, yorumlama, tasarım, edebiyat, sanat, proje üretimi ve açık uçlu problem görevleri.","plan":"Konuyu kişisel örnekle ilişkilendir. Renk/kavram haritası kullan ama süre sınırı koy. Ruh hâli beklemeden 5 dakikalık başlama kuralı uygula."},"5":{"name":"Analiz ve Bilgi Odaklı","motivation":"Merak, derinlik, bağımsız çalışma, sistemi çözme, uzmanlaşma ve zihinsel meydan okuma.","strengths":"Analiz, araştırma, kavramsal düşünme, problem çözme, bağımsız öğrenme.","risks":"Aşırı hazırlık, uygulamayı erteleme, sosyal geri bildirimden uzak kalma.","tasks":"Fen, matematik, kodlama, araştırma, veri analizi, strateji ve derin kavramsal çalışma türleri.","plan":"Önce 15–20 dakika öğren, sonra mutlaka uygulama sorusu çöz. 'Bilgi toplama' ile 'üretme' sürelerini eşitle. Her blok sonunda öğrendiğini 3 cümlede özetle."},"6":{"name":"Güven ve Plan Odaklı","motivation":"Öngörülebilir plan, net beklenti, prova, güvenilir rehber, kontrol listesi ve alternatif senaryo.","strengths":"Hazırlık, sadakat, risk fark etme, ayrıntı, planlı ilerleme.","risks":"Aşırı endişe, karar verememe, güvence arama, olumsuz senaryoya takılma.","tasks":"Planlama, düzenli sınav hazırlığı, ekip sorumluluğu, süreç takibi ve ayrıntı kontrolü gerektiren çalışmalar.","plan":"Haftalık sabit ders saatleri oluştur. Her sınav için 'hazırlık listesi' kullan. Kaygı yükselirse yeni kaynak aramak yerine mevcut plana dön. Her gün küçük tamamlanabilir hedef seç."},"7":{"name":"Çeşitlilik ve Keşif Odaklı","motivation":"Yenilik, kısa hedefler, çeşitlilik, oyunlaştırma, seçim hakkı ve hızlı geri bildirim.","strengths":"Fikir üretme, merak, esneklik, enerji, bağlantılar kurma.","risks":"Çabuk sıkılma, başladığını bitirmeme, zor kısımda başka işe geçme.","tasks":"Beyin fırtınası, dil pratiği, proje, sunum, keşif, girişimcilik ve farklı kaynakları birleştirme görevleri.","plan":"2–3 farklı dersi dönüşümlü çalış. Her blok bitmeden konu değiştirme. 'Başla-bitir-ödül' döngüsü kullan. Günün sonunda yalnızca biten işleri puanla."},"8":{"name":"Özerklik ve Meydan Okuma Odaklı","motivation":"Kontrol alanı, net meydan okuma, doğrudan geri bildirim, zor hedef ve seçim özgürlüğü.","strengths":"Kararlılık, liderlik, cesaret, hızlı karar, baskıda hareket.","risks":"Sabırsızlık, yardımı reddetme, gereksiz çatışma, ayrıntıyı atlama.","tasks":"Tartışma, liderlik, spor/rekabet, zor problem, proje yönetimi ve karar gerektiren görevler.","plan":"Her gün 'en zor görev' ile başla. Hedefi kendin seç ama ölçütü önceden belirle. Blok sonunda ayrıntı kontrolü yap. Haftada bir dış geri bildirim al."},"9":{"name":"Sakinlik ve İstikrar Odaklı","motivation":"Düşük çatışma, sakin başlangıç, küçük adımlar, düzenli rutin ve destekleyici çevre.","strengths":"Sabır, uyum, istikrar, dinleme, uzun vadede sürdürülebilirlik.","risks":"Erteleme, öncelikleri karıştırma, pasif kalma, kolay işe sığınma.","tasks":"Düzenli tekrar, uzun soluklu proje, arabuluculuk, ekip uyumu ve sakin konsantrasyon gerektiren çalışmalar.","plan":"5 dakikalık başlama ritüeli kullan. İlk blokta en önemli tek işi yap. Telefonu başka odada tut. Gün sonunda 'yarına ilk adım' notu bırak."}};
 
 
-const MASTER_TENDENCY_PROMPTS=["Bir işi doğru yaptığımı görmek beni mutlu eder.","Birinin yardıma ihtiyacı olduğunu çabuk fark ederim.","Başardığım bir şeyin fark edilmesini isterim.","Duygularımı resimle, yazıyla veya konuşarak anlatmayı severim.","Bir şeyin nasıl çalıştığını merak ederim.","Yeni bir işe başlamadan önce ne yapacağımı bilmek isterim.","Yeni bir etkinlik denemek beni heyecanlandırır.","Haksızlık gördüğümde itiraz ederim.","Çevremdekilerin iyi anlaşması beni rahatlatır.","Yaptığım işte hata görürsem düzeltmek isterim.","Bir arkadaşım üzgünse yanında olmak isterim.","Kendime bir hedef koyduğumda ona ulaşmak için uğraşırım.","Bir işi kendime özgü bir şekilde yapmayı severim.","Bir konuyu anlamak için soru sorarım.","Bilmediğim bir durumda güvendiğim birine danışırım.","Aynı işi uzun süre yapınca başka bir şey denemek isterim.","Bir grupta ne düşündüğümü açıkça söylerim.","Tartışma çıktığında ortamın sakinleşmesini isterim.","Kuralların herkese aynı uygulanmasını isterim.","Sevdiğim insanların neye ihtiyacı olduğunu düşünürüm.","Bir işi bitirince yeni bir hedef belirlemek isterim.","Kendimi başkalarından farklı hissettiğim zamanlar olur.","Merak ettiğim bir şeyi kendi başıma araştırmayı severim.","Plan değişince bundan sonra ne olacağını öğrenmek isterim.","Yapılabilecek farklı etkinlikler düşünmek hoşuma gider.","Kendi kararımı kendim vermek isterim.","Karar verirken diğer insanların isteklerini de dikkate alırım.","Küçük ayrıntıların doğru olması benim için önemlidir.","Birine faydalı olduğumu hissetmek beni sevindirir.","İlerlediğimi görebildiğim işlerde daha istekli olurum.","Benim için anlamı olan şeylere güçlü biçimde bağlanırım.","Bir işe katılmadan önce bir süre gözlem yapmayı severim.","Verilen bir sözün tutulup tutulmayacağını önemserim.","Bir iş sıkıcı gelirse onu daha eğlenceli yapmanın yolunu ararım.","Gerektiğinde grubun sorumluluğunu üstlenirim.","Kendi isteğimi söylemeden önce başkalarının ne istediğini dinlerim.","İşimi bitirdikten sonra yanlış kalmış mı diye kontrol ederim.","Bir arkadaşımın zorlandığını görünce yardım etmeyi düşünürüm.","Başarılarımın görülmesi çalışma isteğimi artırır.","Kendimi anlatan bir şey ortaya koymak hoşuma gider.","Bir şeyin arkasındaki nedeni öğrenmek isterim.","Yeni bir görevin adımlarını önceden öğrenmek beni rahatlatır.","Yeni seçenekler keşfetmek bana enerji verir.","Adil bulmadığım bir kararı sorgularım.","İnsanlar arasında anlaşmazlık olduğunda ortak bir yol ararım.","Beklediğim kadar iyi yapamadığımda kendime sert davranabilirim.","Beklenti karşılanmadığında kendime sert davranabilirim.","Başkaları benden daha hızlı ilerlediğinde bunu önemserim.","Duygularımın başkaları tarafından anlaşılmasını isterim.","Gürültüden uzak, kendi başıma düşünmek bana iyi gelir.","Bir işte neyin ters gidebileceğini önceden düşünürüm.","Başladığım bir iş bitmeden başka bir işe heveslenebilirim.","Birinin beni gereğinden fazla yönlendirmesinden hoşlanmam.","Anlaşmazlık çıkmaması için bazen kendi isteğimi söylemem.","“Daha iyisini yapabilirdim” diye sık düşünürüm.","Yakınlarımın sorunlarını kendi işlerimin önüne koyabilirim.","Kendimi değerlendirirken yaptığım işlerin sonuçlarına çok bakarım.","Bir yaşantının bende bıraktığı duyguyu uzun süre düşünürüm.","Görüş belirtmeden önce yeterince bilgi edinmek isterim.","Önemli bir karar verirken farklı kişilerden güvence arayabilirim.","Gelecekte yapabileceğim güzel şeyleri düşünmek beni motive eder.","Baskı altında kaldığımda daha kararlı ve doğrudan konuşabilirim.","Yapılacak çok şey olduğunda nereden başlayacağıma karar vermekte zorlanabilirim.","Bir işi teslim etmeden önce küçük kusurlarını da gidermek isterim.","İnsanların bana ihtiyaç duyması kendimi değerli hissettirebilir.","Çevremde başarılı görünmek benim için önemlidir.","Bir çalışmanın beni yansıtması, sıradan biçimde tamamlanmasından daha önemlidir.","Zamanımı ve enerjimi kimlerle paylaşacağımı dikkatle seçerim.","Belirsiz bir durumda yedek bir planım olmasını isterim.","Seçeneklerimin kısıtlanması beni rahatsız eder.","Başkalarının söylemekten çekindiği bir görüşü dile getirebilirim.","Bir kararın farklı taraflarını anlamaya çalışırım.","Bir grubun işinde yanlış gördüğümde düzeltme ihtiyacı hissederim.","Kendi ihtiyacımı söylemektense başkasının ihtiyacını karşılamak bana daha kolay gelebilir.","Bir hedefe ulaşmak için yöntemimi değiştirebilirim.","Kendimi başkalarıyla karşılaştırdığımda bende eksik olanlara odaklanabilirim.","Bir konuyu derinlemesine anlamak, hızlıca bitirmekten daha tatmin edicidir.","Güvendiğim kişilerin tutarlı davranması benim için çok önemlidir.","Zor bir durumun içindeki olumlu ihtimalleri ararım.","Yakınlarımı korumam gerektiğini hissettiğimde öne çıkarım.","Bir konuda farklı düşündüğüm hâlde uyum sağlamak için sessiz kalabilirim.","Sorumluluğumu yerine getirmediğimi düşünürsem rahat edemem.","Yardımım fark edilmediğinde kırılabilirim.","Başarısız görünme ihtimali beni gereğinden fazla zorlayabilir.","Bir hedefin benim için kişisel bir anlam taşımasını isterim.","Beklenmedik sosyal talepler karşısında yalnız kalmak isteyebilirim.","Karar verdikten sonra da doğru karar olup olmadığını tekrar sorgulayabilirim.","Keyif vermeyen bir işi başka etkinliklere yönelerek erteleyebilirim.","Bir sorun çıktığında kontrolü ele almak isterim.","Kendi önceliklerim yerine çevremdeki insanların gündemine uyabilirim.","Doğru olduğuna inandığım bir ilkeyi korumak için rahatlığımdan vazgeçebilirim.","İnsanlarla yakınlık kurarken çoğu zaman destek veren kişi olurum.","Emeğimin somut bir başarıya dönüşmesini görmek isterim.","Kendimi anlaşılmış hissetmediğimde içime çekilebilirim.","Bir sorunu çözmek için önce kavramları ve bilgileri düzenlerim.","Bir öneriyi kabul etmeden önce risklerini sorgularım.","Aynı hedefe ulaşmak için birden fazla yol düşünmek hoşuma gider.","Kararlarımı etkileyen kişilerin benimle açık konuşmasını beklerim.","İnsanlar arasında köprü kurmak bana doğal gelir.","Bir işi “yeterince iyi” bulup bırakmakta zorlanabilirim.","Başkalarının beklentilerini karşılarken kendi sınırlarımı ihmal edebilirim.","Başarılı olmak için kendimi olduğumdan daha güçlü göstermeye çalışabilirim.","Duygusal olarak etkilenmediğim bir hedefe bağlanmakta zorlanabilirim.","Hazırlık ve araştırmayı uzattığım için uygulamaya geçmem gecikebilir.","Belirsizlik azaldığında harekete geçmem kolaylaşır.","Yeni bir ihtimalin heyecanıyla mevcut planımı değiştirmek isteyebilirim.","Yardıma ihtiyaç duyduğumu söylemek bana zor gelebilir.","Bir kararın arkasında durmak yerine kararı erteleyerek rahatlamaya çalışabilirim."] as const;
-const MASTER_HABITS=[{"key":"Planlama","prompt":"Çalışmaya başlamadan önce ne yapacağımı seçtim."},{"key":"Başlama","prompt":"Çalışmaya, başlamayı düşündüğüm zamanda başladım."},{"key":"Odak","prompt":"Çalışırken dikkatimi dağıtan şeyleri kendimden uzaklaştırdım."},{"key":"Görev Tamamlama","prompt":"Planladığım küçük çalışma bölümünü tamamladım."},{"key":"Aktif Hatırlama","prompt":"Kitabı veya notu kapatıp öğrendiğimi kendi sözlerimle anlattım."},{"key":"Aralıklı Tekrar","prompt":"Daha önce öğrendiğim bir konuya başka bir gün yeniden baktım."},{"key":"Soru Uygulama","prompt":"Örnek çözümü gördükten sonra benzer bir soruyu kendim denedim."},{"key":"Hata Analizi","prompt":"Yanlış yaptığımda neden yanlış yaptığımı araştırdım."},{"key":"Yardım İsteme","prompt":"Takıldığımda nerede zorlandığımı söyleyerek yardım istedim."},{"key":"Öz İzleme","prompt":"Çalışmam bitince ne yaptığımı işaretledim veya yazdım."}] as const;
-
-const TENDENCY_COUNTS:Record<EducationBand,number>={
-  ILKOKUL_1_2:27,
-  ILKOKUL_3_4:45,
-  ORTAOKUL_5_6:63,
-  ORTAOKUL_7_8:81,
-  LISE_9_10:90,
-  LISE_11_12:108,
-  YETISKIN_MEZUN:108,
-  GENERAL:90
+const FORM_DATA_KEYS:Record<EducationBand,string>={
+  ILKOKUL_1_2:'ILKOKUL_1_2',
+  ILKOKUL_3_4:'ILKOKUL_3_4',
+  ORTAOKUL_5_6:'ORTAOKUL_5_6',
+  ORTAOKUL_7_8:'ORTAOKUL_7_8',
+  LISE_9_10:'LISE_9_10',
+  LISE_11_12:'LISE_11_12',
+  YETISKIN_MEZUN:'YETISKIN_MEZUN',
+  GENERAL:'LISE_9_10'
 };
 
 export const SCREENING_FORM_LABELS:Record<EducationBand,string>={
@@ -35,34 +37,32 @@ export const SCREENING_FORM_LABELS:Record<EducationBand,string>={
 };
 
 export function getScreeningForm(band:EducationBand):ScreeningForm{
-  const tendencyCount=TENDENCY_COUNTS[band]??90;
-  const tendency=MASTER_TENDENCY_PROMPTS.slice(0,tendencyCount).map((prompt,index)=>{
-    const tendencyKey=String(index%9+1);
+  const dataKey=FORM_DATA_KEYS[band]||'LISE_9_10';
+  const source=PROFESSIONAL_BASELINE_FORMS[dataKey];
+  if(!source)throw new Error('SCREENING_FORM_NOT_FOUND:'+band);
+
+  const questions:ScreeningQuestion[]=source.questions.map(row=>{
+    const kind=row.section==='Kişilik/Eğilim'?'TENDENCY' as const:'HABIT' as const;
     return {
-      id:`KEKS-PDF-V1-${band}-${index+1}`,
-      orderNo:index+1,
-      dimension:TENDENCY_LABELS[tendencyKey],
-      tendencyKey,
-      prompt,
-      reverse:false,
-      kind:'TENDENCY' as const
+      id:`KEKS-PRO-V1-${band}-${row.orderNo}`,
+      orderNo:row.orderNo,
+      dimension:row.dimension,
+      tendencyKey:kind==='TENDENCY'?TENDENCY_DIMENSION_KEYS[row.dimension]:undefined,
+      habitKey:kind==='HABIT'?row.dimension:undefined,
+      prompt:row.prompt,
+      reverse:row.reverse,
+      kind
     };
   });
-  const habitRows=MASTER_HABITS.map((item,index)=>({
-    id:`KEKS-PDF-V1-${band}-${tendencyCount+index+1}`,
-    orderNo:tendencyCount+index+1,
-    dimension:'Çalışma Alışkanlığı — '+item.key,
-    habitKey:item.key,
-    prompt:item.prompt,
-    reverse:false,
-    kind:'HABIT' as const
-  }));
+
   return {
     title:'KEKS – Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması',
-    version:`KEKS_PDF_V1_${band}`,
+    version:`KEKS_PRO_SERIES_V1_BASELINE_${band}`,
     educationBand:band,
-    questions:[...tendency,...habitRows],
-    disclaimer:SCREENING_DISCLAIMER
+    questions,
+    disclaimer:SCREENING_DISCLAIMER,
+    instruction:SCREENING_INSTRUCTION,
+    scale:SCREENING_SCALE
   };
 }
 
