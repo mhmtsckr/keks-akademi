@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/meb-games",
+      "schedule": "0 4 * * *"
+    }
+  ]
+}

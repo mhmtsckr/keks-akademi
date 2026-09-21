@@ -8,7 +8,7 @@ import { writeAudit } from '@/lib/audit';
 const item=z.object({
  examType:z.string().min(2),subject:z.string().min(2),topic:z.string().min(2),prompt:z.string().min(5),
  options:z.record(z.string(),z.string()),correctAnswer:z.string().min(1),explanation:z.string().optional(),
- sourceKind:z.enum(['ORIGINAL','LICENSED','OFFICIAL_LINK']).default('ORIGINAL'),sourceYear:z.number().int().optional(),officialSourceUrl:z.string().url().optional()
+ sourceKind:z.enum(['ORIGINAL','LICENSED','OFFICIAL_LINK','MEB_TEXTBOOK','MEB_TYMM','MEB_OFFICIAL']).default('ORIGINAL'),sourceYear:z.number().int().optional(),officialSourceUrl:z.string().url().optional()
 });
 const schema=z.object({items:z.array(item).min(1).max(500)});
 
