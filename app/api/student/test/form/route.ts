@@ -57,6 +57,8 @@ async function GET__handler(){
       version:form.version,
       educationBand:form.educationBand,
       disclaimer:form.disclaimer,
+      instruction:form.instruction,
+      scale:form.scale,
       questionCount:form.questions.length,
       questions:form.questions.map(q=>({
         id:q.id,orderNo:q.orderNo,prompt:q.prompt,kind:q.kind,dimension:q.dimension
