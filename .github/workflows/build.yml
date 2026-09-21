@@ -29,6 +29,33 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run test:coverage
 
+  integration:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://keks:keks@localhost:5433/keks_test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: keks
+          POSTGRES_PASSWORD: keks
+          POSTGRES_DB: keks_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U keks -d keks_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run test:integration
+
   build:
     runs-on: ubuntu-latest
     steps:

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   // tsconfig.json'daki "@/*" takma adı Vite tarafından doğrudan okunur.
@@ -7,6 +7,8 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./test/setup.ts'],
     include: ['lib/**/*.test.ts', 'app/**/*.test.ts', 'test/**/*.test.ts'],
+    // Entegrasyon testleri gercek Postgres ister; kendi konfigurasyonuyla calisir.
+    exclude: [...configDefaults.exclude, 'test/integration/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

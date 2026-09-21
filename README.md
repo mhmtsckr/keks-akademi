@@ -23,6 +23,25 @@ npx prisma migrate dev --name init
 npm run dev
 ```
 
+## Testler
+
+```bash
+npm test              # birim testleri, veritabanı gerektirmez
+npm run test:coverage # kapsam raporu ve eşik kontrolü
+```
+
+Entegrasyon testleri gerçek bir Postgres ister; transaction geri alması ve
+eşzamanlılık gibi yalnızca gerçek veritabanının kanıtlayabileceği davranışları
+doğrular:
+
+```bash
+docker compose -f docker-compose.test.yml up -d
+DATABASE_URL="postgresql://keks:keks@localhost:5433/keks_test" npm run test:integration
+```
+
+Testler tüm tabloları boşaltır; bu yüzden hedef veritabanının adında `test`
+geçmezse çalışmayı reddederler.
+
 ## Güvenlik
 
 Gerçek test soruları, veritabanı parolaları, PayTR anahtarları ve e-posta API anahtarları public repoya commit edilmez.
