@@ -6,6 +6,7 @@ export function AdminAssessmentWorkflow(){
   const [data,setData]=useState<any>(null);
   const [busy,setBusy]=useState('');
   const [msg,setMsg]=useState('');
+  const [previewAnswers,setPreviewAnswers]=useState<Record<string,number>>({});
 
   async function load(){
     const r=await fetch('/api/admin/workflow',{cache:'no-store'});
@@ -39,18 +40,45 @@ export function AdminAssessmentWorkflow(){
     <div className="card">
       <div className="moduleEyebrow">KEKS TEST KÜTÜPHANESİ</div>
       <h2>Eğitim Düzeyine Göre Eğilim Taraması Formları</h2>
-      <p className="muted">Yönetici, öğrenci çözümünden bağımsız olarak sistemde kullanılan tüm tarama formlarını ve soru metinlerini burada görebilir.</p>
+      <p className="muted">Formlar PDF olarak açılmaz. Yönetici her eğitim düzeyindeki formu doğrudan ekranda 1–5 seçeneklerinden işaretleyerek inceleyebilir. Bu alan önizlemedir; yapılan işaretlemeler öğrenci sonucu olarak kaydedilmez.</p>
       <div className="stack">
-        {(data.forms||[]).map((form:any)=><details key={form.educationBand}>
-          <summary><strong>{form.label} · {form.questionCount} soru</strong> <span className="muted">· {form.version}</span></summary>
-          <div className="notice" style={{marginTop:10}}><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
-          <div className="interviewAnswers">
-            {(form.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}>
-              <div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div>
-              <p>{q.kind==='HABIT'?'Çalışma alışkanlığı':'Eğilim maddesi'}</p>
-            </div>)}
-          </div>
-        </details>)}
+        {(data.forms||[]).map((form:any)=>{
+          const answered=(form.questions||[]).filter((q:any)=>previewAnswers[q.id]!=null).length;
+          return <details key={form.educationBand}>
+            <summary><strong>{form.label} · {form.questionCount} soru</strong> <span className="muted">· İşaretlemeli form · {answered}/{form.questionCount} işaretlendi</span></summary>
+            <div className="notice" style={{marginTop:10}}><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
+            <div className="row" style={{justifyContent:'space-between',alignItems:'center',margin:'12px 0'}}>
+              <span className="pill">{answered}/{form.questionCount} işaretlendi</span>
+              <button className="btn" type="button" onClick={()=>{
+                const ids=new Set((form.questions||[]).map((q:any)=>q.id));
+                setPreviewAnswers(prev=>Object.fromEntries(Object.entries(prev).filter(([id])=>!ids.has(id))));
+              }}>İşaretlemeleri Temizle</button>
+            </div>
+            <div className="stack">
+              {(form.questions||[]).map((q:any)=><div className="preInterviewQuestion" key={q.id}>
+                <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
+                <div style={{flex:1}}>
+                  <strong>{q.prompt}</strong>
+                  <div className="likertRow">
+                    {[1,2,3,4,5].map(n=><label key={n} title={q.kind==='HABIT'?['Hiçbir zaman','Nadiren','Bazen','Çoğu zaman','Her zaman'][n-1]:['Bana hiç benzemiyor','Bana az benziyor','Kısmen benziyor','Bana oldukça benziyor','Bana çok benziyor'][n-1]}>
+                      <input
+                        type="radio"
+                        name={'admin-preview-'+q.id}
+                        value={n}
+                        checked={previewAnswers[q.id]===n}
+                        onChange={()=>setPreviewAnswers(a=>({...a,[q.id]:n}))}
+                      />
+                      <span>{n}</span>
+                    </label>)}
+                  </div>
+                  <div className="muted" style={{fontSize:12,marginTop:4}}>
+                    {q.kind==='HABIT'?'1 Hiçbir zaman · 3 Bazen · 5 Her zaman':'1 Hiç benzemiyor · 3 Kısmen · 5 Çok benziyor'}
+                  </div>
+                </div>
+              </div>)}
+            </div>
+          </details>;
+        })}
       </div>
     </div>
 
