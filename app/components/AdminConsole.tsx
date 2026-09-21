@@ -40,6 +40,8 @@ export function AdminConsole(){
   const [health,setHealth]=useState<any>(null);
   const [logs,setLogs]=useState<any[]>([]);
   const [auditQ,setAuditQ]=useState('');
+  const [gmailAppPassword,setGmailAppPassword]=useState('');
+  const [gmailBusy,setGmailBusy]=useState(false);
 
   async function loadOverview(){
     const j=await fetch('/api/admin/dashboard').then(r=>r.json());
@@ -116,6 +118,22 @@ export function AdminConsole(){
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Kod üretilemedi.'));return}
     setMsg('Yeni KEKS kodu: '+j.code);await loadPayments();
+  }
+
+  async function connectGmail(){
+    setMsg('');setGmailBusy(true);
+    try{
+      const r=await fetch('/api/admin/email-config',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({appPassword:gmailAppPassword})
+      });
+      const j=await r.json();
+      if(!r.ok){setMsg('Hata: '+(j.error||'Gmail bağlantısı kurulamadı.'));return}
+      setGmailAppPassword('');
+      setMsg(j.message||'Gmail bağlantısı kuruldu.');
+      await loadSecurity();
+    }finally{setGmailBusy(false)}
   }
 
   const pendingUsers=useMemo(()=>users.filter(x=>x.status==='PENDING').length,[users]);
@@ -234,11 +252,26 @@ export function AdminConsole(){
         <HealthCard label="Neon Veritabanı" ok={health.database==='OK'} detail={health.database}/>
         <HealthCard label="Kimlik Doğrulama" ok={health.authSecret} detail={health.authSecret?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="PayTR" ok={health.paytr} detail={health.paytr?'Yapılandırıldı':'Eksik'}/>
-        <HealthCard label="E-posta" ok={health.emailConfigured} detail={health.resendAddress||'keksakademi@gmail.com'}/>
-        <HealthCard label="Resend Gönderimi" ok={health.resend} detail={health.resend?'Gönderim hazır':'API anahtarı bekleniyor'}/>
+        <HealthCard label="Kayıt E-postası / Gmail" ok={health.gmail} detail={health.gmail?(health.gmailAddress||'keksakademi@gmail.com'):'Bağlantı bekleniyor'}/>
+        <HealthCard label="Resend / Rapor E-postası" ok={health.resend} detail={health.resend?'Gönderim hazır':'API anahtarı bekleniyor'}/>
         <HealthCard label="Uygulama URL" ok={health.appUrl} detail={health.appUrl?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="Son 24 saat audit" ok={true} detail={String(health.recentAudit)+' kayıt'}/>
       </div>}
+      <div className="card" style={{marginBottom:16}}>
+        <div className="moduleEyebrow">ÖĞRENCİ KAYIT E-POSTASI</div>
+        <h3>keksakademi@gmail.com Gönderici Bağlantısı</h3>
+        <p className="muted">Öğrenci kayıt olduğunda öğrenci kodu, 1 yıl geçerli giriş anahtarı ve son geçerlilik tarihi doğrudan bu Gmail hesabından kayıt sırasında girilen Gmail adresine otomatik gönderilir.</p>
+        {health?.gmail
+          ? <div className="notice"><strong>Bağlı:</strong> {health.gmailAddress||'keksakademi@gmail.com'} · Otomatik kayıt e-postaları aktif.</div>
+          : <div className="notice">Google hesabında 2 Adımlı Doğrulamayı açıp KEKS Akademi için 16 karakterli bir Uygulama Şifresi oluşturun. Şifre yalnızca güvenli, şifrelenmiş biçimde saklanır.</div>}
+        <div className="row" style={{alignItems:'end',marginTop:12}}>
+          <div className="field" style={{flex:1,minWidth:240}}>
+            <label>Google Uygulama Şifresi</label>
+            <input type="password" value={gmailAppPassword} onChange={e=>setGmailAppPassword(e.target.value)} placeholder="16 karakterli uygulama şifresi" autoComplete="new-password"/>
+          </div>
+          <button className="btn primary" onClick={connectGmail} disabled={gmailBusy||gmailAppPassword.replace(/\s+/g,'').length!==16}>{gmailBusy?'Bağlantı test ediliyor…':'Gmail’i Bağla ve Test Et'}</button>
+        </div>
+      </div>
       <div className="card adminFilterBar"><div className="field"><label>İşlem geçmişinde ara</label><input value={auditQ} onChange={e=>setAuditQ(e.target.value)} placeholder="Açıklama veya kullanıcı adı"/></div><button className="btn primary" onClick={loadSecurity}>Ara</button></div>
       <div className="card adminAuditCard"><h3>İşlem Geçmişi</h3>{logs.length===0?<p className="muted">Henüz kayıt yok.</p>:<div className="adminAuditList">{logs.map(l=><div className="adminAuditRow" key={l.id}><span className="adminAuditDot"/><div><strong>{l.summary}</strong><span>{l.actor?.name||'Sistem'}{l.actor?.email?' · '+l.actor.email:''} · {dt(l.createdAt)}</span></div></div>)}</div>}</div>
     </section>}
