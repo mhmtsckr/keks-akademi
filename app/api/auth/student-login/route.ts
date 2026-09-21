@@ -19,6 +19,12 @@ async function POST__handler(req: Request) {
   if (!student || !(await verifySecret(input.accessKey, student.accessKeyHash))) {
     return NextResponse.json({ error: 'Öğrenci kodu veya giriş anahtarı hatalı.' }, { status: 401 });
   }
+  if (student.accessKeyExpiresAt && student.accessKeyExpiresAt.getTime() <= Date.now()) {
+    return NextResponse.json({
+      error: 'Giriş anahtarınızın 1 yıllık geçerlilik süresi dolmuştur. Yeni giriş anahtarı için KEKS Akademi yöneticisiyle iletişime geçin.',
+      code: 'ACCESS_KEY_EXPIRED'
+    }, { status: 403 });
+  }
 
   let user = student.user;
   if (!user) {
