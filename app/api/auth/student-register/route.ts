@@ -40,6 +40,8 @@ export async function POST(req:Request){
 
   const studentCode=await uniqueStudentCode();
   const accessKey=randomCode('STD');
+  const accessKeyExpiresAt=new Date();
+  accessKeyExpiresAt.setUTCFullYear(accessKeyExpiresAt.getUTCFullYear()+1);
   const monthlyCode=randomCode('KEKS');
 
   const created=await db.$transaction(async tx=>{
@@ -52,6 +54,7 @@ export async function POST(req:Request){
         studentCode,
         accessKeyHash:await hashSecret(accessKey),
         accessKeyCiphertext:encryptPrivateCode(accessKey),
+        accessKeyExpiresAt,
         credentialsDeliveryStatus:'PENDING',
         credentialEmailAttempts:0,
         fullName:input.fullName,
@@ -82,6 +85,7 @@ export async function POST(req:Request){
       studentName:input.fullName,
       studentCode,
       accessKey,
+      accessKeyExpiresAt,
       coachName:coach.user.name
     });
     mailSent=!Boolean(mail?.skipped||mail?.error);
@@ -113,7 +117,7 @@ export async function POST(req:Request){
     ok:true,
     emailStatus:mailSent?'SENT':'PENDING',
     message:mailSent
-      ? 'Başvurunuz alınmıştır. Öğrenci kodunuz ve giriş anahtarınız Gmail adresinize gönderildi. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.'
+      ? 'Başvurunuz alınmıştır. Öğrenci kodunuz ve 1 yıl geçerli giriş anahtarınız Gmail adresinize gönderildi. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.'
       : 'Başvurunuz alınmıştır ve seçtiğiniz koça bağlandınız. Gmail gönderimi şu anda bekliyor; bilgileriniz sistemde güvenli biçimde saklandı ve tekrar gönderilebilir.'
   });
 }
