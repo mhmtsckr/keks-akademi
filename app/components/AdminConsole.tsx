@@ -179,7 +179,12 @@ export function AdminConsole(){
         <tbody>{users.map(u=><tr key={u.id}>
           <td><strong>{u.name}</strong><div className="muted">{u.email||'E-posta yok'} · {dt(u.createdAt)}</div></td>
           <td><span className="pill">{u.role}</span></td>
-          <td>{u.student?<>Kod {u.student.studentCode}<div className="muted">{u.student.gradeLevel||'—'}{u.student.coach?.user?.name?' · Koç '+u.student.coach.user.name:''}</div></>:u.coachProfile?u.coachProfile._count.students+' öğrenci':u.parentProfile?'Öğrenci: '+u.parentProfile.student.fullName:'—'}</td>
+          <td>{u.student?<>
+            <strong>Kod {u.student.studentCode}</strong>
+            <div className="muted">{u.student.gradeLevel||'—'}{u.student.coach?.user?.name?' · Koç '+u.student.coach.user.name:''}</div>
+            <div style={{marginTop:8}}><span className="muted">Giriş anahtarı</span><br/>{u.student.accessKey?<code className="adminPrivateCode">{u.student.accessKey}</code>:<span className="muted">Eski kayıt · şifreli kopya yok</span>}</div>
+            <div className="muted">{u.student.credentialsDeliveryStatus==='SENT'?'E-posta gönderildi':'E-posta bekliyor'}{u.student.credentialsEmailedAt?' · '+dt(u.student.credentialsEmailedAt):''}</div>
+          </>:u.coachProfile?u.coachProfile._count.students+' öğrenci':u.parentProfile?'Öğrenci: '+u.parentProfile.student.fullName:'—'}</td>
           <td><span className={'adminStatus '+u.status.toLowerCase()}>{u.status}</span></td>
           <td><div className="row"><button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button><button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button><button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al</button></div></td>
         </tr>)}</tbody></table>

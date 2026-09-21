@@ -10,19 +10,86 @@ function Message({value}:{value:string}) {
 
 export function StudentLoginForm() {
   const [msg,setMsg]=useState('');
+  const [studentCode,setStudentCode]=useState('');
+  const [accessKey,setAccessKey]=useState('');
+  const [remember,setRemember]=useState(false);
+  const [forgotOpen,setForgotOpen]=useState(false);
+  const [forgotMsg,setForgotMsg]=useState('');
+  const [forgotBusy,setForgotBusy]=useState(false);
+
+  useEffect(()=>{
+    try{
+      const raw=localStorage.getItem('keks.studentLogin.v1');
+      if(!raw)return;
+      const saved=JSON.parse(raw);
+      if(typeof saved?.studentCode==='string'&&typeof saved?.accessKey==='string'){
+        setStudentCode(saved.studentCode);
+        setAccessKey(saved.accessKey);
+        setRemember(true);
+      }
+    }catch{
+      localStorage.removeItem('keks.studentLogin.v1');
+    }
+  },[]);
+
   async function submit(e:FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg('');
-    const fd=new FormData(e.currentTarget);
-    const r=await fetch('/api/auth/student-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({studentCode:fd.get('studentCode'),accessKey:fd.get('accessKey')})});
+    const r=await fetch('/api/auth/student-login',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({studentCode,accessKey})
+    });
     const j=await r.json();
     if(!r.ok) return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
+    try{
+      if(remember)localStorage.setItem('keks.studentLogin.v1',JSON.stringify({studentCode,accessKey}));
+      else localStorage.removeItem('keks.studentLogin.v1');
+    }catch{}
     location.href='/ogrenci';
   }
-  return <form className="form" onSubmit={submit}>
-    <div className="field"><label>Öğrenci kodu</label><input name="studentCode" required autoComplete="username"/></div>
-    <div className="field"><label>Giriş anahtarı</label><input name="accessKey" type="password" required autoComplete="current-password"/></div>
-    <button className="btn primary" type="submit">Öğrenci Girişi</button><Message value={msg}/>
-  </form>;
+
+  async function forgot(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();setForgotMsg('');setForgotBusy(true);
+    const fd=new FormData(e.currentTarget);
+    try{
+      const r=await fetch('/api/auth/student-access-key',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          studentCode:fd.get('studentCode'),
+          fullName:fd.get('fullName'),
+          email:fd.get('email')
+        })
+      });
+      const j=await r.json();
+      if(!r.ok)setForgotMsg('Hata: '+(j.error||'Giriş anahtarı gönderilemedi.'));
+      else setForgotMsg(j.message||'Giriş anahtarınız kayıtlı Gmail adresinize yeniden gönderildi.');
+    }finally{setForgotBusy(false)}
+  }
+
+  return <div className="stack">
+    <form className="form" onSubmit={submit}>
+      <div className="field"><label>Öğrenci kodu</label><input name="studentCode" required autoComplete="username" value={studentCode} onChange={e=>setStudentCode(e.target.value)}/></div>
+      <div className="field"><label>Giriş anahtarı</label><input name="accessKey" type="password" required autoComplete="current-password" value={accessKey} onChange={e=>setAccessKey(e.target.value)}/></div>
+      <label className="row" style={{justifyContent:'flex-start',gap:8,cursor:'pointer'}}>
+        <input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/>
+        <span>Beni unutma <small className="muted">· Bu cihazda öğrenci kodu ve giriş anahtarı otomatik doldurulur.</small></span>
+      </label>
+      <button className="btn primary" type="submit">Öğrenci Girişi</button>
+      <button className="btn" type="button" onClick={()=>{setForgotOpen(v=>!v);setForgotMsg('')}}>{forgotOpen?'Geri dön':'Giriş anahtarını unuttum'}</button>
+      <Message value={msg}/>
+    </form>
+
+    {forgotOpen&&<form className="form card" onSubmit={forgot}>
+      <div className="moduleEyebrow">GİRİŞ ANAHTARI YENİDEN GÖNDERİMİ</div>
+      <p className="muted">Bilgiler kayıtla eşleşirse mevcut giriş anahtarınız değiştirilmeden kayıtlı Gmail adresinize yeniden gönderilir.</p>
+      <div className="field"><label>Öğrenci kodu</label><input name="studentCode" required defaultValue={studentCode}/></div>
+      <div className="field"><label>Ad soyad</label><input name="fullName" required autoComplete="name"/></div>
+      <div className="field"><label>Kayıtlı Gmail adresi</label><input name="email" type="email" required autoComplete="email"/></div>
+      <button className="btn primary" type="submit" disabled={forgotBusy}>{forgotBusy?'Doğrulanıyor…':'Bilgileri Doğrula ve Anahtarı Gönder'}</button>
+      <Message value={forgotMsg}/>
+    </form>}
+  </div>;
 }
 
 export function AccountLoginForm({redirect='/koc'}:{redirect?:string}) {

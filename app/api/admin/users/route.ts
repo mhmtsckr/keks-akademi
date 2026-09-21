@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { writeAudit } from '@/lib/audit';
+import { decryptPrivateCode } from '@/lib/security';
 
 const patchSchema=z.object({
   userId:z.string(),
@@ -23,11 +24,26 @@ async function GET__handler(req:Request){
     where,orderBy:{createdAt:'desc'},take:200,
     select:{id:true,name:true,email:true,role:true,status:true,createdAt:true,
       coachProfile:{select:{_count:{select:{students:true}}}},
-      student:{select:{studentCode:true,gradeLevel:true,coach:{select:{user:{select:{name:true}}}}}},
+      student:{select:{studentCode:true,gradeLevel:true,accessKeyCiphertext:true,credentialsDeliveryStatus:true,credentialsEmailedAt:true,coach:{select:{user:{select:{name:true}}}}}},
       parentProfile:{select:{student:{select:{fullName:true,studentCode:true}}}}
     }
   });
-  return NextResponse.json({ok:true,users});
+  const visibleUsers=users.map(u=>({
+    ...u,
+    student:u.student?{
+      studentCode:u.student.studentCode,
+      gradeLevel:u.student.gradeLevel,
+      coach:u.student.coach,
+      credentialsDeliveryStatus:u.student.credentialsDeliveryStatus,
+      credentialsEmailedAt:u.student.credentialsEmailedAt,
+      accessKey:u.student.accessKeyCiphertext?safeDecrypt(u.student.accessKeyCiphertext):null
+    }:null
+  }));
+  return NextResponse.json({ok:true,users:visibleUsers});
+}
+
+function safeDecrypt(value:string){
+  try{return decryptPrivateCode(value)}catch{return null}
 }
 
 async function PATCH__handler(req:Request){

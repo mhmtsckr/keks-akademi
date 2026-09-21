@@ -30,6 +30,31 @@ export async function sendStudentCredentials(input:{email:string;studentName:str
   return result;
 }
 
+export async function resendStudentAccessKey(input:{email:string;studentName:string;studentCode:string;accessKey:string}){
+  if(!process.env.RESEND_API_KEY)return {skipped:true,error:'RESEND_API_KEY_MISSING'};
+  const resend=new Resend(process.env.RESEND_API_KEY);
+  const from=KEKS_FROM();
+  const html=`
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
+      <h1>KEKS Akademi Giriş Anahtarı</h1>
+      <p>Merhaba <strong>${escapeHtml(input.studentName)}</strong>,</p>
+      <p>Giriş bilgileriniz doğrulandı. Mevcut giriş anahtarınız değiştirilmeden yeniden gönderilmiştir.</p>
+      <div style="padding:16px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2">
+        <p><strong>Öğrenci kodu:</strong> ${escapeHtml(input.studentCode)}</p>
+        <p><strong>Giriş anahtarı:</strong> ${escapeHtml(input.accessKey)}</p>
+      </div>
+      <p>Bu talebi siz oluşturmadıysanız KEKS Akademi ile iletişime geçin.</p>
+      <p>KEKS Akademi</p>
+    </div>`;
+  return resend.emails.send({
+    from,
+    to:input.email,
+    replyTo:KEKS_CONTACT_EMAIL,
+    subject:'KEKS Akademi | Giriş anahtarınız',
+    html
+  });
+}
+
 export async function sendAssessmentReport(input: { studentCode: string; studentName: string; assessmentId: string; report: unknown }) {
   if (!process.env.RESEND_API_KEY) return { skipped: true };
   const resend = new Resend(process.env.RESEND_API_KEY);
