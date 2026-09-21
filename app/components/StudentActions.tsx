@@ -3,7 +3,7 @@
 import { FormEvent,useEffect,useMemo,useState } from 'react';
 
 type Question={id:string;orderNo:number;prompt:string;kind:'TENDENCY'|'HABIT';dimension:string};
-type FormDataState={title:string;version:string;educationBand:string;disclaimer:string;questionCount:number;questions:Question[]};
+type FormDataState={title:string;version:string;educationBand:string;disclaimer:string;instruction:string;scale:string[];questionCount:number;questions:Question[]};
 type ScreeningState={status:'READY'|'COMPLETED'|'NO_ACCESS'|'ERROR';form?:FormDataState;workflowStatus?:string};
 
 const PAGE_SIZE=10;
@@ -99,10 +99,16 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
   if(state.status==='READY'&&form){
     return <div className="card">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">KEKS'İN KENDİ TARAMA MODÜLÜ</div><h2>{form.title}</h2><p className="muted">{form.questionCount} madde · Son iki aydaki gerçek çalışma davranışınızı düşünerek cevaplayın.</p></div>
+        <div><div className="moduleEyebrow">KEKS'İN KENDİ TARAMA MODÜLÜ</div><h2>{form.title}</h2><p className="muted">{form.questionCount} madde · Eğitim düzeyinize özgü işaretlemeli form.</p></div>
         <span className="pill">{answered}/{form.questionCount}</span>
       </div>
-      <div className="notice"><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
+      <div className="notice">
+        <strong>Yönerge:</strong> {form.instruction}
+        <div className="muted" style={{marginTop:8}}>
+          (1) {form.scale?.[0]||'Hiç katılmıyorum'} · (2) {form.scale?.[1]||'Katılmıyorum'} · (3) {form.scale?.[2]||'Bazen / Kararsızım'} · (4) {form.scale?.[3]||'Katılıyorum'} · (5) {form.scale?.[4]||'Tamamen katılıyorum'}
+        </div>
+      </div>
+      <div className="notice" style={{marginTop:10}}><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
       <div style={{margin:'14px 0'}}>
         <div className="muted">İlerleme · %{Math.round(answered/Math.max(1,form.questionCount)*100)}</div>
         <div style={{height:8,background:'var(--line)',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:(answered/Math.max(1,form.questionCount)*100)+'%',background:'currentColor'}}/></div>
@@ -112,11 +118,11 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
           <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
           <div style={{flex:1}}><strong>{q.prompt}</strong>
             <div className="likertRow">
-              {[1,2,3,4,5].map(n=><label key={n} title={q.kind==='HABIT'?['Hiçbir zaman','Nadiren','Bazen','Çoğu zaman','Her zaman'][n-1]:['Bana hiç benzemiyor','Bana az benziyor','Kısmen benziyor','Bana oldukça benziyor','Bana çok benziyor'][n-1]}>
+              {[1,2,3,4,5].map(n=><label key={n} title={form.scale?.[n-1]||['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1]}>
                 <input type="radio" name={q.id} value={n} checked={answers[q.id]===n} onChange={()=>setAnswers(a=>({...a,[q.id]:n}))}/><span>{n}</span>
               </label>)}
             </div>
-            <div className="muted" style={{fontSize:12,marginTop:4}}>{q.kind==='HABIT'?'1 Hiçbir zaman · 3 Bazen · 5 Her zaman':'1 Hiç benzemiyor · 3 Kısmen · 5 Çok benziyor'}</div>
+            <div className="muted" style={{fontSize:12,marginTop:4}}>1 Hiç katılmıyorum · 2 Katılmıyorum · 3 Bazen / Kararsızım · 4 Katılıyorum · 5 Tamamen katılıyorum</div>
           </div>
         </div>)}
       </div>
