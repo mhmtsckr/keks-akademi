@@ -86,7 +86,7 @@ export function AdminAssessmentWorkflow(){
           <div className="interviewAnswers">
             {(a.form?.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}>
               <div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div>
-              <p><strong>{answerMap.get(q.id)??'—'} / 5</strong></p>
+              <p><strong>{String(answerMap.get(q.id)??'—')} / 5</strong></p>
             </div>)}
           </div>
         </details>
