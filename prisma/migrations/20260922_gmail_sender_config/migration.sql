@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS "EmailSenderConfig" (
+  "id" TEXT NOT NULL,
+  "email" TEXT NOT NULL,
+  "appPasswordCiphertext" TEXT NOT NULL,
+  "enabled" BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "EmailSenderConfig_pkey" PRIMARY KEY ("id")
+);
