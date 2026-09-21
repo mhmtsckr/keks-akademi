@@ -87,7 +87,7 @@ export default async function CoachPage() {
     startsAt:x.startsAt.toISOString(),endsAt:x.endsAt.toISOString(),meetingUrl:x.meetingUrl
   }))).sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
 
-  return <PortalShell
+  return <PortalShell signedIn
     active="koc"
     eyebrow="KOÇ PANELİ"
     title={'Koç Kontrol Merkezi · '+user.name}

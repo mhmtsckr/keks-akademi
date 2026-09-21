@@ -21,7 +21,7 @@ export default async function GeneratedContentPage({params}:{params:Promise<{id:
   const active=user.role==='COACH'?'koc':user.role==='PARENT'?'veli':user.role==='ADMIN'?'yonetici':'ogrenci';
   const back=user.role==='COACH'?'/koc':user.role==='PARENT'?'/veli':user.role==='ADMIN'?'/yonetici':'/ogrenci';
 
-  return <PortalShell
+  return <PortalShell signedIn
     active={active}
     eyebrow="KEKS ÖĞRENME İÇERİĞİ"
     title={item.title}

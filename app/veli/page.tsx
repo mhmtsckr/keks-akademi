@@ -59,7 +59,7 @@ export default async function ParentPage() {
   const totalTopics=student.topicProgress.length;
   const progressRate=totalTopics?Math.round((completedTopics/totalTopics)*100):0;
 
-  return <PortalShell
+  return <PortalShell signedIn
     active="veli"
     eyebrow="VELİ PANELİ"
     title={student.fullName+' · Gelişim Özeti'}

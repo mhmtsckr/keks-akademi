@@ -7,7 +7,7 @@ export default async function StudentTestsPage(){
  if(!user || user.role!=='STUDENT' || !user.student) return <PortalShell active="ogrenci" eyebrow="ÖĞRENCİ TESTLERİ" title="Bu alan için öğrenci girişi gerekir."><div className="card"><a className="btn primary" href="/ogrenci">Öğrenci Girişine Git</a></div></PortalShell>;
  const grade=(user.student.gradeLevel||'').toLowerCase();
  const allowed=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
- return <PortalShell
+ return <PortalShell signedIn
    active="ogrenci"
    eyebrow="KONU BAZLI TESTLER"
    title="Branş ve konu seç, testini oluştur."

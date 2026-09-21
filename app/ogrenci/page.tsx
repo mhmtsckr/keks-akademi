@@ -74,7 +74,7 @@ export default async function StudentPage() {
   const grade=(student.gradeLevel||'').toLowerCase();
   const allowedExams=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
 
-  return <PortalShell
+  return <PortalShell signedIn
     active="ogrenci"
     eyebrow="ÖĞRENCİ PANELİ"
     title={'Merhaba, '+student.fullName}

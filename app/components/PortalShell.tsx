@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { LogoutButton } from './LogoutButton';
 
 const NAV=[
   ['sistem','/sistem','Sistem'],
@@ -25,11 +26,12 @@ export function KeksBrand({compact=false}:{compact?:boolean}){
   </a>;
 }
 
-export function KeksNav({active}:{active?:string}){
+export function KeksNav({active,signedIn=false}:{active?:string;signedIn?:boolean}){
   return <nav className="portalNav">
     <KeksBrand/>
     <div className="portalNavLinks">
       {NAV.map(([key,href,label])=><a key={key} href={href} className={active===key?'active':''}>{label}</a>)}
+      {signedIn&&<LogoutButton/>}
     </div>
   </nav>;
 }
@@ -67,15 +69,15 @@ function MountainMark(){
 }
 
 export function PortalShell({
-  active,eyebrow,title,description,children,meta,wide=false
+  active,eyebrow,title,description,children,meta,wide=false,signedIn=false
 }:{
-  active?:string;eyebrow:string;title:string;description?:string;children:ReactNode;meta?:ReactNode;wide?:boolean
+  active?:string;eyebrow:string;title:string;description?:string;children:ReactNode;meta?:ReactNode;wide?:boolean;signedIn?:boolean
 }){
   const copy=ROLE_COPY[active||'sistem']||ROLE_COPY.sistem;
   return <main className={'portal portal-'+(active||'default')}>
     <header className="portalHeader portalHeaderBanner">
       <div className={wide?'portalWrap portalWrapWide':'portalWrap'}>
-        <KeksNav active={active}/>
+        <KeksNav active={active} signedIn={signedIn}/>
 
         <div className="portalBanner">
           <aside className="portalSideWords portalSideWordsLeft">

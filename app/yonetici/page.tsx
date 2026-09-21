@@ -33,7 +33,7 @@ export default async function AdminPage() {
     </PortalShell>;
   }
 
-  return <PortalShell
+  return <PortalShell signedIn
     active="yonetici"
     eyebrow="YÖNETİCİ PANELİ"
     title="KEKS Yönetici Kontrol Merkezi"

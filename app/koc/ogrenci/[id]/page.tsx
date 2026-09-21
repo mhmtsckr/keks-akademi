@@ -42,7 +42,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   if(!student) return notFound();
   const goalProgress=await computeGoalProgress(student.id);
 
-  return <PortalShell
+  return <PortalShell signedIn
     active="koc"
     eyebrow="KOÇ ÖĞRENCİ ÇALIŞMA ALANI"
     title={student.fullName}
