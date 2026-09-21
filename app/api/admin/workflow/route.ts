@@ -27,6 +27,8 @@ async function GET__handler(){
       title:form.title,
       version:form.version,
       disclaimer:form.disclaimer,
+      instruction:form.instruction,
+      scale:form.scale,
       questionCount:form.questions.length,
       questions:form.questions.map(q=>({
         id:q.id,
@@ -62,6 +64,8 @@ async function GET__handler(){
         educationBand:band,
         label:SCREENING_FORM_LABELS[band],
         title:form.title,
+        instruction:form.instruction,
+        scale:form.scale,
         questionCount:form.questions.length,
         questions:form.questions.map(q=>({
           id:q.id,
