@@ -1,4 +1,4 @@
-import { TENDENCY_PROFILES } from '@/lib/screeningForms';
+import { TENDENCY_DIMENSION_KEYS,TENDENCY_PROFILES } from '@/lib/screeningForms';
 
 export type Answer = { questionId: string; value: number };
 export type Question = {
@@ -13,16 +13,12 @@ export type Question = {
 };
 
 const HABIT_RECOMMENDATIONS:Record<string,string>={
-  'Planlama':'Her çalışma bloğundan önce ders, konu ve bitiş ölçütünü tek cümleyle yaz.',
-  'Başlama':'Başlamayı kolaylaştırmak için 5 dakikalık ilk adım kuralı kullan ve planlanan saatte masaya otur.',
-  'Odak':'Telefonu ve dikkat dağıtıcıları çalışma alanından çıkar; odak bloklarını süreli uygula.',
-  'Görev Tamamlama':'Görevleri küçük tamamlanabilir parçalara böl ve her parçayı bitirmeden konu değiştirme.',
-  'Aktif Hatırlama':'Konu sonlarında kaynağı kapatıp öğrendiklerini kendi cümlelerinle geri çağır.',
-  'Aralıklı Tekrar':'Tekrarları 0-1-3-7-14-28 gün döngüsüne bağla ve tamamlandıkça işaretle.',
-  'Soru Uygulama':'Örnek gördükten hemen sonra aynı kazanımdan bağımsız soru çözerek uygulamaya geç.',
-  'Hata Analizi':'Yanlışları yalnız doğru cevaba bakarak geçme; hata nedenini sınıflandır ve tekrar kuyruğuna ekle.',
-  'Yardım İsteme':'Takıldığında doğrudan cevabı istemek yerine nerede zorlandığını açıkça belirterek yardım iste.',
-  'Öz İzleme':'Gün sonunda süre, soru, tamamlanan görev ve ertelenen işleri kısa bir kayıtla değerlendir.'
+  'Planlama ve Başlama':'Çalışma öncesinde ders, konu, süre ve bitiş ölçütünü belirle; başlamak zor gelirse ilk adımı 5 dakikalık küçük bir görev hâline getir.',
+  'Odak ve Dikkat Yönetimi':'Telefon ve bildirimleri çalışma alanından çıkar; tek görevli odak blokları kullan ve blok bitmeden konu değiştirme.',
+  'Süreklilik ve Erteleme Yönetimi':'Yoğun günler için uygulanabilir bir minimum çalışma hedefi belirle ve zinciri korumaya odaklan.',
+  'Aktif Hatırlama ve Öğrenme Stratejisi':'Kaynağı kapatıp bilgiyi geri çağır, kendi cümlelerinle anlat ve çözümü görmeden önce bağımsız düşünme süresi kullan.',
+  'Tekrar ve Kalıcılık':'Öğrenilen konuları farklı günlerde 0-1-3-7-14-28 tekrar döngüsüne bağla.',
+  'Hata Analizi ve Sınav Stratejisi':'Yanlış sorularda hata nedenini sınıflandır; bilgi, dikkat, işlem, süre veya strateji kaynağını belirleyip tekrar planına ekle.'
 };
 
 export function scoreAssessment(questions: Question[], answers: Answer[]) {
@@ -44,7 +40,7 @@ export function scoreAssessment(questions: Question[], answers: Answer[]) {
 }
 
 function tendencyKey(name:string){
-  return name.match(/Tip\s+(\d)/i)?.[1]||'';
+  return TENDENCY_DIMENSION_KEYS[name]||name.match(/Tip\s+(\d)/i)?.[1]||'';
 }
 
 export function buildReport(scores: Record<string, number>, questions:Question[]=[], answers:Answer[]=[] ) {
@@ -62,7 +58,17 @@ export function buildReport(scores: Record<string, number>, questions:Question[]
       interpretedScore:response==null?null:(q.reverse?6-response:response)
     };
   });
-  const habitScores=Object.fromEntries(habitSignals.filter(x=>x.interpretedScore!=null).map(x=>[x.key,Number(x.interpretedScore)]));
+  const habitBuckets=new Map<string,number[]>();
+  for(const signal of habitSignals){
+    if(signal.interpretedScore==null)continue;
+    const values=habitBuckets.get(signal.key)||[];
+    values.push(Number(signal.interpretedScore));
+    habitBuckets.set(signal.key,values);
+  }
+  const habitScores=Object.fromEntries([...habitBuckets.entries()].map(([key,values])=>[
+    key,
+    Number((values.reduce((a,b)=>a+b,0)/values.length).toFixed(2))
+  ]));
   const habitValues=Object.values(habitScores).filter(v=>Number.isFinite(v));
   const habitAverage=habitValues.length?Number((habitValues.reduce((a,b)=>a+b,0)/habitValues.length).toFixed(2)):null;
   const habitDevelopment=Object.entries(habitScores)
@@ -104,7 +110,7 @@ export function buildReport(scores: Record<string, number>, questions:Question[]
   return {
     title: 'KEKS – Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması',
     disclaimer: 'Bu uygulama psikolojik tanı koymaz ve kesin kişilik tipi belirlemez. Sonuçlar görüşme, gözlem ve akademik performans verileriyle birlikte değerlendirilmelidir.',
-    formSource:'KEKS eğitim düzeyi soru formları · PDF sürümü',
+    formSource:'KEKS Profesyonel Test Serisi · eğitim düzeyine özgü işaretlemeli başlangıç formu',
     scores,
     leadingDimensions,
     dominance:{difference:diff,clarity},
