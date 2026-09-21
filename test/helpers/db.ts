@@ -15,6 +15,7 @@ export const db = {
   assessment: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
   student: { findUnique: vi.fn(), findFirst: vi.fn() },
   user: { findUnique: vi.fn(), create: vi.fn() },
+  academyCode: { create: vi.fn() },
   preInterviewForm: { findFirst: vi.fn() },
   preInterviewAssignment: { findFirst: vi.fn(), create: vi.fn() },
   coachAlert: { create: vi.fn(), findFirst: vi.fn() },
