@@ -37,6 +37,24 @@ export function AdminAssessmentWorkflow(){
     </div>
 
     <div className="card">
+      <div className="moduleEyebrow">KEKS TEST KÜTÜPHANESİ</div>
+      <h2>Eğitim Düzeyine Göre Eğilim Taraması Formları</h2>
+      <p className="muted">Yönetici, öğrenci çözümünden bağımsız olarak sistemde kullanılan tüm tarama formlarını ve soru metinlerini burada görebilir.</p>
+      <div className="stack">
+        {(data.forms||[]).map((form:any)=><details key={form.educationBand}>
+          <summary><strong>{form.label} · {form.questionCount} soru</strong> <span className="muted">· {form.version}</span></summary>
+          <div className="notice" style={{marginTop:10}}><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
+          <div className="interviewAnswers">
+            {(form.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}>
+              <div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div>
+              <p>{q.kind==='HABIT'?'Çalışma alışkanlığı':'Eğilim maddesi'}</p>
+            </div>)}
+          </div>
+        </details>)}
+      </div>
+    </div>
+
+    <div className="card">
       <div className="moduleEyebrow">AŞAMA 1 · EĞİLİM TARAMASI</div>
       <h2>Ayrıntılı Değerlendirme ve Gelişim Raporları</h2>
       <p className="muted">Yönetici onayı verilmeden ön görüşme açılmaz.</p>
@@ -44,6 +62,8 @@ export function AdminAssessmentWorkflow(){
 
     {(data.screenings||[]).length===0?<div className="card muted">Yönetici onayı bekleyen eğilim taraması yok.</div>:(data.screenings||[]).map((a:any)=>{
       const report=a.report||{},leading=report.leadingDimensions||[],quality=report.responseQuality||{};
+      const answerRows=Array.isArray(a.answers)?a.answers:[];
+      const answerMap=new Map(answerRows.map((x:any)=>[x.questionId,x.value]));
       return <article className="card" key={a.id}>
         <div className="moduleHeaderRow">
           <div><div className="moduleEyebrow">YÖNETİCİ İNCELEMESİ</div><h2>{a.student.fullName}</h2><p className="muted">Kod: {a.student.studentCode} · {a.student.gradeLevel||'Düzey belirtilmedi'} · {new Date(a.completedAt).toLocaleString('tr-TR')} · Koç: {a.student.coach?.user?.name||'Atanmamış'}</p></div>
@@ -60,6 +80,16 @@ export function AdminAssessmentWorkflow(){
         {quality.warnings?.length>0&&<div className="notice error"><strong>Yanıt kalitesi uyarısı</strong>{quality.warnings.map((x:string,i:number)=><div key={i}>{x}</div>)}</div>}
         {report.developmentFocus?.length>0&&<details><summary><strong>Gelişim odakları</strong></summary><div className="briefAgenda">{report.developmentFocus.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div></details>}
         {report.habitSignals?.length>0&&<details><summary><strong>Çalışma alışkanlığı yanıtları</strong></summary><div className="interviewAnswers">{report.habitSignals.map((x:any,i:number)=><div className="interviewAnswerRow" key={i}><div><span>{x.orderNo}</span><strong>{x.prompt}</strong></div><p>{x.response??'—'} / 5</p></div>)}</div></details>}
+        <details style={{marginTop:12}}>
+          <summary><strong>Öğrencinin çözdüğü testin tamamını ve cevaplarını görüntüle</strong></summary>
+          <div className="notice" style={{marginTop:10}}><strong>{a.form?.label}</strong> · {a.form?.questionCount} soru · Kullanılan form: {a.formVersion}</div>
+          <div className="interviewAnswers">
+            {(a.form?.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}>
+              <div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div>
+              <p><strong>{answerMap.get(q.id)??'—'} / 5</strong></p>
+            </div>)}
+          </div>
+        </details>
         <div className="row" style={{justifyContent:'flex-end',marginTop:14}}>
           <button className="btn" disabled={busy!==''} onClick={()=>act('retake_screening',a.id)}>Yeniden Tarama İste</button>
           <button className="btn primary" disabled={busy!==''} onClick={()=>act('approve_screening',a.id)}>{busy==='approve_screening'+a.id?'Onaylanıyor…':'Onayla ve Ön Görüşmeyi Aç'}</button>

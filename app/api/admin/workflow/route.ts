@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
-import { detectEducationBand } from '@/lib/taskEvaluation';
+import { detectEducationBand,type EducationBand } from '@/lib/taskEvaluation';
+import { getScreeningForm,SCREENING_FORM_LABELS } from '@/lib/screeningForms';
 import { writeAudit } from '@/lib/audit';
 
 const schema=z.discriminatedUnion('action',[
@@ -17,6 +18,25 @@ function obj(v:unknown){return v&&typeof v==='object'&&!Array.isArray(v)?v as Re
 
 async function GET__handler(){
   await requireRole(['ADMIN']);
+  const bands:EducationBand[]=['ILKOKUL_1_2','ILKOKUL_3_4','ORTAOKUL_5_6','ORTAOKUL_7_8','LISE_9_10','LISE_11_12','YETISKIN_MEZUN'];
+  const forms=bands.map(band=>{
+    const form=getScreeningForm(band);
+    return {
+      educationBand:band,
+      label:SCREENING_FORM_LABELS[band],
+      title:form.title,
+      version:form.version,
+      disclaimer:form.disclaimer,
+      questionCount:form.questions.length,
+      questions:form.questions.map(q=>({
+        id:q.id,
+        orderNo:q.orderNo,
+        prompt:q.prompt,
+        dimension:q.dimension,
+        kind:q.kind
+      }))
+    };
+  });
   const [assessments,attempts]=await Promise.all([
     db.assessment.findMany({
       orderBy:{completedAt:'desc'},take:100,
@@ -33,14 +53,31 @@ async function GET__handler(){
     })
   ]);
 
-  const screenings=assessments.filter(a=>obj(a.report).workflowStatus==='ADMIN_REVIEW').map(a=>({
-    id:a.id,completedAt:a.completedAt,formVersion:a.formVersion,scores:a.scores,answers:a.answers,report:a.report,student:a.student
-  }));
+  const screenings=assessments.filter(a=>obj(a.report).workflowStatus==='ADMIN_REVIEW').map(a=>{
+    const band=detectEducationBand(a.student.gradeLevel);
+    const form=getScreeningForm(band);
+    return {
+      id:a.id,completedAt:a.completedAt,formVersion:a.formVersion,scores:a.scores,answers:a.answers,report:a.report,student:a.student,
+      form:{
+        educationBand:band,
+        label:SCREENING_FORM_LABELS[band],
+        title:form.title,
+        questionCount:form.questions.length,
+        questions:form.questions.map(q=>({
+          id:q.id,
+          orderNo:q.orderNo,
+          prompt:q.prompt,
+          dimension:q.dimension,
+          kind:q.kind
+        }))
+      }
+    };
+  });
   const plans=attempts.map(a=>({
     id:a.id,completedAt:a.completedAt,academicTrack:a.academicTrack,scores:a.scores,answers:a.answers,report:a.report,
     student:a.student,form:a.form,assignment:a.assignment
   }));
-  return NextResponse.json({ok:true,screenings,plans,counts:{screenings:screenings.length,plans:plans.length}});
+  return NextResponse.json({ok:true,forms,screenings,plans,counts:{screenings:screenings.length,plans:plans.length}});
 }
 
 async function POST__handler(req:Request){
