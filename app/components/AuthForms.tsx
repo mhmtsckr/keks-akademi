@@ -73,6 +73,10 @@ export function StudentRegisterForm() {
       const r=await fetch('/api/public/coaches');
       const j=await r.json();
       if(r.ok&&j.ok)setCoaches(j.coaches||[]);
+    }catch{
+      // Ag hatasi yakalanmazsa yakalanmamis promise reddi olusuyordu.
+      // Liste bos kalir; kullaniciya formda sebebi aciklanir.
+      setCoaches([]);
     }finally{setLoadingCoaches(false)}
   }
 
@@ -103,9 +107,10 @@ export function StudentRegisterForm() {
     <div className="field"><label>Gmail adresi</label><input name="email" type="email" placeholder="ornek@gmail.com" required/></div>
     <div className="field"><label>Eğitim düzeyi / sınav grubu</label><input name="gradeLevel" placeholder="Örn. 11. Sınıf / YKS, Mezun / KPSS" required/></div>
     <div className="field"><label>Koçunu seç</label><select name="coachId" required defaultValue="">
-      <option value="">{loadingCoaches?'Koçlar yükleniyor…':'Koç seçiniz'}</option>
+      <option value="">{loadingCoaches?'Koçlar yükleniyor…':coaches.length?'Koç seçiniz':'Aktif koç yok'}</option>
       {coaches.map(c=><option value={c.id} key={c.id}>{c.name} · {c.studentCount} öğrenci</option>)}
     </select></div>
+    {!loadingCoaches&&coaches.length===0&&<div className="notice error" role="alert">Şu anda başvuruya açık koç bulunmuyor. Lütfen daha sonra tekrar deneyin.</div>}
     <div className="notice">Başvurunuz tamamlandığında öğrenci kodunuz ve özel giriş anahtarınız yalnızca bu Gmail adresine gönderilir. Seçtiğiniz koçun “Öğrencilerim” paneline otomatik eklenirsiniz.</div>
     <button className="btn" type="submit" disabled={loadingCoaches||coaches.length===0}>Başvuruyu Gönder</button>
     <Message value={msg}/>
