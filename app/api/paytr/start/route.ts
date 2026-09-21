@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -12,7 +13,7 @@ const schema = z.object({
   userPhone: z.string().min(7).max(30),
 });
 
-export async function POST(req: Request) {
+async function POST__handler(req: Request) {
   const user = await requireRole(['STUDENT']);
   if (!user.student) return NextResponse.json({ error: 'Öğrenci profili yok.' }, { status: 400 });
 
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'PayTR henüz yapılandırılmadı.' }, { status: 503 });
   }
 
-  const input = schema.parse(await req.json());
+  const input = await readJson(req, schema);
   const amountKurus = Number(process.env.TEST_PRICE_KURUS || 35000);
   const oid = merchantOid();
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
@@ -97,3 +98,5 @@ export async function POST(req: Request) {
     amountKurus,
   });
 }
+
+export const POST = withApiErrors(POST__handler);

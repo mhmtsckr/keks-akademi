@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -16,9 +17,9 @@ async function authorizedUpload(user:any,id:string){
   return null;
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['ADMIN','COACH','STUDENT']);
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
   const upload=await authorizedUpload(user,input.uploadId);
   if(!upload) return NextResponse.json({error:'Kaynak bulunamadı veya erişim yok.'},{status:404});
   if(!upload.extractedText) return NextResponse.json({error:'Bu dosyadan henüz metin çıkarılamadı. Görsel içerik için vision bağlantısı gerekir.'},{status:422});
@@ -38,3 +39,5 @@ export async function POST(req:Request){
   }
   return NextResponse.json({ok:true,outputs:outputs.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,reused:x.reused}))});
 }
+
+export const POST = withApiErrors(POST__handler);

@@ -1,8 +1,9 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-export async function GET(){
+async function GET__handler(){
   await requireRole(['ADMIN']);
   let database='OK';
   try{await db.$queryRawUnsafe('SELECT 1')}catch{database='ERROR'}
@@ -16,3 +17,5 @@ export async function GET(){
     recentAudit
   }});
 }
+
+export const GET = withApiErrors(GET__handler);

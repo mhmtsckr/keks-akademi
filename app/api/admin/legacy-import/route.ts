@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
@@ -37,9 +38,9 @@ function json(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
-export async function POST(req: Request) {
+async function POST__handler(req: Request) {
   await requireRole(['ADMIN']);
-  const input = schema.parse(await req.json());
+  const input = await readJson(req, schema);
   const sourceCode = input.sourceStudentCode.trim();
   const targetCode = input.targetStudentCode.trim();
 
@@ -238,3 +239,5 @@ export async function POST(req: Request) {
     },
   });
 }
+
+export const POST = withApiErrors(POST__handler);

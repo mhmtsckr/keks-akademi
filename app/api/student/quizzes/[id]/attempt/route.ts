@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -7,13 +8,13 @@ import { REVIEW_DAYS } from '@/lib/smartCoach';
 
 const schema=z.object({answers:z.record(z.string(),z.string().nullable())});
 
-export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
+async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
  const user=await requireRole(['STUDENT']);
  if(!user.student) return NextResponse.json({error:'Öğrenci profili bulunamadı.'},{status:400});
  const {id}=await params;
  const quiz=await db.practiceQuiz.findFirst({where:{id,studentId:user.student.id}});
  if(!quiz) return NextResponse.json({error:'Test bulunamadı.'},{status:404});
- const input=schema.parse(await req.json());
+ const input=await readJson(req, schema);
  const ids=Array.isArray(quiz.questionIds)?quiz.questionIds.map(String):[];
  const qs=await db.questionBankItem.findMany({where:{id:{in:ids}}});
  let correct=0,wrong=0,blank=0;
@@ -44,3 +45,5 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
  }});
  return NextResponse.json({ok:true,attempt:{id:attempt.id,correct,wrong,blank,net},reportId:report.id,reviewAdded:wrongIds.length});
 }
+
+export const POST = withApiErrors(POST__handler);

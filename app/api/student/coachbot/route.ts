@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -20,10 +21,10 @@ function fallbackReply(message:string,student:any){
   return parts.join('');
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
-  const {message}=schema.parse(await req.json());
+  const {message}=await readJson(req, schema);
   const student=await db.student.findUnique({where:{id:user.student.id},include:{practiceLogs:{orderBy:{date:'desc'},take:20},coachingActions:{where:{status:'ACTIVE'},orderBy:{periodEnd:'asc'},take:10},plans:{where:{active:true},orderBy:{updatedAt:'desc'},take:3}}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
   await db.coachBotMessage.create({data:{studentId:student.id,role:'user',content:message}});
@@ -55,3 +56,5 @@ export async function POST(req:Request){
   await db.coachBotMessage.create({data:{studentId:student.id,role:'assistant',content:reply}});
   return NextResponse.json({ok:true,reply});
 }
+
+export const POST = withApiErrors(POST__handler);

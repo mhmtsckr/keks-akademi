@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { db } from './db';
+import { AuthError } from './apiGuard';
 
 const secret = () => new TextEncoder().encode(process.env.AUTH_SECRET!);
 const COOKIE = 'keks_session';
@@ -35,6 +36,7 @@ export async function currentUser() {
 
 export async function requireRole(roles: Array<'ADMIN'|'COACH'|'STUDENT'|'PARENT'>) {
   const user = await currentUser();
-  if (!user || !roles.includes(user.role)) throw new Error('UNAUTHORIZED');
+  if (!user) throw new AuthError(401, 'Oturum açmanız gerekiyor.');
+  if (!roles.includes(user.role)) throw new AuthError(403, 'Bu işlem için yetkiniz yok.');
   return user;
 }

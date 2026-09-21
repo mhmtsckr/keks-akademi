@@ -1,9 +1,10 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { computeGoalProgress } from '@/lib/smartCoach';
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const [goal,exams]=await Promise.all([
@@ -13,3 +14,5 @@ export async function GET(){
   const series=exams.map(x=>({date:x.createdAt.toISOString(),examType:x.examType,payload:x.payload}));
   return NextResponse.json({ok:true,goal,series});
 }
+
+export const GET = withApiErrors(GET__handler);

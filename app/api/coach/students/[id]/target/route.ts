@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -20,13 +21,13 @@ const schema=z.object({
  officialPeriod:z.string().max(50).optional(),
 });
 
-export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
+async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
  const user=await requireRole(['COACH','ADMIN']);
  if(!user.coachProfile) return NextResponse.json({error:'Koç profili yok.'},{status:400});
  const {id}=await params;
  const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id}});
  if(!student) return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
- const input=schema.parse(await req.json());
+ const input=await readJson(req, schema);
  await db.studentTarget.updateMany({where:{studentId:id,active:true},data:{active:false}});
  let row=await db.studentTarget.create({data:{
    studentId:id,...input,
@@ -48,3 +49,5 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
  }
  return NextResponse.json({ok:true,row,message:syncMessage});
 }
+
+export const POST = withApiErrors(POST__handler);

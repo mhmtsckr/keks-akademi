@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -19,7 +20,7 @@ function deadlineForAction(action:{taskDate:Date|null;periodEnd:Date}){
   return new Date(Date.UTC(y,m,d,20,0,0)); // 23:00 Europe/Istanbul
 }
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const rows=await db.taskSubmission.findMany({
@@ -31,10 +32,10 @@ export async function GET(){
   return NextResponse.json({ok:true,rows});
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
   if(input.correct+input.wrong+input.blank!==input.totalQuestions){
     return NextResponse.json({error:'Doğru + yanlış + boş toplamı, toplam soru sayısına eşit olmalıdır.'},{status:400});
   }
@@ -112,3 +113,6 @@ export async function POST(req:Request){
   if(input.totalQuestions>=action.targetValue)await awardXp(user.student.id,'ACTION_SUBMISSION',submission.id,late?25:50);
   return NextResponse.json({ok:true,submission,evaluation,late});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

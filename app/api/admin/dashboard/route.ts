@@ -1,8 +1,9 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-export async function GET(){
+async function GET__handler(){
   await requireRole(['ADMIN']);
   const now=new Date();
   const seven=new Date(now.getTime()-7*24*60*60*1000);
@@ -31,3 +32,5 @@ export async function GET(){
     revenueKurus:revenue._sum.amountKurus||0
   }});
 }
+
+export const GET = withApiErrors(GET__handler);

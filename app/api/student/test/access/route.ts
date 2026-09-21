@@ -1,13 +1,14 @@
+import { readJsonBody, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { verifySecret } from '@/lib/security';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 
-export async function POST(req: Request) {
+async function POST__handler(req: Request) {
   const user = await requireRole(['STUDENT']);
   if (!user.student) return NextResponse.json({ error: 'Öğrenci profili yok.' }, { status: 400 });
-  const { code } = await req.json();
+  const { code } = await readJsonBody(req);
   const candidates = await db.academyCode.findMany({ where: { active: true } });
   const now = new Date();
   const month=turkeyMonthWindow(now);
@@ -43,3 +44,5 @@ export async function POST(req: Request) {
   }
   return NextResponse.json({ error: 'Kod geçersiz veya bu öğrenciye ait değil.' }, { status: 400 });
 }
+
+export const POST = withApiErrors(POST__handler);

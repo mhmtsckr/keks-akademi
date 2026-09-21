@@ -1,8 +1,9 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { buildStudentInsights } from '@/lib/analytics';
 
-export async function GET(){
+async function GET__handler(){
  const user=await requireRole(['STUDENT']);
  if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
  const insights=await buildStudentInsights(user.student.id);
@@ -15,3 +16,5 @@ export async function GET(){
    suggestedQuestionCount:weak&&weak.accuracy<45?10:15
  }});
 }
+
+export const GET = withApiErrors(GET__handler);

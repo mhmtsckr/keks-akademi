@@ -1,8 +1,9 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-export async function GET(req:Request){
+async function GET__handler(req:Request){
   await requireRole(['ADMIN']);
   const {searchParams}=new URL(req.url);
   const q=(searchParams.get('q')||'').trim();
@@ -14,3 +15,5 @@ export async function GET(req:Request){
   });
   return NextResponse.json({ok:true,logs});
 }
+
+export const GET = withApiErrors(GET__handler);

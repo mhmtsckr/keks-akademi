@@ -1,3 +1,4 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
@@ -5,7 +6,7 @@ import { summarizeGap } from '@/lib/performance';
 
 function num(v:any){ const n=Number(v); return Number.isFinite(n)?n:null; }
 
-export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){
+async function POST__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
  const user=await requireRole(['COACH','ADMIN']);
  if(!user.coachProfile) return NextResponse.json({error:'Koç profili yok.'},{status:400});
  const {id}=await params;
@@ -63,3 +64,5 @@ export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){
  const report=await db.studentReport.create({data:{studentId:id,title:'Otomatik Performans ve Hedef Raporu',summary,content,createdByUserId:user.id,visibleToStudent:true,visibleToParent:true}});
  return NextResponse.json({ok:true,report,gap,metrics:{completed,totalTopics,totalQ,accuracy}});
 }
+
+export const POST = withApiErrors(POST__handler);

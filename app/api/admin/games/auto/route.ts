@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -11,9 +12,9 @@ const schema=z.object({
   gameType:z.enum(['WORD','MATCH','CONNECTIONS','CROSSWORD']).optional()
 });
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['ADMIN']);
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
   const game=await generateMicroGame({
     createdByUserId:user.id,
     examType:input.examType||null,
@@ -31,3 +32,5 @@ export async function POST(req:Request){
   });
   return NextResponse.json({ok:true,game});
 }
+
+export const POST = withApiErrors(POST__handler);

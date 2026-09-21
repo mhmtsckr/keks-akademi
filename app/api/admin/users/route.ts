@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -10,7 +11,7 @@ const patchSchema=z.object({
   role:z.enum(['ADMIN','COACH','STUDENT','PARENT']).optional()
 });
 
-export async function GET(req:Request){
+async function GET__handler(req:Request){
   await requireRole(['ADMIN']);
   const {searchParams}=new URL(req.url);
   const role=searchParams.get('role') as any;
@@ -29,9 +30,9 @@ export async function GET(req:Request){
   return NextResponse.json({ok:true,users});
 }
 
-export async function PATCH(req:Request){
+async function PATCH__handler(req:Request){
   const admin=await requireRole(['ADMIN']);
-  const input=patchSchema.parse(await req.json());
+  const input=await readJson(req, patchSchema);
   if(admin.id===input.userId&&input.status==='SUSPENDED') return NextResponse.json({error:'Kendi hesabınızı askıya alamazsınız.'},{status:400});
   const before=await db.user.findUnique({where:{id:input.userId},select:{id:true,name:true,role:true,status:true}});
   if(!before)return NextResponse.json({error:'Kullanıcı bulunamadı.'},{status:404});
@@ -42,3 +43,6 @@ export async function PATCH(req:Request){
   await writeAudit({actorUserId:admin.id,action:'USER_UPDATE',entityType:'User',entityId:updated.id,summary:updated.name+' kullanıcısı güncellendi.',metadata:{before,after:updated}});
   return NextResponse.json({ok:true,user:updated});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const PATCH = withApiErrors(PATCH__handler);

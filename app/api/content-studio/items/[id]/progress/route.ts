@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -9,7 +10,7 @@ const schema=z.object({
   completed:z.boolean().default(false)
 });
 
-export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
+async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const {id}=await params;
@@ -19,13 +20,13 @@ export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   return NextResponse.json({ok:true,progress});
 }
 
-export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
+async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const {id}=await params;
   const item=await db.generatedContent.findFirst({where:{id,studentId:user.student.id,visibleToStudent:true}});
   if(!item) return NextResponse.json({error:'İçerik bulunamadı.'},{status:404});
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
   const row=await db.contentProgress.upsert({
     where:{contentId_studentId:{contentId:id,studentId:user.student.id}},
     create:{contentId:id,studentId:user.student.id,state:input.state,score:input.score,completed:input.completed,completedAt:input.completed?new Date():null,lastOpenedAt:new Date()},
@@ -46,3 +47,6 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   }
   return NextResponse.json({ok:true,row:{id:row.id,score:row.score,completed:row.completed,state:row.state}});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

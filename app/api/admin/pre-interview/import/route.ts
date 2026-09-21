@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -21,9 +22,9 @@ const schema=z.object({
   questions:z.array(question).min(1).max(300)
 });
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['ADMIN']);
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
 
   await db.preInterviewForm.updateMany({where:{active:true,educationBand:input.educationBand,version:{not:input.version}},data:{active:false}});
   const form=await db.preInterviewForm.upsert({
@@ -40,3 +41,5 @@ export async function POST(req:Request){
 
   return NextResponse.json({ok:true,formId:form.id,count:input.questions.length,importedBy:user.id});
 }
+
+export const POST = withApiErrors(POST__handler);

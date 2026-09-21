@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -25,10 +26,11 @@ const sessionStatusSchema=z.object({action:z.literal('session_status'),sessionId
 const cohortSchema=z.object({action:z.literal('cohort'),cohortId:z.string().optional(),name:z.string().min(2).optional(),description:z.string().optional()});
 const schema=z.discriminatedUnion('action',[sessionSchema,actionSchema,analyticSchema,sessionStatusSchema,cohortSchema]);
 
-export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
+async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
+  if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
-  const student=await db.student.findFirst({where:{id,coachId:user.coachProfile?.id}});
+  const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
   const [sessions,actions,analytics,connections,cohorts,gameAttempts,badges,taskSubmissions]=await Promise.all([
     db.coachingSession.findMany({where:{studentId:id},orderBy:{startsAt:'desc'},take:40}),
@@ -43,13 +45,13 @@ export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   return NextResponse.json({ok:true,sessions,actions,analytics,connections,cohorts,gameAttempts,badges,taskSubmissions});
 }
 
-export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
+async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
 
   if(input.action==='cohort'){
     let cohortId=input.cohortId;
@@ -125,3 +127,6 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   const row=await db.examAnalyticsRecord.create({data:{studentId:id,examType:input.examType,subject:input.subject,topic:input.topic,questionType:input.questionType,correct:input.correct,wrong:input.wrong,blank:input.blank,avgSeconds:input.avgSeconds,examDate:input.examDate?new Date(input.examDate):new Date()}});
   return NextResponse.json({ok:true,row});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

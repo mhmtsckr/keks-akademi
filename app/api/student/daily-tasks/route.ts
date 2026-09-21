@@ -1,8 +1,9 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const from=new Date(Date.now()-7*86400000);
@@ -18,3 +19,5 @@ export async function GET(){
   });
   return NextResponse.json({ok:true,actions});
 }
+
+export const GET = withApiErrors(GET__handler);

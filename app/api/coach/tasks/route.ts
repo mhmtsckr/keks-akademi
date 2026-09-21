@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -17,7 +18,7 @@ const patchSchema=z.object({
   dueAt:z.string().nullable().optional()
 });
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const tasks=await db.coachTask.findMany({
@@ -29,10 +30,10 @@ export async function GET(){
   return NextResponse.json({ok:true,tasks});
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
-  const input=createSchema.parse(await req.json());
+  const input=await readJson(req, createSchema);
   if(input.studentId){
     const student=await db.student.findFirst({where:{id:input.studentId,coachId:user.coachProfile.id},select:{id:true}});
     if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
@@ -48,10 +49,10 @@ export async function POST(req:Request){
   return NextResponse.json({ok:true,task});
 }
 
-export async function PATCH(req:Request){
+async function PATCH__handler(req:Request){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
-  const input=patchSchema.parse(await req.json());
+  const input=await readJson(req, patchSchema);
   const task=await db.coachTask.findFirst({where:{id:input.id,coachId:user.coachProfile.id}});
   if(!task)return NextResponse.json({error:'Görev bulunamadı.'},{status:404});
   const status=input.status??task.status;
@@ -63,3 +64,7 @@ export async function PATCH(req:Request){
   }});
   return NextResponse.json({ok:true,task:updated});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);
+export const PATCH = withApiErrors(PATCH__handler);

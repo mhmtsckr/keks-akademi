@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -23,10 +24,10 @@ const session=z.object({
 });
 const schema=z.discriminatedUnion('action',[pref,session]);
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
 
   if(input.action==='preference'){
     const row=await db.techniquePreference.upsert({
@@ -74,7 +75,7 @@ export async function POST(req:Request){
   return NextResponse.json({ok:true,row});
 }
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const [preferences,sessions]=await Promise.all([
@@ -83,3 +84,6 @@ export async function GET(){
   ]);
   return NextResponse.json({ok:true,preferences,sessions});
 }
+
+export const POST = withApiErrors(POST__handler);
+export const GET = withApiErrors(GET__handler);

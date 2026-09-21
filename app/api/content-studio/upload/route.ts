@@ -1,3 +1,4 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
@@ -16,7 +17,7 @@ async function resolveStudent(user:any,requested:string|null){
   return null;
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['ADMIN','COACH','STUDENT']);
   const form=await req.formData();
   const file=form.get('file');
@@ -46,3 +47,5 @@ export async function POST(req:Request){
   }});
   return NextResponse.json({ok:true,deduplicated:false,upload:{id:row.id,fileName:row.fileName,status:row.status},analysis,extractionError:extractionError||null});
 }
+
+export const POST = withApiErrors(POST__handler);

@@ -1,3 +1,4 @@
+import { readJsonBody, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -5,10 +6,10 @@ import { buildReport, scoreAssessment } from '@/lib/scoring';
 import { sendAssessmentReport } from '@/lib/mailer';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 
-export async function POST(req: Request) {
+async function POST__handler(req: Request) {
   const user = await requireRole(['STUDENT']);
   if (!user.student) return NextResponse.json({ error: 'Öğrenci profili yok.' }, { status: 400 });
-  const body = await req.json();
+  const body = await readJsonBody(req);
   const month=turkeyMonthWindow();
   const access = await db.testAccess.findFirst({
     where:{
@@ -40,3 +41,5 @@ export async function POST(req: Request) {
   }
   return NextResponse.json({ ok: true, message: 'Test tamamlandı. Rapor KEKS Akademi değerlendirme sistemine iletildi.' });
 }
+
+export const POST = withApiErrors(POST__handler);

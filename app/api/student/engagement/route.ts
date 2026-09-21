@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -12,7 +13,7 @@ const forumSchema=z.object({action:z.literal('forum_post'),cohortId:z.string(),b
 const generateGameSchema=z.object({action:z.literal('generate_game')});
 const schema=z.discriminatedUnion('action',[actionSchema,gameSchema,analyticSchema,forumSchema,generateGameSchema]);
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const id=user.student.id;
@@ -41,10 +42,10 @@ export async function GET(){
   return NextResponse.json({ok:true,actions,gamification,badges,games:visibleGames,weeklyLeaderboard,monthlyLeaderboard,sessions,cohorts});
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
   if(input.action==='generate_game'){
     const weak=await chooseWeakTopic(user.student.id);
     if(!weak)return NextResponse.json({error:'Otomatik oyun üretmek için ders/konu verisi bulunamadı. Önce bir görev, konu veya soru çözüm kaydı oluşturun.'},{status:400});
@@ -93,3 +94,6 @@ export async function POST(req:Request){
   await awardXp(user.student.id,'GAME',attempt.id,xp);
   return NextResponse.json({ok:true,attempt,xp});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

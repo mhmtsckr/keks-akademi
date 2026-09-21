@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -9,8 +10,8 @@ const schema = z.object({
   accessKey: z.string().min(4).max(128),
 });
 
-export async function POST(req: Request) {
-  const input = schema.parse(await req.json());
+async function POST__handler(req: Request) {
+  const input = await readJson(req, schema);
   const student = await db.student.findUnique({
     where: { studentCode: input.studentCode.trim() },
     include: { user: true },
@@ -36,3 +37,5 @@ export async function POST(req: Request) {
   await createSession(user.id);
   return NextResponse.json({ ok: true, role: 'STUDENT' });
 }
+
+export const POST = withApiErrors(POST__handler);

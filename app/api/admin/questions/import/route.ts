@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -15,9 +16,9 @@ const item = z.object({
 });
 const schema = z.object({ questions: z.array(item).min(1).max(500) });
 
-export async function POST(req: Request) {
+async function POST__handler(req: Request) {
   const admin=await requireRole(['ADMIN']);
-  const input = schema.parse(await req.json());
+  const input = await readJson(req, schema);
   for (const q of input.questions) {
     await db.testQuestion.upsert({
       where: { formVersion_ageBand_orderNo: { formVersion: q.formVersion, ageBand: q.ageBand, orderNo: q.orderNo } },
@@ -28,3 +29,5 @@ export async function POST(req: Request) {
   await writeAudit({actorUserId:admin.id,action:'SCREENING_QUESTION_IMPORT',entityType:'TestQuestion',summary:input.questions.length+' tarama sorusu içe aktarıldı.',metadata:{count:input.questions.length}});
   return NextResponse.json({ ok: true, imported: input.questions.length });
 }
+
+export const POST = withApiErrors(POST__handler);

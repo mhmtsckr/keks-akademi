@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -17,7 +18,7 @@ function dateOnlyUtc(v:string){
   return new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
 }
 
-export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
+async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
@@ -35,13 +36,13 @@ export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   return NextResponse.json({ok:true,student,educationBand,activeForm,assignments});
 }
 
-export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
+async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id},select:{id:true,fullName:true,gradeLevel:true}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
   const educationBand=detectEducationBand(student.gradeLevel);
 
   if(input.action==='assign'){
@@ -123,3 +124,6 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
 
   return NextResponse.json({ok:true,approved:true,days:plans.daily.length});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

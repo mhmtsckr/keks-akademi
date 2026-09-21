@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -15,14 +16,14 @@ const item=z.object({
 });
 const schema=z.object({items:z.array(item).min(1).max(500)});
 
-export async function GET(){
+async function GET__handler(){
   await requireRole(['ADMIN']);
   const items=await db.gameContent.findMany({orderBy:{createdAt:'desc'},take:300});
   return NextResponse.json({ok:true,items});
 }
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['ADMIN']);
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
   const rows=[];
   for(const x of input.items){
     rows.push(await db.gameContent.create({data:{
@@ -39,3 +40,6 @@ export async function POST(req:Request){
   await writeAudit({actorUserId:user.id,action:'GAME_CONTENT_IMPORT',entityType:'GameContent',summary:rows.length+' oyun içeriği eklendi.',metadata:{count:rows.length}});
   return NextResponse.json({ok:true,count:rows.length});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

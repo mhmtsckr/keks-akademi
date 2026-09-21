@@ -1,9 +1,10 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { usableAccessToken } from '@/lib/calendarSync';
 
-export async function POST(){
+async function POST__handler(){
   const user=await requireRole(['COACH','ADMIN']);if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const connections=await db.calendarConnection.findMany({where:{coachId:user.coachProfile.id,provider:{in:['GOOGLE','OUTLOOK']},active:true}});
   let updated=0,errors=0;
@@ -24,3 +25,5 @@ export async function POST(){
   }
   return NextResponse.json({ok:true,updated,errors});
 }
+
+export const POST = withApiErrors(POST__handler);

@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -13,8 +14,8 @@ function safeEqual(a: string, b: string) {
   return aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
 }
 
-export async function POST(req: Request) {
-  const input = schema.parse(await req.json());
+async function POST__handler(req: Request) {
+  const input = await readJson(req, schema);
   const email = input.email.toLowerCase();
   const user = await db.user.findUnique({ where: { email } });
   if (!user) return NextResponse.json({ error: 'Giriş bilgileri hatalı.' }, { status: 401 });
@@ -33,3 +34,5 @@ export async function POST(req: Request) {
   await createSession(user.id);
   return NextResponse.json({ ok: true, role: user.role });
 }
+
+export const POST = withApiErrors(POST__handler);

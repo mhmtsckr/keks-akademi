@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -6,7 +7,7 @@ import { writeAudit } from '@/lib/audit';
 
 const patch=z.object({paymentId:z.string(),status:z.enum(['PENDING','PAID','FAILED','REFUNDED'])});
 
-export async function GET(req:Request){
+async function GET__handler(req:Request){
   await requireRole(['ADMIN']);
   const {searchParams}=new URL(req.url);
   const status=searchParams.get('status') as any;
@@ -20,12 +21,15 @@ export async function GET(req:Request){
   return NextResponse.json({ok:true,payments,totals});
 }
 
-export async function PATCH(req:Request){
+async function PATCH__handler(req:Request){
   const admin=await requireRole(['ADMIN']);
-  const input=patch.parse(await req.json());
+  const input=await readJson(req, patch);
   const before=await db.payment.findUnique({where:{id:input.paymentId}});
   if(!before)return NextResponse.json({error:'Ödeme bulunamadı.'},{status:404});
   const row=await db.payment.update({where:{id:input.paymentId},data:{status:input.status}});
   await writeAudit({actorUserId:admin.id,action:'PAYMENT_STATUS_UPDATE',entityType:'Payment',entityId:row.id,summary:'Ödeme durumu '+input.status+' olarak güncellendi.',metadata:{merchantOid:row.merchantOid,before:before.status,after:row.status}});
   return NextResponse.json({ok:true,row});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const PATCH = withApiErrors(PATCH__handler);

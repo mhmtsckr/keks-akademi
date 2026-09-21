@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -9,8 +10,8 @@ const schema = z.object({
   parentCode: z.string().min(4).max(128),
 });
 
-export async function POST(req: Request) {
-  const input = schema.parse(await req.json());
+async function POST__handler(req: Request) {
+  const input = await readJson(req, schema);
   const student = await db.student.findUnique({
     where: { studentCode: input.studentCode.trim() },
     include: { parentProfiles: { where: { active: true }, include: { user: true } } },
@@ -26,3 +27,5 @@ export async function POST(req: Request) {
   }
   return NextResponse.json({ error: 'Öğrenci veya veli kodu hatalı.' }, { status: 401 });
 }
+
+export const POST = withApiErrors(POST__handler);

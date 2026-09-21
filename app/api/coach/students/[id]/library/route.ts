@@ -1,8 +1,9 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 
-export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
+async function POST__handler(req: Request, context: { params: Promise<{ id: string }> }) {
   const user = await requireRole(['COACH','ADMIN']);
   const { id } = await context.params;
   if (!user.coachProfile) return NextResponse.json({ error: 'Koç profili yok.' }, { status: 400 });
@@ -33,3 +34,5 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   });
   return NextResponse.json({ ok: true, row: { id: row.id, title: row.title, fileName: row.fileName } });
 }
+
+export const POST = withApiErrors(POST__handler);

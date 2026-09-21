@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -26,16 +27,16 @@ function weekStartUtc(){
   return d;
 }
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   return NextResponse.json({ok:true,...await buildStudentCommandCenter(user.student.id)});
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
 
   if(input.action==='rebalance'){
     const moved=await rebalanceMissedTasks(user.student.id);
@@ -120,3 +121,6 @@ export async function POST(req:Request){
 
   return NextResponse.json({ok:true,reflection,comparison,snapshot});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

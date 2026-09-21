@@ -1,3 +1,4 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -6,7 +7,7 @@ import { createExternalAssessmentToken } from '@/lib/externalAssessment';
 
 const SITE_URL='https://kazandiran-egitim-kocluk.mhmtsckr029.chatgpt.site/';
 
-export async function GET(req:Request){
+async function GET__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
 
@@ -48,3 +49,5 @@ export async function GET(req:Request){
     expiresInSeconds:7200
   });
 }
+
+export const GET = withApiErrors(GET__handler);

@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -6,7 +7,7 @@ import { REVIEW_DAYS } from '@/lib/smartCoach';
 
 const schema=z.object({id:z.string(),answer:z.string().min(1)});
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const items=await db.reviewQueueItem.findMany({
@@ -18,10 +19,10 @@ export async function GET(){
   return NextResponse.json({ok:true,items:items.map(x=>({...x,fileData:undefined}))});
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
-  const input=schema.parse(await req.json());
+  const input=await readJson(req, schema);
   const item=await db.reviewQueueItem.findFirst({where:{id:input.id,studentId:user.student.id},include:{question:true}});
   if(!item) return NextResponse.json({error:'Tekrar kaydı bulunamadı.'},{status:404});
   const correct=input.answer===item.question.correctAnswer;
@@ -37,3 +38,6 @@ export async function POST(req:Request){
   }});
   return NextResponse.json({ok:true,row,correct,correctAnswer:item.question.correctAnswer,explanation:item.question.explanation});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

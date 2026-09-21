@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -59,7 +60,7 @@ async function buildBrief(studentId:string){
   };
 }
 
-export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
+async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
@@ -68,13 +69,13 @@ export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   return NextResponse.json({ok:true,student,brief:await buildBrief(id)});
 }
 
-export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
+async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id},select:{id:true,fullName:true}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  const input=postSchema.parse(await req.json());
+  const input=await readJson(req, postSchema);
   const session=await db.coachingSession.findFirst({where:{id:input.sessionId,studentId:id,coachId:user.coachProfile.id}});
   if(!session)return NextResponse.json({error:'Seans bulunamadı.'},{status:404});
 
@@ -107,3 +108,6 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   }
   return NextResponse.json({ok:true,session:updated});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

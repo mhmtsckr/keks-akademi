@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -19,13 +20,13 @@ async function ownedStudent(user: any, studentId: string) {
   return db.student.findFirst({ where: { id: studentId, coachId: user.coachProfile.id } });
 }
 
-export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
+async function POST__handler(req: Request, context: { params: Promise<{ id: string }> }) {
   const user = await requireRole(['COACH','ADMIN']);
   const { id } = await context.params;
   const student = await ownedStudent(user, id);
   if (!student) return NextResponse.json({ error: 'Öğrenci bulunamadı veya yetkiniz yok.' }, { status: 404 });
 
-  const input = actionSchema.parse(await req.json());
+  const input = await readJson(req, actionSchema);
 
   if (input.action === 'plan') {
     const row = await db.studyPlan.create({ data: { studentId: student.id, title: input.title, payload: input.payload ?? {}, active: true } });
@@ -69,3 +70,5 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   });
   return NextResponse.json({ ok: true, code: raw, studentCode: student.studentCode, parentUserId: parentUser.id });
 }
+
+export const POST = withApiErrors(POST__handler);

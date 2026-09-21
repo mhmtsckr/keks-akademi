@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -15,7 +16,7 @@ function dateOnlyUtc(v:string){
   return new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
 }
 
-export async function GET(){
+async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const assessment=await db.assessment.findFirst({where:{studentId:user.student.id},orderBy:{completedAt:'desc'}});
@@ -30,12 +31,12 @@ export async function GET(){
   return NextResponse.json({ok:true,locked:false,form:assignment.form,assignment:{id:assignment.id,status:assignment.status},latest});
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const assessment=await db.assessment.findFirst({where:{studentId:user.student.id},orderBy:{completedAt:'desc'}});
   if(!assessment)return NextResponse.json({error:'Önce KEKS eğilim taramasını tamamlayın.'},{status:403});
-  const input=submitSchema.parse(await req.json());
+  const input=await readJson(req, submitSchema);
   const assignment=await db.preInterviewAssignment.findFirst({
     where:{studentId:user.student.id,status:'ASSIGNED',revokedAt:null},
     orderBy:{assignedAt:'desc'},
@@ -113,3 +114,6 @@ export async function POST(req:Request){
 
   return NextResponse.json({ok:true,attempt,report,plans,pendingCoachApproval:true});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const POST = withApiErrors(POST__handler);

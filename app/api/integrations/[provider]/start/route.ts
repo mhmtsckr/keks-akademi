@@ -1,8 +1,9 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { appBaseUrl,makeOAuthState } from '@/lib/integrationOAuth';
 
-export async function GET(_req:Request,{params}:{params:Promise<{provider:string}>}){
+async function GET__handler(_req:Request,{params}:{params:Promise<{provider:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {provider:raw}=await params;const provider=raw.toUpperCase();
@@ -24,3 +25,5 @@ export async function GET(_req:Request,{params}:{params:Promise<{provider:string
   }else return NextResponse.json({error:'Desteklenmeyen sağlayıcı.'},{status:400});
   return NextResponse.redirect(url);
 }
+
+export const GET = withApiErrors(GET__handler);

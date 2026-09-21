@@ -1,3 +1,4 @@
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -10,7 +11,7 @@ const patch=z.object({
   note:z.string().max(1000).optional()
 });
 
-export async function GET(req:Request){
+async function GET__handler(req:Request){
   await requireRole(['ADMIN']);
   const {searchParams}=new URL(req.url);
   const status=searchParams.get('status')||'PENDING';
@@ -21,9 +22,9 @@ export async function GET(req:Request){
   return NextResponse.json({ok:true,items,counts});
 }
 
-export async function PATCH(req:Request){
+async function PATCH__handler(req:Request){
   const admin=await requireRole(['ADMIN']);
-  const input=patch.parse(await req.json());
+  const input=await readJson(req, patch);
   const row=await db.questionBankItem.findUnique({where:{id:input.id}});
   if(!row)return NextResponse.json({error:'Soru bulunamadı.'},{status:404});
   const status=input.action==='APPROVE'?'APPROVED':input.action==='REJECT'?'REJECTED':'PENDING';
@@ -37,3 +38,6 @@ export async function PATCH(req:Request){
   await writeAudit({actorUserId:admin.id,action:'QUESTION_REVIEW',entityType:'QuestionBankItem',entityId:updated.id,summary:'Soru '+status+' durumuna alındı.',metadata:{subject:updated.subject,topic:updated.topic,note:input.note||null}});
   return NextResponse.json({ok:true,item:updated});
 }
+
+export const GET = withApiErrors(GET__handler);
+export const PATCH = withApiErrors(PATCH__handler);

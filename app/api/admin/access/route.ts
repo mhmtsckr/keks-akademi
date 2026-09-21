@@ -1,10 +1,11 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { decryptPrivateCode } from '@/lib/security';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 
-export async function GET(){
+async function GET__handler(){
   await requireRole(['ADMIN']);
   const month=turkeyMonthWindow();
   const [codes,accesses]=await Promise.all([
@@ -61,3 +62,5 @@ export async function GET(){
 
   return NextResponse.json({ok:true,codes:safeCodes,accesses,currentMonth:month.key});
 }
+
+export const GET = withApiErrors(GET__handler);

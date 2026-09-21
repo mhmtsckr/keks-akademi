@@ -1,3 +1,4 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
@@ -8,7 +9,7 @@ function firstNumber(html:string, patterns:RegExp[]){
   return null;
 }
 
-export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){
+async function POST__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
  const user=await requireRole(['COACH','ADMIN']);
  if(!user.coachProfile) return NextResponse.json({error:'Koç profili yok.'},{status:400});
  const {id}=await params;
@@ -58,3 +59,5 @@ export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){
    return NextResponse.json({ok:true,target:updated,message:'Resmî kaynak şu anda otomatik okunamadı. Kayıt korundu; daha sonra yeniden senkronlanabilir.'});
  }
 }
+
+export const POST = withApiErrors(POST__handler);

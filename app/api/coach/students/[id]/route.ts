@@ -1,3 +1,4 @@
+import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -6,7 +7,7 @@ import { writeAudit } from '@/lib/audit';
 
 const schema=z.object({confirmationCode:z.string().min(1)});
 
-export async function DELETE(req:Request,{params}:{params:Promise<{id:string}>}){
+async function DELETE__handler(req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);
   if(!user.coachProfile) return NextResponse.json({error:'Koç profili bulunamadı.'},{status:403});
 
@@ -66,3 +67,5 @@ export async function DELETE(req:Request,{params}:{params:Promise<{id:string}>})
 
   return NextResponse.json({ok:true,id:student.id});
 }
+
+export const DELETE = withApiErrors(DELETE__handler);
