@@ -40,7 +40,14 @@ export function StudentLoginForm() {
       body:JSON.stringify({studentCode,accessKey})
     });
     const j=await r.json();
-    if(!r.ok) return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
+    if(!r.ok){
+      if(j.code==='ACCESS_KEY_EXPIRED'){
+        try{localStorage.removeItem('keks.studentLogin.v1')}catch{}
+        setAccessKey('');
+        setRemember(false);
+      }
+      return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
+    }
     try{
       if(remember)localStorage.setItem('keks.studentLogin.v1',JSON.stringify({studentCode,accessKey}));
       else localStorage.removeItem('keks.studentLogin.v1');
@@ -82,7 +89,7 @@ export function StudentLoginForm() {
 
     {forgotOpen&&<form className="form card" onSubmit={forgot}>
       <div className="moduleEyebrow">GİRİŞ ANAHTARI YENİDEN GÖNDERİMİ</div>
-      <p className="muted">Bilgiler kayıtla eşleşirse mevcut giriş anahtarınız değiştirilmeden kayıtlı Gmail adresinize yeniden gönderilir.</p>
+      <p className="muted">Bilgiler kayıtla eşleşirse ve anahtarın 1 yıllık süresi dolmamışsa mevcut giriş anahtarınız değiştirilmeden kayıtlı Gmail adresinize yeniden gönderilir.</p>
       <div className="field"><label>Öğrenci kodu</label><input name="studentCode" required defaultValue={studentCode}/></div>
       <div className="field"><label>Ad soyad</label><input name="fullName" required autoComplete="name"/></div>
       <div className="field"><label>Kayıtlı Gmail adresi</label><input name="email" type="email" required autoComplete="email"/></div>
