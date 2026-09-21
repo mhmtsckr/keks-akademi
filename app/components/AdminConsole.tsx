@@ -228,7 +228,7 @@ export function AdminConsole(){
         <HealthCard label="Neon Veritabanı" ok={health.database==='OK'} detail={health.database}/>
         <HealthCard label="Kimlik Doğrulama" ok={health.authSecret} detail={health.authSecret?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="PayTR" ok={health.paytr} detail={health.paytr?'Yapılandırıldı':'Eksik'}/>
-        <HealthCard label="E-posta / Resend" ok={health.resend} detail={health.resend?'Yapılandırıldı':'Eksik'}/>
+        <HealthCard label="E-posta / Resend" ok={health.resend} detail={health.resend?(health.resendAddress||'keksakademi@gmail.com'):'RESEND_API_KEY eksik'}/>
         <HealthCard label="Uygulama URL" ok={health.appUrl} detail={health.appUrl?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="Son 24 saat audit" ok={true} detail={String(health.recentAudit)+' kayıt'}/>
       </div>}

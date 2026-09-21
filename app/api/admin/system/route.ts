@@ -12,7 +12,9 @@ async function GET__handler(){
     database,
     authSecret:Boolean(process.env.AUTH_SECRET),
     paytr:Boolean(process.env.PAYTR_MERCHANT_ID&&process.env.PAYTR_MERCHANT_KEY&&process.env.PAYTR_MERCHANT_SALT),
-    resend:Boolean(process.env.RESEND_API_KEY&&process.env.REPORT_FROM),
+    resend:Boolean(process.env.RESEND_API_KEY),
+    resendAddress:process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com',
+    resendFrom:process.env.REPORT_FROM||'KEKS Akademi <onboarding@resend.dev>',
     appUrl:Boolean(process.env.APP_URL||process.env.VERCEL_URL||process.env.VERCEL_PROJECT_PRODUCTION_URL),
     recentAudit
   }});

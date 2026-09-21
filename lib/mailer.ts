@@ -1,9 +1,12 @@
 import { Resend } from 'resend';
 
+const KEKS_CONTACT_EMAIL=process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com';
+const KEKS_FROM=()=>process.env.REPORT_FROM||'KEKS Akademi <onboarding@resend.dev>';
+
 export async function sendStudentCredentials(input:{email:string;studentName:string;studentCode:string;accessKey:string;coachName:string}){
   if(!process.env.RESEND_API_KEY)return {skipped:true,error:'RESEND_API_KEY_MISSING'};
   const resend=new Resend(process.env.RESEND_API_KEY);
-  const from=process.env.REPORT_FROM||'KEKS Akademi <onboarding@resend.dev>';
+  const from=KEKS_FROM();
   const html=`
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
       <h1>KEKS Akademi Öğrenci Başvurusu</h1>
@@ -20,6 +23,7 @@ export async function sendStudentCredentials(input:{email:string;studentName:str
   const result=await resend.emails.send({
     from,
     to:input.email,
+    replyTo:KEKS_CONTACT_EMAIL,
     subject:'KEKS Akademi | Öğrenci giriş bilgileriniz',
     html
   });
@@ -29,10 +33,10 @@ export async function sendStudentCredentials(input:{email:string;studentName:str
 export async function sendAssessmentReport(input: { studentCode: string; studentName: string; assessmentId: string; report: unknown }) {
   if (!process.env.RESEND_API_KEY) return { skipped: true };
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const recipient = process.env.REPORT_RECIPIENT || 'keksakademi@gmail.com';
-  const from = process.env.REPORT_FROM || 'KEKS Akademi <onboarding@resend.dev>';
+  const recipient = KEKS_CONTACT_EMAIL;
+  const from = KEKS_FROM();
   const body = `<h1>KEKS Test Raporu</h1><p><strong>Öğrenci:</strong> ${escapeHtml(input.studentName)} (${escapeHtml(input.studentCode)})</p><p><strong>Kayıt:</strong> ${escapeHtml(input.assessmentId)}</p><pre>${escapeHtml(JSON.stringify(input.report, null, 2))}</pre>`;
-  return resend.emails.send({ from, to: recipient, subject: `KEKS Test Raporu | Öğrenci ${input.studentCode}`, html: body });
+  return resend.emails.send({ from, to: recipient, replyTo: KEKS_CONTACT_EMAIL, subject: `KEKS Test Raporu | Öğrenci ${input.studentCode}`, html: body });
 }
 
 function escapeHtml(value: string) {
