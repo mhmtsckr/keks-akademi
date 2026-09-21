@@ -32,6 +32,13 @@ async function POST__handler(req:Request){
     return NextResponse.json({error:'Öğrenci kodu, ad soyad veya kayıtlı Gmail bilgisi eşleşmedi.'},{status:400});
   }
 
+  if(student.accessKeyExpiresAt&&student.accessKeyExpiresAt.getTime()<=Date.now()){
+    return NextResponse.json({
+      error:'Giriş anahtarınızın 1 yıllık geçerlilik süresi dolmuştur. Süresi dolmuş anahtar yeniden gönderilemez; yöneticiden yeni giriş anahtarı isteyin.',
+      code:'ACCESS_KEY_EXPIRED'
+    },{status:403});
+  }
+
   if(!student.accessKeyCiphertext){
     return NextResponse.json({
       error:'Bu öğrenci eski kayıt sisteminden aktarılmış. Mevcut giriş anahtarı güvenlik nedeniyle geri çözülemiyor; yöneticiden yeni anahtar oluşturmasını isteyin.'
@@ -50,7 +57,8 @@ async function POST__handler(req:Request){
     email:expectedEmail,
     studentName:student.fullName,
     studentCode:student.studentCode,
-    accessKey
+    accessKey,
+    accessKeyExpiresAt:student.accessKeyExpiresAt
   });
   if(mail?.skipped||mail?.error){
     return NextResponse.json({error:'E-posta gönderim servisi şu anda hazır değil. Yöneticiyle iletişime geçin.'},{status:503});
