@@ -35,6 +35,7 @@ const odeme = (ustler: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   resetMocks();
   db.payment.findUnique.mockResolvedValue(null);
+  db.payment.updateMany.mockResolvedValue({ count: 1 });
 });
 
 describe('POST /api/paytr/callback — imza doğrulaması', () => {
@@ -85,8 +86,9 @@ describe('POST /api/paytr/callback — ödeme işleme', () => {
     });
     // İkisi de tek transaction içinde olmalı
     expect(db.$transaction).toHaveBeenCalledTimes(1);
-    expect(db.payment.update).toHaveBeenCalledWith({
-      where: { id: 'odeme-1' },
+    // Kosullu updateMany iyimser kilit: yalnizca hala PAID olmayan satiri alir
+    expect(db.payment.updateMany).toHaveBeenCalledWith({
+      where: { id: 'odeme-1', status: { not: 'PAID' } },
       data: { status: 'PAID', providerPayload: expect.objectContaining({ status: 'success' }) },
     });
     expect(db.testAccess.create).toHaveBeenCalledWith({
@@ -105,6 +107,20 @@ describe('POST /api/paytr/callback — ödeme işleme', () => {
     expect(db.$transaction).not.toHaveBeenCalled();
     expect(db.testAccess.create).not.toHaveBeenCalled();
     expect(db.payment.update).not.toHaveBeenCalled();
+    expect(db.payment.updateMany).not.toHaveBeenCalled();
+  });
+
+  // Eszamanli bir bildirim satiri once PAID yaptiysa kosullu update 0 satir
+  // etkiler ve ikinci bir test erisimi acilmaz.
+  it('kilidi kaptıramayan bildirim ikinci erişim açmaz', async () => {
+    db.payment.findUnique.mockResolvedValue(odeme());
+    db.payment.updateMany.mockResolvedValue({ count: 0 });
+
+    const yanit = await POST(formRequest(URL_, bildirim()));
+
+    expect(yanit.status).toBe(200);
+    expect(db.payment.updateMany).toHaveBeenCalledTimes(1);
+    expect(db.testAccess.create).not.toHaveBeenCalled();
   });
 
   it('başarısız bildirimde ödemeyi FAILED yapar, erişim açmaz', async () => {

@@ -10,7 +10,7 @@ import { vi } from 'vitest';
  * doğrulamayın; yalnızca hangi çağrıların yapıldığını ve dönen yanıtı doğrulayın.
  */
 export const db = {
-  payment: { findUnique: vi.fn(), update: vi.fn() },
+  payment: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   testAccess: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   assessment: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
   student: { findUnique: vi.fn(), findFirst: vi.fn() },
