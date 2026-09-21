@@ -28,7 +28,14 @@ async function main() {
     const student = await db.student.upsert({
       where: { studentCode: s.studentCode },
       update: { coachId: coach.id, legacyExternalId: s.legacyId },
-      create: { studentCode: s.studentCode, fullName: s.fullName, accessKeyHash: await bcrypt.hash(s.accessKey,12), coachId: coach.id, legacyExternalId: s.legacyId }
+      create: {
+        studentCode: s.studentCode,
+        fullName: s.fullName,
+        accessKeyHash: await bcrypt.hash(s.accessKey,12),
+        accessKeyExpiresAt: new Date(Date.now()+365*24*60*60*1000),
+        coachId: coach.id,
+        legacyExternalId: s.legacyId
+      }
     });
     for (const p of s.plans ?? []) await db.studyPlan.upsert({ where:{legacyId:p.legacyId}, update:{studentId:student.id,title:p.title,payload:p.payload as object}, create:{studentId:student.id,title:p.title,payload:p.payload as object,legacyId:p.legacyId} });
     for (const l of s.dailyLogs ?? []) await db.dailyLog.upsert({ where:{legacyId:l.legacyId}, update:{studentId:student.id,date:new Date(l.date),payload:l.payload as object}, create:{studentId:student.id,date:new Date(l.date),payload:l.payload as object,legacyId:l.legacyId} });
