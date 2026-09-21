@@ -125,7 +125,7 @@ export default async function StudentPage() {
 
     <section className="section"><PortalSectionTitle eyebrow="ÜRET" title="Akıllı İçerik Stüdyosu"/><ContentStudio studentId={student.id} existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></section>
 
-    <section className="section"><PortalSectionTitle eyebrow="TARAMA" title="KEKS Eğilim Taraması" description="Eğitsel çalışma ve öz-düzenleme eğilimlerini belirleyen KEKS tarama uygulamasını bu bölümden tamamlayın."/><StudentActions hasAccess={Boolean(access)}/></section>
+    <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="TARAMA" title="KEKS Eğilim Taraması" description="Eğitsel çalışma ve öz-düzenleme eğilimlerini belirleyen KEKS tarama uygulamasını bu bölümden tamamlayın."/><StudentActions hasAccess={Boolean(access)}/></section>
     <section className="section"><PortalSectionTitle eyebrow="ÖN GÖRÜŞME" title="Çalışma Davranışı ve Planlama Formu" description="Kişilik/eğilim taramasını tamamladıktan sonra bu form açılır. Yanıtlarınız koçunuza ayrıntılı rapor olarak iletilir."/><StudentPreInterview/></section>
   </PortalShell>;
 }
