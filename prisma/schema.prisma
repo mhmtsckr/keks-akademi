@@ -79,6 +79,7 @@ model Student {
   studentCode      String          @unique
   accessKeyHash    String
   accessKeyCiphertext String?
+  accessKeyExpiresAt DateTime
   credentialsDeliveryStatus String @default("PENDING")
   credentialsEmailedAt DateTime?
   credentialEmailAttempts Int @default(0)
