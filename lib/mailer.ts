@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 const KEKS_CONTACT_EMAIL=process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com';
 const KEKS_FROM=()=>process.env.REPORT_FROM||'KEKS Akademi <onboarding@resend.dev>';
 
-export async function sendStudentCredentials(input:{email:string;studentName:string;studentCode:string;accessKey:string;coachName:string}){
+export async function sendStudentCredentials(input:{email:string;studentName:string;studentCode:string;accessKey:string;accessKeyExpiresAt:Date;coachName:string}){
   if(!process.env.RESEND_API_KEY)return {skipped:true,error:'RESEND_API_KEY_MISSING'};
   const resend=new Resend(process.env.RESEND_API_KEY);
   const from=KEKS_FROM();
@@ -16,7 +16,9 @@ export async function sendStudentCredentials(input:{email:string;studentName:str
       <div style="padding:16px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2">
         <p><strong>Öğrenci kodu:</strong> ${escapeHtml(input.studentCode)}</p>
         <p><strong>Giriş anahtarı:</strong> ${escapeHtml(input.accessKey)}</p>
+        <p><strong>Son geçerlilik:</strong> ${escapeHtml(input.accessKeyExpiresAt.toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'}))}</p>
       </div>
+      <p>Giriş anahtarınız oluşturulduğu tarihten itibaren 1 yıl geçerlidir. Süre dolduğunda bu anahtarla sisteme giriş yapılamaz.</p>
       <p>Bu bilgileri güvenli bir yerde saklayın. Öğrenci paneline öğrenci kodu ve giriş anahtarıyla giriş yapabilirsiniz.</p>
       <p>KEKS Akademi</p>
     </div>`;
@@ -30,7 +32,7 @@ export async function sendStudentCredentials(input:{email:string;studentName:str
   return result;
 }
 
-export async function resendStudentAccessKey(input:{email:string;studentName:string;studentCode:string;accessKey:string}){
+export async function resendStudentAccessKey(input:{email:string;studentName:string;studentCode:string;accessKey:string;accessKeyExpiresAt:Date}){
   if(!process.env.RESEND_API_KEY)return {skipped:true,error:'RESEND_API_KEY_MISSING'};
   const resend=new Resend(process.env.RESEND_API_KEY);
   const from=KEKS_FROM();
@@ -42,7 +44,9 @@ export async function resendStudentAccessKey(input:{email:string;studentName:str
       <div style="padding:16px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2">
         <p><strong>Öğrenci kodu:</strong> ${escapeHtml(input.studentCode)}</p>
         <p><strong>Giriş anahtarı:</strong> ${escapeHtml(input.accessKey)}</p>
+        <p><strong>Son geçerlilik:</strong> ${escapeHtml(input.accessKeyExpiresAt.toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'}))}</p>
       </div>
+      <p>Bu anahtar yalnızca kendi 1 yıllık geçerlilik süresinin sonuna kadar kullanılabilir.</p>
       <p>Bu talebi siz oluşturmadıysanız KEKS Akademi ile iletişime geçin.</p>
       <p>KEKS Akademi</p>
     </div>`;
