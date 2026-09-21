@@ -51,6 +51,8 @@ export function AdminAssessmentWorkflow(){
         </div>
         <div className="notice"><strong>Bilimsel kullanım sınırı:</strong> {report.disclaimer}</div>
         <div className="interviewScoreGrid">{Object.entries(a.scores||{}).sort((x:any,y:any)=>Number(y[1])-Number(x[1])).map(([k,v]:any)=><div className="briefMetric" key={k}><b>{Number(v).toFixed(2)}</b><span>{k}</span></div>)}</div>
+        {report.habitScores&&<><h3 style={{marginTop:16}}>Çalışma Alışkanlıkları</h3><div className="interviewScoreGrid">{Object.entries(report.habitScores).map(([k,v]:any)=><div className="briefMetric" key={k}><b>{Number(v).toFixed(2)}</b><span>{k}</span></div>)}</div></>}
+        {report.developmentSummary?.immediateActions?.length>0&&<div className="notice"><strong>İlk 28 gün için gelişim öncelikleri</strong>{report.developmentSummary.immediateActions.map((x:string,i:number)=><div key={i}>{i+1}. {x}</div>)}</div>}
         {leading.length>0&&<div className="stack">{leading.map((x:any)=><div className="card" key={x.name} style={{padding:14}}>
           <strong>{x.name} · {Number(x.score).toFixed(2)}/5</strong>
           {x.profile&&<><p><b>Motivasyon:</b> {x.profile.motivation}</p><p><b>Güçlü yönler:</b> {x.profile.strengths}</p><p><b>Gelişim riski:</b> {x.profile.risks}</p><p><b>Çalışma yaklaşımı:</b> {x.profile.plan}</p></>}

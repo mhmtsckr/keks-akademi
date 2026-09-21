@@ -99,7 +99,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
   if(state.status==='READY'&&form){
     return <div className="card">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">KEKS'İN KENDİ TARAMA MODÜLÜ</div><h2>{form.title}</h2><p className="muted">{form.questionCount} madde · Son 6–12 aydaki gerçek çalışma davranışınızı düşünerek cevaplayın.</p></div>
+        <div><div className="moduleEyebrow">KEKS'İN KENDİ TARAMA MODÜLÜ</div><h2>{form.title}</h2><p className="muted">{form.questionCount} madde · Son iki aydaki gerçek çalışma davranışınızı düşünerek cevaplayın.</p></div>
         <span className="pill">{answered}/{form.questionCount}</span>
       </div>
       <div className="notice"><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
@@ -109,7 +109,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
       </div>
       <div className="stack">
         {pageQuestions.map(q=><div className="preInterviewQuestion" key={q.id}>
-          <div className="questionMeta"><span>{q.orderNo}</span><small>{q.kind==='HABIT'?'ÇALIŞMA ALIŞKANLIĞI':'EĞİLİM'}</small></div>
+          <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
           <div style={{flex:1}}><strong>{q.prompt}</strong>
             <div className="likertRow">
               {[1,2,3,4,5].map(n=><label key={n} title={q.kind==='HABIT'?['Hiçbir zaman','Nadiren','Bazen','Çoğu zaman','Her zaman'][n-1]:['Bana hiç benzemiyor','Bana az benziyor','Kısmen benziyor','Bana oldukça benziyor','Bana çok benziyor'][n-1]}>

@@ -13,6 +13,29 @@ const submitSchema=z.object({
 
 function reportObject(v:unknown){return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,any>:{};}
 
+function combineProgramScores(interviewScores:Record<string,number>,habitScores:unknown){
+  const habits=reportObject(habitScores);
+  const map:Record<string,string[]>={
+    'Başlama ve Süreklilik':['Başlama','Görev Tamamlama'],
+    'Görev Yapısı ve Planlama':['Planlama','Öz İzleme'],
+    'Motivasyon ve Pekiştirme':['Görev Tamamlama','Öz İzleme'],
+    'Odak ve Çalışma Ortamı':['Odak'],
+    'Aktif Hatırlama ve Tekrar':['Aktif Hatırlama','Aralıklı Tekrar'],
+    'Soru Çözme ve Hata Analizi':['Soru Uygulama','Hata Analizi'],
+    'Sınav ve Zaman Yönetimi':['Başlama','Odak','Görev Tamamlama'],
+    'Koçluk Bağımsızlığı':['Yardım İsteme','Öz İzleme']
+  };
+  const out={...interviewScores};
+  for(const [dimension,keys] of Object.entries(map)){
+    const values=keys.map(k=>Number(habits[k])).filter(Number.isFinite);
+    if(!values.length)continue;
+    const habitAverage=values.reduce((a,b)=>a+b,0)/values.length;
+    const interview=Number(interviewScores[dimension]);
+    out[dimension]=Number((Number.isFinite(interview)?interview*0.65+habitAverage*0.35:habitAverage).toFixed(2));
+  }
+  return out;
+}
+
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
@@ -63,7 +86,9 @@ async function POST__handler(req:Request){
     }
   }
 
-  const scores=scoreInterview(form.questions.map(q=>({id:q.id,dimension:q.dimension,reverse:q.reverse})),input.answers);
+  const interviewScores=scoreInterview(form.questions.map(q=>({id:q.id,dimension:q.dimension,reverse:q.reverse})),input.answers);
+  const screeningHabitScores=reportObject(assessmentReport.habitScores);
+  const scores=combineProgramScores(interviewScores,screeningHabitScores);
   const motivationSignals=scoreMotivationSignals(form.questions.map(q=>({id:q.id,motivationKey:q.motivationKey,reverse:q.reverse})),input.answers);
   const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
   const academicTrack=requiresTrack?input.academicTrack:'GENERAL';
@@ -77,8 +102,13 @@ async function POST__handler(req:Request){
     screeningSummary:{
       leadingDimensions:assessmentReport.leadingDimensions||[],
       dominance:assessmentReport.dominance||null,
-      developmentFocus:assessmentReport.developmentFocus||[]
+      developmentFocus:assessmentReport.developmentFocus||[],
+      habitScores:assessmentReport.habitScores||{},
+      habitDevelopment:assessmentReport.habitDevelopment||[],
+      developmentSummary:assessmentReport.developmentSummary||null
     },
+    rawInterviewScores:interviewScores,
+    combinedProgramScores:scores,
     planDraft:{annual:plans.annual,monthly:plans.monthly,weekly:plans.weekly,daily:plans.daily},
     workflowStatus:'ADMIN_REVIEW'
   };
@@ -89,8 +119,11 @@ async function POST__handler(req:Request){
     'KEKS BİRLEŞİK DEĞERLENDİRME VE GELİŞİM RAPORU',
     'Program alanı: '+academicTrack.replaceAll('_',' '),
     '',
-    'ÖN GÖRÜŞME BOYUT PUANLARI',
+    'BİRLEŞİK PROGRAMLAMA PUANLARI',
     scoreLines,
+    '',
+    'EĞİLİM TARAMASI ÇALIŞMA ALIŞKANLIKLARI',
+    Object.entries(screeningHabitScores).map(([k,v])=>k+': '+v+'/5').join('\n'),
     '',
     'ÖNCELİKLİ GELİŞİM ALANLARI',
     interviewReport.weakest.map(x=>x.dimension+' ('+x.score+'/5)').join(', '),
