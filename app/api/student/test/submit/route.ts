@@ -1,15 +1,25 @@
-import { readJsonBody, withApiErrors } from '@/lib/apiGuard';
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { buildReport, scoreAssessment } from '@/lib/scoring';
 import { sendAssessmentReport } from '@/lib/mailer';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 
+const schema = z.object({
+  formVersion: z.string().min(1).max(100),
+  ageBand: z.string().min(1).max(100),
+  answers: z
+    .array(z.object({ questionId: z.string().min(1), value: z.number().int().min(1).max(5) }))
+    .min(1)
+    .max(500),
+});
+
 async function POST__handler(req: Request) {
   const user = await requireRole(['STUDENT']);
   if (!user.student) return NextResponse.json({ error: 'Öğrenci profili yok.' }, { status: 400 });
-  const body = await readJsonBody(req);
+  const body = await readJson(req, schema);
   const month=turkeyMonthWindow();
   const access = await db.testAccess.findFirst({
     where:{

@@ -1,14 +1,20 @@
-import { readJsonBody, withApiErrors } from '@/lib/apiGuard';
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { verifySecret } from '@/lib/security';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 
+// Boş kod bilerek kabul ediliyor: döngü onu zaten "Kod geçersiz" mesajıyla
+// reddediyor. Şemanin işi, code alanının hiç gelmemesini (verifySecret'ı null ile
+// çağırıp 500 üretmesini) engellemek.
+const schema = z.object({ code: z.string().max(128) });
+
 async function POST__handler(req: Request) {
   const user = await requireRole(['STUDENT']);
   if (!user.student) return NextResponse.json({ error: 'Öğrenci profili yok.' }, { status: 400 });
-  const { code } = await readJsonBody(req);
+  const { code } = await readJson(req, schema);
   const candidates = await db.academyCode.findMany({ where: { active: true } });
   const now = new Date();
   const month=turkeyMonthWindow(now);

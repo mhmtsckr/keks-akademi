@@ -1,4 +1,4 @@
-import { readJson, readJsonBody, withApiErrors } from '@/lib/apiGuard';
+import { readJson, withApiErrors } from '@/lib/apiGuard';
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -15,6 +15,10 @@ const schema=z.object({
     gamification:z.boolean().default(false)
   })
 });
+
+// shareId zorunlu: eksik olursa Prisma id filtresini düşürür ve öğrencinin
+// rastgele bir paylaşımı iptal edilirdi.
+const patchSchema=z.object({shareId:z.string().min(1)});
 
 function tokenHash(token:string){return crypto.createHash('sha256').update(token).digest('hex')}
 
@@ -37,7 +41,7 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
 
 async function PATCH__handler(req:Request,{params}:{params:Promise<{id:string}>}){
   const user=await requireRole(['COACH','ADMIN']);if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
-  const {id}=await params;const body=await readJsonBody(req);const share=await db.progressShare.findFirst({where:{id:body.shareId,student:{id,coachId:user.coachProfile.id}}});if(!share)return NextResponse.json({error:'Paylaşım bulunamadı.'},{status:404});
+  const {id}=await params;const input=await readJson(req, patchSchema);const share=await db.progressShare.findFirst({where:{id:input.shareId,student:{id,coachId:user.coachProfile.id}}});if(!share)return NextResponse.json({error:'Paylaşım bulunamadı.'},{status:404});
   const row=await db.progressShare.update({where:{id:share.id},data:{revokedAt:new Date()}});
   return NextResponse.json({ok:true,row});
 }
