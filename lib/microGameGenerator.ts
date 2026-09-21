@@ -99,7 +99,7 @@ async function aiGame(input:{subject:string;topic:string;examType?:string|null;g
       body:JSON.stringify({
         model:process.env.OPENAI_MODEL,
         input:[
-          {role:'system',content:'KEKS Akademi için yalnız verilen ders, konu ve kaynak maddelere dayalı Türkçe, kısa ve öğretici mikro tekrar oyunu üret. Yeni bilgi uydurma. Yalnız JSON döndür.'},
+          {role:'system',content:'KEKS Akademi için yalnız verilen ders, konu ve kaynak maddelere dayalı Türkçe, kısa ve öğretici mikro tekrar oyunu üret. Kaynaklar MEB/TYMM olarak işaretliyse kavramları yalnız bu kaynakların desteklediği çerçevede kullan. Ders kitabı cümlelerini uzun biçimde kopyalama; kavramı özgün ve kısa ifadeyle öğret. Yeni bilgi uydurma. Yalnız JSON döndür.'},
           {role:'user',content:JSON.stringify({
             examType:input.examType,gradeLevel:input.gradeLevel,subject:input.subject,topic:input.topic,
             gameType:input.gameType,requiredShape,
@@ -146,6 +146,7 @@ export async function chooseWeakTopic(studentId:string){
 export async function generateMicroGame(input:{
   studentId?:string|null;createdByUserId?:string|null;examType?:string|null;
   subject:string;topic:string;gradeLevel?:string|null;gameType?:GameType;
+  sourcePolicy?:'MEB_ONLY'|'PREFER_MEB'|'ANY';
 }){
   const day=new Date().toISOString().slice(0,10);
   const type:GameType=input.gameType||(['MATCH','WORD','CONNECTIONS','CROSSWORD'][Math.abs(hashCode(input.subject+'|'+input.topic+'|'+day))%4] as GameType);
@@ -153,15 +154,27 @@ export async function generateMicroGame(input:{
   const existing=await db.gameContent.findUnique({where:{generationKey}});
   if(existing)return existing;
 
-  const questions=await db.questionBankItem.findMany({
-    where:{
-      active:true,reviewStatus:'APPROVED',
-      subject:{equals:input.subject,mode:'insensitive'},
-      topic:{equals:input.topic,mode:'insensitive'},
-      ...(input.examType&&input.examType!=='GENEL'?{examType:{equals:input.examType,mode:'insensitive'}}:{})
-    },
+  const sourceKinds=(process.env.AUTO_GAME_SOURCE_KINDS||'MEB_TEXTBOOK,MEB_TYMM,MEB_OFFICIAL')
+    .split(',').map(x=>x.trim()).filter(Boolean);
+  const baseWhere={
+    active:true,reviewStatus:'APPROVED',
+    subject:{equals:input.subject,mode:'insensitive' as const},
+    topic:{equals:input.topic,mode:'insensitive' as const},
+    ...(input.examType&&input.examType!=='GENEL'?{examType:{equals:input.examType,mode:'insensitive' as const}}:{})
+  };
+  const policy=input.sourcePolicy||'PREFER_MEB';
+  let questions=await db.questionBankItem.findMany({
+    where:{...baseWhere,sourceKind:{in:sourceKinds}},
     orderBy:{createdAt:'desc'},take:16
   });
+  if(policy==='ANY'||(policy==='PREFER_MEB'&&questions.length<2)){
+    const fallback=await db.questionBankItem.findMany({
+      where:baseWhere,
+      orderBy:{createdAt:'desc'},take:16
+    });
+    const seen=new Set(questions.map(x=>x.id));
+    questions=[...questions,...fallback.filter(x=>!seen.has(x.id))].slice(0,16);
+  }
 
   const ai=await aiGame({
     subject:input.subject,topic:input.topic,examType:input.examType,gradeLevel:input.gradeLevel,gameType:type,source:questions
@@ -179,11 +192,20 @@ export async function generateMicroGame(input:{
     throw new Error('Bu ders ve konu için otomatik oyun oluşturacak yeterli doğrulanmış içerik bulunamadı.');
   }
 
+  const mebQuestions=questions.filter(q=>sourceKinds.includes(q.sourceKind));
+  const sourceMeta={
+    sourceBasis:mebQuestions.length===questions.length&&questions.length?'MEB_OFFICIAL':
+      mebQuestions.length?'MEB_PREFERRED':'APPROVED_QBANK',
+    sourceKinds:[...new Set(questions.map(q=>q.sourceKind))],
+    officialSourceUrls:[...new Set(questions.map(q=>q.officialSourceUrl).filter(Boolean))].slice(0,8)
+  };
+  const payload={...(generated.payload||{}),_meta:sourceMeta};
+
   return db.gameContent.create({data:{
     gameType:generated.gameType,examType:input.examType||null,subject:input.subject,topic:input.topic,
-    title:generated.title,payload:generated.payload as any,difficulty:'ORTA',active:true,
+    title:generated.title,payload:payload as any,difficulty:'ORTA',active:true,
     createdByUserId:input.createdByUserId||null,studentId:input.studentId||null,
-    generationSource:ai?'AUTO_AI_QBANK':'AUTO_QBANK',generationKey
+    generationSource:sourceMeta.sourceBasis==='MEB_OFFICIAL'?(ai?'AUTO_AI_MEB':'AUTO_MEB_QBANK'):(ai?'AUTO_AI_QBANK':'AUTO_QBANK'),generationKey
   }});
 }
 
