@@ -40,6 +40,7 @@ async function GET__handler(req:Request){
   siteUrl.searchParams.set('keks_session',token);
   siteUrl.searchParams.set('keks_callback',appOrigin+'/api/external/keks-assessment/submit');
   siteUrl.searchParams.set('keks_return',appOrigin+'/ogrenci#keks-egilim-taramasi');
+  siteUrl.searchParams.set('keks_bridge',appOrigin+'/keks-assessment-bridge.js');
   siteUrl.searchParams.set('keks_embed','1');
 
   return NextResponse.json({
