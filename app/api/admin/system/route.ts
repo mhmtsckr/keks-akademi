@@ -8,11 +8,16 @@ async function GET__handler(){
   let database='OK';
   try{await db.$queryRawUnsafe('SELECT 1')}catch{database='ERROR'}
   const recentAudit=await db.auditLog.count({where:{createdAt:{gte:new Date(Date.now()-24*60*60*1000)}}});
+  const gmailConfig=await db.emailSenderConfig.findUnique({where:{id:'gmail'}});
+  const gmailReady=Boolean(process.env.GMAIL_APP_PASSWORD||gmailConfig?.enabled);
   return NextResponse.json({ok:true,health:{
     database,
     authSecret:Boolean(process.env.AUTH_SECRET),
     paytr:Boolean(process.env.PAYTR_MERCHANT_ID&&process.env.PAYTR_MERCHANT_KEY&&process.env.PAYTR_MERCHANT_SALT),
-    emailConfigured:true,
+    emailConfigured:gmailReady,
+    gmail:gmailReady,
+    gmailAddress:gmailConfig?.email||process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com',
+    gmailStatus:gmailReady?'READY':'APP_PASSWORD_REQUIRED',
     resend:Boolean(process.env.RESEND_API_KEY),
     resendAddress:process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com',
     resendFrom:process.env.REPORT_FROM||'KEKS Akademi <onboarding@resend.dev>',
