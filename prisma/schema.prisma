@@ -976,3 +976,13 @@ model TaskReschedule {
 
   @@index([studentId, createdAt])
 }
+
+
+model EmailSenderConfig {
+  id                    String   @id
+  email                 String
+  appPasswordCiphertext String
+  enabled               Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
