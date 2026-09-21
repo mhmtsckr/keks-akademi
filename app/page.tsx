@@ -144,10 +144,6 @@ export default function Home() {
         <div><small>GERÇEK SÜRE</small><h3>Odak ve Teknik Laboratuvarı</h3><p>Pomodoro, Feynman, Cornell, Aktif Hatırlama ve SQ3R teknikleri doğrudan uygulanır; arka planda açık kalan süre çalışma sayılmaz.</p></div>
       </div>
       <div className="homeFeature">
-        <span className="homeFeatureIcon">✦</span>
-        <div><small>İÇERİK ÜRETİMİ</small><h3>Akıllı İçerik Stüdyosu</h3><p>Dosyadan test, kart, slayt, infografik, sesli anlatım ve benzer soru üretir; koç onayıyla öğrenciye gönderilir.</p></div>
-      </div>
-      <div className="homeFeature">
         <span className="homeFeatureIcon">◎</span>
         <div><small>GELİŞİM ANALİZİ</small><h3>Net Trendleri ve Koç Uyarıları</h3><p>Düşük performans, konu birikimi ve hedef açığı otomatik belirlenir; koç müdahale gerektiren noktaları tek panelde görür.</p></div>
       </div>
@@ -159,7 +155,7 @@ export default function Home() {
         <h2>Her kullanıcı için ayrı, sade ve güvenli panel.</h2>
       </div>
       <div className="homePortalGrid">
-        <a href="/ogrenci" className="homePortalCard"><b>01</b><h3>Öğrenci</h3><p>Planlar, testler, teknikler, içerikler ve hedef takibi.</p><span>Panele Gir →</span></a>
+        <a href="/ogrenci" className="homePortalCard"><b>01</b><h3>Öğrenci</h3><p>Planlar, testler, teknikler ve hedef takibi.</p><span>Panele Gir →</span></a>
         <a href="/koc" className="homePortalCard"><b>02</b><h3>Koç</h3><p>Öğrenci yönetimi, raporlar, uyarılar ve kişisel programlama.</p><span>Panele Gir →</span></a>
         <a href="/veli" className="homePortalCard"><b>03</b><h3>Veli</h3><p>Haftalık gelişim, koç raporları ve öğrenci durumu.</p><span>Panele Gir →</span></a>
         <a href="/yonetici" className="homePortalCard"><b>04</b><h3>Yönetici</h3><p>Koç onayı, kod yönetimi, soru bankası ve sistem kontrolü.</p><span>Panele Gir →</span></a>

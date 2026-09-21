@@ -5,7 +5,6 @@ import { StudentActions } from '@/app/components/StudentActions';
 import { StudentProgressTools } from '@/app/components/StudentProgressTools';
 import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation';
 import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
-import { ContentStudio } from '@/app/components/ContentStudio';
 import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
@@ -64,7 +63,6 @@ export default async function StudentPage() {
       targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
       topicProgress:{},
       practiceLogs:{orderBy:{date:'desc'},take:30},
-      generatedContent:{where:{visibleToStudent:true},orderBy:{createdAt:'desc'},take:30}
     }
   });
   if (!student) return null;
@@ -122,8 +120,6 @@ export default async function StudentPage() {
     </div></section>
 
     <section className="section"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><PortalSectionTitle eyebrow="İLERLEME" title="Konu ve Soru Takibi"/><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString(),errorReason:x.errorReason}))}/></section>
-
-    <section className="section"><PortalSectionTitle eyebrow="ÜRET" title="Akıllı İçerik Stüdyosu"/><ContentStudio studentId={student.id} existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></section>
 
     <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="TARAMA" title="KEKS Eğilim Taraması" description="Eğitsel çalışma ve öz-düzenleme eğilimlerini belirleyen KEKS tarama uygulamasını bu bölümden tamamlayın."/><StudentActions hasAccess={Boolean(access)}/></section>
     <section className="section"><PortalSectionTitle eyebrow="ÖN GÖRÜŞME" title="Çalışma Davranışı ve Planlama Formu" description="Kişilik/eğilim taramasını tamamladıktan sonra bu form açılır. Yanıtlarınız koçunuza ayrıntılı rapor olarak iletilir."/><StudentPreInterview/></section>

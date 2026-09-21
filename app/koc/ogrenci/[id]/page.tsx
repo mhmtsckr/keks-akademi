@@ -7,8 +7,6 @@ import { CoachAlerts } from '@/app/components/CoachAlerts';
 import { CoachSmartPlan } from '@/app/components/CoachSmartPlan';
 import { computeGoalProgress } from '@/lib/smartCoach';
 import { CoachTrendSummary } from '@/app/components/CoachTrendSummary';
-import { ContentStudio } from '@/app/components/ContentStudio';
-import { ContentProgressSummary } from '@/app/components/ContentProgressSummary';
 import { TechniqueUsageSummary } from '@/app/components/TechniqueUsageSummary';
 import { PortalShell } from '@/app/components/PortalShell';
 import { CoachOperationsHub } from '@/app/components/CoachOperationsHub';
@@ -34,7 +32,6 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       practiceLogs:{orderBy:{date:'desc'},take:30},
       topicProgress:{},
       reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}},
-      generatedContent:{orderBy:{createdAt:'desc'},take:30,include:{progress:{where:{studentId:id},take:1}}},
       preInterviewAttempts:{orderBy:{completedAt:'desc'},take:3,include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}}}},
       assessments:{orderBy:{completedAt:'desc'},take:5}
     }
@@ -46,12 +43,12 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     active="koc"
     eyebrow="KOÇ ÖĞRENCİ ÇALIŞMA ALANI"
     title={student.fullName}
-    description="Program, hedef, deneme, içerik, teknik ve veli erişimini tek öğrenci çalışma alanından yönetin."
+    description="Program, hedef, deneme, teknik ve veli erişimini tek öğrenci çalışma alanından yönetin."
     meta={<><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.goal&&<span>Hedef tanımlı</span>}<a className="btn" href="/koc">← Öğrencilerim</a></>}
     wide
   >
     <nav className="tabs no-print">
-      <a href="#genel">Genel Bakış</a><a href="#egilim-taramasi">Eğilim Taraması</a><a href="#ongorusme">Ön Görüşme</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#icerik">İçerik Stüdyosu</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
+      <a href="#genel">Genel Bakış</a><a href="#egilim-taramasi">Eğilim Taraması</a><a href="#ongorusme">Ön Görüşme</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
@@ -97,7 +94,6 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       <div className="card"><div className="kpi">{student.reports.length}</div><div className="muted">Rapor</div></div>
       <div className="card"><div className="kpi">{student.practiceLogs.length}</div><div className="muted">Soru çözüm kaydı</div></div>
     </section>
-    <section id="icerik" className="section section-anchor"><div className="stack"><ContentProgressSummary items={student.generatedContent}/><ContentStudio studentId={student.id} canPublish existing={student.generatedContent.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,visibleToStudent:x.visibleToStudent,visibleToParent:x.visibleToParent}))}/></div></section>
     <section id="program" className="section section-anchor"><StudentWorkspaceForms studentId={student.id}/></section>
 
     <section className="section"><TechniqueUsageSummary sessions={student.techniqueSessions}/></section>
