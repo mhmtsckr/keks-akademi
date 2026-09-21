@@ -19,8 +19,10 @@ async function DELETE__handler(req:Request,{params}:{params:Promise<{id:string}>
   const parsed=schema.safeParse(body);
   if(!parsed.success)return NextResponse.json({error:'Öğrenci kodu ile silme onayı gerekli.'},{status:400});
   const input=parsed.data;
-  const student=await db.student.findUnique({
-    where:{id},
+  // Sorgu koça daraltılır: yabancı öğrenci diğer tüm route'lardaki gibi 404
+  // alır, böylece 403 ile varlığı ele verilmez.
+  const student=await db.student.findFirst({
+    where:{id,coachId:user.coachProfile.id},
     include:{
       parentProfiles:{select:{userId:true}},
       user:{select:{id:true,role:true}}
@@ -28,7 +30,6 @@ async function DELETE__handler(req:Request,{params}:{params:Promise<{id:string}>
   });
 
   if(!student) return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  if(student.coachId!==user.coachProfile.id) return NextResponse.json({error:'Bu öğrenciyi silme yetkiniz yok.'},{status:403});
   if(input.confirmationCode!==student.studentCode) return NextResponse.json({error:'Öğrenci kodu doğrulanamadı.'},{status:400});
 
   const linkedUserIds=[...new Set([

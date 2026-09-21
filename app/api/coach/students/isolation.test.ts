@@ -163,7 +163,8 @@ describe('koç başka bir koçun öğrencisine erişemez', () => {
 
     const yanit = await rota(istek(), ctx(BASKASININ));
 
-    expect([403, 404]).toContain(yanit.status);
+    // Her route aynı yanıtı vermeli: 403 öğrencinin var olduğunu ele verir.
+    expect(yanit.status).toBe(404);
     // Reddin gerçekten sahiplik kontrolünden geldiğini doğrula: route öğrenciyi
     // gerçekten sorgulamış olmalı, gövde doğrulamasında erkenden dönmüş olmamalı.
     expect(
