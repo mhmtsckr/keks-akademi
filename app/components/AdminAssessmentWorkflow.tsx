@@ -46,6 +46,12 @@ export function AdminAssessmentWorkflow(){
           const answered=(form.questions||[]).filter((q:any)=>previewAnswers[q.id]!=null).length;
           return <details key={form.educationBand}>
             <summary><strong>{form.label} · {form.questionCount} soru</strong> <span className="muted">· İşaretlemeli form · {answered}/{form.questionCount} işaretlendi</span></summary>
+            <div className="notice" style={{marginTop:10}}>
+              <strong>Yönerge:</strong> {form.instruction}
+              <div className="muted" style={{marginTop:8}}>
+                (1) {form.scale?.[0]||'Hiç katılmıyorum'} · (2) {form.scale?.[1]||'Katılmıyorum'} · (3) {form.scale?.[2]||'Bazen / Kararsızım'} · (4) {form.scale?.[3]||'Katılıyorum'} · (5) {form.scale?.[4]||'Tamamen katılıyorum'}
+              </div>
+            </div>
             <div className="notice" style={{marginTop:10}}><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
             <div className="row" style={{justifyContent:'space-between',alignItems:'center',margin:'12px 0'}}>
               <span className="pill">{answered}/{form.questionCount} işaretlendi</span>
@@ -60,7 +66,7 @@ export function AdminAssessmentWorkflow(){
                 <div style={{flex:1}}>
                   <strong>{q.prompt}</strong>
                   <div className="likertRow">
-                    {[1,2,3,4,5].map(n=><label key={n} title={q.kind==='HABIT'?['Hiçbir zaman','Nadiren','Bazen','Çoğu zaman','Her zaman'][n-1]:['Bana hiç benzemiyor','Bana az benziyor','Kısmen benziyor','Bana oldukça benziyor','Bana çok benziyor'][n-1]}>
+                    {[1,2,3,4,5].map(n=><label key={n} title={form.scale?.[n-1]||['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1]}>
                       <input
                         type="radio"
                         name={'admin-preview-'+q.id}
@@ -72,7 +78,7 @@ export function AdminAssessmentWorkflow(){
                     </label>)}
                   </div>
                   <div className="muted" style={{fontSize:12,marginTop:4}}>
-                    {q.kind==='HABIT'?'1 Hiçbir zaman · 3 Bazen · 5 Her zaman':'1 Hiç benzemiyor · 3 Kısmen · 5 Çok benziyor'}
+                    1 Hiç katılmıyorum · 2 Katılmıyorum · 3 Bazen / Kararsızım · 4 Katılıyorum · 5 Tamamen katılıyorum
                   </div>
                 </div>
               </div>)}
