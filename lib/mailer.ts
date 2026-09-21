@@ -1,12 +1,28 @@
 import { Resend } from 'resend';
+import { db } from '@/lib/db';
+import { decryptPrivateCode } from '@/lib/security';
+import { sendGmailSmtp } from '@/lib/gmailSmtp';
 
 const KEKS_CONTACT_EMAIL=process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com';
 const KEKS_FROM=()=>process.env.REPORT_FROM||'KEKS Akademi <onboarding@resend.dev>';
 
+async function sendFromKeksGmail(to:string,subject:string,html:string){
+  const envPassword=process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g,'');
+  if(envPassword){
+    return sendGmailSmtp({username:KEKS_CONTACT_EMAIL,appPassword:envPassword,to,subject,html});
+  }
+  const config=await db.emailSenderConfig.findUnique({where:{id:'gmail'}});
+  if(!config?.enabled)return {skipped:true,error:'GMAIL_NOT_CONFIGURED'};
+  try{
+    const appPassword=decryptPrivateCode(config.appPasswordCiphertext);
+    return await sendGmailSmtp({username:config.email,appPassword,to,subject,html});
+  }catch(error){
+    return {skipped:true,error:error instanceof Error?error.message:'GMAIL_SEND_FAILED'};
+  }
+}
+
 export async function sendStudentCredentials(input:{email:string;studentName:string;studentCode:string;accessKey:string;accessKeyExpiresAt:Date;coachName:string}){
-  if(!process.env.RESEND_API_KEY)return {skipped:true,error:'RESEND_API_KEY_MISSING'};
-  const resend=new Resend(process.env.RESEND_API_KEY);
-  const from=KEKS_FROM();
+  const from=KEKS_CONTACT_EMAIL;
   const html=`
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
       <h1>KEKS Akademi Öğrenci Başvurusu</h1>
@@ -22,20 +38,11 @@ export async function sendStudentCredentials(input:{email:string;studentName:str
       <p>Bu bilgileri güvenli bir yerde saklayın. Öğrenci paneline öğrenci kodu ve giriş anahtarıyla giriş yapabilirsiniz.</p>
       <p>KEKS Akademi</p>
     </div>`;
-  const result=await resend.emails.send({
-    from,
-    to:input.email,
-    replyTo:KEKS_CONTACT_EMAIL,
-    subject:'KEKS Akademi | Öğrenci giriş bilgileriniz',
-    html
-  });
-  return result;
+  return sendFromKeksGmail(input.email,'KEKS Akademi | Öğrenci giriş bilgileriniz',html);
 }
 
 export async function resendStudentAccessKey(input:{email:string;studentName:string;studentCode:string;accessKey:string;accessKeyExpiresAt:Date}){
-  if(!process.env.RESEND_API_KEY)return {skipped:true,error:'RESEND_API_KEY_MISSING'};
-  const resend=new Resend(process.env.RESEND_API_KEY);
-  const from=KEKS_FROM();
+  const from=KEKS_CONTACT_EMAIL;
   const html=`
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
       <h1>KEKS Akademi Giriş Anahtarı</h1>
@@ -50,13 +57,7 @@ export async function resendStudentAccessKey(input:{email:string;studentName:str
       <p>Bu talebi siz oluşturmadıysanız KEKS Akademi ile iletişime geçin.</p>
       <p>KEKS Akademi</p>
     </div>`;
-  return resend.emails.send({
-    from,
-    to:input.email,
-    replyTo:KEKS_CONTACT_EMAIL,
-    subject:'KEKS Akademi | Giriş anahtarınız',
-    html
-  });
+  return sendFromKeksGmail(input.email,'KEKS Akademi | Giriş anahtarınız',html);
 }
 
 export async function sendAssessmentReport(input: { studentCode: string; studentName: string; assessmentId: string; report: unknown }) {
