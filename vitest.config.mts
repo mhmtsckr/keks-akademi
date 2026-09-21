@@ -1,12 +1,16 @@
+import react from '@vitejs/plugin-react';
 import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   // tsconfig.json'daki "@/*" takma adı Vite tarafından doğrudan okunur.
   resolve: { tsconfigPaths: true },
+  // Projenin tsconfig'i jsx: "preserve" kullaniyor cunku JSX'i Next derliyor.
+  // Vitest'in kendi donusturucusu JSX'i tek basina ayristiramaz.
+  plugins: [react()],
   test: {
     environment: 'node',
     setupFiles: ['./test/setup.ts'],
-    include: ['lib/**/*.test.ts', 'app/**/*.test.ts', 'test/**/*.test.ts'],
+    include: ['lib/**/*.test.ts', 'app/**/*.test.{ts,tsx}', 'test/**/*.test.ts'],
     // Entegrasyon testleri gercek Postgres ister; kendi konfigurasyonuyla calisir.
     exclude: [...configDefaults.exclude, 'test/integration/**'],
     coverage: {
