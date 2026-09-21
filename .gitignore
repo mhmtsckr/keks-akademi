@@ -6,3 +6,7 @@ node_modules
 .DS_Store
 prisma/dev.db
 legacy-data/*.json
+
+# Test cikti ve onbellekleri
+coverage
+*.tsbuildinfo
