@@ -73,6 +73,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
               {Object.entries(scores).sort((x,y)=>Number(y[1])-Number(x[1])).map(([name,value])=><div className="briefMetric" key={name}><b>{Number(value).toFixed(2)}</b><span>{name}</span></div>)}
             </div>
             {Array.isArray(report.leadingDimensions)&&report.leadingDimensions.length>0&&<div className="notice"><strong>Öne çıkan eğilimler:</strong> {report.leadingDimensions.map((x:any)=>x.name+' '+Number(x.score).toFixed(2)+'/5').join(' · ')}</div>}
+            {report.habitScores&&<><h3>Çalışma Alışkanlıkları</h3><div className="interviewScoreGrid">{Object.entries(report.habitScores).map(([name,value]:any)=><div className="briefMetric" key={name}><b>{Number(value).toFixed(2)}</b><span>{name}</span></div>)}</div></>}
+            {report.developmentSummary?.immediateActions?.length>0&&<div className="notice"><strong>Gelişim öncelikleri</strong>{report.developmentSummary.immediateActions.map((x:string,i:number)=><div key={i}>{i+1}. {x}</div>)}</div>}
             {report.disclaimer&&<p className="muted">{String(report.disclaimer)}</p>}
             <details style={{marginTop:12}}>
               <summary><strong>Ayrıntılı sonuç verisini görüntüle</strong></summary>

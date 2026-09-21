@@ -58,6 +58,8 @@ export function CoachPreInterviewSummary({studentId}:{studentId:string}){
         <div className="interviewScoreGrid">{Object.entries(scores).map(([k,v])=><div className="briefMetric" key={k}><b>{Number(v).toFixed(2)}</b><span>{k}</span></div>)}</div>
         {report.weakest?.length>0&&<div className="notice"><strong>Programlama öncelikleri:</strong> {report.weakest.map((x:any)=>x.dimension+' '+x.score+'/5').join(' · ')}</div>}
         {report.screeningSummary?.leadingDimensions?.length>0&&<div className="notice"><strong>Eğilim taramasında öne çıkanlar:</strong> {report.screeningSummary.leadingDimensions.map((x:any)=>x.name+' '+Number(x.score).toFixed(2)+'/5').join(' · ')}</div>}
+        {report.screeningSummary?.habitScores&&<><h3>Çalışma Alışkanlıkları</h3><div className="interviewScoreGrid">{Object.entries(report.screeningSummary.habitScores).map(([k,v]:any)=><div className="briefMetric" key={k}><b>{Number(v).toFixed(2)}</b><span>{k}</span></div>)}</div></>}
+        {report.screeningSummary?.developmentSummary?.immediateActions?.length>0&&<div className="notice"><strong>Yönetici onaylı gelişim öncelikleri</strong>{report.screeningSummary.developmentSummary.immediateActions.map((x:string,i:number)=><div key={i}>{i+1}. {x}</div>)}</div>}
         {report.programParameters&&<div className="programParameterGrid">
           <div><b>{report.programParameters.focusBlockMinutes} dk</b><span>Önerilen odak bloğu</span></div>
           <div><b>{String(report.programParameters.taskSize).replaceAll('_',' ')}</b><span>Görev büyüklüğü</span></div>
