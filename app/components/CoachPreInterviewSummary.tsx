@@ -8,65 +8,77 @@ export function CoachPreInterviewSummary({studentId}:{studentId:string}){
   const [busy,setBusy]=useState('');
 
   async function load(){
-    const r=await fetch('/api/coach/students/'+studentId+'/pre-interview');
+    const r=await fetch('/api/coach/students/'+studentId+'/pre-interview',{cache:'no-store'});
     const j=await r.json();
     setData(j);
   }
   useEffect(()=>{load()},[studentId]);
 
-  async function act(action:string,assignmentId?:string){
-    setBusy(action+(assignmentId||''));setMsg('');
-    const r=await fetch('/api/coach/students/'+studentId+'/pre-interview',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(assignmentId?{action,assignmentId}:{action})});
+  async function activate(assignmentId:string){
+    setBusy(assignmentId);setMsg('');
+    const r=await fetch('/api/coach/students/'+studentId+'/pre-interview',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'approve',assignmentId})});
     const j=await r.json();setBusy('');
-    if(!r.ok)return setMsg('Hata: '+(j.error||'İşlem başarısız.'));
-    if(action==='assign')setMsg('Ön görüşme formu öğrenci panelinde açıldı.');
-    if(action==='approve')setMsg('Onaylandı. Rapor öğrenciye gönderildi ve 28 günlük kişisel görev planı aktifleştirildi.');
-    if(action==='reopen')setMsg('Form yeniden doldurulmak üzere öğrenciye açıldı.');
-    if(action==='revoke')setMsg('Form erişimi kapatıldı.');
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Plan aktifleştirilemedi.'));
+    setMsg('Yönetici onaylı 1 yıllık, aylık, haftalık ve günlük plan öğrenciye aktifleştirildi.');
     await load();
+    setTimeout(()=>location.reload(),600);
   }
 
-  if(!data)return <div className="card"><p className="muted">Ön görüşme yönetimi yükleniyor…</p></div>;
+  if(!data)return <div className="card"><p className="muted">Yönetici onaylı değerlendirme akışı yükleniyor…</p></div>;
+  const assignments=data.assignments||[];
 
-  const current=data.assignments?.[0];
   return <div className="stack">
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
     <div className="card">
-      <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">PROGRAMLAMA ÖN GÖRÜŞMESİ</div><h2>Formu Öğrenciye Aç / Kapat</h2><p className="muted">{data.activeForm?data.activeForm.title+' · '+data.activeForm.questions.length+' soru · Eğitim bandı: '+data.educationBand:'Bu öğrencinin eğitim düzeyi için aktif form bulunmuyor.'}</p></div>
-        <div className="row">
-          <button className="btn primary" disabled={!data.activeForm||busy==='assign'} onClick={()=>act('assign')}>{busy==='assign'?'Açılıyor…':'Öğrenciye Aç'}</button>
-          {current&&['ASSIGNED','COMPLETED'].includes(current.status)&&<button className="btn" onClick={()=>act('revoke',current.id)}>Erişimi Kapat</button>}
-        </div>
-      </div>
-      {current&&<div className="interviewStatusBar">
-        <span className={'adminStatus '+(current.status==='APPROVED'?'active':current.status==='COMPLETED'?'pending':'')}>{current.status}</span>
-        <span>Atama: {new Date(current.assignedAt).toLocaleString('tr-TR')}</span>
-        {current.completedAt&&<span>Tamamlanma: {new Date(current.completedAt).toLocaleString('tr-TR')}</span>}
-      </div>}
+      <div className="moduleEyebrow">YÖNETİCİ ONAYLI KEKS AKIŞI</div>
+      <h2>Eğilim Taraması → Ön Görüşme → Kişisel Plan</h2>
+      <p className="muted">Ön görüşmeyi yönetici açar. Öğrenci tamamladıktan sonra yıllık, aylık, haftalık ve günlük plan yönetici tarafından onaylanır; yalnız onaylanmış plan koça gelir.</p>
     </div>
 
-    {(data.assignments||[]).map((a:any)=>{
-      const attempt=a.attempt; if(!attempt)return <div className="card" key={a.id}><div className="moduleEyebrow">ÖĞRENCİ BEKLENİYOR</div><h3>{a.form.title}</h3><p className="muted">Öğrenci henüz formu tamamlamadı.</p></div>;
-      const scores=attempt.scores||{},report=attempt.report||{},answers=attempt.answers||{};
-      return <div className={'card interviewReviewCard '+(a.status==='COMPLETED'?'awaitingApproval':'')} key={a.id}>
-        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">{a.status==='COMPLETED'?'KOÇ ONAYI BEKLİYOR':'PROGRAMLAMA ÖN GÖRÜŞMESİ'}</div><h2>{a.form.title}</h2><p className="muted">{new Date(attempt.completedAt).toLocaleString('tr-TR')} · Eğitim düzeyi: {a.form.educationBand}{attempt.academicTrack!=='GENERAL'?' · Alan: '+String(attempt.academicTrack).replace('_',' '):''}</p></div><span className="pill">{attempt.reviewStatus}</span></div>
+    {assignments.length===0&&<div className="card"><div className="notice">Henüz yönetici tarafından koça gönderilmiş veya öğrenciye açılmış bir ön görüşme süreci yok.</div></div>}
+
+    {assignments.map((a:any)=>{
+      const attempt=a.attempt;
+      if(!attempt)return <div className="card" key={a.id}>
+        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">{a.status==='ASSIGNED'?'ÖĞRENCİ BEKLENİYOR':'SÜREÇ KAYDI'}</div><h3>{a.form.title}</h3><p className="muted">Yönetici eğilim taramasını onayladı. Öğrenci ön görüşmeyi henüz tamamlamadı.</p></div><span className="pill">{a.status}</span></div>
+      </div>;
+
+      if(a.status==='COMPLETED')return <div className="card" key={a.id}>
+        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">YÖNETİCİ İNCELEMESİNDE</div><h3>{a.form.title}</h3><p className="muted">Öğrenci ön görüşmeyi tamamladı. Ayrıntılı değerlendirme ve plan taslağı yönetici onayından geçmeden koça açılmaz.</p></div><span className="pill">BEKLEMEDE</span></div>
+      </div>;
+      const scores=attempt.scores||{},report=attempt.report||{},answers=attempt.answers||{},draft=report.planDraft||{};
+      return <div className={'card interviewReviewCard '+(a.status==='ADMIN_APPROVED'?'awaitingApproval':'')} key={a.id}>
+        <div className="moduleHeaderRow">
+          <div><div className="moduleEyebrow">{a.status==='COMPLETED'?'YÖNETİCİ ONAYI BEKLİYOR':a.status==='ADMIN_APPROVED'?'YÖNETİCİ ONAYLADI · KOÇA GÖNDERİLDİ':a.status==='APPROVED'?'PLAN AKTİF':'ÖN GÖRÜŞME'}</div><h2>{a.form.title}</h2><p className="muted">{new Date(attempt.completedAt).toLocaleString('tr-TR')} · {a.form.educationBand}{attempt.academicTrack!=='GENERAL'?' · '+String(attempt.academicTrack).replaceAll('_',' '):''}</p></div>
+          <span className="pill">{attempt.reviewStatus}</span>
+        </div>
+
+        {a.status==='COMPLETED'&&<div className="notice"><strong>Koç işlemi kapalı.</strong> Birleşik değerlendirme ve plan taslağı yönetici incelemesinde. Yönetici onayladıktan sonra aktifleştirme düğmesi açılır.</div>}
+
         <div className="interviewScoreGrid">{Object.entries(scores).map(([k,v])=><div className="briefMetric" key={k}><b>{Number(v).toFixed(2)}</b><span>{k}</span></div>)}</div>
-        {report.weakest?.length>0&&<div className="notice"><strong>Programlamada öncelik verilecek alanlar:</strong> {report.weakest.map((x:any)=>x.dimension+' '+x.score+'/5').join(' · ')}</div>}
+        {report.weakest?.length>0&&<div className="notice"><strong>Programlama öncelikleri:</strong> {report.weakest.map((x:any)=>x.dimension+' '+x.score+'/5').join(' · ')}</div>}
+        {report.screeningSummary?.leadingDimensions?.length>0&&<div className="notice"><strong>Eğilim taramasında öne çıkanlar:</strong> {report.screeningSummary.leadingDimensions.map((x:any)=>x.name+' '+Number(x.score).toFixed(2)+'/5').join(' · ')}</div>}
         {report.programParameters&&<div className="programParameterGrid">
           <div><b>{report.programParameters.focusBlockMinutes} dk</b><span>Önerilen odak bloğu</span></div>
-          <div><b>{String(report.programParameters.taskSize).replace('_',' ')}</b><span>Görev büyüklüğü</span></div>
+          <div><b>{String(report.programParameters.taskSize).replaceAll('_',' ')}</b><span>Görev büyüklüğü</span></div>
           <div><b>{String(report.programParameters.coachCheckIn).replaceAll('_',' ')}</b><span>Koç kontrol sıklığı</span></div>
           <div><b>{report.programParameters.spacedReview?'Zorunlu':'Standart'}</b><span>Aralıklı tekrar</span></div>
         </div>}
-        {report.motivationSupports?.length>0&&<div className="briefAgenda"><h3>Motivasyon ve program sunum biçimi</h3>{report.motivationSupports.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
-        {report.recommendations?.length>0&&<div className="briefAgenda"><h3>Programlama Önerileri</h3>{report.recommendations.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
-        <div className="interviewAnswers"><h3>Soru – Cevap Dökümü</h3>{(a.form.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}><div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div><p>{String(answers[q.id]??'—')}</p></div>)}</div>
-        {a.status==='COMPLETED'&&<div className="coachApprovalBox">
-          <div><strong>Öğrenci bu raporu henüz görmüyor.</strong><p>Onay verirseniz değerlendirme öğrenciye açılır ve eğitim düzeyi, çalışma davranışı, önceki eğilim taraması ve varsa alan bilgisine göre 28 günlük görev planı oluşturulur.</p></div>
-          <div className="row"><button className="btn" onClick={()=>act('reopen',a.id)}>Yeniden Doldurt</button><button className="btn primary" disabled={busy==='approve'+a.id} onClick={()=>act('approve',a.id)}>{busy==='approve'+a.id?'Yayınlanıyor…':'Öğrenciye Gönder ve Planı Aktifleştir'}</button></div>
+
+        {draft.annual&&<div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
+          <div className="card"><h3>1 Yıllık Plan</h3>{draft.annual.phases?.map((x:any)=><p key={x.phase}><strong>{x.phase}. Faz:</strong> {x.name} · Aylar {x.months?.join('-')}</p>)}</div>
+          <div className="card"><h3>Aylık Plan</h3>{draft.monthly?.weeks?.map((x:string,i:number)=><p key={i}>{x}</p>)}</div>
         </div>}
-        {a.status==='APPROVED'&&<div className="notice"><strong>Yayınlandı.</strong> Öğrenci raporu görebilir ve 28 günlük kişisel görev planı aktiftir.</div>}
+        {draft.weekly&&<div className="card"><h3>Haftalık Plan</h3><p>{draft.weekly.goals?.join(' · ')}</p></div>}
+        {draft.daily?.length>0&&<details><summary><strong>28 günlük görev taslağını görüntüle</strong></summary><div className="stack">{draft.daily.map((d:any)=><div className="card" key={d.date} style={{padding:12}}><strong>{new Date(d.date).toLocaleDateString('tr-TR')} · {d.subject}</strong><div className="muted">{d.durationMinutes} dk · {d.questions} soru · {d.method}</div></div>)}</div></details>}
+
+        <details style={{marginTop:12}}><summary><strong>Ön görüşme soru – cevap dökümü</strong></summary><div className="interviewAnswers">{(a.form.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}><div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div><p>{String(answers[q.id]??'—')}</p></div>)}</div></details>
+
+        {a.status==='ADMIN_APPROVED'&&<div className="coachApprovalBox">
+          <div><strong>Yönetici planı onayladı.</strong><p>Planın içeriği yönetici onayından geçti. Koç olarak uygulama başlangıcını onayladığınızda dört plan öğrenci paneline ve ilk 28 günlük görevler günlük görev alanına aktarılır.</p></div>
+          <button className="btn primary" disabled={busy===a.id} onClick={()=>activate(a.id)}>{busy===a.id?'Aktifleştiriliyor…':'Yönetici Onaylı Planı Öğrenciye Aktifleştir'}</button>
+        </div>}
+        {a.status==='APPROVED'&&<div className="notice"><strong>Aktif.</strong> Yönetici onaylı plan öğrenciye yayınlandı ve günlük görevler oluşturuldu.</div>}
       </div>;
     })}
   </div>;

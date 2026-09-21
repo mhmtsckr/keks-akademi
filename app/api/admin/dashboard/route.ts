@@ -9,7 +9,7 @@ async function GET__handler(){
   const seven=new Date(now.getTime()-7*24*60*60*1000);
   const [
     users,students,coaches,parents,payments,paidPayments,pendingPayments,
-    pendingCoaches,pendingQuestions,openAlerts,practice7,tech7,contents7
+    pendingCoaches,pendingQuestions,openAlerts,practice7,tech7,recentAssessments,pendingPlans
   ]=await Promise.all([
     db.user.count(),
     db.student.count(),
@@ -23,12 +23,17 @@ async function GET__handler(){
     db.coachAlert.count({where:{resolved:false}}),
     db.practiceLog.count({where:{createdAt:{gte:seven}}}),
     db.techniquePracticeSession.count({where:{createdAt:{gte:seven}}}),
-    db.generatedContent.count({where:{createdAt:{gte:seven}}})
+    db.assessment.findMany({orderBy:{completedAt:'desc'},take:500,select:{report:true}}),
+    db.preInterviewAttempt.count({where:{reviewStatus:'ADMIN_REVIEW'}})
   ]);
+  const pendingScreenings=recentAssessments.filter(a=>{
+    const r=a.report&&typeof a.report==='object'&&!Array.isArray(a.report)?a.report as Record<string,unknown>:{};
+    return r.workflowStatus==='ADMIN_REVIEW';
+  }).length;
   const revenue=await db.payment.aggregate({where:{status:'PAID'},_sum:{amountKurus:true}});
   return NextResponse.json({ok:true,stats:{
     users,students,coaches,parents,payments,paidPayments,pendingPayments,
-    pendingCoaches,pendingQuestions,openAlerts,practice7,tech7,contents7,
+    pendingCoaches,pendingQuestions,openAlerts,practice7,tech7,pendingScreenings,pendingPlans,
     revenueKurus:revenue._sum.amountKurus||0
   }});
 }

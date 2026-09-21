@@ -4,31 +4,38 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { scoreInterview,scoreMotivationSignals,buildInterviewReport,buildTrackPlans } from '@/lib/taskEvaluation';
+import { writeAudit } from '@/lib/audit';
 
 const submitSchema=z.object({
   academicTrack:z.enum(['GENERAL','SAYISAL','ESIT_AGIRLIK','SOZEL']),
   answers:z.record(z.string(),z.unknown())
 });
 
-function dateOnlyUtc(v:string){
-  const d=new Date(v);
-  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(d).split('-').map(Number);
-  return new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
-}
+function reportObject(v:unknown){return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,any>:{};}
 
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const assessment=await db.assessment.findFirst({where:{studentId:user.student.id},orderBy:{completedAt:'desc'}});
   if(!assessment)return NextResponse.json({ok:true,locked:true,reason:'Önce KEKS eğilim taramasını tamamlamalısınız.'});
+  const workflow=reportObject(assessment.report).workflowStatus;
+  if(workflow==='ADMIN_REVIEW')return NextResponse.json({ok:true,locked:true,reason:'Eğilim taraması ayrıntılı değerlendirme ve gelişim raporu yönetici incelemesinde. Yönetici onayından sonra ön görüşme otomatik açılacak.'});
+  if(workflow==='SCREENING_RETAKE_REQUIRED')return NextResponse.json({ok:true,locked:true,reason:'Yönetici eğilim taramasının yeniden çözülmesini istedi. Önce yeni taramayı tamamlayın.'});
+
   const assignment=await db.preInterviewAssignment.findFirst({
-    where:{studentId:user.student.id,status:{in:['ASSIGNED','COMPLETED','APPROVED']},revokedAt:null},
+    where:{studentId:user.student.id,status:{in:['ASSIGNED','COMPLETED','ADMIN_APPROVED','APPROVED']},revokedAt:null},
     orderBy:{assignedAt:'desc'},
     include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}},attempt:true}
   });
-  if(!assignment)return NextResponse.json({ok:true,locked:true,reason:'Koçunuz henüz ön görüşme formunu size açmadı.'});
-  const latest=assignment.attempt||null;
-  return NextResponse.json({ok:true,locked:false,form:assignment.form,assignment:{id:assignment.id,status:assignment.status},latest});
+  if(!assignment)return NextResponse.json({ok:true,locked:true,reason:'Yönetici onayından sonra ön görüşme formunuz burada açılacak.'});
+  return NextResponse.json({
+    ok:true,
+    locked:false,
+    form:assignment.form,
+    assignment:{id:assignment.id,status:assignment.status},
+    latest:assignment.attempt||null,
+    workflowStatus:workflow
+  });
 }
 
 async function POST__handler(req:Request){
@@ -36,13 +43,18 @@ async function POST__handler(req:Request){
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const assessment=await db.assessment.findFirst({where:{studentId:user.student.id},orderBy:{completedAt:'desc'}});
   if(!assessment)return NextResponse.json({error:'Önce KEKS eğilim taramasını tamamlayın.'},{status:403});
-  const input=await readJson(req, submitSchema);
+  const assessmentReport=reportObject(assessment.report);
+  if(assessmentReport.workflowStatus!=='PRE_INTERVIEW_ASSIGNED'){
+    return NextResponse.json({error:'Ön görüşme henüz yönetici tarafından açılmadı veya bu aşama tamamlandı.'},{status:403});
+  }
+
+  const input=await readJson(req,submitSchema);
   const assignment=await db.preInterviewAssignment.findFirst({
     where:{studentId:user.student.id,status:'ASSIGNED',revokedAt:null},
     orderBy:{assignedAt:'desc'},
     include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}}}
   });
-  if(!assignment)return NextResponse.json({error:'Koçunuz tarafından açık bir ön görüşme formu bulunmuyor.'},{status:403});
+  if(!assignment)return NextResponse.json({error:'Yönetici tarafından açık bir ön görüşme formu bulunmuyor.'},{status:403});
   const form=assignment.form;
 
   for(const q of form.questions){
@@ -56,64 +68,99 @@ async function POST__handler(req:Request){
   const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
   const academicTrack=requiresTrack?input.academicTrack:'GENERAL';
   if(requiresTrack&&academicTrack==='GENERAL')return NextResponse.json({error:'Hazırlık alanınızı seçin.'},{status:400});
-  const report=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any,motivationSignals);
+
+  const interviewReport=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any,motivationSignals);
   const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores,motivationSignals);
-
-  const attempt=await db.preInterviewAttempt.create({data:{
-    studentId:user.student.id,
-    formId:form.id,
-    assignmentId:assignment.id,
-    academicTrack,
-    answers:input.answers as any,
-    scores:scores as any,
-    report:report as any,
-    reviewStatus:'PENDING'
-  }});
-  await db.preInterviewAssignment.update({where:{id:assignment.id},data:{status:'COMPLETED',completedAt:new Date()}});
-
-  await db.student.update({where:{id:user.student.id},data:{academicTrack}});
-
-  // Plan taslağı bu aşamada yalnız koç incelemesi için hesaplanır.
-  // Öğrenciye görev olarak aktarım koç onayından sonra yapılır.
+  const combinedReport={
+    ...interviewReport,
+    screeningAssessmentId:assessment.id,
+    screeningSummary:{
+      leadingDimensions:assessmentReport.leadingDimensions||[],
+      dominance:assessmentReport.dominance||null,
+      developmentFocus:assessmentReport.developmentFocus||[]
+    },
+    planDraft:{annual:plans.annual,monthly:plans.monthly,weekly:plans.weekly,daily:plans.daily},
+    workflowStatus:'ADMIN_REVIEW'
+  };
 
   const answerLines=form.questions.map(q=>'S'+q.orderNo+' — '+q.prompt+'\nCevap: '+String(input.answers[q.id]??'')).join('\n\n');
   const scoreLines=Object.entries(scores).map(([k,v])=>k+': '+v+'/5').join('\n');
   const reportText=[
-    'Program alanı: '+academicTrack.replace('_',' '),
+    'KEKS BİRLEŞİK DEĞERLENDİRME VE GELİŞİM RAPORU',
+    'Program alanı: '+academicTrack.replaceAll('_',' '),
     '',
-    'BOYUT PUANLARI',
+    'ÖN GÖRÜŞME BOYUT PUANLARI',
     scoreLines,
     '',
     'ÖNCELİKLİ GELİŞİM ALANLARI',
-    report.weakest.map(x=>x.dimension+' ('+x.score+'/5)').join(', '),
+    interviewReport.weakest.map(x=>x.dimension+' ('+x.score+'/5)').join(', '),
     '',
-    'ÖNERİLER',
-    report.recommendations.map((x,i)=>(i+1)+'. '+x).join('\n'),
+    'PROGRAMLAMA ÖNERİLERİ',
+    interviewReport.recommendations.map((x,i)=>(i+1)+'. '+x).join('\n'),
+    '',
+    '1 YILLIK PLAN',
+    plans.annual.phases.map((x:any)=>x.phase+'. '+x.name+' · Aylar '+x.months.join('-')).join('\n'),
+    '',
+    'AYLIK PLAN',
+    plans.monthly.weeks.join('\n'),
     '',
     'SORU - CEVAP DÖKÜMÜ',
     answerLines
   ].join('\n');
 
-  await db.studentReport.create({data:{
-    studentId:user.student.id,
-    title:'Ön Görüşme Değerlendirme Raporu',
-    summary:'Program alanı: '+academicTrack.replace('_',' ')+' · Programlama öncelikleri: '+report.weakest.map(x=>x.dimension).join(', '),
-    content:reportText,
-    createdByUserId:user.id,
-    visibleToStudent:false,
-    visibleToParent:false
-  }});
+  const attempt=await db.$transaction(async tx=>{
+    const created=await tx.preInterviewAttempt.create({data:{
+      studentId:user.student!.id,
+      formId:form.id,
+      assignmentId:assignment.id,
+      academicTrack,
+      answers:input.answers as any,
+      scores:scores as any,
+      report:combinedReport as any,
+      reviewStatus:'ADMIN_REVIEW'
+    }});
+    await tx.preInterviewAssignment.update({where:{id:assignment.id},data:{status:'COMPLETED',completedAt:new Date()}});
+    await tx.student.update({where:{id:user.student!.id},data:{academicTrack}});
+    await tx.assessment.update({where:{id:assessment.id},data:{report:{
+      ...assessmentReport,
+      workflowStatus:'PLAN_ADMIN_REVIEW',
+      preInterviewAttemptId:created.id,
+      administration:{
+        ...(assessmentReport.administration||{}),
+        preInterviewCompletedAt:new Date().toISOString(),
+        planStatus:'PENDING'
+      }
+    } as any}});
+    await tx.studentReport.create({data:{
+      studentId:user.student!.id,
+      title:'KEKS Birleşik Değerlendirme ve Gelişim Raporu',
+      summary:'Yönetici onayı bekliyor · Program alanı: '+academicTrack.replaceAll('_',' ')+' · Öncelikler: '+interviewReport.weakest.map(x=>x.dimension).join(', '),
+      content:reportText,
+      createdByUserId:user.id,
+      visibleToStudent:false,
+      visibleToParent:false
+    }});
+    return created;
+  });
 
-  await db.coachAlert.create({data:{
-    studentId:user.student.id,
-    kind:'PRE_INTERVIEW:'+attempt.id,
-    severity:'MEDIUM',
-    title:'Ön görüşme tamamlandı',
-    message:'Ön görüşme tamamlandı. Tüm soru-cevaplar, değerlendirme ve alan bazlı plan taslağı koç onayı bekliyor.'
-  }});
+  await writeAudit({
+    actorUserId:user.id,
+    action:'PRE_INTERVIEW_SUBMITTED',
+    entityType:'PreInterviewAttempt',
+    entityId:attempt.id,
+    summary:'Ön görüşme tamamlandı; yıllık/aylık/haftalık/günlük plan taslağı yönetici onayına gönderildi.',
+    metadata:{studentId:user.student.id,assessmentId:assessment.id}
+  });
 
-  return NextResponse.json({ok:true,attempt,report,plans,pendingCoachApproval:true});
+  return NextResponse.json({
+    ok:true,
+    attemptId:attempt.id,
+    report:combinedReport,
+    planDraft:combinedReport.planDraft,
+    pendingAdminApproval:true,
+    message:'Ön görüşme tamamlandı. Birleşik değerlendirme ve çalışma planınız yönetici onayına gönderildi.'
+  });
 }
 
-export const GET = withApiErrors(GET__handler);
-export const POST = withApiErrors(POST__handler);
+export const GET=withApiErrors(GET__handler);
+export const POST=withApiErrors(POST__handler);

@@ -244,5 +244,34 @@ export function buildTrackPlans(track:string,scores:Record<string,number>,start=
     ],
     review:'Ay sonunda görev tamamlama, doğruluk, gerçek odak süresi, tekrar devamlılığı ve koç müdahale ihtiyacı birlikte değerlendirilir.'
   };
-  return {daily,weekly,monthly,report};
+  const phaseNames=['Temel düzen ve öz-düzenleme','Bilgi birikimi ve beceri geliştirme','Performans, deneme ve hata kapatma','Sınav / hedef performansı ve bağımsızlık'];
+  const annualMonths=Array.from({length:12},(_,i)=>{
+    const d=new Date(start);d.setMonth(d.getMonth()+i);
+    const phase=Math.min(3,Math.floor(i/3));
+    return {
+      month:i+1,
+      startsAt:d.toISOString(),
+      phase:phaseNames[phase],
+      priorities:phase===0
+        ?['Düzenli başlama ve görev tamamlama','Aktif hatırlama ve tekrar rutini','Gerçek çalışma süresini ölçme']
+        :phase===1
+          ?['Temel/orta düzey konu açıklarını kapatma','Soru hacmini kontrollü artırma','Yanlış nedenlerini sınıflandırma']
+          :phase===2
+            ?['Karma ve süreli uygulamaları artırma','Zayıf konu döngülerini kapatma','Deneme stratejisini geliştirme']
+            :['Hedefe göre performans provası','Tekrar yükünü optimize etme','Koç desteğini kademeli azaltıp bağımsızlığı artırma'],
+      reviewCriteria:['Görev tamamlama oranı','Doğruluk / net gelişimi','Gerçek odak süresi','Tekrar devamlılığı','Koç müdahale ihtiyacı']
+    };
+  });
+  const annual={
+    title:'Kişisel 1 Yıllık Gelişim ve Çalışma Planı',
+    track,
+    educationBand,
+    programParameters:p,
+    motivationSupports:report.motivationSupports,
+    phases:phaseNames.map((name,i)=>({phase:i+1,name,months:[i*3+1,i*3+2,i*3+3]})),
+    months:annualMonths,
+    reviewCadence:'Her hafta kısa takip, her ay gelişim değerlendirmesi, her 3 ayda plan kalibrasyonu.',
+    principle:'Plan statik değildir; deneme sonuçları, görev tamamlama, gerçek çalışma süresi ve koç gözlemlerine göre aylık olarak güncellenir.'
+  };
+  return {daily,weekly,monthly,annual,report};
 }

@@ -1,0 +1,96 @@
+'use client';
+
+import { useEffect,useState } from 'react';
+
+export function AdminAssessmentWorkflow(){
+  const [data,setData]=useState<any>(null);
+  const [busy,setBusy]=useState('');
+  const [msg,setMsg]=useState('');
+
+  async function load(){
+    const r=await fetch('/api/admin/workflow',{cache:'no-store'});
+    const j=await r.json();
+    setData(j);
+  }
+  useEffect(()=>{load()},[]);
+
+  async function act(action:string,id:string){
+    setBusy(action+id);setMsg('');
+    const body=action.includes('screening')?{action,assessmentId:id}:{action,attemptId:id};
+    const r=await fetch('/api/admin/workflow',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json();setBusy('');
+    if(!r.ok)return setMsg('Hata: '+(j.error||'İşlem başarısız.'));
+    if(action==='approve_screening')setMsg('Eğilim raporu onaylandı; ön görüşme öğrenciye otomatik açıldı.');
+    if(action==='retake_screening')setMsg('Öğrenciye yeni KEKS tarama erişimi açıldı.');
+    if(action==='approve_plan')setMsg('Birleşik plan yönetici tarafından onaylandı ve koça gönderildi.');
+    if(action==='return_plan')setMsg('Ön görüşme yeniden doldurulmak üzere öğrenciye döndürüldü.');
+    await load();
+  }
+
+  if(!data)return <div className="card"><p className="muted">Değerlendirme ve plan onay kuyruğu yükleniyor…</p></div>;
+
+  return <div className="stack">
+    {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
+    <div className="grid">
+      <div className="card"><div className="kpi">{data.counts?.screenings||0}</div><div className="muted">Eğilim raporu yönetici onayı bekliyor</div></div>
+      <div className="card"><div className="kpi">{data.counts?.plans||0}</div><div className="muted">Birleşik çalışma planı yönetici onayı bekliyor</div></div>
+    </div>
+
+    <div className="card">
+      <div className="moduleEyebrow">AŞAMA 1 · EĞİLİM TARAMASI</div>
+      <h2>Ayrıntılı Değerlendirme ve Gelişim Raporları</h2>
+      <p className="muted">Yönetici onayı verilmeden ön görüşme açılmaz.</p>
+    </div>
+
+    {(data.screenings||[]).length===0?<div className="card muted">Yönetici onayı bekleyen eğilim taraması yok.</div>:(data.screenings||[]).map((a:any)=>{
+      const report=a.report||{},leading=report.leadingDimensions||[],quality=report.responseQuality||{};
+      return <article className="card" key={a.id}>
+        <div className="moduleHeaderRow">
+          <div><div className="moduleEyebrow">YÖNETİCİ İNCELEMESİ</div><h2>{a.student.fullName}</h2><p className="muted">Kod: {a.student.studentCode} · {a.student.gradeLevel||'Düzey belirtilmedi'} · {new Date(a.completedAt).toLocaleString('tr-TR')} · Koç: {a.student.coach?.user?.name||'Atanmamış'}</p></div>
+          <span className="pill">{report.dominance?.clarity||'DEĞERLENDİRME'}</span>
+        </div>
+        <div className="notice"><strong>Bilimsel kullanım sınırı:</strong> {report.disclaimer}</div>
+        <div className="interviewScoreGrid">{Object.entries(a.scores||{}).sort((x:any,y:any)=>Number(y[1])-Number(x[1])).map(([k,v]:any)=><div className="briefMetric" key={k}><b>{Number(v).toFixed(2)}</b><span>{k}</span></div>)}</div>
+        {leading.length>0&&<div className="stack">{leading.map((x:any)=><div className="card" key={x.name} style={{padding:14}}>
+          <strong>{x.name} · {Number(x.score).toFixed(2)}/5</strong>
+          {x.profile&&<><p><b>Motivasyon:</b> {x.profile.motivation}</p><p><b>Güçlü yönler:</b> {x.profile.strengths}</p><p><b>Gelişim riski:</b> {x.profile.risks}</p><p><b>Çalışma yaklaşımı:</b> {x.profile.plan}</p></>}
+        </div>)}</div>}
+        {quality.warnings?.length>0&&<div className="notice error"><strong>Yanıt kalitesi uyarısı</strong>{quality.warnings.map((x:string,i:number)=><div key={i}>{x}</div>)}</div>}
+        {report.developmentFocus?.length>0&&<details><summary><strong>Gelişim odakları</strong></summary><div className="briefAgenda">{report.developmentFocus.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div></details>}
+        {report.habitSignals?.length>0&&<details><summary><strong>Çalışma alışkanlığı yanıtları</strong></summary><div className="interviewAnswers">{report.habitSignals.map((x:any,i:number)=><div className="interviewAnswerRow" key={i}><div><span>{x.orderNo}</span><strong>{x.prompt}</strong></div><p>{x.response??'—'} / 5</p></div>)}</div></details>}
+        <div className="row" style={{justifyContent:'flex-end',marginTop:14}}>
+          <button className="btn" disabled={busy!==''} onClick={()=>act('retake_screening',a.id)}>Yeniden Tarama İste</button>
+          <button className="btn primary" disabled={busy!==''} onClick={()=>act('approve_screening',a.id)}>{busy==='approve_screening'+a.id?'Onaylanıyor…':'Onayla ve Ön Görüşmeyi Aç'}</button>
+        </div>
+      </article>;
+    })}
+
+    <div className="card">
+      <div className="moduleEyebrow">AŞAMA 2 · BİRLEŞİK PLAN</div>
+      <h2>Ön Görüşme + Eğilim Taraması Plan Onayı</h2>
+      <p className="muted">Bu aşamada 1 yıllık, aylık, haftalık ve günlük taslak birlikte incelenir; yönetici onayından sonra koça gönderilir.</p>
+    </div>
+
+    {(data.plans||[]).length===0?<div className="card muted">Yönetici onayı bekleyen çalışma planı yok.</div>:(data.plans||[]).map((a:any)=>{
+      const report=a.report||{},draft=report.planDraft||{};
+      return <article className="card interviewReviewCard awaitingApproval" key={a.id}>
+        <div className="moduleHeaderRow">
+          <div><div className="moduleEyebrow">PLAN ONAYI BEKLİYOR</div><h2>{a.student.fullName}</h2><p className="muted">Kod: {a.student.studentCode} · {a.form?.title} · {new Date(a.completedAt).toLocaleString('tr-TR')} · Koç: {a.student.coach?.user?.name||'Atanmamış'}</p></div>
+          <span className="pill">{String(a.academicTrack).replaceAll('_',' ')}</span>
+        </div>
+        <div className="interviewScoreGrid">{Object.entries(a.scores||{}).map(([k,v]:any)=><div className="briefMetric" key={k}><b>{Number(v).toFixed(2)}</b><span>{k}</span></div>)}</div>
+        {report.weakest?.length>0&&<div className="notice"><strong>Öncelikli gelişim alanları:</strong> {report.weakest.map((x:any)=>x.dimension+' '+x.score+'/5').join(' · ')}</div>}
+        <div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
+          <div className="card"><h3>1 Yıllık Plan</h3>{draft.annual?.phases?.map((x:any)=><p key={x.phase}><strong>{x.phase}. Faz:</strong> {x.name} · Aylar {x.months?.join('-')}</p>)}<p className="muted">{draft.annual?.reviewCadence}</p></div>
+          <div className="card"><h3>Aylık Plan</h3>{draft.monthly?.weeks?.map((x:string,i:number)=><p key={i}>{x}</p>)}</div>
+        </div>
+        <div className="card"><h3>Haftalık Plan</h3><p className="muted">{draft.weekly?.goals?.join(' · ')}</p>{draft.weekly?.weeks?.slice(0,1).map((w:any)=><div key={w.week}>{w.days?.map((d:any)=><div key={d.date} style={{marginBottom:8}}><strong>{new Date(d.date).toLocaleDateString('tr-TR')} · {d.subject}</strong><div className="muted">{d.durationMinutes} dk · {d.questions} soru · {d.method}</div></div>)}</div>)}</div>
+        <details><summary><strong>İlk 28 günlük görev taslağını görüntüle</strong></summary><div className="stack">{draft.daily?.map((d:any)=><div className="card" style={{padding:12}} key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR')} · {d.subject}</strong><div className="muted">{d.durationMinutes} dk · {d.questions} soru · {d.method} · Destek: {d.supportDimension}</div></div>)}</div></details>
+        <div className="row" style={{justifyContent:'flex-end',marginTop:14}}>
+          <button className="btn" disabled={busy!==''} onClick={()=>act('return_plan',a.id)}>Ön Görüşmeyi Yeniden Doldurt</button>
+          <button className="btn primary" disabled={busy!==''} onClick={()=>act('approve_plan',a.id)}>{busy==='approve_plan'+a.id?'Koça gönderiliyor…':'Onayla ve Koça Gönder'}</button>
+        </div>
+      </article>;
+    })}
+  </div>;
+}

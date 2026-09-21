@@ -38,6 +38,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   });
   if(!student) return notFound();
   const goalProgress=await computeGoalProgress(student.id);
+  const coachAssessments=student.assessments.filter(a=>['PLAN_ADMIN_APPROVED','COMPLETED'].includes(String(((a.report||{}) as any).workflowStatus||'')));
 
   return <PortalShell signedIn
     active="koc"
@@ -57,10 +58,10 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       <div className="stack">
         <div>
           <div className="moduleEyebrow">KOÇA ÖZEL</div>
-          <h2>KEKS Eğilim Taraması Sonuçları</h2>
-          <p className="muted">Öğrencinin tarama cevapları ve ayrıntılı eğilim sonuçları yalnız bu koç çalışma alanında gösterilir.</p>
+          <h2>Yönetici Onaylı KEKS Eğilim Raporu</h2>
+          <p className="muted">Ayrıntılı eğilim raporu, ön görüşme ve plan yönetici tarafından onaylanıp koça gönderildikten sonra burada görünür.</p>
         </div>
-        {student.assessments.length===0?<div className="card"><p className="muted">Henüz tamamlanmış KEKS eğilim taraması yok.</p></div>:student.assessments.map(a=>{
+        {coachAssessments.length===0?<div className="card"><p className="muted">Henüz yönetici tarafından koça gönderilmiş KEKS değerlendirmesi yok.</p></div>:coachAssessments.map(a=>{
           const scores=(a.scores||{}) as Record<string,number>;
           const report=(a.report||{}) as any;
           return <article className="card" key={a.id}>

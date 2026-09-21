@@ -2,11 +2,13 @@
 
 import { useEffect,useMemo,useState } from 'react';
 import { AdminGameCMS } from '@/app/components/AdminGameCMS';
+import { AdminAssessmentWorkflow } from '@/app/components/AdminAssessmentWorkflow';
 
-type Tab='overview'|'users'|'academic'|'payments'|'security';
+type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
 const TAB_LABELS:Record<Tab,string>={
   overview:'Genel Bakış',
+  workflow:'Değerlendirme & Plan Onayı',
   users:'Kullanıcılar',
   academic:'Akademik İçerik',
   payments:'Ödeme & Erişim',
@@ -135,6 +137,8 @@ export function AdminConsole(){
         <AdminKpi icon="👪" value={dashboard.parents} label="Veli"/>
         <AdminKpi icon="⏳" value={dashboard.pendingCoaches} label="Bekleyen koç" warn={dashboard.pendingCoaches>0}/>
         <AdminKpi icon="?" value={dashboard.pendingQuestions} label="Onay bekleyen soru" warn={dashboard.pendingQuestions>0}/>
+        <AdminKpi icon="✓" value={dashboard.pendingScreenings||0} label="Eğilim raporu onayı" warn={(dashboard.pendingScreenings||0)>0}/>
+        <AdminKpi icon="▤" value={dashboard.pendingPlans||0} label="Plan onayı" warn={(dashboard.pendingPlans||0)>0}/>
         <AdminKpi icon="!" value={dashboard.openAlerts} label="Açık öğrenci uyarısı" warn={dashboard.openAlerts>0}/>
         <AdminKpi icon="₺" value={money(dashboard.revenueKurus)} label="Tahsil edilen"/>
       </div>
@@ -144,7 +148,7 @@ export function AdminConsole(){
           <div className="adminActivityRows">
             <MetricLine label="Soru çözüm kaydı" value={dashboard.practice7}/>
             <MetricLine label="Teknik çalışma oturumu" value={dashboard.tech7}/>
-            <MetricLine label="Üretilen içerik" value={dashboard.contents7}/>
+            <MetricLine label="Yönetici bekleyen değerlendirme" value={(dashboard.pendingScreenings||0)+(dashboard.pendingPlans||0)}/>
           </div>
         </div>
         <div className="card">
@@ -156,6 +160,11 @@ export function AdminConsole(){
           </div>
         </div>
       </div>
+    </section>}
+
+    {tab==='workflow'&&<section className="adminPanelSection">
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">İKİ AŞAMALI ONAY AKIŞI</div><h2>Değerlendirme & Plan Onayı</h2><p className="muted">Önce KEKS Eğilim Taraması raporunu onaylayın; ön görüşme tamamlandıktan sonra birleşik yıllık/aylık/haftalık/günlük planı onaylayıp koça gönderin.</p></div></div>
+      <AdminAssessmentWorkflow/>
     </section>}
 
     {tab==='users'&&<section className="adminPanelSection">

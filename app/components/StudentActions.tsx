@@ -1,118 +1,145 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent,useEffect,useMemo,useState } from 'react';
 
-const SITE_ORIGIN='https://kazandiran-egitim-kocluk.mhmtsckr029.chatgpt.site';
+type Question={id:string;orderNo:number;prompt:string;kind:'TENDENCY'|'HABIT';dimension:string};
+type FormDataState={title:string;version:string;educationBand:string;disclaimer:string;questionCount:number;questions:Question[]};
+type ScreeningState={status:'READY'|'COMPLETED'|'NO_ACCESS'|'ERROR';form?:FormDataState;workflowStatus?:string};
 
-type SessionState={
-  status:'READY'|'COMPLETED'|'NO_ACCESS'|'ERROR';
-  url?:string;
-  assessment?:{id:string;completedAt:string;formVersion:string};
-};
+const PAGE_SIZE=10;
 
-export function StudentActions({hasAccess}:{hasAccess:boolean}) {
+function workflowCopy(status?:string){
+  if(status==='ADMIN_REVIEW')return {eyebrow:'YÖNETİCİ İNCELEMESİNDE',title:'Eğilim taramanız tamamlandı',text:'Ayrıntılı değerlendirme ve gelişim raporunuz yöneticiye iletildi. Yönetici onayından sonra ön görüşme formunuz otomatik açılacak.'};
+  if(status==='SCREENING_RETAKE_REQUIRED')return {eyebrow:'YENİDEN TARAMA',title:'Yönetici yeniden tarama istedi',text:'Yeni tarama erişiminiz açıldıysa form burada görünecektir. Görünmüyorsa sayfayı yenileyin.'};
+  if(status==='PRE_INTERVIEW_ASSIGNED')return {eyebrow:'YÖNETİCİ ONAYLADI',title:'Ön görüşme aşamasına geçebilirsiniz',text:'Eğilim raporunuz onaylandı. Aşağıdaki ön görüşme formunu tamamlayın.'};
+  if(status==='PLAN_ADMIN_REVIEW')return {eyebrow:'PLAN İNCELEMESİNDE',title:'Ön görüşmeniz tamamlandı',text:'Eğilim taraması ve ön görüşme birlikte değerlendirildi. Yıllık, aylık, haftalık ve günlük plan taslağınız yönetici onayında.'};
+  if(status==='PLAN_ADMIN_APPROVED')return {eyebrow:'KOÇA GÖNDERİLDİ',title:'Planınız yönetici tarafından onaylandı',text:'Onaylı çalışma planı koçunuza gönderildi. Koçunuz son uygulama kontrolünden sonra öğrenci panelinizde aktifleştirecek.'};
+  if(status==='COMPLETED')return {eyebrow:'AKTİF PLAN',title:'Değerlendirme süreci tamamlandı',text:'Yönetici onayı ve koç uygulama kontrolü tamamlandı. Onaylı planlarınız ve günlük görevleriniz panelinizde aktiftir.'};
+  return {eyebrow:'TARAMA TAMAMLANDI',title:'KEKS Eğilim Taraması kaydedildi',text:'Sonuçlarınız güvenli şekilde KEKS sistemine kaydedildi.'};
+}
+
+export function StudentActions({hasAccess}:{hasAccess:boolean}){
+  const [state,setState]=useState<ScreeningState|null>(null);
+  const [answers,setAnswers]=useState<Record<string,number>>({});
+  const [page,setPage]=useState(0);
   const [msg,setMsg]=useState('');
-  const [session,setSession]=useState<SessionState|null>(null);
+  const [busy,setBusy]=useState(false);
 
-  async function loadSession(reloadOnComplete=false){
+  async function load(){
     try{
-      const r=await fetch('/api/student/test/external-session',{cache:'no-store'});
+      const r=await fetch('/api/student/test/form',{cache:'no-store'});
       const j=await r.json();
-      if(!r.ok)throw new Error(j.error||'Tarama oturumu açılamadı.');
-      setSession(j);
-      if(j.status==='COMPLETED'&&reloadOnComplete){
-        setMsg('KEKS Eğilim Taraması tamamlandı. Sonuçlar koçunuza aktarıldı; ön görüşme alanı güncelleniyor…');
-        setTimeout(()=>location.reload(),700);
-      }
+      if(!r.ok)throw new Error(j.error||'Tarama formu yüklenemedi.');
+      setState(j);
+      if(j.status==='READY')setPage(0);
     }catch(error:any){
-      setSession({status:'ERROR'});
-      setMsg('Hata: '+(error?.message||'Tarama oturumu açılamadı.'));
+      setState({status:'ERROR'});
+      setMsg('Hata: '+(error?.message||'Tarama formu yüklenemedi.'));
     }
   }
+  useEffect(()=>{load()},[]);
 
-  useEffect(()=>{
-    let active=true;
-    const check=async(reloadOnComplete=false)=>{
-      if(!active)return;
-      await loadSession(reloadOnComplete);
-    };
-    check(false);
-    const timer=setInterval(()=>check(true),8000);
-    const onMessage=(event:MessageEvent)=>{
-      if(event.origin!==SITE_ORIGIN)return;
-      if(event.data?.type==='KEKS_ASSESSMENT_COMPLETED')check(true);
-    };
-    window.addEventListener('message',onMessage);
-    return ()=>{active=false;clearInterval(timer);window.removeEventListener('message',onMessage)};
-  },[]);
-
-  async function code(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault(); const fd=new FormData(e.currentTarget);
+  async function code(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();setMsg('');
+    const form=e.currentTarget;
+    const fd=new FormData(form);
     const r=await fetch('/api/student/test/access',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:fd.get('code')})});
     const j=await r.json();
-    if(!r.ok) return setMsg('Hata: '+(j.error||'Kod doğrulanamadı.'));
-    setMsg('KEKS erişimi açıldı. Tarama oturumu hazırlanıyor…');
-    await loadSession(false);
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Kod doğrulanamadı.'));
+    form.reset();
+    setMsg('KEKS tarama erişimi açıldı.');
+    await load();
   }
 
-  async function pay(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault(); const fd=new FormData(e.currentTarget);
+  async function pay(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();setMsg('');
+    const form=e.currentTarget;
+    const fd=new FormData(form);
     const body=Object.fromEntries(fd.entries());
     const r=await fetch('/api/paytr/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();
-    if(!r.ok) return setMsg('Hata: '+(j.error||'Ödeme başlatılamadı.'));
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Ödeme başlatılamadı.'));
     location.href=j.iframeUrl;
   }
 
-  if(!session)return <div className="card"><p className="muted">KEKS Eğilim Taraması erişimi kontrol ediliyor…</p></div>;
+  const form=state?.form;
+  const totalPages=form?Math.ceil(form.questions.length/PAGE_SIZE):0;
+  const pageQuestions=useMemo(()=>form?.questions.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE)||[],[form,page]);
+  const answered=form?form.questions.filter(q=>answers[q.id]!=null).length:0;
 
-  if(session.status==='COMPLETED')return <div className="card">
-    <div className="moduleEyebrow">TARAMA TAMAMLANDI</div>
-    <h2>KEKS Eğilim Taraması kaydedildi</h2>
-    <div className="notice"><strong>Sonuçlar koç paneline aktarıldı.</strong><div className="muted">Ayrıntılı eğilim raporu yalnız koçunuz tarafından görüntülenir. Ön görüşme formunuz uygun eğitim düzeyi formu mevcutsa otomatik açılır.</div></div>
-  </div>;
+  async function submit(){
+    if(!form)return;
+    if(answered!==form.questions.length)return setMsg('Hata: Tüm maddeleri cevaplayın.');
+    setBusy(true);setMsg('');
+    const payload={
+      formVersion:form.version,
+      educationBand:form.educationBand,
+      answers:form.questions.map(q=>({questionId:q.id,value:answers[q.id]}))
+    };
+    const r=await fetch('/api/student/test/submit',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+    const j=await r.json();setBusy(false);
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Tarama kaydedilemedi.'));
+    setMsg(j.message||'Tarama tamamlandı.');
+    await load();
+    setTimeout(()=>location.reload(),700);
+  }
 
-  if(session.status==='READY'&&session.url)return <div className="stack">
-    <div className="card">
+  if(!state)return <div className="card"><p className="muted">KEKS Eğilim Taraması yükleniyor…</p></div>;
+
+  if(state.status==='COMPLETED'){
+    const copy=workflowCopy(state.workflowStatus);
+    return <div className="card">
+      <div className="moduleEyebrow">{copy.eyebrow}</div>
+      <h2>{copy.title}</h2>
+      <div className="notice"><strong>Süreç durumu</strong><div className="muted">{copy.text}</div></div>
+      {msg&&<div className="notice" style={{marginTop:12}}>{msg}</div>}
+    </div>;
+  }
+
+  if(state.status==='READY'&&form){
+    return <div className="card">
       <div className="moduleHeaderRow">
-        <div>
-          <div className="moduleEyebrow">KEKS EĞİLİM TARAMASI</div>
-          <h2>Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması</h2>
-          <p className="muted">Bu oturum KEKS hesabınıza bağlıdır. Tarama tamamlandığında cevaplar ve sonuçlar otomatik olarak koç panelinize aktarılır.</p>
-        </div>
-        <a className="btn" href={session.url} target="_blank" rel="noreferrer">Yeni Sekmede Aç ↗</a>
+        <div><div className="moduleEyebrow">KEKS'İN KENDİ TARAMA MODÜLÜ</div><h2>{form.title}</h2><p className="muted">{form.questionCount} madde · Son 6–12 aydaki gerçek çalışma davranışınızı düşünerek cevaplayın.</p></div>
+        <span className="pill">{answered}/{form.questionCount}</span>
       </div>
-      <div className="notice" style={{marginBottom:14}}>
-        <strong>Güvenli tarama oturumu aktif.</strong>
-        <div className="muted">Oturum bağlantısı öğrenci hesabınız ve bu aya ait test erişiminizle eşleştirilmiştir.</div>
+      <div className="notice"><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
+      <div style={{margin:'14px 0'}}>
+        <div className="muted">İlerleme · %{Math.round(answered/Math.max(1,form.questionCount)*100)}</div>
+        <div style={{height:8,background:'var(--line)',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:(answered/Math.max(1,form.questionCount)*100)+'%',background:'currentColor'}}/></div>
       </div>
-      <div style={{border:'1px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>
-        <iframe
-          src={session.url}
-          title="KEKS Eğilim Taraması"
-          style={{width:'100%',height:'900px',border:0,display:'block'}}
-          allow="clipboard-read; clipboard-write"
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
+      <div className="stack">
+        {pageQuestions.map(q=><div className="preInterviewQuestion" key={q.id}>
+          <div className="questionMeta"><span>{q.orderNo}</span><small>{q.kind==='HABIT'?'ÇALIŞMA ALIŞKANLIĞI':'EĞİLİM'}</small></div>
+          <div style={{flex:1}}><strong>{q.prompt}</strong>
+            <div className="likertRow">
+              {[1,2,3,4,5].map(n=><label key={n} title={q.kind==='HABIT'?['Hiçbir zaman','Nadiren','Bazen','Çoğu zaman','Her zaman'][n-1]:['Bana hiç benzemiyor','Bana az benziyor','Kısmen benziyor','Bana oldukça benziyor','Bana çok benziyor'][n-1]}>
+                <input type="radio" name={q.id} value={n} checked={answers[q.id]===n} onChange={()=>setAnswers(a=>({...a,[q.id]:n}))}/><span>{n}</span>
+              </label>)}
+            </div>
+            <div className="muted" style={{fontSize:12,marginTop:4}}>{q.kind==='HABIT'?'1 Hiçbir zaman · 3 Bazen · 5 Her zaman':'1 Hiç benzemiyor · 3 Kısmen · 5 Çok benziyor'}</div>
+          </div>
+        </div>)}
+      </div>
+      <div className="row" style={{justifyContent:'space-between',marginTop:16}}>
+        <button className="btn" disabled={page===0||busy} onClick={()=>{setPage(p=>Math.max(0,p-1));window.scrollTo({top:0,behavior:'smooth'})}}>← Önceki</button>
+        <span className="pill">Sayfa {page+1} / {totalPages}</span>
+        {page<totalPages-1?<button className="btn primary" disabled={pageQuestions.some(q=>answers[q.id]==null)||busy} onClick={()=>{setPage(p=>Math.min(totalPages-1,p+1));window.scrollTo({top:0,behavior:'smooth'})}}>Sonraki →</button>:<button className="btn primary" disabled={answered!==form.questionCount||busy} onClick={submit}>{busy?'Kaydediliyor…':'Taramayı Tamamla ve Yöneticiye Gönder'}</button>}
       </div>
       {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')} style={{marginTop:12}}>{msg}</div>}
-    </div>
-  </div>;
+    </div>;
+  }
 
-  if(session.status==='ERROR'&&hasAccess)return <div className="card">
-    <div className="notice error">{msg||'Tarama oturumu hazırlanamadı.'}</div>
-    <button className="btn primary" onClick={()=>loadSession(false)}>Tekrar Dene</button>
-  </div>;
+  if(state.status==='ERROR'&&hasAccess)return <div className="card"><div className="notice error">{msg||'Tarama formu açılamadı.'}</div><button className="btn primary" onClick={load}>Tekrar Dene</button></div>;
 
   return <div className="stack">
-    <div className="card"><h3>Aylık KEKS Akademi Kodum Var</h3><p className="muted">Öğrenciye özel KEKS kodu her takvim ayında bir kez test erişimi açar. Aynı ay ikinci kez kullanılamaz; yeni ayda otomatik olarak tekrar kullanılabilir.</p><form className="form" onSubmit={code}><div className="field"><label>KEKS Akademi kodu</label><input name="code" required placeholder="KEKS-…"/></div><button className="btn primary">Kodu Kullan</button></form></div>
-    <div className="card"><h3>350 TL ile Test Erişimi</h3><p className="muted">Ödeme PayTR üzerinden doğrulandıktan sonra test erişimi otomatik açılır.</p><form className="form" onSubmit={pay}>
+    <div className="card"><h3>Aylık KEKS Akademi Kodum Var</h3><p className="muted">Kod doğrulandıktan sonra KEKS Eğilim Taraması doğrudan bu sistem içinde açılır.</p><form className="form" onSubmit={code}><div className="field"><label>KEKS Akademi kodu</label><input name="code" required placeholder="KEKS-…"/></div><button className="btn primary">Kodu Kullan ve Taramayı Aç</button></form></div>
+    <div className="card"><h3>350 TL ile Tarama Erişimi</h3><p className="muted">Ödeme PayTR üzerinden doğrulandıktan sonra yerleşik tarama erişimi otomatik açılır.</p><form className="form" onSubmit={pay}>
       <div className="field"><label>E-posta</label><input name="email" type="email" required/></div>
       <div className="field"><label>Ad soyad</label><input name="userName" required/></div>
       <div className="field"><label>Telefon</label><input name="userPhone" required/></div>
       <div className="field"><label>Adres</label><textarea name="userAddress" required/></div>
-      <button className="btn primary">350 TL Öde ve Testi Aç</button>
+      <button className="btn primary">350 TL Öde ve Taramayı Aç</button>
     </form></div>
-    {msg && <div className={`notice ${msg.startsWith('Hata:')?'error':''}`}>{msg}</div>}
+    {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
   </div>;
 }
