@@ -24,7 +24,7 @@ async function GET__handler(req:Request){
     where,orderBy:{createdAt:'desc'},take:200,
     select:{id:true,name:true,email:true,role:true,status:true,createdAt:true,
       coachProfile:{select:{_count:{select:{students:true}}}},
-      student:{select:{studentCode:true,gradeLevel:true,accessKeyCiphertext:true,credentialsDeliveryStatus:true,credentialsEmailedAt:true,coach:{select:{user:{select:{name:true}}}}}},
+      student:{select:{studentCode:true,gradeLevel:true,accessKeyCiphertext:true,accessKeyExpiresAt:true,credentialsDeliveryStatus:true,credentialsEmailedAt:true,coach:{select:{user:{select:{name:true}}}}}},
       parentProfile:{select:{student:{select:{fullName:true,studentCode:true}}}}
     }
   });
@@ -36,7 +36,9 @@ async function GET__handler(req:Request){
       coach:u.student.coach,
       credentialsDeliveryStatus:u.student.credentialsDeliveryStatus,
       credentialsEmailedAt:u.student.credentialsEmailedAt,
-      accessKey:u.student.accessKeyCiphertext?safeDecrypt(u.student.accessKeyCiphertext):null
+      accessKey:u.student.accessKeyCiphertext?safeDecrypt(u.student.accessKeyCiphertext):null,
+      accessKeyExpiresAt:u.student.accessKeyExpiresAt,
+      accessKeyExpired:u.student.accessKeyExpiresAt.getTime()<=Date.now()
     }:null
   }));
   return NextResponse.json({ok:true,users:visibleUsers});
