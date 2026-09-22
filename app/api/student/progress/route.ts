@@ -53,7 +53,7 @@ async function POST__handler(req:Request){
           studentId:studentId,
           createdByUserId:user.id,
           title:`${input.subject} · ${input.topic} · ${day}. gün konu tekrarı`,
-          description:`0–1–3–7–14–28 tekrar sistemi · ${day}. gün · ${input.subject} / ${input.topic}`,
+          description:`0–1–3–7–14–28. Gün Tekrar Sistemi · ${day}. gün · ${input.subject} / ${input.topic}`,
           metricType:'COUNT',
           targetValue:1,
           currentValue:0,
