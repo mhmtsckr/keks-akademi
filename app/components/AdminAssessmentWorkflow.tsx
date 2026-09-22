@@ -23,9 +23,7 @@ export function AdminAssessmentWorkflow(){
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'İşlem başarısız.'));
     if(action==='approve_screening')setMsg('Eğilim taraması incelemesi onaylandı. Açık uçlu ön görüşme tarama sonrasında otomatik atama üzerinden devam ediyor.');
-    if(action==='retake_screening')setMsg('Öğrenciye yeni KEKS tarama erişimi açıldı.');
     if(action==='approve_plan')setMsg('Birleşik plan yönetici tarafından onaylandı ve koça gönderildi.');
-    if(action==='return_plan')setMsg('Ön görüşme yeniden doldurulmak üzere öğrenciye döndürüldü.');
     await load();
   }
 
@@ -192,8 +190,8 @@ export function AdminAssessmentWorkflow(){
             </div>)}
           </div>
         </details>
+        <div className="notice" style={{marginTop:14}}><strong>Tek kullanım kuralı:</strong> Bu aylık ürünün Eğilim Taraması yeniden çözdürülemez.</div>
         <div className="row" style={{justifyContent:'flex-end',marginTop:14}}>
-          <button className="btn" disabled={busy!==''} onClick={()=>act('retake_screening',a.id)}>Yeniden Tarama İste</button>
           <button className="btn primary" disabled={busy!==''} onClick={()=>act('approve_screening',a.id)}>{busy==='approve_screening'+a.id?'Onaylanıyor…':'Tarama İncelemesini Onayla'}</button>
         </div>
       </article>;
