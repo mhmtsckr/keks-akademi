@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { withApiErrors } from '@/lib/apiGuard';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
+import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
 
@@ -11,47 +12,50 @@ async function GET__handler(){
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
 
   const month=turkeyMonthWindow();
+  const currentProduct=keksMonthlyProduct();
+  const latest=await db.assessment.findFirst({
+    where:{studentId:user.student.id},
+    orderBy:{completedAt:'desc'},
+    select:{id:true,completedAt:true,formVersion:true,report:true}
+  });
+
+  if(latest){
+    const report=(latest.report||{}) as any;
+    const workflow=String(report.workflowStatus||'');
+    const latestProductKey=productKeyFromReport(report,latest.completedAt);
+    const activeWorkflow=['ADMIN_REVIEW','SCREENING_RETAKE_REQUIRED','PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED'].includes(workflow);
+    if(activeWorkflow||latestProductKey===currentProduct.key){
+      return NextResponse.json({
+        ok:true,
+        status:'COMPLETED',
+        product:report.product||keksMonthlyProduct(latest.completedAt),
+        assessment:{id:latest.id,completedAt:latest.completedAt,formVersion:latest.formVersion},
+        workflowStatus:workflow||'ADMIN_REVIEW'
+      });
+    }
+  }
+
   const access=await db.testAccess.findFirst({
     where:{
       studentId:user.student.id,
       status:'READY',
-      OR:[
-        {source:{not:'ACADEMY_CODE'}},
-        {source:'ACADEMY_CODE',createdAt:{gte:month.start,lt:month.end}}
-      ]
+      createdAt:{gte:month.start,lt:month.end}
     },
     orderBy:{createdAt:'asc'}
   });
 
   if(!access){
-    const latest=await db.assessment.findFirst({
-      where:{studentId:user.student.id},
-      orderBy:{completedAt:'desc'},
-      select:{id:true,completedAt:true,formVersion:true,report:true}
-    });
-    if(latest){
-      const report=(latest.report||{}) as any;
-      const workflow=String(report.workflowStatus||'');
-      const inCurrentMonth=latest.completedAt>=month.start&&latest.completedAt<month.end;
-      const activeWorkflow=['ADMIN_REVIEW','SCREENING_RETAKE_REQUIRED','PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED'].includes(workflow);
-      if(activeWorkflow||inCurrentMonth){
-        return NextResponse.json({
-          ok:true,
-          status:'COMPLETED',
-          assessment:{id:latest.id,completedAt:latest.completedAt,formVersion:latest.formVersion},
-          workflowStatus:workflow||'ADMIN_REVIEW'
-        });
-      }
-    }
-    return NextResponse.json({ok:true,status:'NO_ACCESS'});
+    return NextResponse.json({ok:true,status:'NO_ACCESS',product:currentProduct});
   }
 
+  const product=keksMonthlyProduct(access.createdAt);
   const educationBand=detectEducationBand(user.student.gradeLevel);
   const form=getScreeningForm(educationBand);
   return NextResponse.json({
     ok:true,
     status:'READY',
     accessId:access.id,
+    product,
     form:{
       title:form.title,
       version:form.version,
