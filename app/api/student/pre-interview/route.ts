@@ -16,24 +16,44 @@ function reportObject(v:unknown){return v&&typeof v==='object'&&!Array.isArray(v
 function combineProgramScores(interviewScores:Record<string,number>,habitScores:unknown){
   const habits=reportObject(habitScores);
   const map:Record<string,string[]>={
-    'Başlama ve Süreklilik':['Başlama','Görev Tamamlama'],
-    'Görev Yapısı ve Planlama':['Planlama','Öz İzleme'],
-    'Motivasyon ve Pekiştirme':['Görev Tamamlama','Öz İzleme'],
-    'Odak ve Çalışma Ortamı':['Odak'],
-    'Aktif Hatırlama ve Tekrar':['Aktif Hatırlama','Aralıklı Tekrar'],
-    'Soru Çözme ve Hata Analizi':['Soru Uygulama','Hata Analizi'],
-    'Sınav ve Zaman Yönetimi':['Başlama','Odak','Görev Tamamlama'],
-    'Koçluk Bağımsızlığı':['Yardım İsteme','Öz İzleme']
+    'Başlama ve Süreklilik':['Planlama ve Başlama','Süreklilik ve Erteleme Yönetimi','Başlama','Görev Tamamlama'],
+    'Görev Yapısı ve Planlama':['Planlama ve Başlama','Planlama','Öz İzleme'],
+    'Motivasyon ve Pekiştirme':['Süreklilik ve Erteleme Yönetimi','Görev Tamamlama','Öz İzleme'],
+    'Odak ve Çalışma Ortamı':['Odak ve Dikkat Yönetimi','Odak'],
+    'Aktif Hatırlama ve Tekrar':['Aktif Hatırlama ve Öğrenme Stratejisi','Tekrar ve Kalıcılık','Aktif Hatırlama','Aralıklı Tekrar'],
+    'Soru Çözme ve Hata Analizi':['Hata Analizi ve Sınav Stratejisi','Soru Uygulama','Hata Analizi'],
+    'Sınav ve Zaman Yönetimi':['Hata Analizi ve Sınav Stratejisi','Planlama ve Başlama','Başlama','Odak','Görev Tamamlama'],
+    'Koçluk Bağımsızlığı':['Süreklilik ve Erteleme Yönetimi','Planlama ve Başlama','Yardım İsteme','Öz İzleme']
   };
+  const allHabitValues=Object.values(habits).map(Number).filter(Number.isFinite);
+  const fallbackAverage=allHabitValues.length?allHabitValues.reduce((a,b)=>a+b,0)/allHabitValues.length:3;
   const out={...interviewScores};
   for(const [dimension,keys] of Object.entries(map)){
     const values=keys.map(k=>Number(habits[k])).filter(Number.isFinite);
-    if(!values.length)continue;
-    const habitAverage=values.reduce((a,b)=>a+b,0)/values.length;
+    const habitAverage=values.length?values.reduce((a,b)=>a+b,0)/values.length:fallbackAverage;
     const interview=Number(interviewScores[dimension]);
     out[dimension]=Number((Number.isFinite(interview)?interview*0.65+habitAverage*0.35:habitAverage).toFixed(2));
   }
   return out;
+}
+
+function openEndedContext(questions:Array<{id:string;orderNo:number;dimension:string;prompt:string}>,answers:Record<string,unknown>){
+  const rows=questions.map(q=>({
+    orderNo:q.orderNo,
+    dimension:q.dimension,
+    prompt:q.prompt,
+    answer:String(answers[q.id]??'').trim()
+  })).filter(x=>x.answer);
+  const pick=(pattern:RegExp)=>rows.filter(x=>pattern.test((x.prompt+' '+x.dimension).toLocaleLowerCase('tr-TR'))).slice(0,6);
+  return {
+    scoringPolicy:'Açık uçlu yanıtlar psikometrik olarak puanlanmaz; eğilim taraması puanları çalışma planının nicel temelini oluşturur, açık uçlu yanıtlar bağlamsal planlama bilgisi olarak kullanılır.',
+    answerCount:rows.length,
+    goals:pick(/hedef|önümüzdeki|değiştir|geliştir|daha iyi/),
+    obstacles:pick(/zorlan|engelle|ertel|kayg|dikkat|odak|başla|süreklilik/),
+    learningPreferences:pick(/öğren|çalışma ortam|rahat|yer|yöntem|tekrar/),
+    supportExpectations:pick(/koç|aile|yardım|destek|takip/),
+    examContext:pick(/sınav|deneme|lgs|yks|tyt|ayt|zaman/)
+  };
 }
 
 async function GET__handler(){
@@ -42,7 +62,6 @@ async function GET__handler(){
   const assessment=await db.assessment.findFirst({where:{studentId:user.student.id},orderBy:{completedAt:'desc'}});
   if(!assessment)return NextResponse.json({ok:true,locked:true,reason:'Önce KEKS eğilim taramasını tamamlamalısınız.'});
   const workflow=reportObject(assessment.report).workflowStatus;
-  if(workflow==='ADMIN_REVIEW')return NextResponse.json({ok:true,locked:true,reason:'Eğilim taraması ayrıntılı değerlendirme ve gelişim raporu yönetici incelemesinde. Yönetici onayından sonra ön görüşme otomatik açılacak.'});
   if(workflow==='SCREENING_RETAKE_REQUIRED')return NextResponse.json({ok:true,locked:true,reason:'Yönetici eğilim taramasının yeniden çözülmesini istedi. Önce yeni taramayı tamamlayın.'});
 
   const assignment=await db.preInterviewAssignment.findFirst({
@@ -50,7 +69,7 @@ async function GET__handler(){
     orderBy:{assignedAt:'desc'},
     include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}},attempt:true}
   });
-  if(!assignment)return NextResponse.json({ok:true,locked:true,reason:'Yönetici onayından sonra ön görüşme formunuz burada açılacak.'});
+  if(!assignment)return NextResponse.json({ok:true,locked:true,reason:workflow==='ADMIN_REVIEW'?'Eğilim taramanız alındı. Eğitim düzeyinize uygun ön görüşme formu atanamadı; yönetici/koç bağlantısı kontrol ediliyor.':'Aktif ön görüşme ataması bulunamadı.'});
   return NextResponse.json({
     ok:true,
     locked:false,
@@ -68,7 +87,7 @@ async function POST__handler(req:Request){
   if(!assessment)return NextResponse.json({error:'Önce KEKS eğilim taramasını tamamlayın.'},{status:403});
   const assessmentReport=reportObject(assessment.report);
   if(assessmentReport.workflowStatus!=='PRE_INTERVIEW_ASSIGNED'){
-    return NextResponse.json({error:'Ön görüşme henüz yönetici tarafından açılmadı veya bu aşama tamamlandı.'},{status:403});
+    return NextResponse.json({error:'Ön görüşme bu aşamada doldurulamıyor.'},{status:403});
   }
 
   const input=await readJson(req,submitSchema);
@@ -90,6 +109,7 @@ async function POST__handler(req:Request){
   const screeningHabitScores=reportObject(assessmentReport.habitScores);
   const scores=combineProgramScores(interviewScores,screeningHabitScores);
   const motivationSignals=scoreMotivationSignals(form.questions.map(q=>({id:q.id,motivationKey:q.motivationKey,reverse:q.reverse})),input.answers);
+  const context=openEndedContext(form.questions.map(q=>({id:q.id,orderNo:q.orderNo,dimension:q.dimension,prompt:q.prompt})),input.answers);
   const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
   const academicTrack=requiresTrack?input.academicTrack:'GENERAL';
   if(requiresTrack&&academicTrack==='GENERAL')return NextResponse.json({error:'Hazırlık alanınızı seçin.'},{status:400});
@@ -109,7 +129,14 @@ async function POST__handler(req:Request){
     },
     rawInterviewScores:interviewScores,
     combinedProgramScores:scores,
-    planDraft:{annual:plans.annual,monthly:plans.monthly,weekly:plans.weekly,daily:plans.daily},
+    openEndedInterview:context,
+    planningBasis:'Eğilim taraması çalışma alışkanlığı puanları + açık uçlu ön görüşme yanıtlarının bağlamsal yorumu. Açık uçlu yanıtlar psikometrik puanlanmaz.',
+    planDraft:{
+      annual:{...plans.annual,studentContext:{goals:context.goals,obstacles:context.obstacles}},
+      monthly:{...plans.monthly,studentContext:{goals:context.goals.slice(0,3),supportExpectations:context.supportExpectations.slice(0,3)}},
+      weekly:{...plans.weekly,studentContext:{learningPreferences:context.learningPreferences.slice(0,3),examContext:context.examContext.slice(0,3)}},
+      daily:plans.daily
+    },
     workflowStatus:'ADMIN_REVIEW'
   };
 
@@ -119,8 +146,11 @@ async function POST__handler(req:Request){
     'KEKS BİRLEŞİK DEĞERLENDİRME VE GELİŞİM RAPORU',
     'Program alanı: '+academicTrack.replaceAll('_',' '),
     '',
-    'BİRLEŞİK PROGRAMLAMA PUANLARI',
+    'PLANLAMA PUANLARI (EĞİLİM TARAMASI TEMELLİ)',
     scoreLines,
+    '',
+    'AÇIK UÇLU ÖN GÖRÜŞME KULLANIMI',
+    'Açık uçlu yanıtlar puanlanmamış; hedef, engel, çalışma tercihi ve destek beklentisi olarak planlamaya bağlamsal girdi sağlamıştır.',
     '',
     'EĞİLİM TARAMASI ÇALIŞMA ALIŞKANLIKLARI',
     Object.entries(screeningHabitScores).map(([k,v])=>k+': '+v+'/5').join('\n'),
