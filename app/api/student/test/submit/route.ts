@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { buildReport, scoreAssessment } from '@/lib/scoring';
 import { sendAssessmentReport } from '@/lib/mailer';
-import { turkeyMonthWindow } from '@/lib/monthlyAccess';
+import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
 import { readJson, withApiErrors } from '@/lib/apiGuard';
@@ -20,19 +20,26 @@ async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const body=await readJson(req,schema);
-  const month=turkeyMonthWindow();
   const access=await db.testAccess.findFirst({
-    where:{
-      studentId:user.student.id,
-      status:'READY',
-      OR:[
-        {source:{not:'ACADEMY_CODE'}},
-        {source:'ACADEMY_CODE',createdAt:{gte:month.start,lt:month.end}}
-      ]
-    },
+    where:{studentId:user.student.id,status:'READY'},
     orderBy:{createdAt:'asc'}
   });
-  if(!access)return NextResponse.json({error:'Bu ay için aktif tarama erişimi bulunmuyor. Aylık KEKS Akademi kodunuzu kullanın.'},{status:403});
+  if(!access)return NextResponse.json({error:'Aktif KEKS test ürünü erişimi bulunmuyor. Aylık ürün için kod kullanın veya satın alın.'},{status:403});
+
+  let acquiredAt=access.createdAt;
+  if(access.source==='PAID'&&access.paymentId){
+    const payment=await db.payment.findUnique({where:{id:access.paymentId},select:{createdAt:true}});
+    if(payment?.createdAt)acquiredAt=payment.createdAt;
+  }
+  const product=keksMonthlyProduct(acquiredAt);
+  const latestAssessment=await db.assessment.findFirst({
+    where:{studentId:user.student.id},
+    orderBy:{completedAt:'desc'},
+    select:{completedAt:true,report:true}
+  });
+  if(latestAssessment&&productKeyFromReport(latestAssessment.report,latestAssessment.completedAt)===product.key){
+    return NextResponse.json({error:'Bu aylık KEKS test ürünü daha önce tamamlandı. Aynı ürün ikinci kez çözülemez.',product},{status:409});
+  }
 
   const educationBand=detectEducationBand(user.student.gradeLevel);
   const form=getScreeningForm(educationBand);
@@ -68,6 +75,12 @@ async function POST__handler(req:Request){
     educationBand,
     questionCount:form.questions.length,
     source:'KEKS_NATIVE',
+    product:{
+      ...product,
+      acquiredAt:acquiredAt.toISOString(),
+      accessId:access.id,
+      source:access.source
+    },
     workflowStatus:canAutoAssign?'PRE_INTERVIEW_ASSIGNED':'ADMIN_REVIEW',
     administration:{
       status:'PENDING',
@@ -75,7 +88,7 @@ async function POST__handler(req:Request){
       submittedAt,
       preInterviewAutoAssigned:canAutoAssign,
       nextStep:canAutoAssign
-        ?'Eğitim ve gelişim düzeyine uygun açık uçlu ön görüşme otomatik açıldı. Tarama sonucu ve sonraki plan taslağı yönetici incelemesine gider.'
+        ?'Eğitim ve gelişim düzeyine uygun ön görüşme otomatik açıldı. Tarama sonucu ve sonraki plan taslağı yönetici incelemesine gider.'
         :'Tarama yönetici incelemesine gönderildi; ön görüşme ataması için aktif form ve koç bağlantısı gerekir.'
     }
   };
@@ -130,7 +143,7 @@ async function POST__handler(req:Request){
     entityType:'Assessment',
     entityId:assessment.id,
     summary:result.assignmentId
-      ?'KEKS eğilim taraması tamamlandı; açık uçlu ön görüşme eğitim düzeyine göre otomatik açıldı ve tarama yönetici incelemesine gönderildi.'
+      ?'KEKS eğilim taraması tamamlandı; ön görüşme eğitim düzeyine göre otomatik açıldı ve tarama yönetici incelemesine gönderildi.'
       :'KEKS eğilim taraması tamamlandı ve yönetici incelemesine gönderildi.',
     metadata:{studentId:user.student.id,educationBand,questionCount:form.questions.length,preInterviewAssignmentId:result.assignmentId}
   });
@@ -154,7 +167,7 @@ async function POST__handler(req:Request){
     preInterviewAutoAssigned:Boolean(result.assignmentId),
     workflowStatus:result.assignmentId?'PRE_INTERVIEW_ASSIGNED':'ADMIN_REVIEW',
     message:result.assignmentId
-      ?'Tarama tamamlandı. Eğitim ve gelişim düzeyinize uygun açık uçlu ön görüşme otomatik açıldı. Tarama sonucunuz yönetici incelemesine gönderildi.'
+      ?'Tarama tamamlandı. Eğitim ve gelişim düzeyinize uygun ön görüşme otomatik açıldı. Tarama sonucunuz yönetici incelemesine gönderildi.'
       :'Tarama tamamlandı. Ayrıntılı değerlendirme ve gelişim raporu yönetici incelemesine gönderildi.'
   });
 }
