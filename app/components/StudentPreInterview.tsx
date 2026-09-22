@@ -69,7 +69,11 @@ export function StudentPreInterview(){
     </div>
     <form className="form preInterviewForm" onSubmit={submit}>
       {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
-      <div className="notice"><strong>Nasıl cevaplamalısınız?</strong> İşaretlemeli sorularda 1 = Bana hiç uymuyor, 2 = Az uyuyor, 3 = Kısmen uyuyor, 4 = Çoğunlukla uyuyor, 5 = Bana çok uyuyor. Açık uçlu sorularda kendi sözlerinizle ve mümkünse somut örneklerle yanıt verin.</div>
+      <div className="notice">
+        <strong>Yönerge:</strong> Ders, ödev, arkadaşlık ve günlük sorumluluklarında son iki ayı düşün. Sana en çok uyan seçeneği işaretle. Doğru ya da yanlış cevap yoktur; seni en iyi anlatan seçeneği işaretle.
+        <div className="muted" style={{marginTop:8}}>(1) Hiç katılmıyorum · (2) Katılmıyorum · (3) Bazen / Kararsızım · (4) Katılıyorum · (5) Tamamen katılıyorum</div>
+        <div className="muted" style={{marginTop:8}}>Açık uçlu sorularda ise kendi sözlerinle ve mümkünse somut örneklerle yanıt ver.</div>
+      </div>
       <div className="preInterviewQuestions">{data.form.questions.map((q:any)=><div className="preInterviewQuestion" key={q.id}>
         <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
         <div style={{flex:1}}><strong>{q.prompt}</strong>
@@ -77,7 +81,7 @@ export function StudentPreInterview(){
           ?<textarea name={'q_'+q.id} rows={4} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
           :q.responseType==='CHOICE'&&Array.isArray(q.options)
             ?<select name={'q_'+q.id} required={q.required}><option value="">Seçiniz</option>{q.options.map((o:any)=><option key={String(o.value??o)} value={String(o.value??o)}>{String(o.label??o)}</option>)}</select>
-            :<div className="likertRow">{[1,2,3,4,5].map(n=><label key={n} title={['Bana hiç uymuyor','Az uyuyor','Kısmen uyuyor','Çoğunlukla uyuyor','Bana çok uyuyor'][n-1]}><input type="radio" name={'q_'+q.id} value={n} required={q.required}/><span>{n}</span></label>)}</div>}
+            :<><div className="likertRow">{[1,2,3,4,5].map(n=><label key={n} title={['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1]}><input type="radio" name={'q_'+q.id} value={n} required={q.required}/><span>{n}</span></label>)}</div><div className="muted" style={{fontSize:12,marginTop:4}}>1 Hiç katılmıyorum · 2 Katılmıyorum · 3 Bazen / Kararsızım · 4 Katılıyorum · 5 Tamamen katılıyorum</div></>}
         </div>
       </div>)}</div>
       <button className="btn primary" disabled={busy}>{busy?'Plan hazırlanıyor…':'Ön Görüşmeyi Tamamla ve Plan Taslağını Oluştur'}</button>
