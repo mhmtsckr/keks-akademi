@@ -35,9 +35,9 @@ export default async function StudentPage() {
           <h2>Planını gör, çalışmanı uygula, gelişimini takip et.</h2>
           <p>Koçunun oluşturduğu programları takip et; Pomodoro ve diğer teknikleri doğrudan uygula, konu bazlı test çöz ve hedefe yaklaşma durumunu gör.</p>
           <div className="portalLoginBullets">
-            <span>Akıllı haftalık program ve hedef takibi</span>
-            <span>Gerçek aktif süre ölçümü</span>
-            <span>Konu, deneme ve yanlış soru tekrar sistemi</span>
+            <span>Eğitsel profil + eğitim düzeyine göre ön görüşme</span>
+            <span>Yıllık → aylık → haftalık → günlük kişisel plan</span>
+            <span>Akademik performans, 0–1–3–7–14–28. Gün Tekrar Sistemi ve aylık gelişim</span>
           </div>
         </div>
         <div className="stack">
@@ -97,8 +97,8 @@ export default async function StudentPage() {
     <section id="akilli-koc" className="section section-anchor"><SmartCoachDashboard/></section>
     <section className="section"><PortalSectionTitle eyebrow="KOÇLUK & OYUNLAŞTIRMA" title="Aksiyonlar, seanslar, XP ve mikro tekrar"/><StudentEngagementHub/></section>
 
-    <section className="section">
-      <PortalSectionTitle eyebrow="UYGULA" title="Ders Çalışma Teknikleri" description="Tekniği seç, nasıl uygulanacağını gör ve aynı ekranda hemen çalışmaya başla."/>
+    <section id="ogrenme-tekrar" className="section section-anchor">
+      <PortalSectionTitle eyebrow="AKILLI ÖĞRENME LABORATUVARI" title="Ders Çalışma Teknikleri ve Tekrar Motoru" description="Tekniği seç, hemen uygula; yanlış soru ve aralıklı tekrarlarını aynı öğrenme döngüsünde yönet."/>
       <StudyTechniqueLab initialPreferences={student.techniquePreferences}/>
     </section>
 
@@ -107,7 +107,7 @@ export default async function StudentPage() {
       <div className="card"><h2>Çalışma Tekniklerim</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik atanmadı.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:12}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
     </div></section>
 
-    <section className="section"><PortalSectionTitle eyebrow="PLAN" title="Programlarım"/>{student.plans.length===0?<div className="card muted">Henüz aktif program bulunmuyor.</div>:<div className="stack">{student.plans.map(p=><div className="card" key={p.id}><strong>{p.title}</strong><p className="muted">{pretty(p.payload)}</p></div>)}</div>}</section>
+    <section id="programlar" className="section section-anchor"><PortalSectionTitle eyebrow="AKILLI KİŞİSEL ÇALIŞMA PLANI" title="Yıllık, Aylık, Haftalık ve Günlük Planlarım" description="Onaylı planların hedef, eksik ders, çalışma süresi ve gelişim verilerine göre aynı sistemde yürür."/>{student.plans.length===0?<div className="card muted">Henüz aktif program bulunmuyor.</div>:<div className="stack">{student.plans.map(p=><div className="card" key={p.id}><strong>{p.title}</strong><p className="muted">{pretty(p.payload)}</p></div>)}</div>}</section>
 
     <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
       <div className="card"><h2>Çalışma Kayıtlarım</h2>{student.dailyLogs.length===0?<p className="muted">Henüz kayıt yok.</p>:student.dailyLogs.map(l=><div key={l.id} style={{marginBottom:12}}><strong>{new Date(l.date).toLocaleDateString('tr-TR')}</strong><div className="muted">{pretty(l.payload)}</div></div>)}</div>
@@ -119,7 +119,7 @@ export default async function StudentPage() {
       <div className="card"><h2>Kütüphanem</h2>{student.libraryItems.length===0?<p className="muted">Henüz not veya dosya yok.</p>:student.libraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
     </div></section>
 
-    <section className="section"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><PortalSectionTitle eyebrow="İLERLEME" title="Konu ve Soru Takibi"/><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString(),errorReason:x.errorReason}))}/></section>
+    <section id="akademik-performans" className="section section-anchor"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><PortalSectionTitle eyebrow="AKADEMİK PERFORMANS MERKEZİ" title="Konu, Soru ve Hata Analizi" description="Doğru, yanlış, boş, net, konu ilerlemesi ve hata nedenlerini birlikte takip et."/><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString(),errorReason:x.errorReason}))}/></section>
 
     <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="TARAMA" title="KEKS Eğilim Taraması" description="KEKS’in kendi sistemi içinde çalışan eğitsel çalışma ve öz-düzenleme eğilimleri taramasını bu bölümden tamamlayın. Sonuçlar önce yönetici incelemesine gider."/><StudentActions hasAccess={Boolean(access)}/></section>
     <section className="section"><PortalSectionTitle eyebrow="ÖN GÖRÜŞME" title="Eğitim Düzeyine Göre Ön Görüşme" description="Eğilim taraması tamamlanınca eğitim ve gelişim düzeyinize uygun form otomatik açılır. Bazı soruları işaretler, bazılarını kendi sözlerinizle yanıtlarsınız. Cevaplarınızla birlikte 1 yıllık, aylık, haftalık ve günlük plan taslağı oluşturulur; yönetici onayından sonra koçunuza gönderilir."/><StudentPreInterview/></section>
