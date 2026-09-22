@@ -49,7 +49,21 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
         <div className="briefMetric"><b>{brief.overdueActions?.length||0}</b><span>Geciken aksiyon</span></div>
         <div className="briefMetric"><b>{brief.activeAlerts?.length||0}</b><span>Açık uyarı</span></div>
       </div>}
-      {brief?.agenda?.length>0&&<div className="briefAgenda"><h3>Görüşme gündemi</h3>{brief.agenda.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
+      {brief?.weeklyChange&&<div className="coachWeeklyChange">
+        <div className="moduleEyebrow">BU HAFTA NE DEĞİŞTİ?</div>
+        <div className="coachWeeklyChangeGrid">
+          <ChangeMetric label="Soru miktarı" current={brief.weeklyChange.questions?.current||0} delta={brief.weeklyChange.questions?.delta||0}/>
+          <ChangeMetric label="Doğruluk" current={brief.weeklyChange.accuracy?.current||0} delta={brief.weeklyChange.accuracy?.delta||0} suffix="%"/>
+          <ChangeMetric label="Görev tamamlama" current={brief.weeklyChange.taskCompletion?.current||0} delta={brief.weeklyChange.taskCompletion?.delta||0} suffix="%"/>
+          <ChangeMetric label="Odak süresi" current={brief.weeklyChange.focusMinutes?.current||0} delta={brief.weeklyChange.focusMinutes?.delta||0} suffix=" dk"/>
+        </div>
+        <div className="coachChangeSignals">
+          <div><small>GELİŞEN ALAN</small><strong>{brief.weeklyChange.developedArea?brief.weeklyChange.developedArea.subject+' · +'+brief.weeklyChange.developedArea.delta+' puan':'Yeterli karşılaştırma verisi yok'}</strong></div>
+          <div><small>GERİLEYEN ALAN</small><strong className={brief.weeklyChange.regressedArea?'riskText':''}>{brief.weeklyChange.regressedArea?brief.weeklyChange.regressedArea.subject+' · '+brief.weeklyChange.regressedArea.delta+' puan':'Belirgin gerileme yok'}</strong></div>
+          <div><small>DENEME DEĞİŞİMİ</small><strong>{brief.weeklyChange.exam?.delta==null?'Karşılaştırma verisi yok':(brief.weeklyChange.exam.delta>0?'+':'')+brief.weeklyChange.exam.delta}</strong></div>
+        </div>
+      </div>}
+      {brief?.talkTopics?.length>0&&<div className="briefAgenda"><h3>Bu görüşmede konuşulması gereken 3 konu</h3>{brief.talkTopics.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
       {brief?.weakSubjects?.length>0&&<div className="row" style={{flexWrap:'wrap',marginTop:12}}>{brief.weakSubjects.map((x:any)=><span className="pill" key={x.subject}>{x.subject} · %{x.accuracy}</span>)}</div>}
     </div>
 
@@ -65,5 +79,13 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
       </form>
       {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')} style={{marginTop:12}}>{msg}</div>}
     </div>
+  </div>;
+}
+
+function ChangeMetric({label,current,delta,suffix=''}:{label:string;current:number;delta:number;suffix?:string}){
+  return <div className="coachChangeMetric">
+    <span>{label}</span>
+    <strong>{Math.round(current)}{suffix}</strong>
+    <small className={delta<0?'riskText':''}>{delta===0?'Değişmedi':(delta>0?'+':'')+Math.round(delta)+suffix+' önceki haftaya göre'}</small>
   </div>;
 }
