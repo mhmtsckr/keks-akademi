@@ -37,8 +37,8 @@ function combineProgramScores(interviewScores:Record<string,number>,habitScores:
   return out;
 }
 
-function openEndedContext(questions:Array<{id:string;orderNo:number;dimension:string;prompt:string}>,answers:Record<string,unknown>){
-  const rows=questions.map(q=>({
+function openEndedContext(questions:Array<{id:string;orderNo:number;dimension:string;prompt:string;responseType:string}>,answers:Record<string,unknown>){
+  const rows=questions.filter(q=>q.responseType==='TEXT').map(q=>({
     orderNo:q.orderNo,
     dimension:q.dimension,
     prompt:q.prompt,
@@ -109,7 +109,7 @@ async function POST__handler(req:Request){
   const screeningHabitScores=reportObject(assessmentReport.habitScores);
   const scores=combineProgramScores(interviewScores,screeningHabitScores);
   const motivationSignals=scoreMotivationSignals(form.questions.map(q=>({id:q.id,motivationKey:q.motivationKey,reverse:q.reverse})),input.answers);
-  const context=openEndedContext(form.questions.map(q=>({id:q.id,orderNo:q.orderNo,dimension:q.dimension,prompt:q.prompt})),input.answers);
+  const context=openEndedContext(form.questions.map(q=>({id:q.id,orderNo:q.orderNo,dimension:q.dimension,prompt:q.prompt,responseType:q.responseType})),input.answers);
   const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
   const academicTrack=requiresTrack?input.academicTrack:'GENERAL';
   if(requiresTrack&&academicTrack==='GENERAL')return NextResponse.json({error:'Hazırlık alanınızı seçin.'},{status:400});
@@ -130,7 +130,7 @@ async function POST__handler(req:Request){
     rawInterviewScores:interviewScores,
     combinedProgramScores:scores,
     openEndedInterview:context,
-    planningBasis:'Eğilim taraması çalışma alışkanlığı puanları + açık uçlu ön görüşme yanıtlarının bağlamsal yorumu. Açık uçlu yanıtlar psikometrik puanlanmaz.',
+    planningBasis:'Eğilim taraması çalışma alışkanlığı puanları + ön görüşmedeki 1–5 işaretlemeli davranış soruları + açık uçlu yanıtların bağlamsal yorumu.',
     planDraft:{
       annual:{...plans.annual,studentContext:{goals:context.goals,obstacles:context.obstacles}},
       monthly:{...plans.monthly,studentContext:{goals:context.goals.slice(0,3),supportExpectations:context.supportExpectations.slice(0,3)}},
@@ -149,8 +149,8 @@ async function POST__handler(req:Request){
     'PLANLAMA PUANLARI (EĞİLİM TARAMASI TEMELLİ)',
     scoreLines,
     '',
-    'AÇIK UÇLU ÖN GÖRÜŞME KULLANIMI',
-    'Açık uçlu yanıtlar puanlanmamış; hedef, engel, çalışma tercihi ve destek beklentisi olarak planlamaya bağlamsal girdi sağlamıştır.',
+    'ÖN GÖRÜŞME KULLANIMI',
+    'İşaretlemeli davranış soruları planlama puanlarına katkı sağlamış; açık uçlu yanıtlar hedef, engel, çalışma tercihi ve destek beklentisi için bağlamsal girdi olarak kullanılmıştır.',
     '',
     'EĞİLİM TARAMASI ÇALIŞMA ALIŞKANLIKLARI',
     Object.entries(screeningHabitScores).map(([k,v])=>k+': '+v+'/5').join('\n'),
