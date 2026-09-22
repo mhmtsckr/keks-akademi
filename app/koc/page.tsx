@@ -21,9 +21,9 @@ export default async function CoachPage() {
           <h2>Veriyi gör, öğrenciyi yönlendir, gelişimi ölç.</h2>
           <p>KEKS koç paneli yalnız öğrenci listesi değildir; hedef açığını, çalışma davranışını ve müdahale gerektiren durumları tek ekranda toplar.</p>
           <div className="portalLoginBullets">
-            <span>Öğrenci bazlı akıllı program</span>
-            <span>Net trendleri ve gerçek aktif süre</span>
-            <span>Rapor, içerik ve veli erişimi yönetimi</span>
+            <span>Eğitsel profil, ön görüşme ve öğrenci risk özeti</span>
+            <span>Kişisel plan, performans, tekrar ve görüşme öncesi otomatik brifing</span>
+            <span>Aylık gelişim, veli görünümü ve rol bazlı veri erişimi</span>
           </div>
         </div>
         <div className="stack">
@@ -47,7 +47,11 @@ export default async function CoachPage() {
       practiceLogs:{orderBy:{date:'desc'},take:1,select:{date:true}},
       dailyLogs:{orderBy:{date:'desc'},take:1,select:{date:true}},
       examResults:{orderBy:{createdAt:'desc'},take:1,select:{createdAt:true}},
-      reviewQueue:{where:{status:{in:['DUE','PENDING']},dueAt:{lte:now}},select:{id:true}}
+      reviewQueue:{where:{status:{in:['DUE','PENDING']},dueAt:{lte:now}},select:{id:true}},
+      plans:{where:{active:true},select:{id:true,title:true}},
+      assessments:{orderBy:{completedAt:'desc'},take:1,select:{id:true,report:true}},
+      preInterviewAttempts:{orderBy:{completedAt:'desc'},take:1,select:{id:true,reviewStatus:true}},
+      weeklyReflections:{orderBy:{weekStart:'desc'},take:1,select:{id:true,weekStart:true}}
     },
     orderBy:{createdAt:'desc'}
   });
@@ -79,6 +83,12 @@ export default async function CoachPage() {
       id:s.id,fullName:s.fullName,studentCode:s.studentCode,gradeLevel:s.gradeLevel,
       riskScore,riskLevel:(riskScore>=50?'HIGH':riskScore>=20?'MEDIUM':'LOW') as 'HIGH'|'MEDIUM'|'LOW',
       reasons,overdueActions:overdue,openAlerts:s.coachAlerts.length,dueReviews,
+      activePlans:s.plans.length,
+      profileReady:Boolean(s.assessments[0]&&s.preInterviewAttempts[0]),
+      screeningReady:Boolean(s.assessments[0]),
+      preInterviewReady:Boolean(s.preInterviewAttempts[0]),
+      monthlyDevelopmentReady:Boolean(s.weeklyReflections[0]),
+      hasExamData:Boolean(s.examResults[0]),
       lastActivity:lastActivity?lastActivity.toISOString():null
     };
   }).sort((a,b)=>b.riskScore-a.riskScore);
