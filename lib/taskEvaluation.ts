@@ -44,7 +44,7 @@ export type EducationBand=
 export function detectEducationBand(gradeLevel?:string|null):EducationBand{
   const raw=(gradeLevel||'').toLocaleUpperCase('tr-TR').replace(/\s+/g,' ');
   if(/YETİŞKİN|YETISKIN|KPSS|DGS|ALES/.test(raw))return 'YETISKIN_SINAV';
-  if(/MEZUN/.test(raw))return 'YETISKIN_MEZUN';
+  if(/MEZUN/.test(raw))return 'LISE_11_12';
   if(/LGS/.test(raw))return 'ORTAOKUL_7_8';
   if(/YKS|TYT|AYT/.test(raw)&&!/9|10/.test(raw))return 'LISE_11_12';
   const n=Number((raw.match(/(?:^|\D)(1[0-2]|[1-9])(?:\D|$)/)||[])[1]);
