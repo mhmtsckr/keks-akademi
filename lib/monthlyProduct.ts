@@ -1,14 +1,19 @@
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 
 export const KEKS_TEST_BASE_NAME='KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu';
-export const KEKS_TEST_PRICE_KURUS=50000;
+export const KEKS_TEST_LIST_PRICE_KURUS=80000;
+export const KEKS_TEST_PRICE_KURUS=40000;
+export const KEKS_TEST_DISCOUNT_PERCENT=50;
 
 export type KeksMonthlyProduct={
   key:string;
   monthName:string;
   name:string;
+  listPriceKurus:number;
+  listPriceLabel:string;
   priceKurus:number;
   priceLabel:string;
+  discountPercent:number;
 };
 
 export function keksMonthlyProduct(date=new Date()):KeksMonthlyProduct{
@@ -22,8 +27,11 @@ export function keksMonthlyProduct(date=new Date()):KeksMonthlyProduct{
     key:window.key,
     monthName,
     name:`${monthName} AYI ${KEKS_TEST_BASE_NAME}`,
+    listPriceKurus:KEKS_TEST_LIST_PRICE_KURUS,
+    listPriceLabel:'800 TL',
     priceKurus:KEKS_TEST_PRICE_KURUS,
-    priceLabel:'500 TL'
+    priceLabel:'400 TL',
+    discountPercent:KEKS_TEST_DISCOUNT_PERCENT
   };
 }
 
