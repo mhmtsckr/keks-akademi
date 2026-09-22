@@ -253,7 +253,7 @@ export function AdminConsole(){
         <HealthCard label="Kimlik Doğrulama" ok={health.authSecret} detail={health.authSecret?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="PayTR" ok={health.paytr} detail={health.paytr?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="Kayıt E-postası / Gmail" ok={health.gmail} detail={health.gmail?(health.gmailAddress||'keksakademi@gmail.com'):'Bağlantı bekleniyor'}/>
-        <HealthCard label="Resend / Rapor E-postası" ok={health.resend} detail={health.resend?'Gönderim hazır':'API anahtarı bekleniyor'}/>
+        <HealthCard label="Rapor E-postası / Gmail" ok={health.reportEmail} detail={health.reportEmail?(health.reportEmailAddress||'keksakademi@gmail.com')+' · Gönderim hazır':'Gmail bağlantısı bekleniyor'}/>
         <HealthCard label="Uygulama URL" ok={health.appUrl} detail={health.appUrl?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="Son 24 saat audit" ok={true} detail={String(health.recentAudit)+' kayıt'}/>
       </div>}
