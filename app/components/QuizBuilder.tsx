@@ -78,7 +78,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     const j=await r.json();setReviewBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Tekrar kaydedilemedi.'));
     if(j.correct){
-      if(j.completed)setMsg('Doğru. Bu yanlış soru 0–1–3–7–14–28 döngüsünü başarıyla tamamladı ve kuyruktan çıktı.');
+      if(j.completed)setMsg('Doğru. Bu yanlış soru 0–1–3–7–14–28. Gün Tekrar Sistemi döngüsünü başarıyla tamamladı ve kuyruktan çıktı.');
       else setMsg('Doğru. Sonraki tekrar aralığı '+j.nextIntervalDays+' güne genişletildi · Yeni tekrar tarihi: '+trDate(j.nextDueAt)+'.');
     }else{
       setMsg('Yanlış. Soru tekrar 0. gün aşamasına alındı; doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:''));
@@ -115,7 +115,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
 
     <div className="card">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">0–1–3–7–14–28 TEKRAR SİSTEMİ</div><h2>Yanlış Soru Tekrar Kuyruğu</h2><p className="muted">Yanlış yaptığın sorular otomatik kuyruğa girer. Doğru çözdükçe tekrar aralığı 1 → 3 → 7 → 14 → 28 güne genişler; tekrar yanlış olursa soru 0. güne döner.</p></div>
+        <div><div className="moduleEyebrow">0–1–3–7–14–28. GÜN TEKRAR SİSTEMİ</div><h2>Yanlış Soru Tekrar Kuyruğu</h2><p className="muted">Yanlış yaptığın sorular otomatik kuyruğa girer. Doğru çözdükçe tekrar aralığı 1 → 3 → 7 → 14 → 28 güne genişler; tekrar yanlış olursa soru 0. güne döner.</p></div>
         <span className="pill">{reviews.length} soru</span>
       </div>
       {reviews.length===0?<div className="notice">Tekrar kuyruğun boş. Testlerde yanlış yaptığın sorular burada branş branş görünecek.</div>:<div className="stack">
