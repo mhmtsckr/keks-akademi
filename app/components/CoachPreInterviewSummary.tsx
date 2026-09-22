@@ -32,7 +32,7 @@ export function CoachPreInterviewSummary({studentId}:{studentId:string}){
     <div className="card">
       <div className="moduleEyebrow">YÖNETİCİ ONAYLI KEKS AKIŞI</div>
       <h2>Eğilim Taraması → Ön Görüşme → Kişisel Plan</h2>
-      <p className="muted">Ön görüşmeyi yönetici açar. Öğrenci tamamladıktan sonra yıllık, aylık, haftalık ve günlük plan yönetici tarafından onaylanır; yalnız onaylanmış plan koça gelir.</p>
+      <p className="muted">Açık uçlu ön görüşme eğilim taraması tamamlanınca eğitim ve gelişim düzeyine göre otomatik açılır. Öğrenci tamamladıktan sonra 1 yıllık, aylık, haftalık ve günlük plan yönetici tarafından incelenir; yalnız yönetici onaylı sonuçlar ve plan koça açılır.</p>
     </div>
 
     {assignments.length===0&&<div className="card"><div className="notice">Henüz yönetici tarafından koça gönderilmiş veya öğrenciye açılmış bir ön görüşme süreci yok.</div></div>}
@@ -40,7 +40,7 @@ export function CoachPreInterviewSummary({studentId}:{studentId:string}){
     {assignments.map((a:any)=>{
       const attempt=a.attempt;
       if(!attempt)return <div className="card" key={a.id}>
-        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">{a.status==='ASSIGNED'?'ÖĞRENCİ BEKLENİYOR':'SÜREÇ KAYDI'}</div><h3>{a.form.title}</h3><p className="muted">Yönetici eğilim taramasını onayladı. Öğrenci ön görüşmeyi henüz tamamlamadı.</p></div><span className="pill">{a.status}</span></div>
+        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">{a.status==='ASSIGNED'?'ÖĞRENCİ BEKLENİYOR':'SÜREÇ KAYDI'}</div><h3>{a.form.title}</h3><p className="muted">Eğilim taraması sonrasında açık uçlu ön görüşme otomatik atandı. Öğrenci formu henüz tamamlamadı; yanıt ve plan detayları yönetici onayından sonra koça açılır.</p></div><span className="pill">{a.status}</span></div>
       </div>;
 
       if(a.status==='COMPLETED')return <div className="card" key={a.id}>
