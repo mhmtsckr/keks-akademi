@@ -9,9 +9,9 @@ type ScreeningState={status:'READY'|'COMPLETED'|'NO_ACCESS'|'ERROR';form?:FormDa
 const PAGE_SIZE=10;
 
 function workflowCopy(status?:string){
-  if(status==='ADMIN_REVIEW')return {eyebrow:'YÖNETİCİ İNCELEMESİNDE',title:'Eğilim taramanız tamamlandı',text:'Ayrıntılı değerlendirme ve gelişim raporunuz yöneticiye iletildi. Yönetici onayından sonra ön görüşme formunuz otomatik açılacak.'};
+  if(status==='ADMIN_REVIEW')return {eyebrow:'YÖNETİCİ İNCELEMESİNDE',title:'Eğilim taramanız tamamlandı',text:'Ayrıntılı değerlendirme ve gelişim raporunuz yöneticiye iletildi. Ön görüşme ataması için eğitim düzeyi ve koç bağlantınız kontrol ediliyor.'};
   if(status==='SCREENING_RETAKE_REQUIRED')return {eyebrow:'YENİDEN TARAMA',title:'Yönetici yeniden tarama istedi',text:'Yeni tarama erişiminiz açıldıysa form burada görünecektir. Görünmüyorsa sayfayı yenileyin.'};
-  if(status==='PRE_INTERVIEW_ASSIGNED')return {eyebrow:'YÖNETİCİ ONAYLADI',title:'Ön görüşme aşamasına geçebilirsiniz',text:'Eğilim raporunuz onaylandı. Aşağıdaki ön görüşme formunu tamamlayın.'};
+  if(status==='PRE_INTERVIEW_ASSIGNED')return {eyebrow:'ÖN GÖRÜŞME OTOMATİK AÇILDI',title:'Açık uçlu ön görüşme aşamasına geçebilirsiniz',text:'Eğilim taramanız tamamlandı. Eğitim ve gelişim düzeyinize uygun açık uçlu ön görüşme otomatik açıldı; tarama sonucunuz yönetici tarafından ayrıca inceleniyor.'};
   if(status==='PLAN_ADMIN_REVIEW')return {eyebrow:'PLAN İNCELEMESİNDE',title:'Ön görüşmeniz tamamlandı',text:'Eğilim taraması ve ön görüşme birlikte değerlendirildi. Yıllık, aylık, haftalık ve günlük plan taslağınız yönetici onayında.'};
   if(status==='PLAN_ADMIN_APPROVED')return {eyebrow:'KOÇA GÖNDERİLDİ',title:'Planınız yönetici tarafından onaylandı',text:'Onaylı çalışma planı koçunuza gönderildi. Koçunuz son uygulama kontrolünden sonra öğrenci panelinizde aktifleştirecek.'};
   if(status==='COMPLETED')return {eyebrow:'AKTİF PLAN',title:'Değerlendirme süreci tamamlandı',text:'Yönetici onayı ve koç uygulama kontrolü tamamlandı. Onaylı planlarınız ve günlük görevleriniz panelinizde aktiftir.'};
@@ -129,7 +129,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
       <div className="row" style={{justifyContent:'space-between',marginTop:16}}>
         <button className="btn" disabled={page===0||busy} onClick={()=>{setPage(p=>Math.max(0,p-1));window.scrollTo({top:0,behavior:'smooth'})}}>← Önceki</button>
         <span className="pill">Sayfa {page+1} / {totalPages}</span>
-        {page<totalPages-1?<button className="btn primary" disabled={pageQuestions.some(q=>answers[q.id]==null)||busy} onClick={()=>{setPage(p=>Math.min(totalPages-1,p+1));window.scrollTo({top:0,behavior:'smooth'})}}>Sonraki →</button>:<button className="btn primary" disabled={answered!==form.questionCount||busy} onClick={submit}>{busy?'Kaydediliyor…':'Taramayı Tamamla ve Yöneticiye Gönder'}</button>}
+        {page<totalPages-1?<button className="btn primary" disabled={pageQuestions.some(q=>answers[q.id]==null)||busy} onClick={()=>{setPage(p=>Math.min(totalPages-1,p+1));window.scrollTo({top:0,behavior:'smooth'})}}>Sonraki →</button>:<button className="btn primary" disabled={answered!==form.questionCount||busy} onClick={submit}>{busy?'Kaydediliyor…':'Taramayı Tamamla ve Ön Görüşmeye Geç'}</button>}
       </div>
       {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')} style={{marginTop:12}}>{msg}</div>}
     </div>;
