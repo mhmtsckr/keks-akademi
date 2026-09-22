@@ -19,7 +19,8 @@ async function GET__handler(){
   ]);
   return NextResponse.json({
     ok:true,
-    cronConfigured:Boolean(process.env.CRON_SECRET),
+    cronConfigured:true,
+    cronAuthMode:process.env.CRON_SECRET?'CRON_SECRET':'VERCEL_CRON_FALLBACK',
     scheduleUtc:'04:00',
     scheduleTurkey:'07:00',
     sourceCount,
