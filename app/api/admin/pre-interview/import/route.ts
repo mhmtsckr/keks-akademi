@@ -22,33 +22,23 @@ const schema=z.object({
   questions:z.array(question).min(1).max(300)
 });
 
-function openEndedSuffix(band:string){
-  if(band==='ILKOKUL_1_2')return 'Bu durum sende nasıl oluyor? Kısaca kendi sözlerinle anlat ve mümkünse bir örnek ver.';
-  if(band==='ILKOKUL_3_4')return 'Bu durumu kendi sözlerinle anlat. Ne zaman kolay, ne zaman zor olduğunu bir örnekle açıkla.';
-  if(band==='ORTAOKUL_5_6')return 'Bu ifadeyi kendi durumuna göre açıkla. Ne zaman böyle oluyor, ne zaman olmuyor? Yakın zamandan bir örnek ver.';
-  if(band==='ORTAOKUL_7_8')return 'Bu durumu kendi çalışma düzenine göre açıkla; nedenlerini ve yakın zamandan bir örneği yaz.';
-  if(band==='LISE_9_10')return 'Bu durumu kendi çalışma düzenin açısından değerlendir; nedenlerini, seni kolaylaştıran/zorlaştıran etkenleri ve bir örneği yaz.';
-  if(band==='LISE_11_12')return 'Bu durumu mevcut sınav hazırlığın açısından değerlendir; ne zaman işe yaradığını, ne zaman zorlandığını ve geliştirmek istediğin noktayı açıkla.';
-  if(band==='YETISKIN_MEZUN')return 'Bu durumu mevcut sınav/öğrenme düzenin açısından değerlendir; nedenlerini, etkisini ve değiştirmek istediğin noktayı açıkla.';
-  return 'Bu durumu kendi çalışma düzenin açısından açıkla ve mümkünse somut bir örnek ver.';
-}
-
-function toOpenEndedPrompt(q:z.infer<typeof question>,band:string){
-  const prompt=q.prompt.trim();
-  if(q.responseType==='TEXT')return prompt;
-  if(q.responseType==='CHOICE')return prompt+' Seçenek işaretlemek yerine kendi düşünceni ve gerekçeni açıkça yaz.';
-  return '“'+prompt+'” '+openEndedSuffix(band);
-}
-
 async function POST__handler(req:Request){
   const user=await requireRole(['ADMIN']);
   const input=await readJson(req, schema);
   const targetVersion=input.version.startsWith('PREINT_V1_')
     ?input.version.replace('PREINT_V1_','PREINT_OPEN_V2_')
     :input.version;
-  const targetTitle=input.version.startsWith('PREINT_V1_')
-    ?input.title.replace('v1.0','Açık Uçlu v2.0')
-    :input.title;
+  const titleByBand:Record<string,string>={
+    ILKOKUL_1_2:'İlkokul 1–2',
+    ILKOKUL_3_4:'İlkokul 3–4',
+    ORTAOKUL_5_6:'Ortaokul 5–6',
+    ORTAOKUL_7_8:'Ortaokul 7–8 / LGS',
+    LISE_9_10:'Lise 9–10',
+    LISE_11_12:'Lise 11–12 / YKS',
+    YETISKIN_MEZUN:'Mezun / Yetişkin Sınav Grubu',
+    GENERAL:'Genel'
+  };
+  const targetTitle=titleByBand[input.educationBand]||input.title;
 
   await db.preInterviewForm.updateMany({where:{active:true,educationBand:input.educationBand,version:{not:targetVersion}},data:{active:false}});
   const form=await db.preInterviewForm.upsert({
@@ -62,10 +52,10 @@ async function POST__handler(req:Request){
     formId:form.id,
     orderNo:q.orderNo,
     dimension:q.dimension,
-    prompt:toOpenEndedPrompt(q,input.educationBand),
-    responseType:'TEXT',
-    options:undefined,
-    reverse:false,
+    prompt:q.prompt.trim(),
+    responseType:q.responseType,
+    options:(q.options??undefined) as any,
+    reverse:q.reverse,
     motivationKey:q.motivationKey||null,
     required:q.required
   }))});
@@ -75,7 +65,7 @@ async function POST__handler(req:Request){
     formId:form.id,
     version:targetVersion,
     count:input.questions.length,
-    mode:'OPEN_ENDED',
+    mode:'MIXED',
     importedBy:user.id
   });
 }
