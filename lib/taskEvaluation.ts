@@ -41,9 +41,16 @@ export type EducationBand=
   | 'YETISKIN_SINAV'
   | 'GENERAL';
 
+export function normalizeEducationLevelLabel(gradeLevel?:string|null){
+  const original=(gradeLevel||'').trim();
+  const raw=original.toLocaleUpperCase('tr-TR').replace(/\s+/g,' ');
+  if(/AGS|ÖABT|OABT/.test(raw))return 'Yetişkin Sınav Grubu · AGS/ÖABT';
+  return original;
+}
+
 export function detectEducationBand(gradeLevel?:string|null):EducationBand{
   const raw=(gradeLevel||'').toLocaleUpperCase('tr-TR').replace(/\s+/g,' ');
-  if(/YETİŞKİN|YETISKIN|KPSS|DGS|ALES/.test(raw))return 'YETISKIN_SINAV';
+  if(/YETİŞKİN|YETISKIN|KPSS|DGS|ALES|AGS|ÖABT|OABT/.test(raw))return 'YETISKIN_SINAV';
   if(/MEZUN/.test(raw))return 'LISE_11_12';
   if(/LGS/.test(raw))return 'ORTAOKUL_7_8';
   if(/YKS|TYT|AYT/.test(raw)&&!/9|10/.test(raw))return 'LISE_11_12';
