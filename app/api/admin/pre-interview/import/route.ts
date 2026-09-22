@@ -25,6 +25,7 @@ const schema=z.object({
 async function POST__handler(req:Request){
   const user=await requireRole(['ADMIN']);
   const input=await readJson(req, schema);
+  const normalizedBand=input.educationBand==='YETISKIN_MEZUN'?'LISE_11_12':input.educationBand;
   const targetVersion=input.version.startsWith('PREINT_V1_')
     ?input.version.replace('PREINT_V1_','PREINT_OPEN_V2_')
     :input.version;
@@ -34,18 +35,18 @@ async function POST__handler(req:Request){
     ORTAOKUL_5_6:'Ortaokul 5–6',
     ORTAOKUL_7_8:'Ortaokul 7–8 / LGS',
     LISE_9_10:'Lise 9–10',
-    LISE_11_12:'Lise 11–12 / YKS',
+    LISE_11_12:'Lise 11–12 / YKS / Lise Mezunu',
     YETISKIN_MEZUN:'Lise Mezunu / Sınav Grubu',
     YETISKIN_SINAV:'Yetişkin Sınav Grubu',
     GENERAL:'Genel'
   };
-  const targetTitle=titleByBand[input.educationBand]||input.title;
+  const targetTitle=titleByBand[normalizedBand]||input.title;
 
-  await db.preInterviewForm.updateMany({where:{active:true,educationBand:input.educationBand,version:{not:targetVersion}},data:{active:false}});
+  await db.preInterviewForm.updateMany({where:{active:true,educationBand:normalizedBand,version:{not:targetVersion}},data:{active:false}});
   const form=await db.preInterviewForm.upsert({
     where:{version:targetVersion},
-    create:{title:targetTitle,version:targetVersion,sourceUrl:input.sourceUrl||null,educationBand:input.educationBand,active:true},
-    update:{title:targetTitle,sourceUrl:input.sourceUrl||null,educationBand:input.educationBand,active:true}
+    create:{title:targetTitle,version:targetVersion,sourceUrl:input.sourceUrl||null,educationBand:normalizedBand,active:true},
+    update:{title:targetTitle,sourceUrl:input.sourceUrl||null,educationBand:normalizedBand,active:true}
   });
 
   await db.preInterviewQuestion.deleteMany({where:{formId:form.id}});
