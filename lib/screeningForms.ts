@@ -22,6 +22,7 @@ const FORM_DATA_KEYS:Record<EducationBand,string>={
   LISE_9_10:'LISE_9_10',
   LISE_11_12:'LISE_11_12',
   YETISKIN_MEZUN:'LISE_11_12',
+  YETISKIN_SINAV:'YETISKIN_MEZUN',
   GENERAL:'LISE_9_10'
 };
 
@@ -33,6 +34,7 @@ export const SCREENING_FORM_LABELS:Record<EducationBand,string>={
   LISE_9_10:'Lise 9-10',
   LISE_11_12:'Lise 11-12 / YKS',
   YETISKIN_MEZUN:'Lise Mezunu / Sınav Grubu',
+  YETISKIN_SINAV:'Yetişkin Sınav Grubu',
   GENERAL:'Genel'
 };
 
