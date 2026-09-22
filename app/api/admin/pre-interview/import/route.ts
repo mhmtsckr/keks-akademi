@@ -18,7 +18,7 @@ const schema=z.object({
   title:z.string().min(2),
   version:z.string().min(1),
   sourceUrl:z.string().url().optional(),
-  educationBand:z.enum(['ILKOKUL_1_2','ILKOKUL_3_4','ORTAOKUL_5_6','ORTAOKUL_7_8','LISE_9_10','LISE_11_12','YETISKIN_MEZUN','GENERAL']),
+  educationBand:z.enum(['ILKOKUL_1_2','ILKOKUL_3_4','ORTAOKUL_5_6','ORTAOKUL_7_8','LISE_9_10','LISE_11_12','YETISKIN_MEZUN','YETISKIN_SINAV','GENERAL']),
   questions:z.array(question).min(1).max(300)
 });
 
@@ -36,6 +36,7 @@ async function POST__handler(req:Request){
     LISE_9_10:'Lise 9–10',
     LISE_11_12:'Lise 11–12 / YKS',
     YETISKIN_MEZUN:'Lise Mezunu / Sınav Grubu',
+    YETISKIN_SINAV:'Yetişkin Sınav Grubu',
     GENERAL:'Genel'
   };
   const targetTitle=titleByBand[input.educationBand]||input.title;
