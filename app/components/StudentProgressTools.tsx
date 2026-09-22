@@ -12,6 +12,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
   const [progress,setProgress]=useState(initialProgress);
   const [practice,setPractice]=useState(initialPractice);
   const [msg,setMsg]=useState('');
+  const [lastSchedule,setLastSchedule]=useState<{subject:string;topic:string;items:{day:number;label:string;date:string}[]} | null>(null);
   const subjects=Object.keys(EXAM_CATALOG[exam]||{});
   const topics=(EXAM_CATALOG[exam] as any)?.[subject]||[];
 
@@ -21,7 +22,13 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
     const r=await fetch('/api/student/progress',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'topic',examType:exam,subject,topic,completed})});
     const j=await r.json(); if(!r.ok){setMsg('Hata: '+(j.error||'Kaydedilemedi.'));return}
     setProgress(p=>[...p.filter(x=>!(x.examType===exam&&x.subject===subject&&x.topic===topic)),{examType:exam,subject,topic,completed}]);
-    setMsg(completed?'Konu tamamlandı olarak işaretlendi.':'Konu yeniden açıldı.');
+    if(completed){
+      setLastSchedule({subject,topic,items:j.reviewSchedule||[]});
+      setMsg('Konu tamamlandı. 0–1–3–7–14–28 gün tekrarları günlük görevlerine eklendi.');
+    }else{
+      setLastSchedule(null);
+      setMsg('Konu yeniden açıldı; bekleyen otomatik konu tekrar görevleri iptal edildi.');
+    }
   }
 
   async function addPractice(e:FormEvent<HTMLFormElement>){
@@ -40,6 +47,16 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
 
   return <div className="studentProgressLayout">
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
+    {lastSchedule&&<div className="card">
+      <div className="moduleEyebrow">KONU TEKRAR TAKVİMİ</div>
+      <h3>{lastSchedule.subject} · {lastSchedule.topic}</h3>
+      <p className="muted">Konu bitişinden itibaren tekrar günleri otomatik oluşturuldu.</p>
+      <div className="row" style={{flexWrap:'wrap'}}>
+        {lastSchedule.items.map(item=><span className="pill" key={item.day}>
+          {item.label} · {new Date(item.date).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul',day:'2-digit',month:'short'})}
+        </span>)}
+      </div>
+    </div>}
 
     <div className="card topicProgressCard">
       <div className="moduleHeaderRow">
