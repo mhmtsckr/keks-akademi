@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { awardXp } from '@/lib/gamification';
 import { chooseWeakTopic,generateMicroGame } from '@/lib/microGameGenerator';
+import { gameAudiencesForGradeLevel } from '@/lib/mebCoreQuestionBank';
 
 const actionSchema=z.object({action:z.literal('progress'),id:z.string(),currentValue:z.number().min(0)});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
@@ -17,13 +18,25 @@ async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const id=user.student.id;
+  const studentRow=await db.student.findUnique({where:{id},select:{gradeLevel:true}});
+  const gameAudiences=gameAudiencesForGradeLevel(studentRow?.gradeLevel);
   const weekStart=new Date(Date.now()-7*24*60*60*1000);
   const monthStart=new Date(Date.now()-30*24*60*60*1000);
   const [actions,gamification,badges,games,sessions,weeklyLedger,monthlyLedger,cohorts]=await Promise.all([
     db.coachingAction.findMany({where:{studentId:id,status:'ACTIVE'},orderBy:{periodEnd:'asc'}}),
     db.studentGamification.findUnique({where:{studentId:id}}),
     db.badgeAward.findMany({where:{studentId:id},orderBy:{awardedAt:'desc'}}),
-    db.gameContent.findMany({where:{active:true,OR:[{studentId:null},{studentId:id}]},orderBy:{createdAt:'desc'},take:100}),
+    db.gameContent.findMany({
+      where:{
+        active:true,
+        OR:[
+          {studentId:id},
+          {studentId:null,examType:null},
+          {studentId:null,examType:{in:gameAudiences}}
+        ]
+      },
+      orderBy:{createdAt:'desc'},take:100
+    }),
     db.coachingSession.findMany({where:{studentId:id,startsAt:{gte:new Date()}},orderBy:{startsAt:'asc'},take:10}),
     db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:weekStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20}),
     db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:monthStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20}),
