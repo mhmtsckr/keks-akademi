@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { generateMicroGame } from '@/lib/microGameGenerator';
+import { ensureMebCoreQuestionBank } from '@/lib/mebCoreQuestionBank';
 
 const DEFAULT_KINDS=['MEB_TEXTBOOK','MEB_TYMM','MEB_OFFICIAL'];
 
@@ -16,6 +17,7 @@ function dailyLimit(){
 export async function publishMebMicroGames(input?:{limit?:number;createdByUserId?:string|null}){
   const kinds=sourceKinds();
   const limit=Math.min(30,Math.max(1,input?.limit||dailyLimit()));
+  const core=await ensureMebCoreQuestionBank();
 
   const groups=await db.questionBankItem.groupBy({
     by:['examType','subject','topic'],
@@ -32,7 +34,7 @@ export async function publishMebMicroGames(input?:{limit?:number;createdByUserId
     .filter(x=>x._count._all>=2)
     .sort((a,b)=>b._count._all-a._count._all||a.subject.localeCompare(b.subject,'tr'));
 
-  if(!ready.length)return {ok:true,published:[],skipped:0,message:'Yayınlanabilir MEB kaynaklı onaylı konu bulunamadı.'};
+  if(!ready.length)return {ok:true,published:[],skipped:0,seededSources:core.seeded,coreSources:core.total,message:'Yayınlanabilir MEB kaynaklı onaylı konu bulunamadı.'};
 
   const dayIndex=Math.floor(Date.now()/(24*60*60*1000));
   const start=dayIndex%ready.length;
@@ -70,5 +72,5 @@ export async function publishMebMicroGames(input?:{limit?:number;createdByUserId
     });
   }
 
-  return {ok:true,published,skipped,availableTopics:ready.length};
+  return {ok:true,published,skipped,availableTopics:ready.length,seededSources:core.seeded,coreSources:core.total};
 }
