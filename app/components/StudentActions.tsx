@@ -1,10 +1,11 @@
 'use client';
 
+import Image from 'next/image';
 import { FormEvent,useEffect,useMemo,useState } from 'react';
 
 type Question={id:string;orderNo:number;prompt:string;kind:'TENDENCY'|'HABIT';dimension:string};
 type FormDataState={title:string;version:string;educationBand:string;disclaimer:string;instruction:string;scale:string[];questionCount:number;questions:Question[]};
-type ProductState={key:string;monthName:string;name:string;priceKurus:number;priceLabel:string};
+type ProductState={key:string;monthName:string;name:string;listPriceKurus:number;listPriceLabel:string;priceKurus:number;priceLabel:string;discountPercent:number};
 type ScreeningState={status:'READY'|'COMPLETED'|'NO_ACCESS'|'ERROR';form?:FormDataState;workflowStatus?:string;product?:ProductState};
 
 const PAGE_SIZE=10;
@@ -154,6 +155,16 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
 
   return <div className="card keksProductCard keksProductStorefront">
     <div className="keksProductTop"><ProductBrand/><span className="pill">AYLIK DİJİTAL ÜRÜN</span></div>
+    <div className="keksProductVisual">
+      <Image
+        src="/images/keks-egilim-on-gorusme.webp"
+        alt="KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu"
+        fill
+        sizes="(max-width: 820px) 100vw, 1100px"
+        priority
+      />
+      <div className="keksProductVisualBadge">%{product?.discountPercent||50} İNDİRİM</div>
+    </div>
     <div className="keksProductHero">
       <div>
         <div className="moduleEyebrow">KEKS AKADEMİ · {product?.monthName||'BU AY'}</div>
@@ -164,14 +175,19 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
           <span><b>2</b> Eğitim Düzeyine Göre Ön Görüşme</span>
         </div>
       </div>
-      <div className="keksProductPrice"><small>KODSUZ SATIN ALMA</small><strong>{product?.priceLabel||'500 TL'}</strong><span>Tek kullanıcı · tek çözüm</span></div>
+      <div className="keksProductPrice">
+        <small>%{product?.discountPercent||50} İNDİRİMLİ SATIŞ</small>
+        <span className="keksProductOldPrice">{product?.listPriceLabel||'800 TL'}</span>
+        <strong>{product?.priceLabel||'400 TL'}</strong>
+        <span>Normal fiyat {product?.listPriceLabel||'800 TL'} · Tek kullanıcı · tek çözüm</span>
+      </div>
     </div>
 
     <div className="keksProductAccessGrid">
       <div className="keksProductAccess">
         <div className="moduleEyebrow">KOD İLE ERİŞİM</div>
         <h3>Yönetici / koç kodum var</h3>
-        <p className="muted">Size tanımlanan KEKS Akademi ürün kodunu girin. Kod doğrulandıktan sonra yalnızca ilk test görünür; ikinci test ilk aşama tamamlanınca açılır.</p>
+        <p className="muted">Öğrenci kaydınızla birlikte size bağlı ürün kodu yönetici kayıtlarında otomatik oluşturulur. Yönetici veya koç kodu size ilettiyse buraya girin. Kod onaylanmadan test soruları açılmaz.</p>
         <form className="form" onSubmit={code}>
           <div className="field"><label>KEKS Akademi ürün kodu</label><input name="code" required placeholder="KEKS-…" autoComplete="off"/></div>
           <button className="btn primary" disabled={busy}>{busy?'Kontrol ediliyor…':'Kodu Kullan ve Ürünü Aç'}</button>
@@ -180,14 +196,14 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
 
       <div className="keksProductAccess">
         <div className="moduleEyebrow">KOD GEREKMEZ</div>
-        <h3>{product?.priceLabel||'500 TL'} ile satın al</h3>
-        <p className="muted">PayTR ile ödeme doğrulandığında ürün hesabınıza otomatik tanımlanır. Aynı aylık ürün ikinci kez satın alınamaz veya çözülemez.</p>
+        <h3><span className="keksProductOldPrice inline">{product?.listPriceLabel||'800 TL'}</span> {product?.priceLabel||'400 TL'} ile satın al</h3>
+        <p className="muted">Kodunuz yoksa %{product?.discountPercent||50} indirimli fiyatla PayTR üzerinden güvenli ödeme yapabilirsiniz. Ödeme doğrulandığında ürün hesabınıza otomatik tanımlanır; kart bilgileriniz KEKS Akademi sunucularında saklanmaz.</p>
         <form className="form" onSubmit={pay}>
           <div className="field"><label>E-posta</label><input name="email" type="email" required/></div>
           <div className="field"><label>Ad soyad</label><input name="userName" required/></div>
           <div className="field"><label>Telefon</label><input name="userPhone" required/></div>
           <div className="field"><label>Adres</label><textarea name="userAddress" required/></div>
-          <button className="btn primary" disabled={busy}>{busy?'Hazırlanıyor…':(product?.priceLabel||'500 TL')+' Öde ve Ürünü Aç'}</button>
+          <button className="btn primary" disabled={busy}>{busy?'Hazırlanıyor…':(product?.priceLabel||'400 TL')+' ile Güvenli Ödemeye Geç'}</button>
         </form>
       </div>
     </div>
