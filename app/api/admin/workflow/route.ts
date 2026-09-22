@@ -90,11 +90,34 @@ async function GET__handler(){
     id:a.id,completedAt:a.completedAt,academicTrack:a.academicTrack,scores:a.scores,answers:a.answers,report:a.report,
     student:a.student,form:a.form,assignment:a.assignment
   }));
-  const openEndedForms=preInterviewForms.map(form=>({
-    id:form.id,title:form.title,version:form.version,educationBand:form.educationBand,
-    questionCount:form.questions.length,
-    questions:form.questions.map(q=>({id:q.id,orderNo:q.orderNo,dimension:q.dimension,prompt:q.prompt,responseType:q.responseType}))
-  }));
+  const preInterviewBandOrder:Record<string,number>={
+    ILKOKUL_1_2:0,
+    ILKOKUL_3_4:1,
+    ORTAOKUL_5_6:2,
+    ORTAOKUL_7_8:3,
+    LISE_9_10:4,
+    LISE_11_12:5,
+    YETISKIN_MEZUN:6
+  };
+  const preInterviewBandLabel:Record<string,string>={
+    ILKOKUL_1_2:'İlkokul 1-2',
+    ILKOKUL_3_4:'İlkokul 3-4',
+    ORTAOKUL_5_6:'Ortaokul 5-6',
+    ORTAOKUL_7_8:'Ortaokul 7-8 / LGS',
+    LISE_9_10:'Lise 9-10',
+    LISE_11_12:'Lise 11-12 / YKS',
+    YETISKIN_MEZUN:'Mezun/Yetişkin Sınav Grubu'
+  };
+  const openEndedForms=preInterviewForms
+    .sort((a,b)=>(preInterviewBandOrder[a.educationBand]??99)-(preInterviewBandOrder[b.educationBand]??99))
+    .map(form=>({
+      id:form.id,
+      title:preInterviewBandLabel[form.educationBand]||form.title,
+      version:form.version,
+      educationBand:form.educationBand,
+      questionCount:form.questions.length,
+      questions:form.questions.map(q=>({id:q.id,orderNo:q.orderNo,dimension:q.dimension,prompt:q.prompt,responseType:q.responseType}))
+    }));
   return NextResponse.json({ok:true,forms,preInterviewForms:openEndedForms,screenings,plans,counts:{screenings:screenings.length,plans:plans.length}});
 }
 
