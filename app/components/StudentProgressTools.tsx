@@ -24,7 +24,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
     setProgress(p=>[...p.filter(x=>!(x.examType===exam&&x.subject===subject&&x.topic===topic)),{examType:exam,subject,topic,completed}]);
     if(completed){
       setLastSchedule({subject,topic,items:j.reviewSchedule||[]});
-      setMsg('Konu tamamlandı. 0–1–3–7–14–28 gün tekrarları günlük görevlerine eklendi.');
+      setMsg('Konu tamamlandı. 0–1–3–7–14–28. Gün Tekrar Sistemi görevleri günlük görevlerine eklendi.');
     }else{
       setLastSchedule(null);
       setMsg('Konu yeniden açıldı; bekleyen otomatik konu tekrar görevleri iptal edildi.');
