@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { scoreInterview,scoreMotivationSignals,buildInterviewReport,buildTrackPlans } from '@/lib/taskEvaluation';
 import { writeAudit } from '@/lib/audit';
-import { keksMonthlyProduct } from '@/lib/monthlyProduct';
+import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 
 const submitSchema=z.object({
   academicTrack:z.enum(['GENERAL','SAYISAL','ESIT_AGIRLIK','SOZEL']),
@@ -103,6 +103,14 @@ async function POST__handler(req:Request){
   });
   if(!assignment)return NextResponse.json({error:'Yönetici tarafından açık bir ön görüşme formu bulunmuyor.'},{status:403});
   const form=assignment.form;
+  const latestAttempt=await db.preInterviewAttempt.findFirst({
+    where:{studentId:user.student.id},
+    orderBy:{completedAt:'desc'},
+    select:{completedAt:true,report:true}
+  });
+  if(latestAttempt&&productKeyFromReport(latestAttempt.report,latestAttempt.completedAt)===String(product.key||'')){
+    return NextResponse.json({error:'Bu aylık KEKS test ürününün Ön Görüşme aşaması daha önce tamamlandı. Aynı ürün ikinci kez çözülemez.'},{status:409});
+  }
 
   for(const q of form.questions){
     if(q.required&&(input.answers[q.id]===undefined||input.answers[q.id]===null||input.answers[q.id]==='')){
