@@ -6,6 +6,8 @@ type PriorityStudent={
   id:string;fullName:string;studentCode:string;gradeLevel:string|null;
   riskScore:number;riskLevel:'HIGH'|'MEDIUM'|'LOW';reasons:string[];
   overdueActions:number;openAlerts:number;dueReviews:number;lastActivity:string|null;
+  activePlans?:number;profileReady?:boolean;screeningReady?:boolean;preInterviewReady?:boolean;
+  monthlyDevelopmentReady?:boolean;hasExamData?:boolean;
 };
 type AgendaItem={id:string;studentId:string;studentName:string;title:string;startsAt:string;endsAt:string;meetingUrl:string|null};
 type Task={id:string;title:string;description:string|null;priority:string;status:string;dueAt:string|null;student:{id:string;fullName:string}|null};
@@ -17,6 +19,14 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
   const visible=useMemo(()=>students.filter(s=>filter==='ALL'||s.riskLevel===filter),[students,filter]);
   const openTasks=tasks.filter(t=>t.status==='OPEN');
   const overdueTasks=openTasks.filter(t=>t.dueAt&&new Date(t.dueAt)<new Date());
+  const systemSummary={
+    profile:students.filter(x=>x.profileReady).length,
+    plans:students.filter(x=>(x.activePlans||0)>0).length,
+    performance:students.filter(x=>x.hasExamData).length,
+    reviews:students.reduce((n,x)=>n+x.dueReviews,0),
+    intervention:students.filter(x=>x.riskLevel==='HIGH'||x.riskLevel==='MEDIUM').length,
+    monthly:students.filter(x=>x.monthlyDevelopmentReady).length
+  };
 
   async function complete(id:string){
     const r=await fetch('/api/coach/tasks',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id,status:'COMPLETED'})});
@@ -29,6 +39,15 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
       <div className="card"><div className="moduleEyebrow">MÜDAHALE</div><div className="kpi">{students.filter(x=>x.riskLevel==='HIGH').length}</div><span className="muted">yüksek öncelikli öğrenci</span></div>
       <div className="card"><div className="moduleEyebrow">GECİKEN</div><div className="kpi">{students.reduce((n,x)=>n+x.overdueActions,0)}</div><span className="muted">öğrenci aksiyonu</span></div>
       <div className="card"><div className="moduleEyebrow">KOÇ GÖREVLERİ</div><div className="kpi">{openTasks.length}</div><span className="muted">{overdueTasks.length} gecikmiş görev</span></div>
+    </div>
+
+    <div className="coachSystemOverview">
+      <div className="coachSystemTile"><span>01</span><div><small>EĞİTSEL PROFİL</small><strong>Profil & Ön Görüşme</strong><p>{systemSummary.profile}/{students.length} öğrencide tarama + ön görüşme verisi hazır</p></div></div>
+      <div className="coachSystemTile"><span>02</span><div><small>AKILLI PLANLAMA</small><strong>Kişisel Çalışma Planı</strong><p>{systemSummary.plans}/{students.length} öğrencide aktif plan bulunuyor</p></div></div>
+      <div className="coachSystemTile"><span>03</span><div><small>PERFORMANS</small><strong>Akademik Performans Merkezi</strong><p>{systemSummary.performance}/{students.length} öğrencide güncel sınav/deneme verisi var</p></div></div>
+      <div className="coachSystemTile"><span>04</span><div><small>ÖĞRENME & TEKRAR</small><strong>Tekrar Motoru</strong><p>{systemSummary.reviews} vadesi gelmiş yanlış soru tekrarı</p></div></div>
+      <div className="coachSystemTile"><span>05</span><div><small>KOÇ KOMUTA</small><strong>Müdahale & Görüşme</strong><p>{systemSummary.intervention} öğrenci aktif izlem/müdahale düzeyinde</p></div></div>
+      <div className="coachSystemTile"><span>06</span><div><small>AYLIK GELİŞİM</small><strong>Gelişim & Değerlendirme</strong><p>{systemSummary.monthly}/{students.length} öğrencide öz değerlendirme verisi mevcut</p></div></div>
     </div>
 
     <div className="coachCommandGrid">
