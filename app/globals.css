@@ -664,6 +664,10 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .keksProductCard{position:relative;overflow:hidden;border-color:rgba(232,187,76,.18)!important;background:radial-gradient(circle at 92% 0%,rgba(229,181,69,.10),transparent 30%),linear-gradient(145deg,#0b2745,#081d34)!important}
 .keksProductCard:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(#f1cf76,#a86d16)}
 .keksProductTop{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.keksProductVisual{position:relative;aspect-ratio:16/7;overflow:hidden;border-radius:20px;border:1px solid rgba(236,191,82,.22);margin-bottom:22px;background:#071a30;box-shadow:0 16px 44px rgba(0,0,0,.22)}
+.keksProductVisual img{object-fit:cover;object-position:center}
+.keksProductVisual:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(5,18,33,.38));pointer-events:none}
+.keksProductVisualBadge{position:absolute;z-index:2;right:16px;top:16px;padding:9px 13px;border-radius:999px;background:#efca6b;color:#0a2038;font-size:11px;font-weight:950;letter-spacing:.08em;box-shadow:0 8px 24px rgba(0,0,0,.22)}
 .keksProductBrand{display:flex;align-items:center;gap:11px;color:#fff}
 .keksProductBrand .portalBrandMark{width:44px;height:44px}
 .keksProductBrand .portalBrandText strong{font-size:20px}
@@ -673,6 +677,8 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .keksProductPrice{display:grid;gap:5px;padding:22px;border-radius:18px;background:#071a30;border:1px solid rgba(236,191,82,.18);text-align:center}
 .keksProductPrice small{color:#bd963f;font-size:9px;font-weight:900;letter-spacing:.12em}
 .keksProductPrice strong{font-size:42px;line-height:1;color:#efca6b;margin:5px 0}
+.keksProductOldPrice{display:block;color:#8fa1b4;font-size:18px;font-weight:800;text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:#c79d47}
+.keksProductOldPrice.inline{display:inline;font-size:.92em;margin-right:6px}
 .keksProductPrice span{color:#8094a8;font-size:11px}
 .keksProductSteps{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
 .keksProductSteps span{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;background:#071a30;border:1px solid rgba(255,255,255,.07);color:#bac7d3;font-size:11px;font-weight:750}
@@ -682,4 +688,4 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .keksProductAccess h3{margin:5px 0 8px}
 .keksProductAccess>p{min-height:44px;line-height:1.55}
 .keksProductActive{box-shadow:0 18px 52px rgba(0,0,0,.18)!important}
-@media(max-width:820px){.keksProductHero,.keksProductAccessGrid{grid-template-columns:1fr}.keksProductPrice{max-width:260px;text-align:left}.keksProductAccess>p{min-height:0}}
+@media(max-width:820px){.keksProductHero,.keksProductAccessGrid{grid-template-columns:1fr}.keksProductPrice{max-width:280px;text-align:left}.keksProductAccess>p{min-height:0}.keksProductVisual{aspect-ratio:1/1}.keksProductVisualBadge{right:10px;top:10px}}
