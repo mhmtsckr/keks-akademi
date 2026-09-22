@@ -63,7 +63,7 @@ async function GET__handler(){
   const screenings=assessments.filter(a=>{
     const report=obj(a.report);
     const administration=obj(report.administration);
-    return report.workflowStatus==='ADMIN_REVIEW'||administration.screeningReviewStatus==='PENDING_REVIEW';
+    return ['ADMIN_REVIEW','SCREENING_RETAKE_REQUIRED'].includes(String(report.workflowStatus))||administration.screeningReviewStatus==='PENDING_REVIEW';
   }).map(a=>{
     const band=detectEducationBand(a.student.gradeLevel);
     const form=getScreeningForm(band);
@@ -125,7 +125,13 @@ async function POST__handler(req:Request){
   const user=await requireRole(['ADMIN']);
   const input=await readJson(req,schema);
 
-  if(input.action==='approve_screening'||input.action==='retake_screening'){
+  if(input.action==='retake_screening'||input.action==='return_plan'){
+    return NextResponse.json({
+      error:'KEKS aylık test ürünü tek kullanımlıktır. Tamamlanmış Eğilim Taraması veya Ön Görüşme aynı aylık ürün içinde yeniden çözdürülemez.'
+    },{status:409});
+  }
+
+  if(input.action==='approve_screening'){
     const assessment=await db.assessment.findUnique({
       where:{id:input.assessmentId},
       include:{student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,coachId:true}}}
@@ -133,26 +139,8 @@ async function POST__handler(req:Request){
     if(!assessment)return NextResponse.json({error:'Tarama kaydı bulunamadı.'},{status:404});
     const report=obj(assessment.report);
     const administration=obj(report.administration);
-    const screeningPending=report.workflowStatus==='ADMIN_REVIEW'||administration.screeningReviewStatus==='PENDING_REVIEW';
+    const screeningPending=['ADMIN_REVIEW','SCREENING_RETAKE_REQUIRED'].includes(String(report.workflowStatus))||administration.screeningReviewStatus==='PENDING_REVIEW';
     if(!screeningPending)return NextResponse.json({error:'Bu tarama artık yönetici incelemesi beklemiyor.'},{status:409});
-
-    if(input.action==='retake_screening'){
-      await db.$transaction(async tx=>{
-        await tx.preInterviewAssignment.updateMany({
-          where:{studentId:assessment.studentId,status:{in:['ASSIGNED','COMPLETED','ADMIN_APPROVED']},revokedAt:null},
-          data:{status:'REVOKED',revokedAt:new Date()}
-        });
-        const ready=await tx.testAccess.findFirst({where:{studentId:assessment.studentId,status:'READY'}});
-        if(!ready)await tx.testAccess.create({data:{studentId:assessment.studentId,source:'ADMIN_GRANT',status:'READY'}});
-        await tx.assessment.update({where:{id:assessment.id},data:{report:{
-          ...report,
-          workflowStatus:'SCREENING_RETAKE_REQUIRED',
-          administration:{...(report.administration||{}),status:'RETAKE_REQUESTED',reviewedAt:new Date().toISOString(),reviewedByUserId:user.id}
-        } as any}});
-      });
-      await writeAudit({actorUserId:user.id,action:'SCREENING_RETAKE_REQUESTED',entityType:'Assessment',entityId:assessment.id,summary:'Yönetici KEKS eğilim taramasının yeniden çözülmesini istedi.',metadata:{studentId:assessment.studentId}});
-      return NextResponse.json({ok:true,status:'SCREENING_RETAKE_REQUIRED'});
-    }
 
     if(!assessment.student.coachId)return NextResponse.json({error:'Öğrenciye atanmış koç bulunmuyor.'},{status:400});
     let assignment=await db.preInterviewAssignment.findFirst({
@@ -201,21 +189,6 @@ async function POST__handler(req:Request){
     :await db.assessment.findFirst({where:{studentId:attempt.studentId},orderBy:{completedAt:'desc'}});
   if(!assessment)return NextResponse.json({error:'Bağlı eğilim taraması bulunamadı.'},{status:404});
   const screeningReport=obj(assessment.report);
-
-  if(input.action==='return_plan'){
-    if(attempt.reviewStatus!=='ADMIN_REVIEW')return NextResponse.json({error:'Bu plan yönetici incelemesinde değil.'},{status:409});
-    await db.$transaction([
-      db.preInterviewAttempt.update({where:{id:attempt.id},data:{assignmentId:null,reviewStatus:'REVISION_REQUESTED'}}),
-      db.preInterviewAssignment.update({where:{id:attempt.assignment.id},data:{status:'ASSIGNED',completedAt:null,approvedAt:null,approvedByUserId:null}}),
-      db.assessment.update({where:{id:assessment.id},data:{report:{
-        ...screeningReport,
-        workflowStatus:'PRE_INTERVIEW_ASSIGNED',
-        administration:{...(screeningReport.administration||{}),planStatus:'REVISION_REQUESTED',planReviewedAt:new Date().toISOString(),planReviewedByUserId:user.id}
-      } as any}})
-    ]);
-    await writeAudit({actorUserId:user.id,action:'PLAN_REVISION_REQUESTED',entityType:'PreInterviewAttempt',entityId:attempt.id,summary:'Yönetici ön görüşme ve çalışma planı taslağını yeniden doldurma/düzenleme için öğrenciye döndürdü.',metadata:{studentId:attempt.studentId}});
-    return NextResponse.json({ok:true,status:'REVISION_REQUESTED'});
-  }
 
   if(attempt.reviewStatus!=='ADMIN_REVIEW'||attempt.assignment.status!=='COMPLETED')return NextResponse.json({error:'Bu plan yönetici onayı beklemiyor.'},{status:409});
   if(!attempt.student.coachId)return NextResponse.json({error:'Öğrenciye atanmış koç bulunmuyor.'},{status:400});
