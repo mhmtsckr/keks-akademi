@@ -23,19 +23,20 @@ const schema=z.discriminatedUnion('action',[
 async function POST__handler(req:Request){
  const user=await requireRole(['STUDENT']);
  if(!user.student) return NextResponse.json({error:'Öğrenci profili bulunamadı.'},{status:400});
+ const studentId=studentId;
  const input=await readJson(req, schema);
  if(input.action==='topic'){
    const completedAt=input.completed?new Date():null;
    const row=await db.$transaction(async tx=>{
     const progress=await tx.topicProgress.upsert({
-      where:{studentId_examType_subject_topic:{studentId:user.student.id,examType:input.examType,subject:input.subject,topic:input.topic}},
-      create:{studentId:user.student.id,examType:input.examType,subject:input.subject,topic:input.topic,completed:input.completed,completedAt},
+      where:{studentId_examType_subject_topic:{studentId:studentId,examType:input.examType,subject:input.subject,topic:input.topic}},
+      create:{studentId:studentId,examType:input.examType,subject:input.subject,topic:input.topic,completed:input.completed,completedAt},
       update:{completed:input.completed,completedAt},
     });
 
     await tx.coachingAction.updateMany({
       where:{
-        studentId:user.student.id,
+        studentId:studentId,
         subject:input.subject,
         topic:input.topic,
         planSource:TOPIC_REVIEW_SOURCE,
@@ -49,7 +50,7 @@ async function POST__handler(req:Request){
         const taskDate=turkeyDayStart(day);
         const periodEnd=new Date(taskDate);periodEnd.setUTCDate(periodEnd.getUTCDate()+1);
         await tx.coachingAction.create({data:{
-          studentId:user.student.id,
+          studentId:studentId,
           createdByUserId:user.id,
           title:`${input.subject} · ${input.topic} · ${day}. gün konu tekrarı`,
           description:`0–1–3–7–14–28 tekrar sistemi · ${day}. gün · ${input.subject} / ${input.topic}`,
@@ -78,7 +79,7 @@ async function POST__handler(req:Request){
  }
  const total=input.correct+input.wrong+input.blank;
  const net=calcNet(input.correct,input.wrong);
- const row=await db.practiceLog.create({data:{studentId:user.student.id,examType:input.examType,subject:input.subject,topic:input.topic||null,correct:input.correct,wrong:input.wrong,blank:input.blank,total,net,errorReason:input.errorReason||null}});
+ const row=await db.practiceLog.create({data:{studentId:studentId,examType:input.examType,subject:input.subject,topic:input.topic||null,correct:input.correct,wrong:input.wrong,blank:input.blank,total,net,errorReason:input.errorReason||null}});
  return NextResponse.json({ok:true,row});
 }
 
