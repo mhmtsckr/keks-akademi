@@ -33,7 +33,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       topicProgress:{},
       reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}},
       preInterviewAttempts:{orderBy:{completedAt:'desc'},take:3,include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}}}},
-      assessments:{orderBy:{completedAt:'desc'},take:5}
+      assessments:{orderBy:{completedAt:'desc'},take:5},
+      weeklyReflections:{orderBy:{weekStart:'desc'},take:2}
     }
   });
   if(!student) return notFound();
@@ -51,6 +52,16 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     <nav className="tabs no-print">
       <a href="#genel">Genel Bakış</a><a href="#egilim-taramasi">Eğilim Taraması</a><a href="#ongorusme">Ön Görüşme</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
+    <section className="section">
+      <div className="coachStudentSystemOverview">
+        <a href="#egilim-taramasi"><span>01</span><div><small>EĞİTSEL PROFİL</small><strong>Profil & Ön Görüşme</strong><p>{coachAssessments.length&&student.preInterviewAttempts.length?'Yönetici onaylı profil verisi hazır':'Profil süreci tamamlanmayı bekliyor'}</p></div></a>
+        <a href="#program"><span>02</span><div><small>AKILLI PLANLAMA</small><strong>Kişisel Çalışma Planı</strong><p>{student.plans.filter(x=>x.active).length} aktif plan</p></div></a>
+        <a href="#denemeler"><span>03</span><div><small>PERFORMANS</small><strong>Akademik Performans</strong><p>{student.examResults.length} deneme · {student.practiceLogs.length} soru çözüm kaydı</p></div></a>
+        <a href="#calisma"><span>04</span><div><small>ÖĞRENME & TEKRAR</small><strong>Tekrar Motoru</strong><p>{student.reviewQueue.filter(x=>x.dueAt<=new Date()).length} vadesi gelmiş yanlış tekrar</p></div></a>
+        <a href="#seans-akisi"><span>05</span><div><small>KOÇ KOMUTA</small><strong>Görüşme & Müdahale</strong><p>Haftalık değişim, risk ve görüşme gündemi</p></div></a>
+        <a href="#aylik-gelisim"><span>06</span><div><small>AYLIK GELİŞİM</small><strong>Gelişim & Değerlendirme</strong><p>{student.weeklyReflections[0]?'Son öz değerlendirme '+new Date(student.weeklyReflections[0].weekStart).toLocaleDateString('tr-TR'):'Henüz öz değerlendirme kaydı yok'}</p></div></a>
+      </div>
+    </section>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
     <section className="section"><CoachTrendSummary exams={student.examResults.slice().reverse().map(x=>({createdAt:x.createdAt.toISOString(),examType:x.examType,payload:x.payload}))} reviewDue={student.reviewQueue.filter(x=>x.dueAt<=new Date()).length}/></section>
@@ -105,6 +116,18 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
         <div className="card"><h3>Programlar</h3>{student.plans.map(p=><div key={p.id} style={{marginBottom:10}}><strong>{p.title}</strong><div className="muted">{JSON.stringify(p.payload)}</div></div>)}</div>
         <div id="teknikler" className="card section-anchor"><h3>Teknikler</h3>{student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:10}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
         <div id="denemeler" className="card section-anchor"><h3>Denemeler</h3>{student.examResults.map(x=><div key={x.id} style={{marginBottom:10}}><strong>{x.examType}</strong><div className="muted">{JSON.stringify(x.payload)}</div></div>)}</div>
+      </div>
+    </section>
+
+    <section id="aylik-gelisim" className="section section-anchor">
+      <div className="card">
+        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">AYLIK GELİŞİM VE DEĞERLENDİRME</div><h2>Davranışsal gelişim ve öğrenci öz değerlendirmesi</h2><p className="muted">Başlangıç eğilim profilinden ayrı olarak süreklilik, odak, görev, tekrar ve öğrenci öz değerlendirmesindeki değişimi takip edin.</p></div><span className="pill">{student.weeklyReflections.length} yakın dönem kayıt</span></div>
+        {student.weeklyReflections.length===0?<p className="muted">Öğrenci henüz haftalık öz değerlendirme göndermedi. Aylık değerlendirme için yeterli veri birikince burada görünür.</p>:<div className="stack">{student.weeklyReflections.map((x:any)=><div className="monthlyCoachReflection" key={x.id}>
+          <div><strong>{new Date(x.weekStart).toLocaleDateString('tr-TR')} haftası</strong><span>Öz puan: {x.selfRating}/5</span></div>
+          <p>{x.bestThing?'Gelişen: '+x.bestThing:'Gelişen alan belirtilmedi.'}</p>
+          <p>{x.biggestChallenge?'Zorlanma: '+x.biggestChallenge:'Zorlanma alanı belirtilmedi.'}</p>
+          {x.nextWeekChange&&<p><strong>Sonraki değişim hedefi:</strong> {x.nextWeekChange}</p>}
+        </div>)}</div>}
       </div>
     </section>
 
