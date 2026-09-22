@@ -179,7 +179,22 @@ export function StudentRegisterForm() {
   return <form className="form" onSubmit={submit}>
     <div className="field"><label>Ad soyad</label><input name="fullName" required/></div>
     <div className="field"><label>Gmail adresi</label><input name="email" type="email" placeholder="ornek@gmail.com" required/></div>
-    <div className="field"><label>Eğitim düzeyi / sınav grubu</label><input name="gradeLevel" placeholder="Örn. 11. Sınıf / YKS, Mezun / KPSS" required/></div>
+    <div className="field"><label>Eğitim düzeyi / sınav grubu</label><input name="gradeLevel" list="keks-grade-levels" placeholder="Örn. 11. Sınıf / YKS, AGS / ÖABT, KPSS" required/>
+      <datalist id="keks-grade-levels">
+        <option value="İlkokul 1-2"/>
+        <option value="İlkokul 3-4"/>
+        <option value="Ortaokul 5-6"/>
+        <option value="Ortaokul 7-8 / LGS"/>
+        <option value="Lise 9-10"/>
+        <option value="Lise 11-12 / YKS"/>
+        <option value="Mezun / YKS"/>
+        <option value="AGS / ÖABT"/>
+        <option value="KPSS"/>
+        <option value="DGS"/>
+        <option value="ALES"/>
+      </datalist>
+      <small className="muted">AGS veya ÖABT yazan kayıtlar sistemde otomatik olarak “Yetişkin Sınav Grubu” altında sınıflandırılır.</small>
+    </div>
     <div className="field"><label>Koçunu seç</label><select name="coachId" required defaultValue="">
       <option value="">{loadingCoaches?'Koçlar yükleniyor…':coaches.length?'Koç seçiniz':'Aktif koç yok'}</option>
       {coaches.map(c=><option value={c.id} key={c.id}>{c.name} · {c.studentCount} öğrenci</option>)}
