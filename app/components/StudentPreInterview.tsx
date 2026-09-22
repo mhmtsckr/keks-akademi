@@ -34,7 +34,7 @@ export function StudentPreInterview(){
 
   if(!data)return <div className="card"><p className="muted">Ön görüşme yükleniyor…</p></div>;
   if(data.locked)return <div className="card"><div className="moduleEyebrow">ÖN GÖRÜŞME</div><div className="notice">{data.reason}</div></div>;
-  if(!data.form)return <div className="card"><div className="moduleEyebrow">ÖN GÖRÜŞME</div><h2>Form henüz atanmadı</h2><p className="muted">Eğilim taramasından sonra eğitim ve gelişim düzeyinize uygun açık uçlu form otomatik atanır. Atama görünmüyorsa koç bağlantınız yönetici tarafından kontrol edilir.</p></div>;
+  if(!data.form)return <div className="card"><div className="moduleEyebrow">ÖN GÖRÜŞME</div><h2>Form henüz atanmadı</h2><p className="muted">Eğilim taramasından sonra eğitim ve gelişim düzeyinize uygun ön görüşme formu otomatik atanır. Atama görünmüyorsa koç bağlantınız yönetici tarafından kontrol edilir.</p></div>;
 
   if(data.assignment?.status==='COMPLETED'){
     return <div className="card preInterviewPending">
@@ -64,16 +64,21 @@ export function StudentPreInterview(){
 
   return <div className="card">
     <div className="moduleHeaderRow">
-      <div><div className="moduleEyebrow">TARAMA SONRASI OTOMATİK AÇILDI</div><h2>{data.form.title}</h2><p className="muted">Bu açık uçlu form eğitim ve gelişim düzeyinize göre otomatik seçildi. Yanıtlarınız psikometrik olarak puanlanmaz; çalışma planının bağlamsal girdisi olur ve plan taslağı önce yönetici onayına gider.</p></div>
-      <span className="pill">{data.form.version}</span>
+      <div><div className="moduleEyebrow">TARAMA SONRASI OTOMATİK AÇILDI</div><h2>{data.form.title}</h2><p className="muted">Bu form eğitim ve gelişim düzeyinize göre otomatik seçildi. Davranış sorularını işaretleyebilir, açıklama isteyen soruları kendi sözlerinizle yanıtlayabilirsiniz. Sonuçlar çalışma planının girdisi olur ve plan taslağı önce yönetici onayına gider.</p></div>
+      
     </div>
     <form className="form preInterviewForm" onSubmit={submit}>
       {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
-      <div className="notice"><strong>Nasıl cevaplamalısınız?</strong> Soruları kendi sözlerinizle ve mümkün olduğunca somut örneklerle yanıtlayın. Doğru/yanlış cevap yoktur. Hedeflerinizi, zorlandığınız noktaları, çalışma ortamınızı ve sizde işe yarayan yöntemleri açıkça anlatın.</div>
+      <div className="notice"><strong>Nasıl cevaplamalısınız?</strong> İşaretlemeli sorularda 1 = Bana hiç uymuyor, 2 = Az uyuyor, 3 = Kısmen uyuyor, 4 = Çoğunlukla uyuyor, 5 = Bana çok uyuyor. Açık uçlu sorularda kendi sözlerinizle ve mümkünse somut örneklerle yanıt verin.</div>
       <div className="preInterviewQuestions">{data.form.questions.map((q:any)=><div className="preInterviewQuestion" key={q.id}>
         <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
-        <div><strong>{q.prompt}</strong>
-        <textarea name={'q_'+q.id} rows={4} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/></div>
+        <div style={{flex:1}}><strong>{q.prompt}</strong>
+        {q.responseType==='TEXT'
+          ?<textarea name={'q_'+q.id} rows={4} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
+          :q.responseType==='CHOICE'&&Array.isArray(q.options)
+            ?<select name={'q_'+q.id} required={q.required}><option value="">Seçiniz</option>{q.options.map((o:any)=><option key={String(o.value??o)} value={String(o.value??o)}>{String(o.label??o)}</option>)}</select>
+            :<div className="likertRow">{[1,2,3,4,5].map(n=><label key={n} title={['Bana hiç uymuyor','Az uyuyor','Kısmen uyuyor','Çoğunlukla uyuyor','Bana çok uyuyor'][n-1]}><input type="radio" name={'q_'+q.id} value={n} required={q.required}/><span>{n}</span></label>)}</div>}
+        </div>
       </div>)}</div>
       <button className="btn primary" disabled={busy}>{busy?'Plan hazırlanıyor…':'Ön Görüşmeyi Tamamla ve Plan Taslağını Oluştur'}</button>
       {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
