@@ -70,9 +70,34 @@ export function StudentCommandCenter(){
 
   const t=data.today;
   const axes=data.progressAxes||{};
+  const system=data.systemStatus||{};
+  const monthly=data.monthlyDevelopment||{};
+  const currentMonth=monthly.current||{};
+  const previousMonth=monthly.previous||{};
   return <div className="stack studentCommandCenter">
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
     {busy==='rebalance'&&<div className="notice">Kaçırılan görevleriniz dengeleniyor…</div>}
+
+    <div className="studentSystemJourney">
+      <a href="#keks-egilim-taramasi" className="studentSystemTile">
+        <span>01</span><div><small>EĞİTSEL PROFİL</small><strong>Profil & Ön Görüşme</strong><p>{system.screening?(system.preInterview?'Tarama ve ön görüşme verisi mevcut':'Tarama tamamlandı · ön görüşme bekleniyor'):'Eğilim taraması bekleniyor'}</p></div>
+      </a>
+      <a href="#programlar" className="studentSystemTile">
+        <span>02</span><div><small>KİŞİSEL PLAN</small><strong>Akıllı Çalışma Planı</strong><p>{system.activePlans?system.activePlans+' aktif plan':'Yönetici/koç onaylı plan bekleniyor'}</p></div>
+      </a>
+      <a href="#akademik-performans" className="studentSystemTile">
+        <span>03</span><div><small>PERFORMANS</small><strong>Akademik Merkez</strong><p>Doğruluk %{currentMonth.questionPerformance||0} · {currentMonth.questionCount||0} soru</p></div>
+      </a>
+      <a href="#ogrenme-tekrar" className="studentSystemTile">
+        <span>04</span><div><small>ÖĞRENME</small><strong>Tekrar & Teknikler</strong><p>{system.dueReviews||0} tekrar bekliyor · odak {currentMonth.focusMinutes||0} dk</p></div>
+      </a>
+      <a href="#akilli-koc" className="studentSystemTile">
+        <span>05</span><div><small>KOÇLUK</small><strong>Koçla Çalışma</strong><p>{system.nextSession?'Görüşme planlı':'Yeni görüşme planı bekleniyor'}</p></div>
+      </a>
+      <a href="#aylik-gelisim" className="studentSystemTile">
+        <span>06</span><div><small>AYLIK GELİŞİM</small><strong>Gelişim & Değerlendirme</strong><p>Süreklilik %{currentMonth.continuity||0} · görev %{currentMonth.taskCompletion||0}</p></div>
+      </a>
+    </div>
 
     <div className="studentTodayHero">
       <div className="card todayMissionCard">
@@ -129,6 +154,25 @@ export function StudentCommandCenter(){
       </div>
     </div>
 
+    <div id="aylik-gelisim" className="card studentMonthlyDevelopment">
+      <div className="moduleHeaderRow">
+        <div><div className="moduleEyebrow">AYLIK GELİŞİM VE DEĞERLENDİRME</div><h2>Bu ay hangi çalışma davranışlarım değişti?</h2><p className="muted">Göstergeler görev, soru, tekrar, deneme ve gerçek odak kayıtlarından oluşur. Eğilim profiliyle aynı şey değildir.</p></div>
+        <span className="pill">{currentMonth.taskCount||0} görev kaydı</span>
+      </div>
+      <div className="studentMonthlyAxes">
+        <MonthAxis label="Çalışma Sürekliliği" current={currentMonth.continuity||0} previous={previousMonth.continuity||0} suffix="%"/>
+        <MonthAxis label="Görev Tamamlama" current={currentMonth.taskCompletion||0} previous={previousMonth.taskCompletion||0} suffix="%"/>
+        <MonthAxis label="Soru Performansı" current={currentMonth.questionPerformance||0} previous={previousMonth.questionPerformance||0} suffix="%"/>
+        <MonthAxis label="Tekrar Disiplini" current={currentMonth.reviewDiscipline||0} previous={previousMonth.reviewDiscipline||0} suffix="%"/>
+        <MonthAxis label="Odak Süresi" current={currentMonth.focusMinutes||0} previous={previousMonth.focusMinutes||0} suffix=" dk" normalize={Math.max(240,currentMonth.focusMinutes||0,previousMonth.focusMinutes||0)}/>
+        <div className="monthlyAxisCard">
+          <div className="monthlyAxisHead"><strong>Deneme Gelişimi</strong><span>{monthly.examDelta==null?'Veri bekleniyor':(monthly.examDelta>0?'+':'')+monthly.examDelta+' '+(monthly.examUnit||'net')}</span></div>
+          <p className="muted">{currentMonth.examValue==null?'Bu ay karşılaştırılabilir deneme kaydı yok.':'Bu ay '+currentMonth.examValue+' '+(currentMonth.examUnit||'net')+(previousMonth.examValue!=null?' · Önceki ay '+previousMonth.examValue:'')}</p>
+        </div>
+      </div>
+      <div className="notice" style={{marginTop:14}}>{monthly.note||'Bu alan çalışma davranışlarındaki operasyonel değişimi gösterir.'}</div>
+    </div>
+
     <div className="card weeklyReflectionCard">
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">HAFTALIK ÖZ DEĞERLENDİRME</div><h2>Bu hafta gerçekten nasıldım?</h2><p className="muted">Cevabınız görev, doğruluk ve gerçek odak verileriyle karşılaştırılır ve koçunuza iletilir.</p></div>{data.latestReflection&&<span className="pill">Son kayıt mevcut</span>}</div>
       <form className="weeklyReflectionForm" onSubmit={reflection}>
@@ -142,6 +186,16 @@ export function StudentCommandCenter(){
         <button className="btn primary" disabled={busy==='reflection'}>{busy==='reflection'?'Kaydediliyor…':'Haftayı Değerlendir ve Koçuma Gönder'}</button>
       </form>
     </div>
+  </div>;
+}
+
+function MonthAxis({label,current,previous,suffix='',normalize=100}:{label:string;current:number;previous:number;suffix?:string;normalize?:number}){
+  const delta=Number((current-previous).toFixed(1));
+  const pct=Math.max(0,Math.min(100,normalize?current/normalize*100:current));
+  return <div className="monthlyAxisCard">
+    <div className="monthlyAxisHead"><strong>{label}</strong><span className={delta<0?'riskText':''}>{Math.round(current)}{suffix} · {delta===0?'aynı':(delta>0?'+':'')+delta+suffix}</span></div>
+    <div className="goldProgress"><i style={{width:pct+'%'}}/></div>
+    <small className="muted">Önceki ay: {Math.round(previous)}{suffix}</small>
   </div>;
 }
 
