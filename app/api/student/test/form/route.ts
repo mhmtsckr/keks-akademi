@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { withApiErrors } from '@/lib/apiGuard';
-import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
@@ -11,7 +10,6 @@ async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
 
-  const month=turkeyMonthWindow();
   const currentProduct=keksMonthlyProduct();
   const latest=await db.assessment.findFirst({
     where:{studentId:user.student.id},
@@ -36,11 +34,7 @@ async function GET__handler(){
   }
 
   const access=await db.testAccess.findFirst({
-    where:{
-      studentId:user.student.id,
-      status:'READY',
-      createdAt:{gte:month.start,lt:month.end}
-    },
+    where:{studentId:user.student.id,status:'READY'},
     orderBy:{createdAt:'asc'}
   });
 
@@ -48,7 +42,12 @@ async function GET__handler(){
     return NextResponse.json({ok:true,status:'NO_ACCESS',product:currentProduct});
   }
 
-  const product=keksMonthlyProduct(access.createdAt);
+  let acquiredAt=access.createdAt;
+  if(access.source==='PAID'&&access.paymentId){
+    const payment=await db.payment.findUnique({where:{id:access.paymentId},select:{createdAt:true}});
+    if(payment?.createdAt)acquiredAt=payment.createdAt;
+  }
+  const product=keksMonthlyProduct(acquiredAt);
   const educationBand=detectEducationBand(user.student.gradeLevel);
   const form=getScreeningForm(educationBand);
   return NextResponse.json({
