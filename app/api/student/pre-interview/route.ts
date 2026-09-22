@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { scoreInterview,scoreMotivationSignals,buildInterviewReport,buildTrackPlans } from '@/lib/taskEvaluation';
 import { writeAudit } from '@/lib/audit';
+import { keksMonthlyProduct } from '@/lib/monthlyProduct';
 
 const submitSchema=z.object({
   academicTrack:z.enum(['GENERAL','SAYISAL','ESIT_AGIRLIK','SOZEL']),
@@ -61,7 +62,9 @@ async function GET__handler(){
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const assessment=await db.assessment.findFirst({where:{studentId:user.student.id},orderBy:{completedAt:'desc'}});
   if(!assessment)return NextResponse.json({ok:true,locked:true,reason:'Önce KEKS eğilim taramasını tamamlamalısınız.'});
-  const workflow=reportObject(assessment.report).workflowStatus;
+  const assessmentReport=reportObject(assessment.report);
+  const workflow=assessmentReport.workflowStatus;
+  const product=assessmentReport.product||keksMonthlyProduct(assessment.completedAt);
   if(workflow==='SCREENING_RETAKE_REQUIRED')return NextResponse.json({ok:true,locked:true,reason:'Yönetici eğilim taramasının yeniden çözülmesini istedi. Önce yeni taramayı tamamlayın.'});
 
   const assignment=await db.preInterviewAssignment.findFirst({
@@ -76,7 +79,8 @@ async function GET__handler(){
     form:assignment.form,
     assignment:{id:assignment.id,status:assignment.status},
     latest:assignment.attempt||null,
-    workflowStatus:workflow
+    workflowStatus:workflow,
+    product
   });
 }
 
@@ -86,6 +90,7 @@ async function POST__handler(req:Request){
   const assessment=await db.assessment.findFirst({where:{studentId:user.student.id},orderBy:{completedAt:'desc'}});
   if(!assessment)return NextResponse.json({error:'Önce KEKS eğilim taramasını tamamlayın.'},{status:403});
   const assessmentReport=reportObject(assessment.report);
+  const product=assessmentReport.product||keksMonthlyProduct(assessment.completedAt);
   if(assessmentReport.workflowStatus!=='PRE_INTERVIEW_ASSIGNED'){
     return NextResponse.json({error:'Ön görüşme bu aşamada doldurulamıyor.'},{status:403});
   }
@@ -118,6 +123,7 @@ async function POST__handler(req:Request){
   const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores,motivationSignals);
   const combinedReport={
     ...interviewReport,
+    product,
     screeningAssessmentId:assessment.id,
     screeningSummary:{
       leadingDimensions:assessmentReport.leadingDimensions||[],
