@@ -18,10 +18,10 @@ async function GET__handler(){
     gmail:gmailReady,
     gmailAddress:gmailConfig?.email||process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com',
     gmailStatus:gmailReady?'READY':'APP_PASSWORD_REQUIRED',
-    resend:Boolean(process.env.RESEND_API_KEY),
-    resendAddress:process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com',
-    resendFrom:process.env.REPORT_FROM||'KEKS Akademi <onboarding@resend.dev>',
-    resendStatus:process.env.RESEND_API_KEY?'READY':'API_KEY_REQUIRED',
+    reportEmail:gmailReady,
+    reportEmailAddress:gmailConfig?.email||process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com',
+    reportEmailProvider:'GMAIL',
+    reportEmailStatus:gmailReady?'READY':'GMAIL_CONNECTION_REQUIRED',
     appUrl:Boolean(process.env.APP_URL||process.env.VERCEL_URL||process.env.VERCEL_PROJECT_PRODUCTION_URL),
     recentAudit
   }});
