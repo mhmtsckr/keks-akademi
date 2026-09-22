@@ -30,13 +30,20 @@ async function POST__handler(req: Request) {
   const month=turkeyMonthWindow(now);
   const product=keksMonthlyProduct(now);
 
+  const pendingCutoff=new Date(Math.max(month.start.getTime(),now.getTime()-45*60*1000));
   const [existingPayment,existingAccess,latestAssessment]=await Promise.all([
     db.payment.findFirst({
-      where:{studentId:user.student.id,createdAt:{gte:month.start,lt:month.end},status:{in:['PENDING','PAID']}},
+      where:{
+        studentId:user.student.id,
+        OR:[
+          {status:'PAID',createdAt:{gte:month.start,lt:month.end}},
+          {status:'PENDING',createdAt:{gte:pendingCutoff,lt:month.end}}
+        ]
+      },
       orderBy:{createdAt:'desc'}
     }),
     db.testAccess.findFirst({
-      where:{studentId:user.student.id,createdAt:{gte:month.start,lt:month.end},status:{in:['READY','USED']}},
+      where:{studentId:user.student.id,source:{not:'PAID'},createdAt:{gte:month.start,lt:month.end},status:{in:['READY','USED']}},
       orderBy:{createdAt:'desc'}
     }),
     db.assessment.findFirst({
@@ -50,7 +57,7 @@ async function POST__handler(req: Request) {
     return NextResponse.json({error:'Bu ayın KEKS test ürünü hesabınızda zaten tanımlı veya tamamlanmış. Aynı aylık ürün ikinci kez satın alınamaz.',product},{status:409});
   }
   if(existingPayment){
-    return NextResponse.json({error:existingPayment.status==='PAID'?'Bu ayın ürünü için ödemeniz zaten alınmış.':'Bu ayın ürünü için devam eden bir ödeme kaydınız var. Yeni ödeme başlatılamaz.',product},{status:409});
+    return NextResponse.json({error:existingPayment.status==='PAID'?'Bu ayın ürünü için ödemeniz zaten alınmış.':'Bu ürün için son 45 dakika içinde başlatılmış bir ödeme oturumunuz var. Yeni ödeme başlatılamaz.',product},{status:409});
   }
 
   const amountKurus = product.priceKurus;
