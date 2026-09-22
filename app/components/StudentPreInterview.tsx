@@ -81,7 +81,15 @@ export function StudentPreInterview(){
           ?<textarea name={'q_'+q.id} rows={4} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
           :q.responseType==='CHOICE'&&Array.isArray(q.options)
             ?<select name={'q_'+q.id} required={q.required}><option value="">Seçiniz</option>{q.options.map((o:any)=><option key={String(o.value??o)} value={String(o.value??o)}>{String(o.label??o)}</option>)}</select>
-            :<><div className="likertRow">{[1,2,3,4,5].map(n=><label key={n} title={['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1]}><input type="radio" name={'q_'+q.id} value={n} required={q.required}/><span>{n}</span></label>)}</div><div className="muted" style={{fontSize:12,marginTop:4}}>1 Hiç katılmıyorum · 2 Katılmıyorum · 3 Bazen / Kararsızım · 4 Katılıyorum · 5 Tamamen katılıyorum</div></>}
+            :<fieldset className="likertChecklist" style={{border:0,padding:0,margin:'12px 0 0'}}>
+              {[1,2,3,4,5].map(n=>{
+                const label=['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1];
+                return <label key={n} className="likertChecklistOption" style={{display:'flex',gap:10,alignItems:'center',padding:'9px 10px',border:'1px solid var(--line)',borderRadius:10,marginBottom:8,cursor:'pointer'}}>
+                  <input type="radio" name={'q_'+q.id} value={n} required={q.required}/>
+                  <span><strong>({n})</strong> {label}</span>
+                </label>;
+              })}
+            </fieldset>}
         </div>
       </div>)}</div>
       <button className="btn primary" disabled={busy}>{busy?'Plan hazırlanıyor…':'Ön Görüşmeyi Tamamla ve Plan Taslağını Oluştur'}</button>
