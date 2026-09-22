@@ -5,6 +5,7 @@ import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
 import { createSession } from '@/lib/auth';
 import { sendStudentCredentials } from '@/lib/mailer';
 import { writeAudit } from '@/lib/audit';
+import { normalizeEducationLevelLabel } from '@/lib/taskEvaluation';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -28,6 +29,7 @@ export async function POST(req:Request){
   if(!parsed.success)return NextResponse.json({error:parsed.error.issues[0]?.message||'Kayıt bilgileri eksik.'},{status:400});
   const input=parsed.data;
   const email=input.email.toLowerCase();
+  const gradeLevel=normalizeEducationLevelLabel(input.gradeLevel)||input.gradeLevel.trim();
 
   const existing=await db.user.findUnique({where:{email}});
   if(existing)return NextResponse.json({error:'Bu Gmail adresiyle daha önce hesap oluşturulmuş.'},{status:409});
@@ -58,7 +60,7 @@ export async function POST(req:Request){
         credentialsDeliveryStatus:'PENDING',
         credentialEmailAttempts:0,
         fullName:input.fullName,
-        gradeLevel:input.gradeLevel,
+        gradeLevel,
         coachId:coach.id
       }
     });
@@ -107,8 +109,8 @@ export async function POST(req:Request){
     action:'STUDENT_APPLICATION_CREATED',
     entityType:'Student',
     entityId:created.student.id,
-    summary:input.fullName+' öğrenci başvurusu oluşturuldu ve seçtiği koça bağlandı.',
-    metadata:{coachId:coach.id,gradeLevel:input.gradeLevel,email}
+    summary:input.fullName+' öğrenci başvurusu oluşturuldu, seçtiği koça bağlandı ve yönetici kayıtlarına otomatik KEKS ürün kodu eklendi.',
+    metadata:{coachId:coach.id,gradeLevel,email,automaticKeksProductCode:true}
   });
 
   await createSession(created.user.id);
