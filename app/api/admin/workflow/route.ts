@@ -203,7 +203,17 @@ async function POST__handler(req:Request){
     await tx.assessment.update({where:{id:assessment.id},data:{report:{
       ...screeningReport,
       workflowStatus:'PLAN_ADMIN_APPROVED',
-      administration:{...(screeningReport.administration||{}),planStatus:'APPROVED',planReviewedAt:new Date().toISOString(),planReviewedByUserId:user.id,approvedAttemptId:attempt.id}
+      administration:{
+        ...(screeningReport.administration||{}),
+        status:'APPROVED',
+        screeningReviewStatus:'APPROVED',
+        planStatus:'APPROVED',
+        reviewedAt:(screeningReport.administration as any)?.reviewedAt||new Date().toISOString(),
+        reviewedByUserId:(screeningReport.administration as any)?.reviewedByUserId||user.id,
+        planReviewedAt:new Date().toISOString(),
+        planReviewedByUserId:user.id,
+        approvedAttemptId:attempt.id
+      }
     } as any}});
     await tx.coachAlert.create({data:{
       studentId:attempt.studentId,
