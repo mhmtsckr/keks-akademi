@@ -62,7 +62,7 @@ export function StudentDailyTasks(){
             {a.submission?.late?<span className="lateAlarm">KIRMIZI ALARM</span>:a.submission?<span className="doneBadge">KAYDEDİLDİ</span>:a.planSource==='TOPIC_REVIEW_01371428'?<span className="doneBadge">KONU TEKRARI</span>:null}
           </div>
           <p className="muted">{a.description||'Koç görevi'}</p>
-          {a.planSource==='TOPIC_REVIEW_01371428'&&<div className="notice" style={{marginBottom:10}}><strong>0–1–3–7–14–28 sistemi</strong><div className="muted">Bu görev, konuyu bitirdiğin güne göre otomatik planlandı. Branş: {a.subject||'—'} · Konu: {a.topic||'—'}</div></div>}
+          {a.planSource==='TOPIC_REVIEW_01371428'&&<div className="notice" style={{marginBottom:10}}><strong>0–1–3–7–14–28. Gün Tekrar Sistemi</strong><div className="muted">Bu görev, konuyu bitirdiğin güne göre otomatik planlandı. Branş: {a.subject||'—'} · Konu: {a.topic||'—'}</div></div>}
           <div className="taskMeta"><span>Hedef: {a.targetValue} {a.metricType==='QUESTIONS'?'soru':''}</span><span>23.00'a kadar kayıt</span></div>
           {a.submission&&<div className="taskResultSummary">
             <span><b>{a.submission.totalQuestions}</b> soru</span><span><b>{a.submission.correct}</b> doğru</span><span><b>{a.submission.wrong}</b> yanlış</span><span><b>{a.submission.blank}</b> boş</span><span><b>{a.submission.net}</b> net</span><span><b>%{a.submission.accuracy}</b> doğruluk</span>
