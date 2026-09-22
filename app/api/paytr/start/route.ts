@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { createPaytrToken } from '@/lib/paytr';
+import { createPaytrToken,resolvePaytrCredentials } from '@/lib/paytr';
 import { merchantOid } from '@/lib/security';
 
 const schema = z.object({
@@ -17,17 +17,18 @@ async function POST__handler(req: Request) {
   const user = await requireRole(['STUDENT']);
   if (!user.student) return NextResponse.json({ error: 'Öğrenci profili yok.' }, { status: 400 });
 
-  const merchantId = process.env.PAYTR_MERCHANT_ID;
-  const appUrl = process.env.APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '');
-  if (!merchantId || !process.env.PAYTR_MERCHANT_KEY || !process.env.PAYTR_MERCHANT_SALT || !appUrl) {
-    return NextResponse.json({ error: 'PayTR henüz yapılandırılmadı.' }, { status: 503 });
+  const paytr=await resolvePaytrCredentials();
+  const appUrl=process.env.APP_URL||(process.env.VERCEL_PROJECT_PRODUCTION_URL?`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`:process.env.VERCEL_URL?`https://${process.env.VERCEL_URL}`:'');
+  if(!paytr||!appUrl){
+    return NextResponse.json({error:'PayTR henüz yapılandırılmadı.'},{status:503});
   }
+  const merchantId=paytr.merchantId;
 
   const input = await readJson(req, schema);
   const amountKurus = Number(process.env.TEST_PRICE_KURUS || 35000);
   const oid = merchantOid();
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
-  const testMode = process.env.PAYTR_TEST_MODE || '1';
+  const testMode=paytr.testMode;
   const noInstallment = '1';
   const maxInstallment = '0';
   const currency = 'TL';
@@ -48,7 +49,7 @@ async function POST__handler(req: Request) {
     maxInstallment,
     currency,
     testMode,
-  });
+  },paytr);
 
   const form = new URLSearchParams({
     merchant_id: merchantId,

@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { verifyPaytrCallback } from '@/lib/paytr';
+import { resolvePaytrCredentials,verifyPaytrCallback } from '@/lib/paytr';
 
 export async function POST(req: Request) {
   const text = await req.text();
-  const params = Object.fromEntries(new URLSearchParams(text).entries());
-  if (!verifyPaytrCallback(params)) return new NextResponse('PAYTR notification failed: bad hash', { status: 400 });
+  const params=Object.fromEntries(new URLSearchParams(text).entries());
+  const paytr=await resolvePaytrCredentials();
+  if(!paytr)return new NextResponse('PAYTR configuration unavailable',{status:503});
+  if(!verifyPaytrCallback(params,paytr))return new NextResponse('PAYTR notification failed: bad hash',{status:400});
   const payment = await db.payment.findUnique({ where: { merchantOid: params.merchant_oid } });
   if (!payment) return new NextResponse('OK');
   if (params.status === 'success' && payment.status !== 'PAID') {

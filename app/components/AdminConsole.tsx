@@ -42,6 +42,11 @@ export function AdminConsole(){
   const [auditQ,setAuditQ]=useState('');
   const [gmailAppPassword,setGmailAppPassword]=useState('');
   const [gmailBusy,setGmailBusy]=useState(false);
+  const [paytrMerchantId,setPaytrMerchantId]=useState('');
+  const [paytrMerchantKey,setPaytrMerchantKey]=useState('');
+  const [paytrMerchantSalt,setPaytrMerchantSalt]=useState('');
+  const [paytrTestMode,setPaytrTestMode]=useState(true);
+  const [paytrBusy,setPaytrBusy]=useState(false);
 
   async function loadOverview(){
     const j=await fetch('/api/admin/dashboard').then(r=>r.json());
@@ -118,6 +123,28 @@ export function AdminConsole(){
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Kod üretilemedi.'));return}
     setMsg('Yeni KEKS kodu: '+j.code);await loadPayments();
+  }
+
+  async function savePaytr(){
+    setMsg('');setPaytrBusy(true);
+    try{
+      const r=await fetch('/api/admin/paytr-config',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          merchantId:paytrMerchantId,
+          merchantKey:paytrMerchantKey,
+          merchantSalt:paytrMerchantSalt,
+          testMode:paytrTestMode
+        })
+      });
+      const j=await r.json();
+      if(!r.ok){setMsg('Hata: '+(j.error||'PayTR yapılandırılamadı.'));return}
+      setPaytrMerchantKey('');
+      setPaytrMerchantSalt('');
+      setMsg(j.message||'PayTR yapılandırıldı.');
+      await loadSecurity();
+    }finally{setPaytrBusy(false)}
   }
 
   async function connectGmail(){
@@ -251,12 +278,25 @@ export function AdminConsole(){
       {health&&<div className="adminHealthGrid">
         <HealthCard label="Neon Veritabanı" ok={health.database==='OK'} detail={health.database}/>
         <HealthCard label="Kimlik Doğrulama" ok={health.authSecret} detail={health.authSecret?'Yapılandırıldı':'Eksik'}/>
-        <HealthCard label="PayTR" ok={health.paytr} detail={health.paytr?'Yapılandırıldı':'Eksik'}/>
+        <HealthCard label="PayTR" ok={health.paytr} detail={health.paytr?(health.paytrMerchantId||'Yapılandırıldı')+' · '+(health.paytrTestMode?'Test modu':'Canlı mod'):'Kimlik bilgileri bekleniyor'}/>
         <HealthCard label="Kayıt E-postası / Gmail" ok={health.gmail} detail={health.gmail?(health.gmailAddress||'keksakademi@gmail.com'):'Bağlantı bekleniyor'}/>
         <HealthCard label="Rapor E-postası / Gmail" ok={health.reportEmail} detail={health.reportEmail?(health.reportEmailAddress||'keksakademi@gmail.com')+' · Gönderim hazır':'Gmail bağlantısı bekleniyor'}/>
         <HealthCard label="Uygulama URL" ok={health.appUrl} detail={health.appUrl?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="Son 24 saat audit" ok={true} detail={String(health.recentAudit)+' kayıt'}/>
       </div>}
+      <div className="card" style={{marginBottom:16}}>
+        <div className="moduleEyebrow">ÖDEME ENTEGRASYONU</div>
+        <h3>PayTR iFrame API Yapılandırması</h3>
+        <p className="muted">PayTR Mağaza Paneli → BİLGİ sayfasındaki Merchant ID, Merchant Key ve Merchant Salt değerlerini girin. Key ve Salt düz metin olarak saklanmaz; şifreli biçimde korunur.</p>
+        {health?.paytr&&<div className="notice"><strong>Yapılandırıldı:</strong> Merchant ID {health.paytrMerchantId||'—'} · {health.paytrTestMode?'Test modu':'Canlı mod'} · Ödeme başlatma ve callback doğrulaması aktif.</div>}
+        <div className="row" style={{alignItems:'end',marginTop:12,flexWrap:'wrap'}}>
+          <div className="field" style={{minWidth:180}}><label>Merchant ID</label><input value={paytrMerchantId} onChange={e=>setPaytrMerchantId(e.target.value)} placeholder={health?.paytrMerchantId||'Merchant ID'}/></div>
+          <div className="field" style={{minWidth:220}}><label>Merchant Key</label><input type="password" value={paytrMerchantKey} onChange={e=>setPaytrMerchantKey(e.target.value)} placeholder="Merchant Key" autoComplete="new-password"/></div>
+          <div className="field" style={{minWidth:220}}><label>Merchant Salt</label><input type="password" value={paytrMerchantSalt} onChange={e=>setPaytrMerchantSalt(e.target.value)} placeholder="Merchant Salt" autoComplete="new-password"/></div>
+          <label className="row" style={{gap:8,alignItems:'center',paddingBottom:10}}><input type="checkbox" checked={paytrTestMode} onChange={e=>setPaytrTestMode(e.target.checked)}/><span>Test modu</span></label>
+          <button className="btn primary" onClick={savePaytr} disabled={paytrBusy||paytrMerchantId.trim().length<2||paytrMerchantKey.trim().length<8||paytrMerchantSalt.trim().length<8}>{paytrBusy?'Kaydediliyor…':'PayTR’yi Kaydet ve Etkinleştir'}</button>
+        </div>
+      </div>
       <div className="card" style={{marginBottom:16}}>
         <div className="moduleEyebrow">ÖĞRENCİ KAYIT E-POSTASI</div>
         <h3>keksakademi@gmail.com Gönderici Bağlantısı</h3>
