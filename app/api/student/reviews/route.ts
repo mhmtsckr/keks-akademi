@@ -16,7 +16,29 @@ async function GET__handler(){
     orderBy:{dueAt:'asc'},
     take:50
   });
-  return NextResponse.json({ok:true,items:items.map(x=>({...x,fileData:undefined}))});
+  const now=Date.now();
+  return NextResponse.json({
+    ok:true,
+    scheduleDays:REVIEW_DAYS,
+    items:items.map(x=>({
+      id:x.id,
+      stepIndex:x.stepIndex,
+      dueAt:x.dueAt,
+      status:new Date(x.dueAt).getTime()<=now?'DUE':'PENDING',
+      lastCorrect:x.lastCorrect,
+      question:{
+        id:x.question.id,
+        examType:x.question.examType,
+        subject:x.question.subject,
+        topic:x.question.topic,
+        prompt:x.question.prompt,
+        options:x.question.options,
+        sourceKind:x.question.sourceKind,
+        sourceYear:x.question.sourceYear,
+        officialSourceUrl:x.question.officialSourceUrl
+      }
+    }))
+  });
 }
 
 async function POST__handler(req:Request){
@@ -31,12 +53,23 @@ async function POST__handler(req:Request){
   else step=0;
   const completed=correct && step>=REVIEW_DAYS.length;
   const due=new Date();
-  if(!completed) due.setDate(due.getDate()+REVIEW_DAYS[step]);
+  const nextIntervalDays=completed?null:REVIEW_DAYS[step];
+  if(!completed) due.setDate(due.getDate()+Number(nextIntervalDays||0));
   const row=await db.reviewQueueItem.update({where:{id:item.id},data:{
-    stepIndex:step,lastCorrect:correct,status:completed?'COMPLETED':'PENDING',
+    stepIndex:step,lastCorrect:correct,status:completed?'COMPLETED':(Number(nextIntervalDays||0)===0?'DUE':'PENDING'),
     completedAt:completed?new Date():null,dueAt:due
   }});
-  return NextResponse.json({ok:true,row,correct,correctAnswer:item.question.correctAnswer,explanation:item.question.explanation});
+  return NextResponse.json({
+    ok:true,
+    row,
+    correct,
+    correctAnswer:item.question.correctAnswer,
+    explanation:item.question.explanation,
+    completed,
+    currentStage:correct?Math.min(step,REVIEW_DAYS.length-1):0,
+    nextIntervalDays,
+    nextDueAt:completed?null:due
+  });
 }
 
 export const GET = withApiErrors(GET__handler);
