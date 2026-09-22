@@ -7,7 +7,7 @@ import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation'
 import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
 import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
-import { turkeyMonthWindow } from '@/lib/monthlyAccess';
+import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { StudentEngagementHub } from '@/app/components/StudentEngagementHub';
 import { StudentDailyTasks } from '@/app/components/StudentDailyTasks';
 import { StudentPreInterview } from '@/app/components/StudentPreInterview';
@@ -48,7 +48,6 @@ export default async function StudentPage() {
     </PortalShell>;
   }
 
-  const month=turkeyMonthWindow();
   const student = await db.student.findUnique({
     where:{id:user.student.id},
     include:{
@@ -59,7 +58,8 @@ export default async function StudentPage() {
       techniquePreferences:{},
       reports:{where:{visibleToStudent:true},orderBy:{createdAt:'desc'}},
       libraryItems:{orderBy:{createdAt:'desc'}},
-      testAccesses:{where:{status:'READY',OR:[{source:{not:'ACADEMY_CODE'}},{createdAt:{gte:month.start,lt:month.end}}]},orderBy:{createdAt:'asc'},take:1},
+      testAccesses:{where:{status:'READY'},orderBy:{createdAt:'asc'},take:1},
+      assessments:{orderBy:{completedAt:'desc'},take:1},
       targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
       topicProgress:{},
       practiceLogs:{orderBy:{date:'desc'},take:30},
@@ -68,6 +68,15 @@ export default async function StudentPage() {
   if (!student) return null;
 
   const access = student.testAccesses[0];
+  const latestAssessment=student.assessments[0];
+  const latestReport=(latestAssessment?.report&&typeof latestAssessment.report==='object'&&!Array.isArray(latestAssessment.report)?latestAssessment.report:{}) as Record<string,any>;
+  const latestWorkflow=String(latestReport.workflowStatus||'');
+  const currentProduct=keksMonthlyProduct();
+  const latestProductKey=latestAssessment?productKeyFromReport(latestAssessment.report,latestAssessment.completedAt):null;
+  const showPreInterview=Boolean(latestAssessment&&
+    ['PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED','COMPLETED'].includes(latestWorkflow)&&
+    (latestProductKey===currentProduct.key||['PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED'].includes(latestWorkflow))
+  );
   const activeTarget = student.targets[0];
   const grade=(student.gradeLevel||'').toLowerCase();
   const allowedExams=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
@@ -121,7 +130,7 @@ export default async function StudentPage() {
 
     <section id="akademik-performans" className="section section-anchor"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><PortalSectionTitle eyebrow="AKADEMİK PERFORMANS MERKEZİ" title="Konu, Soru ve Hata Analizi" description="Doğru, yanlış, boş, net, konu ilerlemesi ve hata nedenlerini birlikte takip et."/><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString(),errorReason:x.errorReason}))}/></section>
 
-    <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="TARAMA" title="KEKS Eğilim Taraması" description="KEKS’in kendi sistemi içinde çalışan eğitsel çalışma ve öz-düzenleme eğilimleri taramasını bu bölümden tamamlayın. Sonuçlar önce yönetici incelemesine gider."/><StudentActions hasAccess={Boolean(access)}/></section>
-    <section className="section"><PortalSectionTitle eyebrow="ÖN GÖRÜŞME" title="Eğitim Düzeyine Göre Ön Görüşme" description="Eğilim taraması tamamlanınca eğitim ve gelişim düzeyinize uygun form otomatik açılır. Bazı soruları işaretler, bazılarını kendi sözlerinizle yanıtlarsınız. Cevaplarınızla birlikte 1 yıllık, aylık, haftalık ve günlük plan taslağı oluşturulur; yönetici onayından sonra koçunuza gönderilir."/><StudentPreInterview/></section>
+    <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="KEKS AKADEMİ TEST ÜRÜNLERİ" title="Aylık KEKS Akademi Test Ürünü" description="Ürün erişiminiz yoksa test soruları görünmez. Yönetici/koç tarafından verilen kodla veya 500 TL ödeme ile aylık ürünü hesabınıza tanımlayabilirsiniz."/><StudentActions hasAccess={Boolean(access)}/></section>
+    {showPreInterview&&<section className="section"><PortalSectionTitle eyebrow="ÜRÜN AŞAMASI 2/2" title="Eğitim Düzeyine Göre Ön Görüşme" description="Bu bölüm yalnızca aynı aylık ürünün KEKS Eğilim Taraması tamamlandıktan sonra açılır. Form bir kez tamamlanabilir."/><StudentPreInterview/></section>}
   </PortalShell>;
 }
