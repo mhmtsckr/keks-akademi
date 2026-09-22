@@ -7,6 +7,7 @@ export function AdminAssessmentWorkflow(){
   const [busy,setBusy]=useState('');
   const [msg,setMsg]=useState('');
   const [previewAnswers,setPreviewAnswers]=useState<Record<string,number>>({});
+  const [preInterviewPreviewAnswers,setPreInterviewPreviewAnswers]=useState<Record<string,string|number>>({});
 
   async function load(){
     const r=await fetch('/api/admin/workflow',{cache:'no-store'});
@@ -93,15 +94,65 @@ export function AdminAssessmentWorkflow(){
       <h2>Eğitim ve Gelişim Düzeyine Göre Ön Görüşme Formları</h2>
       <p className="muted">Bu form eğilim taraması tamamlandıktan sonra öğrencinin eğitim düzeyine göre otomatik açılır. Davranış ifadeleri işaretlemeli, açıklama isteyen sorular açık uçludur.</p>
       <div className="stack">
-        {(data.preInterviewForms||[]).map((form:any)=><details key={form.id}>
-          <summary><strong>{form.title}</strong> <span className="muted">· {form.questionCount} soru</span></summary>
-          <div className="interviewAnswers" style={{marginTop:10}}>
-            {(form.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}>
-              <div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div>
-              <p>{q.responseType==='TEXT'?'Açık uçlu':q.responseType==='CHOICE'?'Seçmeli':'İşaretlemeli · 1–5'}</p>
-            </div>)}
-          </div>
-        </details>)}
+        {(data.preInterviewForms||[]).map((form:any)=>{
+          const answered=(form.questions||[]).filter((q:any)=>{
+            const v=preInterviewPreviewAnswers[q.id];
+            return v!==undefined&&v!==null&&String(v).trim()!=='';
+          }).length;
+          return <details key={form.id}>
+            <summary><strong>{form.title}</strong> <span className="muted">· {form.questionCount} soru · {answered}/{form.questionCount} cevaplandı</span></summary>
+            <div className="notice" style={{marginTop:10}}>
+              <strong>Yönerge:</strong> Ders, ödev, arkadaşlık ve günlük sorumluluklarında son iki ayı düşün. Sana en çok uyan seçeneği işaretle. Doğru ya da yanlış cevap yoktur; seni en iyi anlatan seçeneği işaretle.
+              <div className="muted" style={{marginTop:8}}>(1) Hiç katılmıyorum · (2) Katılmıyorum · (3) Bazen / Kararsızım · (4) Katılıyorum · (5) Tamamen katılıyorum</div>
+              <div className="muted" style={{marginTop:8}}>Açık uçlu sorular kendi sözleriyle yazılarak cevaplanabilir. Bu alan yönetici önizlemesidir; cevaplar öğrenci sonucu olarak kaydedilmez.</div>
+            </div>
+            <div className="row" style={{justifyContent:'space-between',alignItems:'center',margin:'12px 0'}}>
+              <span className="pill">{answered}/{form.questionCount} cevaplandı</span>
+              <button className="btn" type="button" onClick={()=>{
+                const ids=new Set((form.questions||[]).map((q:any)=>q.id));
+                setPreInterviewPreviewAnswers(prev=>Object.fromEntries(Object.entries(prev).filter(([id])=>!ids.has(id))));
+              }}>Cevapları Temizle</button>
+            </div>
+            <div className="stack">
+              {(form.questions||[]).map((q:any)=><div className="preInterviewQuestion" key={q.id}>
+                <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
+                <div style={{flex:1}}>
+                  <strong>{q.prompt}</strong>
+                  {q.responseType==='TEXT'
+                    ?<textarea
+                        rows={4}
+                        value={String(preInterviewPreviewAnswers[q.id]??'')}
+                        onChange={e=>setPreInterviewPreviewAnswers(a=>({...a,[q.id]:e.target.value}))}
+                        placeholder="Yönetici önizleme cevabını yazabilir…"
+                      />
+                    :q.responseType==='CHOICE'&&Array.isArray(q.options)
+                      ?<select
+                          value={String(preInterviewPreviewAnswers[q.id]??'')}
+                          onChange={e=>setPreInterviewPreviewAnswers(a=>({...a,[q.id]:e.target.value}))}
+                        >
+                          <option value="">Seçiniz</option>
+                          {q.options.map((o:any)=><option key={String(o.value??o)} value={String(o.value??o)}>{String(o.label??o)}</option>)}
+                        </select>
+                      :<>
+                        <div className="likertRow">
+                          {[1,2,3,4,5].map(n=><label key={n} title={['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1]}>
+                            <input
+                              type="radio"
+                              name={'admin-preinterview-preview-'+q.id}
+                              value={n}
+                              checked={Number(preInterviewPreviewAnswers[q.id])===n}
+                              onChange={()=>setPreInterviewPreviewAnswers(a=>({...a,[q.id]:n}))}
+                            />
+                            <span>{n}</span>
+                          </label>)}
+                        </div>
+                        <div className="muted" style={{fontSize:12,marginTop:4}}>1 Hiç katılmıyorum · 2 Katılmıyorum · 3 Bazen / Kararsızım · 4 Katılıyorum · 5 Tamamen katılıyorum</div>
+                      </>}
+                </div>
+              </div>)}
+            </div>
+          </details>;
+        })}
       </div>
     </div>
 
