@@ -50,41 +50,89 @@ async function POST__handler(req:Request){
 
   const scores=scoreAssessment(form.questions,body.answers);
   const baseReport=buildReport(scores,form.questions,body.answers);
+  const studentMeta=await db.student.findUnique({
+    where:{id:user.student.id},
+    select:{coachId:true}
+  });
+  const preInterviewForm=await db.preInterviewForm.findFirst({
+    where:{active:true,educationBand},
+    orderBy:{createdAt:'desc'}
+  })||await db.preInterviewForm.findFirst({
+    where:{active:true,educationBand:'GENERAL'},
+    orderBy:{createdAt:'desc'}
+  });
+  const canAutoAssign=Boolean(studentMeta?.coachId&&preInterviewForm);
+  const submittedAt=new Date().toISOString();
   const report={
     ...baseReport,
     educationBand,
     questionCount:form.questions.length,
     source:'KEKS_NATIVE',
-    workflowStatus:'ADMIN_REVIEW',
+    workflowStatus:canAutoAssign?'PRE_INTERVIEW_ASSIGNED':'ADMIN_REVIEW',
     administration:{
       status:'PENDING',
-      submittedAt:new Date().toISOString(),
-      nextStep:'Yönetici ayrıntılı değerlendirme ve gelişim raporunu inceleyip onayladığında ön görüşme açılır.'
+      screeningReviewStatus:'PENDING_REVIEW',
+      submittedAt,
+      preInterviewAutoAssigned:canAutoAssign,
+      nextStep:canAutoAssign
+        ?'Eğitim ve gelişim düzeyine uygun açık uçlu ön görüşme otomatik açıldı. Tarama sonucu ve sonraki plan taslağı yönetici incelemesine gider.'
+        :'Tarama yönetici incelemesine gönderildi; ön görüşme ataması için aktif form ve koç bağlantısı gerekir.'
     }
   };
 
-  const assessment=await db.$transaction(async tx=>{
+  const result=await db.$transaction(async tx=>{
     const claimed=await tx.testAccess.updateMany({
       where:{id:access.id,studentId:user.student!.id,status:'READY'},
       data:{status:'USED',usedAt:new Date()}
     });
     if(claimed.count!==1)throw new Error('TEST_ACCESS_ALREADY_USED');
-    return tx.assessment.create({data:{
+
+    const assessment=await tx.assessment.create({data:{
       studentId:user.student!.id,
       formVersion:form.version,
       answers:body.answers as any,
       scores:scores as any,
       report:report as any
     }});
+
+    let assignmentId:string|null=null;
+    if(canAutoAssign&&preInterviewForm&&studentMeta?.coachId){
+      await tx.preInterviewAssignment.updateMany({
+        where:{studentId:user.student!.id,status:{in:['ASSIGNED','COMPLETED','ADMIN_APPROVED']},revokedAt:null},
+        data:{status:'REVOKED',revokedAt:new Date()}
+      });
+      const assignment=await tx.preInterviewAssignment.create({data:{
+        studentId:user.student!.id,
+        formId:preInterviewForm.id,
+        coachId:studentMeta.coachId,
+        status:'ASSIGNED'
+      }});
+      assignmentId=assignment.id;
+      await tx.assessment.update({
+        where:{id:assessment.id},
+        data:{report:{
+          ...report,
+          administration:{
+            ...report.administration,
+            preInterviewAssignmentId:assignment.id,
+            preInterviewAutoAssignedAt:new Date().toISOString()
+          }
+        } as any}
+      });
+    }
+    return {assessment,assignmentId};
   });
+  const assessment=result.assessment;
 
   await writeAudit({
     actorUserId:user.id,
     action:'SCREENING_SUBMITTED',
     entityType:'Assessment',
     entityId:assessment.id,
-    summary:'KEKS eğilim taraması tamamlandı ve yönetici incelemesine gönderildi.',
-    metadata:{studentId:user.student.id,educationBand,questionCount:form.questions.length}
+    summary:result.assignmentId
+      ?'KEKS eğilim taraması tamamlandı; açık uçlu ön görüşme eğitim düzeyine göre otomatik açıldı ve tarama yönetici incelemesine gönderildi.'
+      :'KEKS eğilim taraması tamamlandı ve yönetici incelemesine gönderildi.',
+    metadata:{studentId:user.student.id,educationBand,questionCount:form.questions.length,preInterviewAssignmentId:result.assignmentId}
   });
 
   try{
@@ -103,8 +151,11 @@ async function POST__handler(req:Request){
     ok:true,
     assessmentId:assessment.id,
     pendingAdminApproval:true,
-    workflowStatus:'ADMIN_REVIEW',
-    message:'Tarama tamamlandı. Ayrıntılı değerlendirme ve gelişim raporu yönetici onayına gönderildi.'
+    preInterviewAutoAssigned:Boolean(result.assignmentId),
+    workflowStatus:result.assignmentId?'PRE_INTERVIEW_ASSIGNED':'ADMIN_REVIEW',
+    message:result.assignmentId
+      ?'Tarama tamamlandı. Eğitim ve gelişim düzeyinize uygun açık uçlu ön görüşme otomatik açıldı. Tarama sonucunuz yönetici incelemesine gönderildi.'
+      :'Tarama tamamlandı. Ayrıntılı değerlendirme ve gelişim raporu yönetici incelemesine gönderildi.'
   });
 }
 
