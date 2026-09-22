@@ -37,9 +37,10 @@ export function StudentPreInterview(){
   if(!data.form)return <div className="card"><div className="moduleEyebrow">ÖN GÖRÜŞME</div><h2>Form henüz atanmadı</h2><p className="muted">Eğilim taramasından sonra eğitim ve gelişim düzeyinize uygun ön görüşme formu otomatik atanır. Atama görünmüyorsa koç bağlantınız yönetici tarafından kontrol edilir.</p></div>;
 
   if(data.assignment?.status==='COMPLETED'){
-    return <div className="card preInterviewPending">
-      <div className="moduleEyebrow">YÖNETİCİ İNCELEMESİNDE</div>
-      <h2>Ön görüşmeniz tamamlandı</h2>
+    return <div className="card preInterviewPending keksProductCard">
+      <div className="keksProductTop"><div className="moduleEyebrow">2/2 TAMAMLANDI · YÖNETİCİ İNCELEMESİNDE</div><span className="pill">TEK KULLANIMLIK</span></div>
+      <h2>{data.product?.name||'Aylık KEKS Test Ürünü'}</h2>
+      <h3>Ön görüşmeniz tamamlandı</h3>
       <p>Eğilim taraması ile ön görüşme yanıtlarınız birlikte değerlendirildi.</p>
       <div className="notice">1 yıllık, aylık, haftalık ve günlük çalışma planı taslağınız yönetici onayı bekliyor. Onaydan sonra koçunuza gönderilecek.</div>
       {msg&&<div className="notice" style={{marginTop:10}}>{msg}</div>}
@@ -62,9 +63,10 @@ export function StudentPreInterview(){
     </div>;
   }
 
-  return <div className="card">
+  return <div className="card keksProductCard keksProductActive">
+    <div className="keksProductTop"><div className="moduleEyebrow">2/2 · ÖN GÖRÜŞME</div><span className="pill">TEK KULLANIMLIK</span></div>
     <div className="moduleHeaderRow">
-      <div><div className="moduleEyebrow">TARAMA SONRASI OTOMATİK AÇILDI</div><h2>{data.form.title}</h2><p className="muted">Bu form eğitim ve gelişim düzeyinize göre otomatik seçildi. Davranış sorularını işaretleyebilir, açıklama isteyen soruları kendi sözlerinizle yanıtlayabilirsiniz. Sonuçlar çalışma planının girdisi olur ve plan taslağı önce yönetici onayına gider.</p></div>
+      <div><div className="moduleEyebrow">{data.product?.name||'TARAMA SONRASI OTOMATİK AÇILDI'}</div><h2>{data.form.title}</h2><p className="muted">Bu form eğitim ve gelişim düzeyinize göre otomatik seçildi. Davranış sorularını işaretleyebilir, açıklama isteyen soruları kendi sözlerinizle yanıtlayabilirsiniz. Sonuçlar çalışma planının girdisi olur ve plan taslağı önce yönetici onayına gider.</p></div>
       
     </div>
     <form className="form preInterviewForm" onSubmit={submit}>
@@ -92,7 +94,7 @@ export function StudentPreInterview(){
             </fieldset>}
         </div>
       </div>)}</div>
-      <button className="btn primary" disabled={busy}>{busy?'Plan hazırlanıyor…':'Ön Görüşmeyi Tamamla ve Plan Taslağını Oluştur'}</button>
+      <button className="btn primary" disabled={busy}>{busy?'Plan hazırlanıyor…':'2. Aşamayı Tamamla ve Ürünü Bitir'}</button>
       {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
     </form>
   </div>;
