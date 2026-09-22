@@ -11,7 +11,7 @@ const PAGE_SIZE=10;
 
 function workflowCopy(status?:string){
   if(status==='ADMIN_REVIEW')return {eyebrow:'1/2 TAMAMLANDI · YÖNETİCİ İNCELEMESİNDE',title:'KEKS Eğilim Taraması tamamlandı',text:'Tarama kaydedildi. Eğitim düzeyine uygun ön görüşme ataması ve yönetici incelemesi devam ediyor.'};
-  if(status==='SCREENING_RETAKE_REQUIRED')return {eyebrow:'YENİDEN TARAMA',title:'Yönetici yeniden tarama istedi',text:'Yeni erişim açıldığında ürünün tarama aşaması burada tekrar görünür.'};
+  if(status==='SCREENING_RETAKE_REQUIRED')return {eyebrow:'YÖNETİCİ İNCELEMESİ',title:'Tek kullanım kuralı uygulanıyor',text:'Bu aylık ürünün Eğilim Taraması yeniden çözülemez. Kayıt yönetici incelemesine alınır ve mevcut sonuç üzerinden süreç devam eder.'};
   if(status==='PRE_INTERVIEW_ASSIGNED')return {eyebrow:'1/2 TAMAMLANDI',title:'KEKS Eğilim Taraması tamamlandı',text:'Ürünün ikinci aşaması olan Eğitim Düzeyine Göre Ön Görüşme aşağıda otomatik olarak açıldı.'};
   if(status==='PLAN_ADMIN_REVIEW')return {eyebrow:'2/2 TAMAMLANDI · İNCELEMEDE',title:'Aylık test ürününüz tamamlandı',text:'Eğilim taraması ve ön görüşme birlikte değerlendirildi. Çalışma planı taslağınız yönetici onayında.'};
   if(status==='PLAN_ADMIN_APPROVED')return {eyebrow:'2/2 TAMAMLANDI · KOÇA GÖNDERİLDİ',title:'Aylık test ürününüz tamamlandı',text:'Onaylı değerlendirme ve çalışma planı koçunuza gönderildi.'};
