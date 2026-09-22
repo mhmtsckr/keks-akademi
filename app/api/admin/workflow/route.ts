@@ -163,7 +163,7 @@ async function POST__handler(req:Request){
 
     await db.assessment.update({where:{id:assessment.id},data:{report:{
       ...report,
-      workflowStatus:report.workflowStatus==='ADMIN_REVIEW'?'PRE_INTERVIEW_ASSIGNED':report.workflowStatus,
+      workflowStatus:'PRE_INTERVIEW_ASSIGNED',
       administration:{
         ...administration,
         status:'SCREENING_APPROVED',
@@ -173,7 +173,7 @@ async function POST__handler(req:Request){
         preInterviewAssignmentId:assignment.id
       }
     } as any}});
-    await writeAudit({actorUserId:user.id,action:'SCREENING_APPROVED',entityType:'Assessment',entityId:assessment.id,summary:'Yönetici eğilim taraması incelemesini onayladı. Açık uçlu ön görüşme otomatik atama üzerinden devam ediyor.',metadata:{studentId:assessment.studentId,assignmentId:assignment.id}});
+    await writeAudit({actorUserId:user.id,action:'SCREENING_APPROVED',entityType:'Assessment',entityId:assessment.id,summary:'Yönetici eğilim taraması incelemesini onayladı. Ön görüşme otomatik atama üzerinden devam ediyor.',metadata:{studentId:assessment.studentId,assignmentId:assignment.id}});
     return NextResponse.json({ok:true,status:'PRE_INTERVIEW_ASSIGNED',assignmentId:assignment.id});
   }
 
