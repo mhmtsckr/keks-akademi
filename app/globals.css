@@ -616,3 +616,45 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .keksProcess{grid-template-columns:1fr}
   .keksClosingStats{grid-template-columns:1fr}
 }
+
+
+/* Student + coach KEKS system architecture */
+.studentSystemJourney,.coachSystemOverview,.coachStudentSystemOverview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.studentSystemTile,.coachSystemTile,.coachStudentSystemOverview>a{display:grid;grid-template-columns:38px minmax(0,1fr);gap:11px;align-items:start;padding:16px;border-radius:15px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(145deg,#0a223d,#081c32)}
+.studentSystemTile:hover,.coachStudentSystemOverview>a:hover{border-color:rgba(227,180,70,.34);transform:translateY(-1px);transition:.18s ease}
+.studentSystemTile>span,.coachSystemTile>span,.coachStudentSystemOverview>a>span{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:rgba(222,173,63,.1);border:1px solid rgba(222,173,63,.16);color:#e8c268;font-size:10px;font-weight:900}
+.studentSystemTile>div,.coachSystemTile>div,.coachStudentSystemOverview>a>div{display:grid;gap:3px}
+.studentSystemTile small,.coachSystemTile small,.coachStudentSystemOverview small{color:#8b9fb3;font-size:9px;font-weight:900;letter-spacing:.1em}
+.studentSystemTile strong,.coachSystemTile strong,.coachStudentSystemOverview strong{font-size:13px;color:#edf3f8}
+.studentSystemTile p,.coachSystemTile p,.coachStudentSystemOverview p{margin:1px 0 0;color:#74899e;font-size:10px;line-height:1.45}
+
+.studentMonthlyDevelopment{background:radial-gradient(circle at 92% 0%,rgba(228,180,67,.1),transparent 32%),linear-gradient(145deg,#0b2745,#081d34)!important}
+.studentMonthlyAxes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+.monthlyAxisCard{padding:14px;border-radius:13px;border:1px solid rgba(255,255,255,.07);background:#071b31}
+.monthlyAxisHead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:9px}
+.monthlyAxisHead strong{font-size:11px}.monthlyAxisHead span{color:#edc869;font-size:10px;font-weight:900}
+.monthlyAxisCard small{display:block;margin-top:6px;font-size:9px}
+
+.coachSystemOverview{margin:2px 0 16px}
+.coachSystemTile{min-height:98px}
+.coachWeeklyChange{margin:16px 0;padding:15px;border-radius:14px;border:1px solid rgba(229,182,72,.14);background:#081d34}
+.coachWeeklyChangeGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.coachChangeMetric{display:grid;gap:4px;padding:11px;border-radius:11px;background:#0a223d;border:1px solid rgba(255,255,255,.06)}
+.coachChangeMetric span{font-size:9px;color:#7a8fa4}.coachChangeMetric strong{font-size:18px;color:#edc869}.coachChangeMetric small{font-size:9px;color:#8fa1b4}
+.coachChangeSignals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+.coachChangeSignals>div{display:grid;gap:4px;padding:10px;border-radius:10px;background:#071a30}
+.coachChangeSignals small{font-size:8px;color:#70869b;font-weight:900;letter-spacing:.08em}
+.coachChangeSignals strong{font-size:11px;color:#dce5ed}
+
+.monthlyCoachReflection{padding:13px;border-radius:12px;background:#081d34;border:1px solid rgba(255,255,255,.06)}
+.monthlyCoachReflection>div{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.monthlyCoachReflection>div span{color:#edc869;font-size:11px}
+.monthlyCoachReflection p{margin:8px 0 0;color:#9fb0c1;font-size:12px;line-height:1.5}
+
+@media(max-width:1000px){
+  .studentSystemJourney,.coachSystemOverview,.coachStudentSystemOverview{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .studentMonthlyAxes{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .coachWeeklyChangeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+  .studentSystemJourney,.coachSystemOverview,.coachStudentSystemOverview,.studentMonthlyAxes,.coachWeeklyChangeGrid,.coachChangeSignals{grid-template-columns:1fr}
+}
