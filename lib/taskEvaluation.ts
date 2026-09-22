@@ -38,11 +38,13 @@ export type EducationBand=
   | 'LISE_9_10'
   | 'LISE_11_12'
   | 'YETISKIN_MEZUN'
+  | 'YETISKIN_SINAV'
   | 'GENERAL';
 
 export function detectEducationBand(gradeLevel?:string|null):EducationBand{
   const raw=(gradeLevel||'').toLocaleUpperCase('tr-TR').replace(/\s+/g,' ');
-  if(/MEZUN|YETİŞKİN|YETISKIN|KPSS|DGS|ALES/.test(raw))return 'YETISKIN_MEZUN';
+  if(/YETİŞKİN|YETISKIN|KPSS|DGS|ALES/.test(raw))return 'YETISKIN_SINAV';
+  if(/MEZUN/.test(raw))return 'YETISKIN_MEZUN';
   if(/LGS/.test(raw))return 'ORTAOKUL_7_8';
   if(/YKS|TYT|AYT/.test(raw)&&!/9|10/.test(raw))return 'LISE_11_12';
   const n=Number((raw.match(/(?:^|\D)(1[0-2]|[1-9])(?:\D|$)/)||[])[1]);
@@ -181,6 +183,7 @@ function bandConfig(band:EducationBand,track:string){
   if(band==='LISE_9_10')return {subjects:['Türk Dili ve Edebiyatı','Matematik','Fizik','Kimya','Biyoloji','Tarih','Coğrafya'],questions:30,minutes:65};
   if(band==='LISE_11_12')return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:40,minutes:75};
   if(band==='YETISKIN_MEZUN')return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:45,minutes:80};
+  if(band==='YETISKIN_SINAV')return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:40,minutes:75};
   return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:30,minutes:60};
 }
 
