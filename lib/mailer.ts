@@ -1,11 +1,8 @@
-import { Resend } from 'resend';
 import { db } from '@/lib/db';
 import { decryptPrivateCode } from '@/lib/security';
 import { sendGmailSmtp } from '@/lib/gmailSmtp';
 
 const KEKS_CONTACT_EMAIL=process.env.KEKS_CONTACT_EMAIL||'keksakademi@gmail.com';
-const KEKS_FROM=()=>process.env.REPORT_FROM||'KEKS Akademi <onboarding@resend.dev>';
-
 async function sendFromKeksGmail(to:string,subject:string,html:string){
   const envPassword=process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g,'');
   if(envPassword){
@@ -61,12 +58,17 @@ export async function resendStudentAccessKey(input:{email:string;studentName:str
 }
 
 export async function sendAssessmentReport(input: { studentCode: string; studentName: string; assessmentId: string; report: unknown }) {
-  if (!process.env.RESEND_API_KEY) return { skipped: true };
-  const resend = new Resend(process.env.RESEND_API_KEY);
   const recipient = KEKS_CONTACT_EMAIL;
-  const from = KEKS_FROM();
-  const body = `<h1>KEKS Test Raporu</h1><p><strong>Öğrenci:</strong> ${escapeHtml(input.studentName)} (${escapeHtml(input.studentCode)})</p><p><strong>Kayıt:</strong> ${escapeHtml(input.assessmentId)}</p><pre>${escapeHtml(JSON.stringify(input.report, null, 2))}</pre>`;
-  return resend.emails.send({ from, to: recipient, replyTo: KEKS_CONTACT_EMAIL, subject: `KEKS Test Raporu | Öğrenci ${input.studentCode}`, html: body });
+  const body = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
+      <h1>KEKS Test Raporu</h1>
+      <p><strong>Öğrenci:</strong> ${escapeHtml(input.studentName)} (${escapeHtml(input.studentCode)})</p>
+      <p><strong>Kayıt:</strong> ${escapeHtml(input.assessmentId)}</p>
+      <p>KEKS değerlendirme raporu aşağıdadır:</p>
+      <pre style="white-space:pre-wrap;background:#faf8f2;border:1px solid #e0c16b;border-radius:12px;padding:16px">${escapeHtml(JSON.stringify(input.report, null, 2))}</pre>
+      <p>KEKS Akademi</p>
+    </div>`;
+  return sendFromKeksGmail(recipient,`KEKS Test Raporu | Öğrenci ${input.studentCode}`,body);
 }
 
 function escapeHtml(value: string) {
