@@ -16,6 +16,7 @@ async function POST__handler(req: Request) {
   const now = new Date();
   const month=turkeyMonthWindow(now);
   const product=keksMonthlyProduct(now);
+  const pendingCutoff=new Date(Math.max(month.start.getTime(),now.getTime()-45*60*1000));
 
   const [existingAccess,existingPayment,latestAssessment]=await Promise.all([
     db.testAccess.findFirst({
@@ -23,7 +24,13 @@ async function POST__handler(req: Request) {
       orderBy:{createdAt:'desc'}
     }),
     db.payment.findFirst({
-      where:{studentId:user.student.id,createdAt:{gte:month.start,lt:month.end},status:{in:['PENDING','PAID']}},
+      where:{
+        studentId:user.student.id,
+        OR:[
+          {status:'PAID',createdAt:{gte:month.start,lt:month.end}},
+          {status:'PENDING',createdAt:{gte:pendingCutoff,lt:month.end}}
+        ]
+      },
       orderBy:{createdAt:'desc'}
     }),
     db.assessment.findFirst({
