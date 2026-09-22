@@ -4,7 +4,7 @@ const features=[
   ['↗','HEDEF ODAKLI','Akıllı Eğitim Koçu','Zayıf dersleri, tamamlanmamış konuları ve hedef açığını değerlendirerek haftalık program üretir.'],
   ['◎','ANALİTİK','Net Trendleri','Deneme sonuçlarındaki ders bazlı net değişimini ve hedefe yaklaşma durumunu gösterir.'],
   ['◉','ODAK','Çalışma Teknikleri Laboratuvarı','Pomodoro, Aktif Hatırlama, Feynman, Cornell ve SQ3R doğrudan uygulanır ve gerçek aktif süre kaydedilir.'],
-  ['↺','TEKRAR','0–1–3–7–14–28 Sistemi','Yanlış soruları otomatik tekrar kuyruğuna alır ve doğru oldukça tekrar aralığını genişletir.'],
+  ['↺','TEKRAR','0–1–3–7–14–28. Gün Tekrar Sistemi','Yanlış soruları otomatik tekrar kuyruğuna alır ve doğru oldukça tekrar aralığını genişletir.'],
   ['⚑','HEDEF','Okul / Üniversite Takibi','LGS ve YKS hedef verilerini öğrenci performansıyla karşılaştırır.'],
   ['!','MÜDAHALE','Koç Uyarıları','Düşük performans ve konu birikimi gibi durumlarda koça otomatik uyarı oluşturur.'],
   ['◇','VELİ','Veli Gelişim Paneli','Veliye haftalık çalışma özeti, hedef durumu ve koç raporlarını sade şekilde sunar.'],
