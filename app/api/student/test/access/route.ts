@@ -17,9 +17,13 @@ async function POST__handler(req: Request) {
   const month=turkeyMonthWindow(now);
   const product=keksMonthlyProduct(now);
 
-  const [existingAccess,latestAssessment]=await Promise.all([
+  const [existingAccess,existingPayment,latestAssessment]=await Promise.all([
     db.testAccess.findFirst({
-      where:{studentId:user.student.id,createdAt:{gte:month.start,lt:month.end},status:{in:['READY','USED']}},
+      where:{studentId:user.student.id,source:{not:'PAID'},createdAt:{gte:month.start,lt:month.end},status:{in:['READY','USED']}},
+      orderBy:{createdAt:'desc'}
+    }),
+    db.payment.findFirst({
+      where:{studentId:user.student.id,createdAt:{gte:month.start,lt:month.end},status:{in:['PENDING','PAID']}},
       orderBy:{createdAt:'desc'}
     }),
     db.assessment.findFirst({
@@ -29,8 +33,8 @@ async function POST__handler(req: Request) {
     })
   ]);
 
-  if(existingAccess){
-    return NextResponse.json({error:'Bu ayın KEKS test ürünü bu kullanıcı için zaten tanımlandı. Her aylık ürün yalnızca bir kez kullanılabilir.',product},{status:409});
+  if(existingAccess||existingPayment){
+    return NextResponse.json({error:'Bu ayın KEKS test ürünü bu kullanıcı için zaten tanımlandı veya ödeme süreci başlatıldı. Her aylık ürün yalnızca bir kez kullanılabilir.',product},{status:409});
   }
   if(latestAssessment&&productKeyFromReport(latestAssessment.report,latestAssessment.completedAt)===product.key){
     return NextResponse.json({error:'Bu ayın KEKS test ürünü daha önce tamamlandı. Aynı kullanıcı aynı aylık ürünü ikinci kez çözemez.',product},{status:409});
