@@ -18,7 +18,7 @@ function obj(v:unknown){return v&&typeof v==='object'&&!Array.isArray(v)?v as Re
 
 async function GET__handler(){
   await requireRole(['ADMIN']);
-  const bands:EducationBand[]=['ILKOKUL_1_2','ILKOKUL_3_4','ORTAOKUL_5_6','ORTAOKUL_7_8','LISE_9_10','LISE_11_12','YETISKIN_MEZUN'];
+  const bands:EducationBand[]=['ILKOKUL_1_2','ILKOKUL_3_4','ORTAOKUL_5_6','ORTAOKUL_7_8','LISE_9_10','LISE_11_12','YETISKIN_MEZUN','YETISKIN_SINAV'];
   const forms=bands.map(band=>{
     const form=getScreeningForm(band);
     return {
@@ -97,7 +97,8 @@ async function GET__handler(){
     ORTAOKUL_7_8:3,
     LISE_9_10:4,
     LISE_11_12:5,
-    YETISKIN_MEZUN:6
+    YETISKIN_MEZUN:6,
+    YETISKIN_SINAV:7
   };
   const preInterviewBandLabel:Record<string,string>={
     ILKOKUL_1_2:'İlkokul 1-2',
@@ -106,7 +107,8 @@ async function GET__handler(){
     ORTAOKUL_7_8:'Ortaokul 7-8 / LGS',
     LISE_9_10:'Lise 9-10',
     LISE_11_12:'Lise 11-12 / YKS',
-    YETISKIN_MEZUN:'Lise Mezunu / Sınav Grubu'
+    YETISKIN_MEZUN:'Lise Mezunu / Sınav Grubu',
+    YETISKIN_SINAV:'Yetişkin Sınav Grubu'
   };
   const openEndedForms=preInterviewForms
     .sort((a,b)=>(preInterviewBandOrder[a.educationBand]??99)-(preInterviewBandOrder[b.educationBand]??99))
