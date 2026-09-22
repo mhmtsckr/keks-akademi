@@ -23,7 +23,7 @@ const schema=z.discriminatedUnion('action',[
 async function POST__handler(req:Request){
  const user=await requireRole(['STUDENT']);
  if(!user.student) return NextResponse.json({error:'Öğrenci profili bulunamadı.'},{status:400});
- const studentId=studentId;
+ const studentId:string=user.student.id;
  const input=await readJson(req, schema);
  if(input.action==='topic'){
    const completedAt=input.completed?new Date():null;
