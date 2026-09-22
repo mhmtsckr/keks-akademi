@@ -47,6 +47,8 @@ async function POST__handler(req:Request){
   const input=await readJson(req, schema);
   const item=await db.reviewQueueItem.findFirst({where:{id:input.id,studentId:user.student.id},include:{question:true}});
   if(!item) return NextResponse.json({error:'Tekrar kaydı bulunamadı.'},{status:404});
+  if(item.status==='COMPLETED')return NextResponse.json({error:'Bu tekrar döngüsü zaten tamamlandı.'},{status:409});
+  if(item.dueAt.getTime()>Date.now())return NextResponse.json({error:'Bu sorunun tekrar günü henüz gelmedi.'},{status:409});
   const correct=input.answer===item.question.correctAnswer;
   let step=item.stepIndex;
   if(correct) step=Math.min(step+1,REVIEW_DAYS.length);
