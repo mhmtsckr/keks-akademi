@@ -5,6 +5,8 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { createPaytrToken,resolvePaytrCredentials } from '@/lib/paytr';
 import { merchantOid } from '@/lib/security';
+import { turkeyMonthWindow } from '@/lib/monthlyAccess';
+import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 
 const schema = z.object({
   email: z.string().email(),
@@ -23,16 +25,42 @@ async function POST__handler(req: Request) {
     return NextResponse.json({error:'PayTR henüz yapılandırılmadı.'},{status:503});
   }
   const merchantId=paytr.merchantId;
-
   const input = await readJson(req, schema);
-  const amountKurus = Number(process.env.TEST_PRICE_KURUS || 35000);
+  const now=new Date();
+  const month=turkeyMonthWindow(now);
+  const product=keksMonthlyProduct(now);
+
+  const [existingPayment,existingAccess,latestAssessment]=await Promise.all([
+    db.payment.findFirst({
+      where:{studentId:user.student.id,createdAt:{gte:month.start,lt:month.end},status:{in:['PENDING','PAID']}},
+      orderBy:{createdAt:'desc'}
+    }),
+    db.testAccess.findFirst({
+      where:{studentId:user.student.id,createdAt:{gte:month.start,lt:month.end},status:{in:['READY','USED']}},
+      orderBy:{createdAt:'desc'}
+    }),
+    db.assessment.findFirst({
+      where:{studentId:user.student.id},
+      orderBy:{completedAt:'desc'},
+      select:{completedAt:true,report:true}
+    })
+  ]);
+
+  if(existingAccess||latestAssessment&&productKeyFromReport(latestAssessment.report,latestAssessment.completedAt)===product.key){
+    return NextResponse.json({error:'Bu ayın KEKS test ürünü hesabınızda zaten tanımlı veya tamamlanmış. Aynı aylık ürün ikinci kez satın alınamaz.',product},{status:409});
+  }
+  if(existingPayment){
+    return NextResponse.json({error:existingPayment.status==='PAID'?'Bu ayın ürünü için ödemeniz zaten alınmış.':'Bu ayın ürünü için devam eden bir ödeme kaydınız var. Yeni ödeme başlatılamaz.',product},{status:409});
+  }
+
+  const amountKurus = product.priceKurus;
   const oid = merchantOid();
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
   const testMode=paytr.testMode;
   const noInstallment = '1';
   const maxInstallment = '0';
   const currency = 'TL';
-  const basketJson = JSON.stringify([['KEKS Eğilim Taraması', (amountKurus / 100).toFixed(2), 1]]);
+  const basketJson = JSON.stringify([[product.name, (amountKurus / 100).toFixed(2), 1]]);
   const basket = Buffer.from(basketJson).toString('base64');
 
   await db.payment.create({
@@ -97,6 +125,7 @@ async function POST__handler(req: Request) {
     iframeToken: result.token,
     iframeUrl: `https://www.paytr.com/odeme/guvenli/${result.token}`,
     amountKurus,
+    product
   });
 }
 
