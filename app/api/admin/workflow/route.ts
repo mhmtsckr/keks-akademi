@@ -106,7 +106,7 @@ async function GET__handler(){
     ORTAOKUL_7_8:'Ortaokul 7-8 / LGS',
     LISE_9_10:'Lise 9-10',
     LISE_11_12:'Lise 11-12 / YKS',
-    YETISKIN_MEZUN:'Mezun/Yetişkin Sınav Grubu'
+    YETISKIN_MEZUN:'Lise Mezunu / Sınav Grubu'
   };
   const openEndedForms=preInterviewForms
     .sort((a,b)=>(preInterviewBandOrder[a.educationBand]??99)-(preInterviewBandOrder[b.educationBand]??99))
