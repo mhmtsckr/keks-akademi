@@ -36,7 +36,7 @@ async function POST__handler(req:Request){
     ORTAOKUL_7_8:'Ortaokul 7–8 / LGS',
     LISE_9_10:'Lise 9–10',
     LISE_11_12:'Lise 11–12 / YKS / Lise Mezunu',
-    YETISKIN_MEZUN:'Lise Mezunu / Sınav Grubu',
+    YETISKIN_MEZUN:'Lise 11–12 / YKS / Lise Mezunu',
     YETISKIN_SINAV:'Yetişkin Sınav Grubu',
     GENERAL:'Genel'
   };
