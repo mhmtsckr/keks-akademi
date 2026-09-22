@@ -39,7 +39,7 @@ async function GET__handler(){
       }))
     };
   });
-  const [assessments,attempts]=await Promise.all([
+  const [assessments,attempts,preInterviewForms]=await Promise.all([
     db.assessment.findMany({
       orderBy:{completedAt:'desc'},take:100,
       include:{student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,coachId:true,coach:{select:{user:{select:{name:true,email:true}}}}}}}
@@ -49,13 +49,22 @@ async function GET__handler(){
       orderBy:{completedAt:'desc'},take:100,
       include:{
         student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,coachId:true,coach:{select:{user:{select:{name:true,email:true}}}}}},
-        form:{select:{title:true,version:true,educationBand:true}},
+        form:{include:{questions:{orderBy:{orderNo:'asc'}}}},
         assignment:true
       }
+    }),
+    db.preInterviewForm.findMany({
+      where:{active:true},
+      orderBy:[{educationBand:'asc'},{createdAt:'desc'}],
+      include:{questions:{orderBy:{orderNo:'asc'}}}
     })
   ]);
 
-  const screenings=assessments.filter(a=>obj(a.report).workflowStatus==='ADMIN_REVIEW').map(a=>{
+  const screenings=assessments.filter(a=>{
+    const report=obj(a.report);
+    const administration=obj(report.administration);
+    return report.workflowStatus==='ADMIN_REVIEW'||administration.screeningReviewStatus==='PENDING_REVIEW';
+  }).map(a=>{
     const band=detectEducationBand(a.student.gradeLevel);
     const form=getScreeningForm(band);
     return {
@@ -81,7 +90,12 @@ async function GET__handler(){
     id:a.id,completedAt:a.completedAt,academicTrack:a.academicTrack,scores:a.scores,answers:a.answers,report:a.report,
     student:a.student,form:a.form,assignment:a.assignment
   }));
-  return NextResponse.json({ok:true,forms,screenings,plans,counts:{screenings:screenings.length,plans:plans.length}});
+  const openEndedForms=preInterviewForms.map(form=>({
+    id:form.id,title:form.title,version:form.version,educationBand:form.educationBand,
+    questionCount:form.questions.length,
+    questions:form.questions.map(q=>({id:q.id,orderNo:q.orderNo,dimension:q.dimension,prompt:q.prompt,responseType:q.responseType}))
+  }));
+  return NextResponse.json({ok:true,forms,preInterviewForms:openEndedForms,screenings,plans,counts:{screenings:screenings.length,plans:plans.length}});
 }
 
 async function POST__handler(req:Request){
@@ -95,7 +109,9 @@ async function POST__handler(req:Request){
     });
     if(!assessment)return NextResponse.json({error:'Tarama kaydı bulunamadı.'},{status:404});
     const report=obj(assessment.report);
-    if(report.workflowStatus!=='ADMIN_REVIEW')return NextResponse.json({error:'Bu tarama artık yönetici incelemesi beklemiyor.'},{status:409});
+    const administration=obj(report.administration);
+    const screeningPending=report.workflowStatus==='ADMIN_REVIEW'||administration.screeningReviewStatus==='PENDING_REVIEW';
+    if(!screeningPending)return NextResponse.json({error:'Bu tarama artık yönetici incelemesi beklemiyor.'},{status:409});
 
     if(input.action==='retake_screening'){
       await db.$transaction(async tx=>{
@@ -116,30 +132,37 @@ async function POST__handler(req:Request){
     }
 
     if(!assessment.student.coachId)return NextResponse.json({error:'Öğrenciye atanmış koç bulunmuyor.'},{status:400});
-    const educationBand=detectEducationBand(assessment.student.gradeLevel);
-    const form=await db.preInterviewForm.findFirst({where:{active:true,educationBand},orderBy:{createdAt:'desc'}})
-      ||await db.preInterviewForm.findFirst({where:{active:true,educationBand:'GENERAL'},orderBy:{createdAt:'desc'}});
-    if(!form)return NextResponse.json({error:'Bu öğrenci için aktif ön görüşme formu bulunamadı.'},{status:400});
+    let assignment=await db.preInterviewAssignment.findFirst({
+      where:{studentId:assessment.studentId,status:{in:['ASSIGNED','COMPLETED','ADMIN_APPROVED','APPROVED']},revokedAt:null},
+      orderBy:{assignedAt:'desc'}
+    });
 
-    const assignment=await db.$transaction(async tx=>{
-      await tx.preInterviewAssignment.updateMany({
-        where:{studentId:assessment.studentId,status:{in:['ASSIGNED','COMPLETED','ADMIN_APPROVED']},revokedAt:null},
-        data:{status:'REVOKED',revokedAt:new Date()}
-      });
-      const row=await tx.preInterviewAssignment.create({data:{
+    if(!assignment){
+      const educationBand=detectEducationBand(assessment.student.gradeLevel);
+      const form=await db.preInterviewForm.findFirst({where:{active:true,educationBand},orderBy:{createdAt:'desc'}})
+        ||await db.preInterviewForm.findFirst({where:{active:true,educationBand:'GENERAL'},orderBy:{createdAt:'desc'}});
+      if(!form)return NextResponse.json({error:'Bu öğrenci için aktif ön görüşme formu bulunamadı.'},{status:400});
+      assignment=await db.preInterviewAssignment.create({data:{
         studentId:assessment.studentId,
         formId:form.id,
-        coachId:assessment.student.coachId!,
+        coachId:assessment.student.coachId,
         status:'ASSIGNED'
       }});
-      await tx.assessment.update({where:{id:assessment.id},data:{report:{
-        ...report,
-        workflowStatus:'PRE_INTERVIEW_ASSIGNED',
-        administration:{...(report.administration||{}),status:'SCREENING_APPROVED',reviewedAt:new Date().toISOString(),reviewedByUserId:user.id,preInterviewAssignmentId:row.id}
-      } as any}});
-      return row;
-    });
-    await writeAudit({actorUserId:user.id,action:'SCREENING_APPROVED',entityType:'Assessment',entityId:assessment.id,summary:'Yönetici eğilim taramasını onayladı ve ön görüşmeyi öğrenciye açtı.',metadata:{studentId:assessment.studentId,assignmentId:assignment.id}});
+    }
+
+    await db.assessment.update({where:{id:assessment.id},data:{report:{
+      ...report,
+      workflowStatus:report.workflowStatus==='ADMIN_REVIEW'?'PRE_INTERVIEW_ASSIGNED':report.workflowStatus,
+      administration:{
+        ...administration,
+        status:'SCREENING_APPROVED',
+        screeningReviewStatus:'APPROVED',
+        reviewedAt:new Date().toISOString(),
+        reviewedByUserId:user.id,
+        preInterviewAssignmentId:assignment.id
+      }
+    } as any}});
+    await writeAudit({actorUserId:user.id,action:'SCREENING_APPROVED',entityType:'Assessment',entityId:assessment.id,summary:'Yönetici eğilim taraması incelemesini onayladı. Açık uçlu ön görüşme otomatik atama üzerinden devam ediyor.',metadata:{studentId:assessment.studentId,assignmentId:assignment.id}});
     return NextResponse.json({ok:true,status:'PRE_INTERVIEW_ASSIGNED',assignmentId:assignment.id});
   }
 
