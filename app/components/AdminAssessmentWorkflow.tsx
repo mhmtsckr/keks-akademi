@@ -21,7 +21,7 @@ export function AdminAssessmentWorkflow(){
     const r=await fetch('/api/admin/workflow',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'İşlem başarısız.'));
-    if(action==='approve_screening')setMsg('Eğilim raporu onaylandı; ön görüşme öğrenciye otomatik açıldı.');
+    if(action==='approve_screening')setMsg('Eğilim taraması incelemesi onaylandı. Açık uçlu ön görüşme tarama sonrasında otomatik atama üzerinden devam ediyor.');
     if(action==='retake_screening')setMsg('Öğrenciye yeni KEKS tarama erişimi açıldı.');
     if(action==='approve_plan')setMsg('Birleşik plan yönetici tarafından onaylandı ve koça gönderildi.');
     if(action==='return_plan')setMsg('Ön görüşme yeniden doldurulmak üzere öğrenciye döndürüldü.');
@@ -89,9 +89,26 @@ export function AdminAssessmentWorkflow(){
     </div>
 
     <div className="card">
+      <div className="moduleEyebrow">KEKS ÖN GÖRÜŞME KÜTÜPHANESİ</div>
+      <h2>Eğitim ve Gelişim Düzeyine Göre Açık Uçlu Ön Görüşme Formları</h2>
+      <p className="muted">Bu sorular eğilim taraması tamamlandıktan sonra öğrencinin eğitim düzeyine göre otomatik açılır. Tüm yanıtlar açık uçludur; psikometrik puan verilmez, çalışma planına bağlamsal girdi sağlar.</p>
+      <div className="stack">
+        {(data.preInterviewForms||[]).map((form:any)=><details key={form.id}>
+          <summary><strong>{form.title}</strong> <span className="muted">· {form.questionCount} açık uçlu soru · {form.version}</span></summary>
+          <div className="interviewAnswers" style={{marginTop:10}}>
+            {(form.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}>
+              <div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div>
+              <p>Açık uçlu</p>
+            </div>)}
+          </div>
+        </details>)}
+      </div>
+    </div>
+
+    <div className="card">
       <div className="moduleEyebrow">AŞAMA 1 · EĞİLİM TARAMASI</div>
       <h2>Ayrıntılı Değerlendirme ve Gelişim Raporları</h2>
-      <p className="muted">Yönetici onayı verilmeden ön görüşme açılmaz.</p>
+      <p className="muted">Ön görüşme, eğilim taraması tamamlanınca eğitim ve gelişim düzeyine göre otomatik açılır. Yönetici tarama sonucunu ayrıca inceler; koça gönderim için son onay plan aşamasında verilir.</p>
     </div>
 
     {(data.screenings||[]).length===0?<div className="card muted">Yönetici onayı bekleyen eğilim taraması yok.</div>:(data.screenings||[]).map((a:any)=>{
@@ -126,7 +143,7 @@ export function AdminAssessmentWorkflow(){
         </details>
         <div className="row" style={{justifyContent:'flex-end',marginTop:14}}>
           <button className="btn" disabled={busy!==''} onClick={()=>act('retake_screening',a.id)}>Yeniden Tarama İste</button>
-          <button className="btn primary" disabled={busy!==''} onClick={()=>act('approve_screening',a.id)}>{busy==='approve_screening'+a.id?'Onaylanıyor…':'Onayla ve Ön Görüşmeyi Aç'}</button>
+          <button className="btn primary" disabled={busy!==''} onClick={()=>act('approve_screening',a.id)}>{busy==='approve_screening'+a.id?'Onaylanıyor…':'Tarama İncelemesini Onayla'}</button>
         </div>
       </article>;
     })}
@@ -152,6 +169,10 @@ export function AdminAssessmentWorkflow(){
         </div>
         <div className="card"><h3>Haftalık Plan</h3><p className="muted">{draft.weekly?.goals?.join(' · ')}</p>{draft.weekly?.weeks?.slice(0,1).map((w:any)=><div key={w.week}>{w.days?.map((d:any)=><div key={d.date} style={{marginBottom:8}}><strong>{new Date(d.date).toLocaleDateString('tr-TR')} · {d.subject}</strong><div className="muted">{d.durationMinutes} dk · {d.questions} soru · {d.method}</div></div>)}</div>)}</div>
         <details><summary><strong>İlk 28 günlük görev taslağını görüntüle</strong></summary><div className="stack">{draft.daily?.map((d:any)=><div className="card" style={{padding:12}} key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR')} · {d.subject}</strong><div className="muted">{d.durationMinutes} dk · {d.questions} soru · {d.method} · Destek: {d.supportDimension}</div></div>)}</div></details>
+        <details style={{marginTop:12}}><summary><strong>Açık uçlu ön görüşme soru–cevaplarının tamamını görüntüle</strong></summary>
+          <div className="notice" style={{marginTop:10}}><strong>Planlama ilkesi:</strong> Açık uçlu yanıtlar psikometrik olarak puanlanmaz; hedef, engel, öğrenme tercihi ve destek beklentisi olarak plan taslağına bağlamsal girdi sağlar.</div>
+          <div className="interviewAnswers">{(a.form?.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}><div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div><p>{String((a.answers||{})[q.id]??'—')}</p></div>)}</div>
+        </details>
         <div className="row" style={{justifyContent:'flex-end',marginTop:14}}>
           <button className="btn" disabled={busy!==''} onClick={()=>act('return_plan',a.id)}>Ön Görüşmeyi Yeniden Doldurt</button>
           <button className="btn primary" disabled={busy!==''} onClick={()=>act('approve_plan',a.id)}>{busy==='approve_plan'+a.id?'Koça gönderiliyor…':'Onayla ve Koça Gönder'}</button>
