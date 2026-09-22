@@ -90,15 +90,15 @@ export function AdminAssessmentWorkflow(){
 
     <div className="card">
       <div className="moduleEyebrow">KEKS ÖN GÖRÜŞME KÜTÜPHANESİ</div>
-      <h2>Eğitim ve Gelişim Düzeyine Göre Açık Uçlu Ön Görüşme Formları</h2>
-      <p className="muted">Bu sorular eğilim taraması tamamlandıktan sonra öğrencinin eğitim düzeyine göre otomatik açılır. Tüm yanıtlar açık uçludur; psikometrik puan verilmez, çalışma planına bağlamsal girdi sağlar.</p>
+      <h2>Eğitim ve Gelişim Düzeyine Göre Ön Görüşme Formları</h2>
+      <p className="muted">Bu form eğilim taraması tamamlandıktan sonra öğrencinin eğitim düzeyine göre otomatik açılır. Davranış ifadeleri işaretlemeli, açıklama isteyen sorular açık uçludur.</p>
       <div className="stack">
         {(data.preInterviewForms||[]).map((form:any)=><details key={form.id}>
-          <summary><strong>{form.title}</strong> <span className="muted">· {form.questionCount} açık uçlu soru · {form.version}</span></summary>
+          <summary><strong>{form.title}</strong> <span className="muted">· {form.questionCount} soru</span></summary>
           <div className="interviewAnswers" style={{marginTop:10}}>
             {(form.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}>
               <div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div>
-              <p>Açık uçlu</p>
+              <p>{q.responseType==='TEXT'?'Açık uçlu':q.responseType==='CHOICE'?'Seçmeli':'İşaretlemeli · 1–5'}</p>
             </div>)}
           </div>
         </details>)}
@@ -169,8 +169,8 @@ export function AdminAssessmentWorkflow(){
         </div>
         <div className="card"><h3>Haftalık Plan</h3><p className="muted">{draft.weekly?.goals?.join(' · ')}</p>{draft.weekly?.weeks?.slice(0,1).map((w:any)=><div key={w.week}>{w.days?.map((d:any)=><div key={d.date} style={{marginBottom:8}}><strong>{new Date(d.date).toLocaleDateString('tr-TR')} · {d.subject}</strong><div className="muted">{d.durationMinutes} dk · {d.questions} soru · {d.method}</div></div>)}</div>)}</div>
         <details><summary><strong>İlk 28 günlük görev taslağını görüntüle</strong></summary><div className="stack">{draft.daily?.map((d:any)=><div className="card" style={{padding:12}} key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR')} · {d.subject}</strong><div className="muted">{d.durationMinutes} dk · {d.questions} soru · {d.method} · Destek: {d.supportDimension}</div></div>)}</div></details>
-        <details style={{marginTop:12}}><summary><strong>Açık uçlu ön görüşme soru–cevaplarının tamamını görüntüle</strong></summary>
-          <div className="notice" style={{marginTop:10}}><strong>Planlama ilkesi:</strong> Açık uçlu yanıtlar psikometrik olarak puanlanmaz; hedef, engel, öğrenme tercihi ve destek beklentisi olarak plan taslağına bağlamsal girdi sağlar.</div>
+        <details style={{marginTop:12}}><summary><strong>Ön görüşme soru–cevaplarının tamamını görüntüle</strong></summary>
+          <div className="notice" style={{marginTop:10}}><strong>Planlama ilkesi:</strong> İşaretlemeli sorular çalışma davranışı puanlamasına katkı sağlar; açık uçlu yanıtlar hedef, engel, öğrenme tercihi ve destek beklentisi için bağlamsal girdi sağlar.</div>
           <div className="interviewAnswers">{(a.form?.questions||[]).map((q:any)=><div className="interviewAnswerRow" key={q.id}><div><span>{q.orderNo}</span><strong>{q.prompt}</strong><small>{q.dimension}</small></div><p>{String((a.answers||{})[q.id]??'—')}</p></div>)}</div>
         </details>
         <div className="row" style={{justifyContent:'flex-end',marginTop:14}}>
