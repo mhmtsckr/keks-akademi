@@ -6,11 +6,13 @@ import { createSession } from '@/lib/auth';
 import { sendStudentCredentials } from '@/lib/mailer';
 import { writeAudit } from '@/lib/audit';
 import { normalizeEducationLevelLabel } from '@/lib/taskEvaluation';
+import { AGS_OABT_FIELDS,isAgsOabtLabel,isAgsYdsLabel } from '@/lib/agsExamOptions';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
   email:z.string().email().refine(v=>v.toLowerCase().endsWith('@gmail.com'),'Gmail adresi kullanın.'),
   gradeLevel:z.string().min(1).max(80),
+  academicTrack:z.string().max(120).nullable().optional(),
   coachId:z.string().min(1)
 });
 
@@ -30,6 +32,13 @@ export async function POST(req:Request){
   const input=parsed.data;
   const email=input.email.toLowerCase();
   const gradeLevel=normalizeEducationLevelLabel(input.gradeLevel)||input.gradeLevel.trim();
+  const isAgsOabt=isAgsOabtLabel(gradeLevel);
+  const isAgsYds=isAgsYdsLabel(gradeLevel);
+  const requestedTrack=(input.academicTrack||'').trim();
+  if(isAgsOabt&&!AGS_OABT_FIELDS.includes(requestedTrack as any)){
+    return NextResponse.json({error:'AGS/ÖABT için geçerli bir alan seçiniz.'},{status:400});
+  }
+  const academicTrack=isAgsOabt?requestedTrack:isAgsYds?'YDS':(requestedTrack||null);
 
   const existing=await db.user.findUnique({where:{email}});
   if(existing)return NextResponse.json({error:'Bu Gmail adresiyle daha önce hesap oluşturulmuş.'},{status:409});
@@ -61,6 +70,7 @@ export async function POST(req:Request){
         credentialEmailAttempts:0,
         fullName:input.fullName,
         gradeLevel,
+        academicTrack,
         coachId:coach.id
       }
     });
@@ -110,7 +120,7 @@ export async function POST(req:Request){
     entityType:'Student',
     entityId:created.student.id,
     summary:input.fullName+' öğrenci başvurusu oluşturuldu, seçtiği koça bağlandı ve yönetici kayıtlarına otomatik KEKS ürün kodu eklendi.',
-    metadata:{coachId:coach.id,gradeLevel,email,automaticKeksProductCode:true}
+    metadata:{coachId:coach.id,gradeLevel,academicTrack,email,automaticKeksProductCode:true}
   });
 
   await createSession(created.user.id);
