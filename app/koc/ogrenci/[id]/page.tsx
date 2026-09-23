@@ -141,7 +141,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       </div>
     </section>
     <section id="ongorusme" className="section section-anchor"><CoachPreInterviewSummary studentId={student.id}/></section>
-    {showAgsStudyArithmetic&&<section id="ags-calisma-aritmetigi" className="section section-anchor"><AgsStudyArithmetic studentName={student.fullName}/></section>}
+    {showAgsStudyArithmetic&&<section id="ags-calisma-aritmetigi" className="section section-anchor"><AgsStudyArithmetic studentName={student.fullName} field={student.academicTrack}/></section>}
     <section id="seans-akisi" className="section section-anchor"><CoachSessionWorkflow studentId={student.id}/></section>
     <section id="operasyon" className="section section-anchor"><CoachOperationsHub studentId={student.id}/></section>
     <section id="genel" className="grid section-anchor">
