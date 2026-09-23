@@ -5,7 +5,6 @@ import { withApiErrors } from '@/lib/apiGuard';
 import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
-import { findUsableReadyTestAccess } from '@/lib/keksAccessCode';
 
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
@@ -34,7 +33,10 @@ async function GET__handler(){
     }
   }
 
-  const access=await findUsableReadyTestAccess(user.student.id);
+  const access=await db.testAccess.findFirst({
+    where:{studentId:user.student.id,status:'READY'},
+    orderBy:{createdAt:'asc'}
+  });
 
   if(!access){
     return NextResponse.json({ok:true,status:'NO_ACCESS',product:currentProduct});
