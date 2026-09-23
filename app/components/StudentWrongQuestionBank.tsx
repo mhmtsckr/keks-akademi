@@ -11,14 +11,20 @@ const SUBJECTS=[
 
 export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [items,setItems]=useState<any[]>([]);
+  const [reviews,setReviews]=useState<any[]>([]);
+  const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
   const [editing,setEditing]=useState<Record<string,string>>({});
 
   async function load(){
-    const r=await fetch('/api/student/wrong-questions',{cache:'no-store'});
-    const j=await r.json();
-    if(r.ok)setItems(j.items||[]);
+    const [wr,rr]=await Promise.all([
+      fetch('/api/student/wrong-questions',{cache:'no-store'}),
+      fetch('/api/student/reviews',{cache:'no-store'})
+    ]);
+    const [wj,rj]=await Promise.all([wr.json(),rr.json()]);
+    if(wr.ok)setItems(wj.items||[]);
+    if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
   }
   useEffect(()=>{load()},[]);
 
@@ -32,6 +38,22 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     if(!r.ok)return setMsg('Hata: '+(j.error||'Yanlış soru yüklenemedi.'));
     setMsg(j.message+' · Tekrar döngüsü: 0–1–3–7–14–28 gün.');
     form.reset();
+    await load();
+  }
+
+  async function answerReview(id:string){
+    const answer=String(reviewAnswers[id]||'').trim();
+    if(!answer)return;
+    const r=await fetch('/api/student/reviews',{
+      method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({id,answer})
+    });
+    const j=await r.json();
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Tekrar görevi kaydedilemedi.'));
+    setReviewAnswers(x=>({...x,[id]:''}));
+    setMsg(j.correct
+      ? (j.completed?'Doğru. Bu yanlış soru için 0–1–3–7–14–28 tekrar döngüsü tamamlandı.':'Doğru. Bir sonraki tekrar günü otomatik planlandı.')
+      : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+' · Döngü 0. güne döndü.');
     await load();
   }
 
@@ -49,8 +71,31 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     await load();
   }
 
+  const dueReviews=reviews.filter((x:any)=>new Date(x.dueAt)<=new Date());
+
   return <div className="wrongQuestionBank">
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
+
+    <div className="card wrongQuestionDueCard">
+      <div className="moduleHeaderRow">
+        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. Doğru cevap bir sonraki aşamaya geçirir; tekrar yanlışsa döngü 0. güne döner.</p></div>
+        <span className="pill">{dueReviews.length} görev</span>
+      </div>
+      {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış soru yok.</strong><div className="muted">Yeni yanlış yüklediğinde 0. gün görevi hemen burada görünür.</div></div>:<div className="wrongReviewTaskList">
+        {dueReviews.map((x:any)=><article className="wrongReviewTask" key={x.id}>
+          <div className="wrongQuestionRowHead">
+            <div><strong>{x.question.subject} · {x.question.topic}</strong><span>Aşama {x.stepIndex} · {new Date(x.dueAt).toLocaleDateString('tr-TR')}</span></div>
+            <span className="pill">TEKRAR GÖREVİ</span>
+          </div>
+          {x.question.imageUrl&&<Image src={x.question.imageUrl} alt="Tekrar görevi yanlış soru" width={900} height={600} unoptimized className="wrongReviewTaskImage"/>}
+          <p>{x.question.prompt}</p>
+          <div className="reviewTextAnswer">
+            <input value={reviewAnswers[x.id]||''} onChange={e=>setReviewAnswers(v=>({...v,[x.id]:e.target.value}))} placeholder="Cevabını yeniden çözerek yaz"/>
+            <button className="btn primary" type="button" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>answerReview(x.id)}>Görevi Kontrol Et</button>
+          </div>
+        </article>)}
+      </div>}
+    </div>
 
     <div className="card wrongQuestionUploadCard">
       <div className="moduleHeaderRow">
