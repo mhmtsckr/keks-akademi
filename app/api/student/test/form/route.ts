@@ -5,6 +5,7 @@ import { withApiErrors } from '@/lib/apiGuard';
 import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
+import { decryptPrivateCode } from '@/lib/security';
 
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
@@ -23,12 +24,23 @@ async function GET__handler(){
     const latestProductKey=productKeyFromReport(report,latest.completedAt);
     const activeWorkflow=['ADMIN_REVIEW','SCREENING_RETAKE_REQUIRED','PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED'].includes(workflow);
     if(activeWorkflow||latestProductKey===currentProduct.key){
+      const activeCoachCode=await db.coachAccessCode.findFirst({
+        where:{studentId:user.student.id,active:true,expiresAt:{gt:new Date()}},
+        orderBy:{createdAt:'desc'},
+        select:{codeCiphertext:true,expiresAt:true}
+      });
+      let coachAccessCode:string|null=null;
+      if(activeCoachCode){
+        try{coachAccessCode=decryptPrivateCode(activeCoachCode.codeCiphertext)}catch{coachAccessCode=null}
+      }
       return NextResponse.json({
         ok:true,
         status:'COMPLETED',
         product:report.product||keksMonthlyProduct(latest.completedAt),
         assessment:{id:latest.id,completedAt:latest.completedAt,formVersion:latest.formVersion},
-        workflowStatus:workflow||'ADMIN_REVIEW'
+        workflowStatus:workflow||'ADMIN_REVIEW',
+        coachAccessCode,
+        coachAccessCodeExpiresAt:activeCoachCode?.expiresAt||null
       });
     }
   }
