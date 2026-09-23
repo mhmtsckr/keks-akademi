@@ -6,13 +6,13 @@ import { AdminAssessmentWorkflow } from '@/app/components/AdminAssessmentWorkflo
 
 type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
-const TAB_LABELS:Record<Tab,string>={
-  overview:'Genel Bakış',
-  workflow:'Değerlendirme & Plan Onayı',
-  users:'Kullanıcılar',
-  academic:'Akademik İçerik',
-  payments:'Ödeme & Erişim',
-  security:'Sistem & Güvenlik'
+const TAB_META:Record<Tab,{eyebrow:string;label:string;description:string}>={
+  overview:{eyebrow:'SİSTEM DURUMU',label:'Genel Bakış',description:'Operasyon, kullanım ve ödeme göstergeleri'},
+  workflow:{eyebrow:'ONAY AKIŞI',label:'Değerlendirme & Plan',description:'Eğilim raporu ve kişisel plan onay merkezi'},
+  users:{eyebrow:'HESAP & ROL',label:'Kullanıcı Yönetimi',description:'Koç, öğrenci, veli ve yönetici hesapları'},
+  academic:{eyebrow:'AKADEMİK İÇERİK',label:'İçerik & Soru Bankası',description:'Soru onayı, kalite ve mikro içerik yönetimi'},
+  payments:{eyebrow:'FİNANS & ERİŞİM',label:'Ödeme & Ürün Kodları',description:'PayTR işlemleri, ürün erişimleri ve kodlar'},
+  security:{eyebrow:'ALTYAPI & GÜVENLİK',label:'Sistem & Güvenlik',description:'Servisler, bağlantılar ve işlem geçmişi'}
 };
 
 function money(kurus:number){return new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format((kurus||0)/100)}
@@ -166,8 +166,18 @@ export function AdminConsole(){
   const pendingUsers=useMemo(()=>users.filter(x=>x.status==='PENDING').length,[users]);
 
   return <div className="adminConsole">
-    <div className="adminTabs">
-      {(Object.keys(TAB_LABELS) as Tab[]).map(k=><button key={k} className={tab===k?'active':''} onClick={()=>{setTab(k);setMsg('')}}>{TAB_LABELS[k]}</button>)}
+    <div className="adminPanelNavigator">
+      <div className="adminPanelNavigatorHead">
+        <div><div className="moduleEyebrow">YÖNETİM ALANLARI</div><h2>KEKS Yönetim Haritası</h2><p className="muted">İşlem türüne göre yönetim alanını seçin. Her bölüm kendi operasyonuna odaklanır.</p></div>
+        <span className="pill">6 ana alan</span>
+      </div>
+      <div className="adminPanelNavGrid">
+        {(Object.keys(TAB_META) as Tab[]).map(k=>{const meta=TAB_META[k];return <button key={k} className={'adminPanelNavItem '+(tab===k?'active':'')} onClick={()=>{setTab(k);setMsg('')}}>
+          <small>{meta.eyebrow}</small>
+          <strong>{meta.label}</strong>
+          <span>{meta.description}</span>
+        </button>})}
+      </div>
     </div>
 
     {loading&&<div className="notice">Veriler yükleniyor…</div>}
