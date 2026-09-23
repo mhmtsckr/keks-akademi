@@ -157,7 +157,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
     <div className="keksProductTop"><ProductBrand/><span className="pill">AYLIK DİJİTAL ÜRÜN</span></div>
     <div className="keksProductVisual">
       <Image
-        src="/api/assets/keks-product-image"
+        src="/images/keks-monthly-product.webp"
         alt="KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu"
         fill
         sizes="(max-width: 820px) 100vw, 1100px"
