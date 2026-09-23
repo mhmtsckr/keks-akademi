@@ -252,14 +252,14 @@ export function AdminConsole(){
     </section>}
 
     {tab==='payments'&&<section className="adminPanelSection">
-      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">FİNANS & AYLIK ÜRÜN ERİŞİMİ</div><h2>KEKS Test Ürünü · Ödeme & Kodlar</h2><p className="muted">“KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu” için PayTR ödemelerini ve ürün erişim kodlarını tek yerde yönetin. Kod öğrenciye veya koça iletilebilir; ürün her kullanıcı için ay bazında yalnızca bir kez tamamlanabilir.</p></div><button className="btn primary" onClick={makeCode}>Yeni Ürün Kodu Oluştur</button></div>
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">FİNANS & AYLIK ÜRÜN ERİŞİMİ</div><h2>KEKS Test Ürünü · Ödeme & Kodlar</h2><p className="muted">“KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu” için PayTR ödemelerini ve ürün erişim kodlarını tek yerde yönetin. Normal fiyat 800 TL, %50 indirimli satış fiyatı 400 TL’dir. Yeni öğrenci kaydında öğrenciye bağlı aylık KEKS ürün kodu otomatik oluşturulur ve burada yöneticiye görünür. Ürün her kullanıcı için ay bazında yalnızca bir kez tamamlanabilir.</p></div><button className="btn primary" onClick={makeCode}>Yeni Ürün Kodu Oluştur</button></div>
       <div className="adminPaymentStats">{paymentTotals.map((x:any)=><div className="card" key={x.status}><div className="moduleEyebrow">{x.status}</div><div className="kpi">{x._count._all}</div><div className="muted">{money(x._sum.amountKurus||0)}</div></div>)}</div>
       <div className="card adminTableCard"><h3>Son Ödemeler</h3><table className="table"><thead><tr><th>Öğrenci</th><th>İşlem</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>{payments.map(p=><tr key={p.id}><td><strong>{p.student.fullName}</strong><div className="muted">{p.student.studentCode}</div></td><td>{p.merchantOid}<div className="muted">{dt(p.createdAt)}</div></td><td>{money(p.amountKurus)}</td><td><span className={'adminStatus '+p.status.toLowerCase()}>{p.status}</span></td><td><div className="row"><button className="btn" onClick={()=>setPayment(p.id,'PENDING')}>Bekleyen</button><button className="btn danger" onClick={()=>setPayment(p.id,'FAILED')}>Başarısız</button><button className="btn" onClick={()=>setPayment(p.id,'REFUNDED')}>İade</button></div></td></tr>)}</tbody></table></div>
       <div className="adminAccessGrid">
         <div className="card">
           <div className="moduleEyebrow">AYLIK KEKS ÜRÜN KODLARI</div>
           <h3>Ürün Erişim Kodları</h3>
-          <p className="muted">Kodlar yönetici panelinde üretilir ve koça/öğrenciye iletilebilir. Kod kullanıldığı ayın ürünü hesaba tanımlanır; aynı kullanıcı aynı aylık ürünü ikinci kez açamaz.</p>
+          <p className="muted">Yeni öğrenci kayıtlarında öğrenciye bağlı aylık ürün kodu otomatik kaydedilir; yönetici ayrıca gerektiğinde yeni ürün kodu oluşturabilir. Kod koça/öğrenciye iletilir, öğrenci kodu onayladıktan sonra teste girer. Aynı kullanıcı aynı aylık ürünü ikinci kez açamaz.</p>
           {codes.slice(0,40).map(c=><div className="adminSimpleRow" key={c.id}>
             <div>
               <strong>{c.student?.fullName||'Atanmamış kod'} {c.student?.studentCode?'· '+c.student.studentCode:''}</strong>
