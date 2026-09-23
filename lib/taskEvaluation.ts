@@ -46,12 +46,18 @@ export function normalizeEducationLevelLabel(gradeLevel?:string|null){
   const raw=original.toLocaleUpperCase('tr-TR').replace(/\s+/g,' ');
   if(/AGS/.test(raw)&&/YDS/.test(raw))return 'Yetişkin Sınav Grubu · AGS/YDS';
   if(/ÖABT|OABT/.test(raw)||(/AGS/.test(raw)&&!/YDS/.test(raw)))return 'Yetişkin Sınav Grubu · AGS/ÖABT';
+  if(/YÖKDİL|YOKDIL/.test(raw))return 'Yetişkin Sınav Grubu · YÖKDİL';
+  if(/EKPSS/.test(raw))return 'Yetişkin Sınav Grubu · EKPSS';
+  if(/KPSS/.test(raw))return 'Yetişkin Sınav Grubu · KPSS';
+  if(/DGS/.test(raw))return 'Yetişkin Sınav Grubu · DGS';
+  if(/ALES/.test(raw))return 'Yetişkin Sınav Grubu · ALES';
+  if(/YDS/.test(raw))return 'Yetişkin Sınav Grubu · YDS';
   return original;
 }
 
 export function detectEducationBand(gradeLevel?:string|null):EducationBand{
   const raw=(gradeLevel||'').toLocaleUpperCase('tr-TR').replace(/\s+/g,' ');
-  if(/YETİŞKİN|YETISKIN|KPSS|DGS|ALES|AGS|ÖABT|OABT/.test(raw))return 'YETISKIN_SINAV';
+  if(/YETİŞKİN|YETISKIN|KPSS|EKPSS|DGS|ALES|AGS|ÖABT|OABT|YDS|YÖKDİL|YOKDIL/.test(raw))return 'YETISKIN_SINAV';
   if(/MEZUN/.test(raw))return 'LISE_11_12';
   if(/LGS/.test(raw))return 'ORTAOKUL_7_8';
   if(/YKS|TYT|AYT/.test(raw)&&!/9|10/.test(raw))return 'LISE_11_12';
