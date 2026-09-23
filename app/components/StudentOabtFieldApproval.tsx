@@ -59,7 +59,7 @@ export function StudentOabtFieldApproval(){
       <div>
         <div className="moduleEyebrow">AGS/ÖABT · ZORUNLU ALAN DOĞRULAMA</div>
         <h2>ÖABT alanınızı seçin</h2>
-        <p className="muted">Seçiminiz yöneticiye gönderilir. Yönetici onayladıktan sonra alanınız kesinleşir ve artık değiştirilemez.</p>
+        <p className="muted">Mevcut eski kaydınızda bir alan görünse bile yönetici onay kaydı yoksa burada alanınızı yeniden doğrulamanız gerekir. Seçiminiz yöneticiye gönderilir; onaydan sonra alanınız kesinleşir ve artık değiştirilemez.</p>
       </div>
       <span className="pill">TEK SEFERLİK</span>
     </div>
