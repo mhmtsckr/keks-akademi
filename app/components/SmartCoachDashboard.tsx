@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect,useMemo,useState } from 'react';
 
 function pctWidth(v:number|null){return Math.max(0,Math.min(100,v??0))+'%';}
@@ -8,6 +9,7 @@ export function SmartCoachDashboard(){
   const [metrics,setMetrics]=useState<any>(null);
   const [plan,setPlan]=useState<any>(null);
   const [reviews,setReviews]=useState<any[]>([]);
+  const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [msg,setMsg]=useState('');
 
   async function load(){
@@ -35,6 +37,7 @@ export function SmartCoachDashboard(){
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Tekrar güncellenemedi.'));return}
     setMsg(j.correct?'Doğru: bir sonraki tekrar tarihi planlandı.':'Yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:''));
+    setReviewAnswers(x=>({...x,[id]:''}));
     load();
   }
 
@@ -96,8 +99,14 @@ export function SmartCoachDashboard(){
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">YANLIŞ SORU TEKRARI</div><h2>0–1–3–7–14–28 tekrar kuyruğu</h2></div><span className="moduleIcon">↺</span></div>
       {reviews.length===0?<p className="muted">Tekrar kuyruğunda soru yok.</p>:<div className="reviewList">{reviews.slice(0,10).map((x:any)=><article key={x.id} className="reviewItem">
         <div className="reviewItemHead"><div><strong>{x.question.subject} · {x.question.topic}</strong><span>Aşama {x.stepIndex} · {new Date(x.dueAt).toLocaleDateString('tr-TR')}</span></div>{new Date(x.dueAt)<=new Date()&&<span className="pill">Bugün</span>}</div>
+        {x.question.imageUrl&&<div className="reviewQuestionImage"><Image src={x.question.imageUrl} alt="Tekrar edilecek yanlış soru" width={720} height={480} unoptimized/></div>}
         <p>{x.question.prompt}</p>
-        {new Date(x.dueAt)<=new Date()&&<div className="answerGrid">{Object.entries(x.question.options||{}).map(([key,val]:any)=><button key={key} className="btn" onClick={()=>review(x.id,key)}><strong>{key})</strong> {val}</button>)}</div>}
+        {new Date(x.dueAt)<=new Date()&&(x.question.inputMode==='TEXT'
+          ? <div className="reviewTextAnswer">
+              <input value={reviewAnswers[x.id]||''} onChange={e=>setReviewAnswers(v=>({...v,[x.id]:e.target.value}))} placeholder="Cevabını yaz"/>
+              <button className="btn primary" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>review(x.id,String(reviewAnswers[x.id]||'').trim())}>Cevabı Kontrol Et</button>
+            </div>
+          : <div className="answerGrid">{Object.entries(x.question.options||{}).map(([key,val]:any)=><button key={key} className="btn" onClick={()=>review(x.id,key)}><strong>{key})</strong> {val}</button>)}</div>)}
       </article>)}</div>}
     </div>
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
