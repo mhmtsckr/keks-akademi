@@ -46,10 +46,10 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   const coachAssessments=student.assessments.filter(a=>['PLAN_ADMIN_APPROVED','COMPLETED'].includes(String(((a.report||{}) as any).workflowStatus||'')));
   const gradeLabel=(student.gradeLevel||'').toLocaleUpperCase('tr-TR');
   const adultExamGroup=getAdultExamGroup(student.gradeLevel);
-  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,isAgsOabt?approvedOabtField:student.academicTrack);
   const isAgsOabt=/ÖABT|OABT/.test(gradeLabel)||(/AGS/.test(gradeLabel)&&!/YDS/.test(gradeLabel));
   const oabtApproval=getOabtFieldApproval(student.profile);
   const approvedOabtField=isAgsOabt&&oabtApproval.status==='APPROVED'?(oabtApproval.approvedField||student.academicTrack):null;
+  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,isAgsOabt?approvedOabtField:student.academicTrack);
   const showAgsStudyArithmetic=isAgsOabt&&Boolean(approvedOabtField)&&coachAssessments.length>0;
   const wrongTopicMap=new Map<string,{subject:string;topic:string;count:number;due:number}>();
   for(const row of student.reviewQueue){
