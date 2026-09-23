@@ -82,14 +82,14 @@ export default async function StudentPage() {
   const activeTarget = student.targets[0];
   const grade=(student.gradeLevel||'').toLowerCase();
   const allowedExams=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
-  const defaultWrongExam=/ags|öabt|oabt/.test(grade)?'AGS/ÖABT':grade.includes('kpss')?'KPSS':(grade.includes('8')||grade.includes('ortaokul'))?'LGS':'TYT';
+  const defaultWrongExam=(grade.includes('ags')&&grade.includes('yds'))?'AGS/YDS':(/öabt|oabt/.test(grade)||grade.includes('ags'))?'AGS/ÖABT':grade.includes('kpss')?'KPSS':(grade.includes('8')||grade.includes('ortaokul'))?'LGS':'TYT';
 
   return <PortalShell signedIn
     active="ogrenci"
     eyebrow="ÖĞRENCİ PANELİ"
     title={'Merhaba, '+student.fullName}
     description="Bugünkü çalışmalarını başlat, hedefini kontrol et ve gelişimini tek ekrandan yönet."
-    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}<span>{student.plans.length} aktif program</span></>}
+    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.academicTrack&&<span>Alan: {student.academicTrack}</span>}<span>{student.plans.length} aktif program</span></>}
     wide
   >
     <section className="section">
