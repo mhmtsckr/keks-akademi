@@ -183,6 +183,25 @@ const TRACK_SUBJECTS:Record<string,string[]>={
   GENERAL:['Türkçe','Matematik','Fen','Sosyal']
 };
 
+const AGS_COMMON_SUBJECTS=[
+  'AGS Sözel Yetenek',
+  'AGS Sayısal Yetenek',
+  'Tarih',
+  'Türkiye Coğrafyası',
+  'Eğitim Bilimleri',
+  'Mevzuat'
+];
+
+function adultExamSubjects(track:string){
+  if(track==='YDS'){
+    return [...AGS_COMMON_SUBJECTS,'YDS Kelime','YDS Dil Bilgisi','YDS Okuma','YDS Çeviri'];
+  }
+  if(track&&!['GENERAL','SAYISAL','ESIT_AGIRLIK','SOZEL'].includes(track)){
+    return [...AGS_COMMON_SUBJECTS,'ÖABT · '+track];
+  }
+  return TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL;
+}
+
 function bandConfig(band:EducationBand,track:string){
   if(band==='ILKOKUL_1_2')return {subjects:['Okuma','Türkçe','Matematik','Hayat Bilgisi'],questions:8,minutes:20};
   if(band==='ILKOKUL_3_4')return {subjects:['Türkçe','Matematik','Fen Bilimleri','Sosyal Bilgiler'],questions:15,minutes:30};
@@ -191,7 +210,7 @@ function bandConfig(band:EducationBand,track:string){
   if(band==='LISE_9_10')return {subjects:['Türk Dili ve Edebiyatı','Matematik','Fizik','Kimya','Biyoloji','Tarih','Coğrafya'],questions:30,minutes:65};
   if(band==='LISE_11_12')return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:40,minutes:75};
   if(band==='YETISKIN_MEZUN')return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:45,minutes:80};
-  if(band==='YETISKIN_SINAV')return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:40,minutes:75};
+  if(band==='YETISKIN_SINAV')return {subjects:adultExamSubjects(track),questions:40,minutes:75};
   return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:30,minutes:60};
 }
 
