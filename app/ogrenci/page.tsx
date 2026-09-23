@@ -14,6 +14,7 @@ import { StudentPreInterview } from '@/app/components/StudentPreInterview';
 import { StudentCommandCenter } from '@/app/components/StudentCommandCenter';
 import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionBank';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
+import { displayExamGroupWithTrack,getAdultExamGroup } from '@/lib/agsExamOptions';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -82,14 +83,16 @@ export default async function StudentPage() {
   const activeTarget = student.targets[0];
   const grade=(student.gradeLevel||'').toLowerCase();
   const allowedExams=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
-  const defaultWrongExam=(grade.includes('ags')&&grade.includes('yds'))?'AGS/YDS':(/öabt|oabt/.test(grade)||grade.includes('ags'))?'AGS/ÖABT':grade.includes('kpss')?'KPSS':(grade.includes('8')||grade.includes('ortaokul'))?'LGS':'TYT';
+  const adultExamGroup=getAdultExamGroup(student.gradeLevel);
+  const defaultWrongExam=adultExamGroup||(grade.includes('8')||grade.includes('ortaokul')?'LGS':'TYT');
+  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
 
   return <PortalShell signedIn
     active="ogrenci"
     eyebrow="ÖĞRENCİ PANELİ"
     title={'Merhaba, '+student.fullName}
     description="Bugünkü çalışmalarını başlat, hedefini kontrol et ve gelişimini tek ekrandan yönet."
-    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.academicTrack&&<span>Alan: {student.academicTrack}</span>}<span>{student.plans.length} aktif program</span></>}
+    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{adultExamGroup?'Sınav grubu: ':'Düzey: '}{studentGroupLabel}</span>}<span>{student.plans.length} aktif program</span></>}
     wide
   >
     <section className="section">
