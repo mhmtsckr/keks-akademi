@@ -1,7 +1,7 @@
 export const BUSINESS_INFO={
   brandName:'KEKS Akademi',
   serviceName:'Kazandıran Eğitim ve Koçluk Sistemi',
-  legalTitle:'',
+  legalTitle:'Mehmet Sait Çakır',
   address:'',
   phone:'',
   email:'keksakademi@gmail.com'
