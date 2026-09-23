@@ -792,3 +792,16 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .panelSectionBand>div{display:grid;gap:3px}.panelSectionBand small{font-size:9px;color:#d9aa49;font-weight:900;letter-spacing:.12em}.panelSectionBand strong{font-size:17px;color:#edf3f8}.panelSectionBand p{margin:0;color:#8498aa;font-size:10px;line-height:1.5}.panelSectionBand>span{font-size:9px;color:#6f8498;white-space:nowrap}
 @media(max-width:900px){.panelNavigatorGroups{grid-template-columns:1fr}}
 @media(max-width:620px){.panelNavigator{padding:14px}.panelNavigatorHead{display:grid}.panelNavigatorHint{width:max-content}.panelNavigatorItem{grid-template-columns:minmax(0,1fr) 18px}.panelNavigatorItem>span{grid-column:1/-1;width:max-content}}
+
+
+/* Admin management map + coach primary navigation */
+.adminPanelNavigator{display:grid;gap:14px;margin-bottom:18px;padding:18px;border-radius:18px;border:1px solid rgba(232,187,76,.14);background:radial-gradient(circle at 92% 0%,rgba(225,177,65,.1),transparent 27%),linear-gradient(145deg,#0a233f,#081c33)}
+.adminPanelNavigatorHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.adminPanelNavigatorHead h2{margin:0 0 5px}.adminPanelNavigatorHead p{margin:0}
+.adminPanelNavGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.adminPanelNavItem{display:grid;gap:4px;text-align:left;padding:13px 14px;border-radius:13px;border:1px solid rgba(255,255,255,.06);background:#071b31;color:inherit;cursor:pointer;transition:.18s ease}
+.adminPanelNavItem:hover{transform:translateY(-1px);border-color:rgba(226,178,66,.26);background:#09213b}
+.adminPanelNavItem.active{border-color:rgba(237,196,94,.45);background:linear-gradient(145deg,#0c2a49,#09213a);box-shadow:0 0 0 1px rgba(232,187,76,.06) inset}
+.adminPanelNavItem small{font-size:8px;color:#d8a94a;font-weight:900;letter-spacing:.12em}.adminPanelNavItem strong{font-size:12px;color:#edf3f8}.adminPanelNavItem span{font-size:9px;color:#788da1;line-height:1.45}
+.coachPrimaryTabs{padding:9px 0 13px;margin-bottom:3px}.coachPrimaryTabs a{font-size:11px!important;padding:8px 11px!important}
+@media(max-width:1000px){.adminPanelNavGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.adminPanelNavigator{padding:14px}.adminPanelNavigatorHead{display:grid}.adminPanelNavGrid{grid-template-columns:1fr}}
