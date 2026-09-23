@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { hashSecret, randomCode } from '@/lib/security';
+import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
+import { keksCodeHashInput,keksCodeHint } from '@/lib/keksAccessCode';
 import { writeAudit } from '@/lib/audit';
 
 // Ücretli test erişimi üreten uç nokta; girdi doğrulanmadan Prisma'ya
@@ -31,7 +32,7 @@ async function POST__handler(req: Request) {
   }
 
   const raw = randomCode('KEKS');
-  const code = await db.academyCode.create({ data: { codeHash: await hashSecret(raw), codeHint: raw.slice(-4), assignedStudentId: input.assignedStudentId ?? null, maxUses: input.maxUses, expiresAt: input.expiresAt ? new Date(input.expiresAt) : null, createdByUserId: admin.id } });
+  const code = await db.academyCode.create({ data: { codeHash: await hashSecret(keksCodeHashInput(raw)), codeHint: keksCodeHint(raw), codeCiphertext: encryptPrivateCode(raw), assignedStudentId: input.assignedStudentId ?? null, maxUses: input.maxUses, expiresAt: input.expiresAt ? new Date(input.expiresAt) : null, createdByUserId: admin.id } });
   await writeAudit({actorUserId:admin.id,action:'ACADEMY_CODE_CREATE',entityType:'AcademyCode',entityId:code.id,summary:'Yeni KEKS erişim kodu oluşturuldu.',metadata:{codeHint:code.codeHint,assignedStudentId:code.assignedStudentId,maxUses:code.maxUses,expiresAt:code.expiresAt}});
   return NextResponse.json({ id: code.id, code: raw, codeHint: code.codeHint });
 }
