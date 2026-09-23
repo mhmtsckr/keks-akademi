@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { AGS_OABT_FIELDS } from '@/lib/agsExamOptions';
+import { ADULT_EXAM_GROUPS, AGS_OABT_FIELDS } from '@/lib/agsExamOptions';
 
 function Message({value}:{value:string}) {
   if (!value) return null;
@@ -187,20 +187,20 @@ export function StudentRegisterForm() {
     <div className="field"><label>Gmail adresi</label><input name="email" type="email" placeholder="ornek@gmail.com" required/></div>
     <div className="field"><label>Eğitim düzeyi / sınav grubu</label><select name="gradeLevel" required value={gradeLevel} onChange={e=>setGradeLevel(e.target.value)}>
       <option value="">Seçiniz</option>
-      <option value="İlkokul 1-2">İlkokul 1-2</option>
-      <option value="İlkokul 3-4">İlkokul 3-4</option>
-      <option value="Ortaokul 5-6">Ortaokul 5-6</option>
-      <option value="Ortaokul 7-8 / LGS">Ortaokul 7-8 / LGS</option>
-      <option value="Lise 9-10">Lise 9-10</option>
-      <option value="Lise 11-12 / YKS">Lise 11-12 / YKS</option>
-      <option value="Mezun / YKS">Mezun / YKS</option>
-      <option value="AGS/ÖABT">AGS/ÖABT</option>
-      <option value="AGS/YDS">AGS/YDS</option>
-      <option value="KPSS">KPSS</option>
-      <option value="DGS">DGS</option>
-      <option value="ALES">ALES</option>
+      <optgroup label="Eğitim Düzeyi">
+        <option value="İlkokul 1-2">İlkokul 1-2</option>
+        <option value="İlkokul 3-4">İlkokul 3-4</option>
+        <option value="Ortaokul 5-6">Ortaokul 5-6</option>
+        <option value="Ortaokul 7-8 / LGS">Ortaokul 7-8 / LGS</option>
+        <option value="Lise 9-10">Lise 9-10</option>
+        <option value="Lise 11-12 / YKS">Lise 11-12 / YKS</option>
+        <option value="Mezun / YKS">Mezun / YKS</option>
+      </optgroup>
+      <optgroup label="Sınav Grubu">
+        {ADULT_EXAM_GROUPS.map(group=><option key={group} value={group}>{group}</option>)}
+      </optgroup>
     </select>
-      <small className="muted">AGS öğrencileri için AGS/ÖABT ve AGS/YDS birbirinden ayrı çalışma grubu olarak kaydedilir.</small>
+      <small className="muted">Sınav grupları: DGS, KPSS, EKPSS, ALES, AGS/YDS, YÖKDİL, AGS/ÖABT ve YDS. AGS/ÖABT seçildiğinde alan seçimi zorunludur.</small>
     </div>
     {isAgsOabt&&<div className="field agsBranchField">
       <label>ÖABT alanı</label>
