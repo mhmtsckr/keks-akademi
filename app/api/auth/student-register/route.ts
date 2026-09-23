@@ -6,6 +6,7 @@ import { createSession } from '@/lib/auth';
 import { sendStudentCredentials } from '@/lib/mailer';
 import { writeAudit } from '@/lib/audit';
 import { normalizeEducationLevelLabel } from '@/lib/taskEvaluation';
+import { keksCodeHashInput,keksCodeHint } from '@/lib/keksAccessCode';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -66,8 +67,8 @@ export async function POST(req:Request){
     });
     await tx.academyCode.create({
       data:{
-        codeHash:await hashSecret(monthlyCode),
-        codeHint:monthlyCode.slice(-4),
+        codeHash:await hashSecret(keksCodeHashInput(monthlyCode)),
+        codeHint:keksCodeHint(monthlyCode),
         codeCiphertext:encryptPrivateCode(monthlyCode),
         assignedStudentId:student.id,
         maxUses:1,
