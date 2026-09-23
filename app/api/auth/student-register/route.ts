@@ -83,7 +83,7 @@ export async function POST(req:Request){
         fullName:input.fullName,
         gradeLevel,
         academicTrack,
-        profile:initialProfile as any,
+        ...(initialProfile?{profile:initialProfile as any}:{}),
         coachId:coach.id
       }
     });
