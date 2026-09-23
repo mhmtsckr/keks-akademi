@@ -7,6 +7,7 @@ import { createPaytrToken,resolvePaytrCredentials } from '@/lib/paytr';
 import { merchantOid } from '@/lib/security';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
+import { hasBlockingNonPaidTestAccess } from '@/lib/keksAccessCode';
 
 const schema = z.object({
   email: z.string().email(),
@@ -42,10 +43,7 @@ async function POST__handler(req: Request) {
       },
       orderBy:{createdAt:'desc'}
     }),
-    db.testAccess.findFirst({
-      where:{studentId:user.student.id,source:{not:'PAID'},createdAt:{gte:month.start,lt:month.end},status:{in:['READY','USED']}},
-      orderBy:{createdAt:'desc'}
-    }),
+    hasBlockingNonPaidTestAccess(user.student.id,month.start,month.end),
     db.assessment.findFirst({
       where:{studentId:user.student.id},
       orderBy:{completedAt:'desc'},
