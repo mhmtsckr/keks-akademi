@@ -763,3 +763,12 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .wrongQuestionRow{grid-template-columns:1fr}.wrongQuestionThumb{width:100%;height:auto;max-height:260px}
   .wrongQuestionTopicEdit{grid-template-columns:1fr}.reviewTextAnswer{grid-template-columns:1fr}
 }
+
+
+.wrongTopicCoachGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}
+.wrongTopicCoachGrid>div{display:grid;gap:4px;padding:13px;border-radius:12px;background:#081d34;border:1px solid rgba(255,255,255,.06)}
+.wrongTopicCoachGrid span{font-size:9px;color:#d8aa4c;font-weight:900;letter-spacing:.08em}
+.wrongTopicCoachGrid strong{font-size:12px;color:#edf3f8}
+.wrongTopicCoachGrid small{font-size:9px;color:#7f94a8}
+@media(max-width:900px){.wrongTopicCoachGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.wrongTopicCoachGrid{grid-template-columns:1fr}}
