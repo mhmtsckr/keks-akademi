@@ -7,6 +7,15 @@ import { REVIEW_DAYS } from '@/lib/smartCoach';
 
 const schema=z.object({id:z.string(),answer:z.string().min(1)});
 
+function normalizeAnswer(v:string){
+  return v.toLocaleLowerCase('tr-TR')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ').trim();
+}
+function questionMeta(v:unknown){
+  return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
+}
+
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
@@ -32,10 +41,14 @@ async function GET__handler(){
         subject:x.question.subject,
         topic:x.question.topic,
         prompt:x.question.prompt,
-        options:x.question.options,
+        options:String(x.question.sourceKind).startsWith('STUDENT_WRONG:')?{}:x.question.options,
         sourceKind:x.question.sourceKind,
         sourceYear:x.question.sourceYear,
-        officialSourceUrl:x.question.officialSourceUrl
+        officialSourceUrl:x.question.officialSourceUrl,
+        inputMode:String(x.question.sourceKind).startsWith('STUDENT_WRONG:')?'TEXT':'CHOICE',
+        imageUrl:String(x.question.sourceKind).startsWith('STUDENT_WRONG:')
+          ? String(questionMeta(x.question.options).imageUrl||'')||null
+          : null
       }
     }))
   });
@@ -49,7 +62,9 @@ async function POST__handler(req:Request){
   if(!item) return NextResponse.json({error:'Tekrar kaydı bulunamadı.'},{status:404});
   if(item.status==='COMPLETED')return NextResponse.json({error:'Bu tekrar döngüsü zaten tamamlandı.'},{status:409});
   if(item.dueAt.getTime()>Date.now())return NextResponse.json({error:'Bu sorunun tekrar günü henüz gelmedi.'},{status:409});
-  const correct=input.answer===item.question.correctAnswer;
+  const correct=String(item.question.sourceKind).startsWith('STUDENT_WRONG:')
+    ? normalizeAnswer(input.answer)===normalizeAnswer(item.question.correctAnswer)
+    : input.answer===item.question.correctAnswer;
   let step=item.stepIndex;
   if(correct) step=Math.min(step+1,REVIEW_DAYS.length);
   else step=0;
