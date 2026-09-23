@@ -5,6 +5,7 @@ import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { CoachStudentTable } from '@/app/components/CoachStudentTable';
 import { CoachCommandCenter } from '@/app/components/CoachCommandCenter';
 import { CoachAccessCodeClaim } from '@/app/components/CoachAccessCodeClaim';
+import { PanelNavigator } from '@/app/components/PanelNavigator';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -107,6 +108,20 @@ export default async function CoachPage() {
     wide
   >
     <section className="section">
+      <PanelNavigator roleLabel="Koç" groups={[
+        {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[
+          {href:'#koc-komuta',title:'Koç Komuta Merkezi',description:'Risk sinyalleri, seanslar ve geciken aksiyonlar',badge:'BUGÜN'}
+        ]},
+        {label:'ÖĞRENCİ ERİŞİMİ',description:'Yeni öğrenciyi güvenli biçimde koç hesabına bağla.',items:[
+          {href:'#ogrenci-erisim',title:'Erişim Kodu',description:'Öğrencinin tek kullanımlık koç kodunu doğrula'}
+        ]},
+        {label:'ÖĞRENCİ YÖNETİMİ',description:'Tüm öğrencilerin durumunu karşılaştır ve detay ekranına geç.',items:[
+          {href:'#ogrencilerim',title:'Öğrencilerim',description:'Risk, tekrar, plan ve aktivite durumunu birlikte gör'}
+        ]}
+      ]}/>
+    </section>
+
+    <section id="koc-komuta" className="section section-anchor">
       <PortalSectionTitle eyebrow="KOÇ KOMUTA MERKEZİ" title="Bugün neye müdahale etmeliyim?" description="Seanslar, risk sinyalleri, geciken aksiyonlar ve kişisel takip görevleriniz tek ekranda."/>
       <CoachCommandCenter
         students={priorityStudents}
@@ -115,12 +130,12 @@ export default async function CoachPage() {
       />
     </section>
 
-    <section className="section">
-      <PortalSectionTitle eyebrow="ERİŞİM KODU" title="Testini tamamlayan öğrenciyi koç paneline tanımla" description="Öğrencinin test sonunda aldığı tek kullanımlık KOC erişim kodunu girerek öğrenci bağlantısını doğrulayın."/>
+    <section id="ogrenci-erisim" className="section section-anchor">
+      <PortalSectionTitle eyebrow="ÖĞRENCİ ERİŞİMİ" title="Testini tamamlayan öğrenciyi koç paneline tanımla" description="Öğrencinin test sonunda aldığı tek kullanımlık KOC erişim kodunu girerek öğrenci bağlantısını doğrulayın."/>
       <CoachAccessCodeClaim/>
     </section>
 
-    <section className="section">
+    <section id="ogrencilerim" className="section section-anchor">
       <PortalSectionTitle eyebrow="ÖĞRENCİ YÖNETİMİ" title="Öğrencilerim" description="Bir öğrencinin adına dokunarak detaylı koç çalışma alanını açabilirsiniz."/>
       <div className="grid">
         <div className="card">
