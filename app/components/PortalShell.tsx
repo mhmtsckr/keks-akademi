@@ -120,9 +120,13 @@ export function PortalShell({
 
     <footer className="portalFooter">
       <div className={wide?'portalWrap portalWrapWide':'portalWrap'}>
-        <span>KEKS AKADEMİ</span>
-        <span>Enneagram Yöntemiyle Kazandıran Eğitim ve Koçluk Sistemi</span>
-        <span>Fark Et · Öğren · Geliş · Başar</span>
+        <div className="portalFooterBrand"><strong>KEKS AKADEMİ</strong><span>Enneagram Yöntemiyle Kazandıran Eğitim ve Koçluk Sistemi</span></div>
+        <div className="legalFooterLinks" aria-label="Yasal sayfalar">
+          <a href="/mesafeli-satis-sozlesmesi">Mesafeli Satış Sözleşmesi</a>
+          <a href="/gizlilik-guvenlik">Gizlilik &amp; Güvenlik</a>
+          <a href="/iptal-iade">İptal &amp; İade</a>
+          <a href="/iletisim">İletişim</a>
+        </div>
       </div>
     </footer>
   </main>;
