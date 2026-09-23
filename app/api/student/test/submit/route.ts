@@ -9,6 +9,7 @@ import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
 import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { writeAudit } from '@/lib/audit';
+import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
 
 const schema=z.object({
   formVersion:z.string().min(1),
@@ -70,6 +71,8 @@ async function POST__handler(req:Request){
   });
   const canAutoAssign=Boolean(studentMeta?.coachId&&preInterviewForm);
   const submittedAt=new Date().toISOString();
+  const coachAccessCode=randomCode('KOC');
+  const coachAccessCodeExpiresAt=new Date(Date.now()+30*24*60*60*1000);
   const report={
     ...baseReport,
     educationBand,
@@ -87,9 +90,11 @@ async function POST__handler(req:Request){
       screeningReviewStatus:'PENDING_REVIEW',
       submittedAt,
       preInterviewAutoAssigned:canAutoAssign,
+      coachAccessCodeHint:coachAccessCode.slice(-4),
+      coachAccessCodeExpiresAt:coachAccessCodeExpiresAt.toISOString(),
       nextStep:canAutoAssign
-        ?'Eğitim ve gelişim düzeyine uygun ön görüşme otomatik açıldı. Tarama sonucu ve sonraki plan taslağı yönetici incelemesine gider.'
-        :'Tarama yönetici incelemesine gönderildi; ön görüşme ataması için aktif form ve koç bağlantısı gerekir.'
+        ?'Eğitim ve gelişim düzeyine uygun ön görüşme otomatik açıldı. Koç erişim kodunuzu koçunuza iletin.'
+        :'Tarama yönetici incelemesine gönderildi. Koç erişim kodunuzu koçunuza iletin.'
     }
   };
 
@@ -106,6 +111,19 @@ async function POST__handler(req:Request){
       answers:body.answers as any,
       scores:scores as any,
       report:report as any
+    }});
+
+    await tx.coachAccessCode.updateMany({
+      where:{studentId:user.student!.id,active:true},
+      data:{active:false}
+    });
+    await tx.coachAccessCode.create({data:{
+      studentId:user.student!.id,
+      codeHash:await hashSecret(coachAccessCode),
+      codeHint:coachAccessCode.slice(-4),
+      codeCiphertext:encryptPrivateCode(coachAccessCode),
+      expiresAt:coachAccessCodeExpiresAt,
+      assessmentId:assessment.id
     }});
 
     let assignmentId:string|null=null;
@@ -145,7 +163,7 @@ async function POST__handler(req:Request){
     summary:result.assignmentId
       ?'KEKS eğilim taraması tamamlandı; ön görüşme eğitim düzeyine göre otomatik açıldı ve tarama yönetici incelemesine gönderildi.'
       :'KEKS eğilim taraması tamamlandı ve yönetici incelemesine gönderildi.',
-    metadata:{studentId:user.student.id,educationBand,questionCount:form.questions.length,preInterviewAssignmentId:result.assignmentId}
+    metadata:{studentId:user.student.id,educationBand,questionCount:form.questions.length,preInterviewAssignmentId:result.assignmentId,coachAccessCodeHint:coachAccessCode.slice(-4)}
   });
 
   try{
@@ -166,9 +184,11 @@ async function POST__handler(req:Request){
     pendingAdminApproval:true,
     preInterviewAutoAssigned:Boolean(result.assignmentId),
     workflowStatus:result.assignmentId?'PRE_INTERVIEW_ASSIGNED':'ADMIN_REVIEW',
+    coachAccessCode,
+    coachAccessCodeExpiresAt:coachAccessCodeExpiresAt.toISOString(),
     message:result.assignmentId
-      ?'Tarama tamamlandı. Eğitim ve gelişim düzeyinize uygun ön görüşme otomatik açıldı. Tarama sonucunuz yönetici incelemesine gönderildi.'
-      :'Tarama tamamlandı. Ayrıntılı değerlendirme ve gelişim raporu yönetici incelemesine gönderildi.'
+      ?'Tarama tamamlandı. Koç erişim kodunuz oluşturuldu. Kodu koçunuza iletiniz; ön görüşmeniz de otomatik açıldı.'
+      :'Tarama tamamlandı. Koç erişim kodunuz oluşturuldu. Kodu koçunuza iletiniz.'
   });
 }
 
