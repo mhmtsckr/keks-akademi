@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { AGS_OABT_FIELDS } from '@/lib/agsExamOptions';
 
 function Message({value}:{value:string}) {
   if (!value) return null;
@@ -140,6 +141,9 @@ export function StudentRegisterForm() {
   const [msg,setMsg]=useState('');
   const [coaches,setCoaches]=useState<Array<{id:string;name:string;studentCount:number}>>([]);
   const [loadingCoaches,setLoadingCoaches]=useState(true);
+  const [gradeLevel,setGradeLevel]=useState('');
+  const isAgsOabt=gradeLevel==='AGS/ÖABT';
+  const isAgsYds=gradeLevel==='AGS/YDS';
 
   async function loadCoaches(){
     setLoadingCoaches(true);
@@ -167,34 +171,49 @@ export function StudentRegisterForm() {
         fullName:fd.get('fullName'),
         email:fd.get('email'),
         gradeLevel:fd.get('gradeLevel'),
+        academicTrack:isAgsOabt?fd.get('academicTrack'):isAgsYds?'YDS':null,
         coachId:fd.get('coachId')
       })
     });
     const j=await r.json();
     if(!r.ok) return setMsg('Hata: '+(j.error||'Başvuru oluşturulamadı.'));
     form.reset();
+    setGradeLevel('');
     setMsg(j.message||'Başvurunuz alınmıştır. Giriş bilgileriniz Gmail adresinize gönderildi.');
   }
 
   return <form className="form" onSubmit={submit}>
     <div className="field"><label>Ad soyad</label><input name="fullName" required/></div>
     <div className="field"><label>Gmail adresi</label><input name="email" type="email" placeholder="ornek@gmail.com" required/></div>
-    <div className="field"><label>Eğitim düzeyi / sınav grubu</label><input name="gradeLevel" list="keks-grade-levels" placeholder="Örn. 11. Sınıf / YKS, AGS / ÖABT, KPSS" required/>
-      <datalist id="keks-grade-levels">
-        <option value="İlkokul 1-2"/>
-        <option value="İlkokul 3-4"/>
-        <option value="Ortaokul 5-6"/>
-        <option value="Ortaokul 7-8 / LGS"/>
-        <option value="Lise 9-10"/>
-        <option value="Lise 11-12 / YKS"/>
-        <option value="Mezun / YKS"/>
-        <option value="AGS / ÖABT"/>
-        <option value="KPSS"/>
-        <option value="DGS"/>
-        <option value="ALES"/>
-      </datalist>
-      <small className="muted">AGS veya ÖABT yazan kayıtlar sistemde otomatik olarak “Yetişkin Sınav Grubu” altında sınıflandırılır.</small>
+    <div className="field"><label>Eğitim düzeyi / sınav grubu</label><select name="gradeLevel" required value={gradeLevel} onChange={e=>setGradeLevel(e.target.value)}>
+      <option value="">Seçiniz</option>
+      <option value="İlkokul 1-2">İlkokul 1-2</option>
+      <option value="İlkokul 3-4">İlkokul 3-4</option>
+      <option value="Ortaokul 5-6">Ortaokul 5-6</option>
+      <option value="Ortaokul 7-8 / LGS">Ortaokul 7-8 / LGS</option>
+      <option value="Lise 9-10">Lise 9-10</option>
+      <option value="Lise 11-12 / YKS">Lise 11-12 / YKS</option>
+      <option value="Mezun / YKS">Mezun / YKS</option>
+      <option value="AGS/ÖABT">AGS/ÖABT</option>
+      <option value="AGS/YDS">AGS/YDS</option>
+      <option value="KPSS">KPSS</option>
+      <option value="DGS">DGS</option>
+      <option value="ALES">ALES</option>
+    </select>
+      <small className="muted">AGS öğrencileri için AGS/ÖABT ve AGS/YDS birbirinden ayrı çalışma grubu olarak kaydedilir.</small>
     </div>
+    {isAgsOabt&&<div className="field agsBranchField">
+      <label>ÖABT alanı</label>
+      <select name="academicTrack" required defaultValue="">
+        <option value="">Alanınızı seçiniz</option>
+        {AGS_OABT_FIELDS.map(field=><option key={field} value={field}>{field}</option>)}
+      </select>
+      <small className="muted">Seçtiğiniz alan koç panelinde ve kişisel AGS/ÖABT çalışma planınızda kullanılacaktır.</small>
+    </div>}
+    {isAgsYds&&<div className="notice">
+      <strong>AGS/YDS çalışma grubu</strong>
+      <div className="muted">Bu grupta alan bilgisi otomatik olarak YDS şeklinde kaydedilir. ÖABT branş seçimi gösterilmez.</div>
+    </div>}
     <div className="field"><label>Koçunu seç</label><select name="coachId" required defaultValue="">
       <option value="">{loadingCoaches?'Koçlar yükleniyor…':coaches.length?'Koç seçiniz':'Aktif koç yok'}</option>
       {coaches.map(c=><option value={c.id} key={c.id}>{c.name} · {c.studentCount} öğrenci</option>)}
