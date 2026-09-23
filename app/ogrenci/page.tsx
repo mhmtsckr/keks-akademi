@@ -12,6 +12,7 @@ import { StudentEngagementHub } from '@/app/components/StudentEngagementHub';
 import { StudentDailyTasks } from '@/app/components/StudentDailyTasks';
 import { StudentPreInterview } from '@/app/components/StudentPreInterview';
 import { StudentCommandCenter } from '@/app/components/StudentCommandCenter';
+import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionBank';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -80,6 +81,7 @@ export default async function StudentPage() {
   const activeTarget = student.targets[0];
   const grade=(student.gradeLevel||'').toLowerCase();
   const allowedExams=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
+  const defaultWrongExam=/ags|öabt|oabt/.test(grade)?'AGS/ÖABT':grade.includes('kpss')?'KPSS':(grade.includes('8')||grade.includes('ortaokul'))?'LGS':'TYT';
 
   return <PortalShell signedIn
     active="ogrenci"
@@ -102,6 +104,7 @@ export default async function StudentPage() {
     </section>
 
     <section id="gunluk-gorevler" className="section section-anchor"><PortalSectionTitle eyebrow="BUGÜN" title="Günlük Görevlerim" description="Koçunuzun verdiği görevleri en geç 23.00'a kadar soru sonuçlarıyla birlikte kaydedin."/><StudentDailyTasks/></section>
+    <section id="yanlis-soru-bankasi" className="section section-anchor"><PortalSectionTitle eyebrow="0–1–3–7–14–28 TEKRAR MOTORU" title="Günlük Yanlış Soru Bankam" description="Her derste yanlış yaptığın soruyu yükle. KEKS konuyu otomatik sınıflandırır ve tekrar gününde soruyu yeniden görev olarak önüne getirir."/><StudentWrongQuestionBank defaultExam={defaultWrongExam}/></section>
     <section className="section"><AdaptiveRecommendation/></section>
     <section id="akilli-koc" className="section section-anchor"><SmartCoachDashboard/></section>
     <section className="section"><PortalSectionTitle eyebrow="KOÇLUK & OYUNLAŞTIRMA" title="Aksiyonlar, seanslar, XP ve mikro tekrar"/><StudentEngagementHub/></section>
