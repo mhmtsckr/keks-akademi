@@ -259,7 +259,7 @@ export function AdminConsole(){
         <div className="card">
           <div className="moduleEyebrow">AYLIK KEKS ÜRÜN KODLARI</div>
           <h3>Ürün Erişim Kodları</h3>
-          <p className="muted">Önceki ürün erişim kodları sıfırlanmış ve geçersiz kılınmıştır. Bu listede yalnızca yeni nesil geçerli kodlar gösterilir. Yeni öğrenci kayıtlarında öğrenciye bağlı yeni kod otomatik kaydedilir; yönetici ayrıca gerektiğinde yeni ürün kodu oluşturabilir.</p>
+          <p className="muted">Önceki ürün erişim kodları sıfırlanmış ve sistemden kaldırılmıştır. Bu alan bundan sonra oluşturulan yeni kodları gösterir. Yeni öğrenci kayıtlarında öğrenciye bağlı yeni kod otomatik kaydedilir; yönetici ayrıca gerektiğinde yeni ürün kodu oluşturabilir.</p>
           <div className="notice"><strong>Eski kodlar iptal:</strong> Önceki kodlar ve bu kodlardan kalmış kullanılmamış test erişimleri artık testi açmaz. Öğrenci yalnızca yeni oluşturulan kod veya geçerli ödeme erişimiyle devam edebilir.</div>
           {codes.slice(0,40).map(c=><div className="adminSimpleRow" key={c.id}>
             <div>
