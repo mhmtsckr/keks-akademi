@@ -14,6 +14,7 @@ import { CoachSessionWorkflow } from '@/app/components/CoachSessionWorkflow';
 import { CoachPreInterviewSummary } from '@/app/components/CoachPreInterviewSummary';
 import { AgsStudyArithmetic } from '@/app/components/AgsStudyArithmetic';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
+import { displayExamGroupWithTrack,getAdultExamGroup } from '@/lib/agsExamOptions';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -43,6 +44,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   const goalProgress=await computeGoalProgress(student.id);
   const coachAssessments=student.assessments.filter(a=>['PLAN_ADMIN_APPROVED','COMPLETED'].includes(String(((a.report||{}) as any).workflowStatus||'')));
   const gradeLabel=(student.gradeLevel||'').toLocaleUpperCase('tr-TR');
+  const adultExamGroup=getAdultExamGroup(student.gradeLevel);
+  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
   const isAgsOabt=/ÖABT|OABT/.test(gradeLabel)||(/AGS/.test(gradeLabel)&&!/YDS/.test(gradeLabel));
   const showAgsStudyArithmetic=isAgsOabt&&coachAssessments.length>0;
   const wrongTopicMap=new Map<string,{subject:string;topic:string;count:number;due:number}>();
@@ -62,7 +65,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     eyebrow="KOÇ ÖĞRENCİ ÇALIŞMA ALANI"
     title={student.fullName}
     description="Program, hedef, deneme, teknik ve veli erişimini tek öğrenci çalışma alanından yönetin."
-    meta={<><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.academicTrack&&<span>Alan: {student.academicTrack}</span>}{student.goal&&<span>Hedef tanımlı</span>}<a className="btn" href="/koc">← Öğrencilerim</a></>}
+    meta={<><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{adultExamGroup?'Sınav grubu: ':'Düzey: '}{studentGroupLabel}</span>}{student.goal&&<span>Hedef tanımlı</span>}<a className="btn" href="/koc">← Öğrencilerim</a></>}
     wide
   >
     <nav className="tabs coachPrimaryTabs no-print" aria-label="Koç öğrenci çalışma alanı ana bölümleri">
