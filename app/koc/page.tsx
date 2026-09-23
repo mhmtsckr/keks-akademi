@@ -4,6 +4,7 @@ import { AccountLoginForm, CoachRegisterForm } from '@/app/components/AuthForms'
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { CoachStudentTable } from '@/app/components/CoachStudentTable';
 import { CoachCommandCenter } from '@/app/components/CoachCommandCenter';
+import { CoachAccessCodeClaim } from '@/app/components/CoachAccessCodeClaim';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -112,6 +113,11 @@ export default async function CoachPage() {
         agenda={agenda}
         initialTasks={coachTasks.map(t=>({id:t.id,title:t.title,description:t.description,priority:t.priority,status:t.status,dueAt:t.dueAt?.toISOString()||null,student:t.student}))}
       />
+    </section>
+
+    <section className="section">
+      <PortalSectionTitle eyebrow="ERİŞİM KODU" title="Testini tamamlayan öğrenciyi koç paneline tanımla" description="Öğrencinin test sonunda aldığı tek kullanımlık KOC erişim kodunu girerek öğrenci bağlantısını doğrulayın."/>
+      <CoachAccessCodeClaim/>
     </section>
 
     <section className="section">
