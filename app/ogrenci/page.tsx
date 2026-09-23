@@ -13,6 +13,7 @@ import { StudentDailyTasks } from '@/app/components/StudentDailyTasks';
 import { StudentPreInterview } from '@/app/components/StudentPreInterview';
 import { StudentCommandCenter } from '@/app/components/StudentCommandCenter';
 import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionBank';
+import { PanelNavigator } from '@/app/components/PanelNavigator';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -92,6 +93,33 @@ export default async function StudentPage() {
     wide
   >
     <section className="section">
+      <PanelNavigator roleLabel="Öğrenci" groups={[
+        {label:'BUGÜN & PLANLAMA',description:'Günün öncelikleri, görevleri ve kişisel program.',items:[
+          {href:'#genel-bakis',title:'Kontrol Merkezi',description:'Bugünkü durum ve hızlı aksiyonlar'},
+          {href:'#gunluk-gorevler',title:'Günlük Görevler',description:'Koç görevleri ve günlük kayıt'},
+          {href:'#programlar',title:'Kişisel Planlar',description:'Yıllık, aylık, haftalık ve günlük plan'}
+        ]},
+        {label:'ÖĞRENME & TEKRAR',description:'Yanlışları kapat, bilgiyi kalıcı hâle getir.',items:[
+          {href:'#yanlis-soru-bankasi',title:'Yanlış Soru Bankası',description:'Fotoğraf/metin yükle ve tekrar görevine dönüştür',badge:'0–1–3–7–14–28'},
+          {href:'#ogrenme-tekrar',title:'Çalışma Teknikleri',description:'Pomodoro, aktif hatırlama, Feynman ve diğer teknikler'}
+        ]},
+        {label:'AKADEMİK PERFORMANS',description:'Net, konu, doğruluk ve hedef gelişimini izle.',items:[
+          {href:'#akilli-koc',title:'Akıllı Koç',description:'Hedefe yaklaşma, trend ve haftalık öneriler'},
+          {href:'#akademik-performans',title:'Konu & Soru Analizi',description:'Doğru, yanlış, boş, net ve hata nedenleri'}
+        ]},
+        {label:'KOÇLUK & OYUNLAŞTIRMA',description:'Koçluk aksiyonları, seanslar, XP ve mikro tekrar.',items:[
+          {href:'#kocluk-oyunlastirma',title:'Koçluk & Oyunlaştırma',description:'Aksiyon, seans, XP, rozet ve mikro tekrar'}
+        ]},
+        {label:'RAPORLAR & KAYITLAR',description:'Geçmiş çalışmalar, denemeler ve koç raporları.',items:[
+          {href:'#kayitlar-raporlar',title:'Kayıtlar & Raporlar',description:'Çalışma geçmişi, denemeler, raporlar ve kütüphane'}
+        ]},
+        {label:'TEST & DEĞERLENDİRME',description:'KEKS aylık değerlendirme ürünleri.',items:[
+          {href:'#keks-egilim-taramasi',title:'Aylık KEKS Test Ürünü',description:'Eğilim taraması ve ön görüşme',badge:'AYLIK'}
+        ]}
+      ]}/>
+    </section>
+
+    <section id="genel-bakis" className="section section-anchor">
       <StudentCommandCenter/>
     </section>
 
@@ -107,14 +135,14 @@ export default async function StudentPage() {
     <section id="yanlis-soru-bankasi" className="section section-anchor"><PortalSectionTitle eyebrow="0–1–3–7–14–28 TEKRAR MOTORU" title="Günlük Yanlış Soru Bankam" description="Her derste yanlış yaptığın soruyu yükle. KEKS konuyu otomatik sınıflandırır ve tekrar gününde soruyu yeniden görev olarak önüne getirir."/><StudentWrongQuestionBank defaultExam={defaultWrongExam}/></section>
     <section className="section"><AdaptiveRecommendation/></section>
     <section id="akilli-koc" className="section section-anchor"><SmartCoachDashboard/></section>
-    <section className="section"><PortalSectionTitle eyebrow="KOÇLUK & OYUNLAŞTIRMA" title="Aksiyonlar, seanslar, XP ve mikro tekrar"/><StudentEngagementHub/></section>
+    <section id="kocluk-oyunlastirma" className="section section-anchor"><PortalSectionTitle eyebrow="KOÇLUK & OYUNLAŞTIRMA" title="Aksiyonlar, seanslar, XP ve mikro tekrar" description="Koçluk sürecindeki görevleri, seansları, puanları, rozetleri ve kısa öğrenme oyunlarını tek alanda yönet."/><StudentEngagementHub/></section>
 
     <section id="ogrenme-tekrar" className="section section-anchor">
       <PortalSectionTitle eyebrow="AKILLI ÖĞRENME LABORATUVARI" title="Ders Çalışma Teknikleri ve Tekrar Motoru" description="Tekniği seç, hemen uygula; yanlış soru ve aralıklı tekrarlarını aynı öğrenme döngüsünde yönet."/>
       <StudyTechniqueLab initialPreferences={student.techniquePreferences}/>
     </section>
 
-    <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
+    <section id="kayitlar-raporlar" className="section section-anchor"><div className="panelSectionBand"><div><small>RAPORLAR & KAYITLAR</small><strong>Çalışma geçmişi ve gelişim kayıtları</strong><p>Çalışmalar, denemeler, koç raporları ve kütüphane içerikleri aynı bölümde.</p></div><span>GEÇMİŞ VERİ</span></div><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
       <div className="card"><h2>Hedefim</h2><p>{student.goal || 'Koçunuz henüz hedef bilgisi eklemedi.'}</p>{activeTarget&&<div className="notice"><strong>{activeTarget.institutionName}</strong>{activeTarget.departmentName?' · '+activeTarget.departmentName:''}<br/><span className="muted">{activeTarget.source} · {activeTarget.dataYear||'Yıl belirtilmedi'} · Puan {activeTarget.score??'—'} · Sıra {activeTarget.ranking??'—'} · Yüzdelik {activeTarget.percentile??'—'}</span></div>}{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
       <div className="card"><h2>Çalışma Tekniklerim</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik atanmadı.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:12}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
     </div></section>
