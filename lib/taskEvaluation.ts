@@ -44,7 +44,8 @@ export type EducationBand=
 export function normalizeEducationLevelLabel(gradeLevel?:string|null){
   const original=(gradeLevel||'').trim();
   const raw=original.toLocaleUpperCase('tr-TR').replace(/\s+/g,' ');
-  if(/AGS|ÖABT|OABT/.test(raw))return 'Yetişkin Sınav Grubu · AGS/ÖABT';
+  if(/AGS/.test(raw)&&/YDS/.test(raw))return 'Yetişkin Sınav Grubu · AGS/YDS';
+  if(/ÖABT|OABT/.test(raw)||(/AGS/.test(raw)&&!/YDS/.test(raw)))return 'Yetişkin Sınav Grubu · AGS/ÖABT';
   return original;
 }
 
