@@ -81,7 +81,7 @@ const STRATEGIES:StrategyItem[]=[
   }
 ];
 
-export function AgsStudyArithmetic({studentName}:{studentName:string}){
+export function AgsStudyArithmetic({studentName,field}:{studentName:string;field?:string|null}){
   return <div className="agsArithmeticShell">
     <div className="agsArithmeticHero">
       <div>
@@ -89,9 +89,9 @@ export function AgsStudyArithmetic({studentName}:{studentName:string}){
         <div className="agsArithmeticTitleRow">
           <div>
             <h2>AGS Çalışma Aritmetiği</h2>
-            <p>{studentName} için AGS/ÖABT çalışma sürecini ders sırası, uygulama yöntemi, tekrar ve hata analizi ekseninde yönetin.</p>
+            <p>{studentName} için AGS/ÖABT çalışma sürecini ders sırası, uygulama yöntemi, tekrar ve hata analizi ekseninde yönetin.{field?' Seçili ÖABT alanı: '+field+'.':''}</p>
           </div>
-          <span className="agsArithmeticBadge">AGS / ÖABT</span>
+          <span className="agsArithmeticBadge">{field?'ÖABT · '+field:'AGS / ÖABT'}</span>
         </div>
       </div>
       <div className="agsArithmeticPrinciple">
