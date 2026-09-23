@@ -4,21 +4,16 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { decryptPrivateCode } from '@/lib/security';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
-import { currentKeksCodeHintPrefix } from '@/lib/keksAccessCode';
 
 async function GET__handler(){
   await requireRole(['ADMIN']);
   const month=turkeyMonthWindow();
-  const [codes,accesses,currentCodeRows]=await Promise.all([
-    db.academyCode.findMany({where:{codeHint:{startsWith:currentKeksCodeHintPrefix()}},orderBy:{createdAt:'desc'},take:200}),
+  const [codes,accesses]=await Promise.all([
+    db.academyCode.findMany({orderBy:{createdAt:'desc'},take:200}),
     db.testAccess.findMany({
       orderBy:{createdAt:'desc'},
       take:200,
       include:{student:{select:{fullName:true,studentCode:true}}}
-    }),
-    db.academyCode.findMany({
-      where:{codeHint:{startsWith:currentKeksCodeHintPrefix()}},
-      select:{id:true}
     })
   ]);
 
@@ -65,12 +60,7 @@ async function GET__handler(){
     };
   });
 
-  const currentCodeIds=new Set(currentCodeRows.map(c=>c.id));
-  const safeAccesses=accesses.filter(a=>
-    a.source!=='ACADEMY_CODE'||Boolean(a.academyCodeId&&currentCodeIds.has(a.academyCodeId))
-  );
-
-  return NextResponse.json({ok:true,codes:safeCodes,accesses:safeAccesses,currentMonth:month.key,legacyCodesReset:true});
+  return NextResponse.json({ok:true,codes:safeCodes,accesses,currentMonth:month.key,legacyCodesReset:true});
 }
 
 export const GET = withApiErrors(GET__handler);
