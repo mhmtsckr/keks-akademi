@@ -9,7 +9,7 @@ type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
 const TAB_META:Record<Tab,{eyebrow:string;label:string;description:string}>={
   overview:{eyebrow:'SİSTEM DURUMU',label:'Genel Bakış',description:'Operasyon, kullanım ve ödeme göstergeleri'},
-  workflow:{eyebrow:'ONAY AKIŞI',label:'Değerlendirme & Plan',description:'Eğilim raporu ve kişisel plan onay merkezi'},
+  workflow:{eyebrow:'ONAY AKIŞI',label:'Değerlendirme & Plan',description:'ÖABT alanı, eğilim raporu ve kişisel plan onay merkezi'},
   users:{eyebrow:'HESAP & ROL',label:'Kullanıcı Yönetimi',description:'Koç, öğrenci, veli ve yönetici hesapları'},
   academic:{eyebrow:'AKADEMİK İÇERİK',label:'İçerik & Soru Bankası',description:'Soru onayı, kalite ve mikro içerik yönetimi'},
   payments:{eyebrow:'FİNANS & ERİŞİM',label:'Ödeme & Ürün Kodları',description:'PayTR işlemleri, ürün erişimleri ve kodlar'},
@@ -219,7 +219,7 @@ export function AdminConsole(){
     </section>}
 
     {tab==='workflow'&&<section className="adminPanelSection">
-      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">İKİ AŞAMALI ONAY AKIŞI</div><h2>Değerlendirme & Plan Onayı</h2><p className="muted">Önce KEKS Eğilim Taraması raporunu onaylayın; ön görüşme tamamlandıktan sonra birleşik yıllık/aylık/haftalık/günlük planı onaylayıp koça gönderin.</p></div></div>
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">YÖNETİCİ ONAY MERKEZİ</div><h2>ÖABT Alanı · Değerlendirme · Plan Onayı</h2><p className="muted">AGS/ÖABT alan seçimlerini doğrulayın; ardından KEKS Eğilim Taraması ve kişisel çalışma planı onay akışlarını yönetin.</p></div></div>
       <AdminOabtFieldApprovals/>
       <AdminAssessmentWorkflow/>
     </section>}
