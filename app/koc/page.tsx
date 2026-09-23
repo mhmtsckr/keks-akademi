@@ -6,6 +6,8 @@ import { CoachStudentTable } from '@/app/components/CoachStudentTable';
 import { CoachCommandCenter } from '@/app/components/CoachCommandCenter';
 import { CoachAccessCodeClaim } from '@/app/components/CoachAccessCodeClaim';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
+import { isAgsOabtLabel } from '@/lib/agsExamOptions';
+import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -42,7 +44,7 @@ export default async function CoachPage() {
   const students = await db.student.findMany({
     where:{coachId:user.coachProfile.id},
     select:{
-      id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,createdAt:true,
+      id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,profile:true,createdAt:true,
       coachAlerts:{where:{resolved:false},select:{severity:true,title:true}},
       coachingActions:{where:{status:'ACTIVE'},select:{periodEnd:true,title:true,currentValue:true,targetValue:true}},
       coachingSessions:{where:{startsAt:{gte:now,lte:sevenDaysAhead},status:'SCHEDULED'},select:{id:true,title:true,startsAt:true,endsAt:true,meetingUrl:true},orderBy:{startsAt:'asc'}},
@@ -82,7 +84,10 @@ export default async function CoachPage() {
     if(inactive)reasons.push('7+ gündür düşük aktivite');
     if(dueReviews)reasons.push(dueReviews+' yanlış tekrar');
     return {
-      id:s.id,fullName:s.fullName,studentCode:s.studentCode,gradeLevel:s.gradeLevel,academicTrack:s.academicTrack,
+      id:s.id,fullName:s.fullName,studentCode:s.studentCode,gradeLevel:s.gradeLevel,
+      academicTrack:isAgsOabtLabel(s.gradeLevel)
+        ?(getOabtFieldApproval(s.profile).status==='APPROVED'?s.academicTrack:null)
+        :s.academicTrack,
       riskScore,riskLevel:(riskScore>=50?'HIGH':riskScore>=20?'MEDIUM':'LOW') as 'HIGH'|'MEDIUM'|'LOW',
       reasons,overdueActions:overdue,openAlerts:s.coachAlerts.length,dueReviews,
       activePlans:s.plans.length,
