@@ -80,7 +80,11 @@ async function GET__handler(){
     assignment:{id:assignment.id,status:assignment.status},
     latest:assignment.attempt||null,
     workflowStatus:workflow,
-    product
+    product,
+    studentSelection:{
+      gradeLevel:user.student.gradeLevel||null,
+      academicTrack:user.student.academicTrack||null
+    }
   });
 }
 
@@ -118,14 +122,17 @@ async function POST__handler(req:Request){
     }
   }
 
+  const studentRecord=await db.student.findUnique({where:{id:user.student.id},select:{gradeLevel:true,academicTrack:true}});
   const interviewScores=scoreInterview(form.questions.map(q=>({id:q.id,dimension:q.dimension,reverse:q.reverse})),input.answers);
   const screeningHabitScores=reportObject(assessmentReport.habitScores);
   const scores=combineProgramScores(interviewScores,screeningHabitScores);
   const motivationSignals=scoreMotivationSignals(form.questions.map(q=>({id:q.id,motivationKey:q.motivationKey,reverse:q.reverse})),input.answers);
   const context=openEndedContext(form.questions.map(q=>({id:q.id,orderNo:q.orderNo,dimension:q.dimension,prompt:q.prompt,responseType:q.responseType})),input.answers);
   const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
-  const academicTrack=requiresTrack?input.academicTrack:'GENERAL';
+  const adultExamTrack=form.educationBand==='YETISKIN_SINAV'?(studentRecord?.academicTrack||'GENERAL'):null;
+  const academicTrack=adultExamTrack|| (requiresTrack?input.academicTrack:'GENERAL');
   if(requiresTrack&&academicTrack==='GENERAL')return NextResponse.json({error:'Hazırlık alanınızı seçin.'},{status:400});
+  if(form.educationBand==='YETISKIN_SINAV'&&academicTrack==='GENERAL')return NextResponse.json({error:'AGS/YDS veya AGS/ÖABT alan bilginiz bulunamadı. Kayıt bilgilerinizin güncellenmesi gerekiyor.'},{status:400});
 
   const interviewReport=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any,motivationSignals);
   const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores,motivationSignals);
