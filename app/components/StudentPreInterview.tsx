@@ -71,6 +71,10 @@ export function StudentPreInterview(){
     </div>
     <form className="form preInterviewForm" onSubmit={submit}>
       {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
+      {data.form.educationBand==='YETISKIN_SINAV'&&<div className="notice">
+        <strong>{data.studentSelection?.gradeLevel||'Yetişkin Sınav Grubu'}</strong>
+        <div className="muted">Hazırlık alanınız: {data.studentSelection?.academicTrack||'Alan bilgisi bulunamadı'}. Bu seçim kayıt sırasında belirlenir ve kişisel planınızda otomatik kullanılır.</div>
+      </div>}
       <div className="notice">
         <strong>Yönerge:</strong> Ders, ödev, arkadaşlık ve günlük sorumluluklarında son iki ayı düşün. Sana en çok uyan seçeneği işaretle. Doğru ya da yanlış cevap yoktur; seni en iyi anlatan seçeneği işaretle.
         <div className="muted" style={{marginTop:8}}>(1) Hiç katılmıyorum · (2) Katılmıyorum · (3) Bazen / Kararsızım · (4) Katılıyorum · (5) Tamamen katılıyorum</div>
