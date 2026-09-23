@@ -9,7 +9,6 @@ import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
 import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { writeAudit } from '@/lib/audit';
-import { findUsableReadyTestAccess } from '@/lib/keksAccessCode';
 
 const schema=z.object({
   formVersion:z.string().min(1),
@@ -21,7 +20,10 @@ async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const body=await readJson(req,schema);
-  const access=await findUsableReadyTestAccess(user.student.id);
+  const access=await db.testAccess.findFirst({
+    where:{studentId:user.student.id,status:'READY'},
+    orderBy:{createdAt:'asc'}
+  });
   if(!access)return NextResponse.json({error:'Aktif KEKS test ürünü erişimi bulunmuyor. Aylık ürün için kod kullanın veya satın alın.'},{status:403});
 
   let acquiredAt=access.createdAt;
