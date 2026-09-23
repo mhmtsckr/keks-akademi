@@ -32,7 +32,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       targets:{where:{active:true},orderBy:{createdAt:'desc'},take:1},
       practiceLogs:{orderBy:{date:'desc'},take:30},
       topicProgress:{},
-      reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'}},
+      reviewQueue:{where:{status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'},include:{question:{select:{subject:true,topic:true,sourceKind:true}}}},
       preInterviewAttempts:{orderBy:{completedAt:'desc'},take:3,include:{form:{include:{questions:{orderBy:{orderNo:'asc'}}}}}},
       assessments:{orderBy:{completedAt:'desc'},take:5},
       weeklyReflections:{orderBy:{weekStart:'desc'},take:2}
@@ -43,6 +43,17 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   const coachAssessments=student.assessments.filter(a=>['PLAN_ADMIN_APPROVED','COMPLETED'].includes(String(((a.report||{}) as any).workflowStatus||'')));
   const isAgsOabt=/AGS|ÖABT|OABT/i.test(student.gradeLevel||'');
   const showAgsStudyArithmetic=isAgsOabt&&coachAssessments.length>0;
+  const wrongTopicMap=new Map<string,{subject:string;topic:string;count:number;due:number}>();
+  for(const row of student.reviewQueue){
+    const q=row.question;
+    if(!q||!String(q.sourceKind||'').startsWith('STUDENT_WRONG:'))continue;
+    const key=q.subject+'||'+q.topic;
+    const current=wrongTopicMap.get(key)||{subject:q.subject,topic:q.topic,count:0,due:0};
+    current.count+=1;
+    if(row.dueAt<=new Date())current.due+=1;
+    wrongTopicMap.set(key,current);
+  }
+  const wrongTopicSummary=[...wrongTopicMap.values()].sort((a,b)=>b.count-a.count);
 
   return <PortalShell signedIn
     active="koc"
@@ -114,6 +125,13 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       <div className="card"><div className="kpi">{student.practiceLogs.length}</div><div className="muted">Soru çözüm kaydı</div></div>
     </section>
     <section id="program" className="section section-anchor"><StudentWorkspaceForms studentId={student.id}/></section>
+
+    <section className="section">
+      <div className="card">
+        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">YANLIŞ SORU KONU HARİTASI</div><h2>Öğrencinin tekrar yoğunluğu</h2><p className="muted">Öğrencinin günlük yüklediği yanlış sorular, otomatik konu sınıflandırmasına göre burada gruplanır.</p></div><span className="pill">{student.reviewQueue.filter(x=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')).length} aktif yanlış</span></div>
+        {wrongTopicSummary.length===0?<p className="muted">Henüz öğrenci tarafından yüklenmiş aktif yanlış soru bulunmuyor.</p>:<div className="wrongTopicCoachGrid">{wrongTopicSummary.slice(0,12).map(x=><div key={x.subject+'-'+x.topic}><span>{x.subject}</span><strong>{x.topic}</strong><small>{x.count} soru · {x.due} bugün tekrar</small></div>)}</div>}
+      </div>
+    </section>
 
     <section className="section"><TechniqueUsageSummary sessions={student.techniqueSessions}/></section>
     <section id="calisma" className="section section-anchor"><h2>Mevcut Kayıtlar</h2>
