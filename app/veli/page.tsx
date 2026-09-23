@@ -2,6 +2,7 @@ import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { ParentLoginForm } from '@/app/components/AuthForms';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
+import { PanelNavigator } from '@/app/components/PanelNavigator';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -68,6 +69,26 @@ export default async function ParentPage() {
     wide
   >
     <section className="section">
+      <PanelNavigator roleLabel="Veli" groups={[
+        {label:'GENEL DURUM',description:'Öğrencinin güncel gelişim fotoğrafını hızlıca gör.',items:[
+          {href:'#veli-genel',title:'Genel Gelişim Özeti',description:'Konu ilerleme, program ve çalışma kayıtları'}
+        ]},
+        {label:'HAFTALIK PERFORMANS',description:'Son 7 günün soru ve net özetini incele.',items:[
+          {href:'#haftalik-ozet',title:'Haftalık Özet',description:'Doğru, yanlış, boş ve toplam net'}
+        ]},
+        {label:'HEDEF & PLANLAMA',description:'Öğrencinin hedefi ve uygulanan programları takip et.',items:[
+          {href:'#hedef-plan',title:'Hedef & Programlar',description:'Ana hedef, aktif program ve çalışma yaklaşımı'}
+        ]},
+        {label:'ÖĞRENME & İÇERİK',description:'Öğrenme teknikleri ve veliye açılan içerikler.',items:[
+          {href:'#ogrenme-icerik',title:'Teknikler & İçerikler',description:'Uygulanan teknikler ve paylaşılan öğrenme içerikleri'}
+        ]},
+        {label:'KOÇ DEĞERLENDİRMESİ',description:'Koçun veliye açtığı profesyonel raporları gör.',items:[
+          {href:'#koc-raporlari',title:'Koç Raporları',description:'Gelişim değerlendirmeleri ve öneriler'}
+        ]}
+      ]}/>
+    </section>
+
+    <section id="veli-genel" className="section section-anchor">
       <div className="grid">
         <div className="card"><div className="kpi">%{progressRate}</div><div className="muted">Konu ilerleme oranı</div></div>
         <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Aktif program</div></div>
@@ -76,12 +97,12 @@ export default async function ParentPage() {
       </div>
     </section>
 
-    <section className="section">
-      <PortalSectionTitle eyebrow="HAFTALIK ÖZET" title="Son 7 gün"/>
+    <section id="haftalik-ozet" className="section section-anchor">
+      <PortalSectionTitle eyebrow="HAFTALIK PERFORMANS" title="Son 7 gün"/>
       <div className="card"><div className="row"><span className="pill">Doğru {week.c}</span><span className="pill">Yanlış {week.w}</span><span className="pill">Boş {week.b}</span><span className="pill">Toplam Net {Number(week.n.toFixed(2))}</span></div></div>
     </section>
 
-    <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
+    <section id="hedef-plan" className="section section-anchor"><div className="panelSectionBand"><div><small>HEDEF & PLANLAMA</small><strong>Hedef, program ve çalışma yaklaşımı</strong><p>Öğrencinin yönünü ve uygulanan çalışma düzenini tek bölümde izleyin.</p></div><span>VELİ ÖZETİ</span></div><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
       <div className="card"><h2>Hedef ve Genel Durum</h2><p>{student.goal||'Henüz hedef bilgisi eklenmedi.'}</p>{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
       <div className="card"><h2>Uygulanan Teknikler</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik yok.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:10}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
     </div></section>
@@ -91,12 +112,12 @@ export default async function ParentPage() {
       <div className="card"><h2>Denemeler</h2>{student.examResults.length===0?<p className="muted">Henüz deneme yok.</p>:student.examResults.map(x=><div key={x.id} style={{marginBottom:12}}><strong>{x.examType}</strong><div className="muted">{pretty(x.payload)}</div></div>)}</div>
     </div></section>
 
-    <section className="section">
-      <PortalSectionTitle eyebrow="PAYLAŞILAN İÇERİK" title="Öğrenme İçerikleri"/>
+    <section id="ogrenme-icerik" className="section section-anchor">
+      <PortalSectionTitle eyebrow="ÖĞRENME & İÇERİK" title="Öğrenme İçerikleri"/>
       <div className="card">{student.generatedContent.length===0?<p className="muted">Henüz veliye açılmış içerik yok.</p>:<div className="grid">{student.generatedContent.map(x=><a className="card" key={x.id} href={'/icerik/'+x.id}><span className="pill">{x.type}</span><h3>{x.title}</h3><p className="muted">Kalite: {x.qualityScore??'—'} / 100</p></a>)}</div>}</div>
     </section>
 
-    <section className="section">
+    <section id="koc-raporlari" className="section section-anchor">
       <PortalSectionTitle eyebrow="KOÇ DEĞERLENDİRMESİ" title="Raporlar"/>
       <div className="card">{student.reports.length===0?<p className="muted">Henüz veliye açık rapor yayınlanmadı.</p>:student.reports.map(r=><article key={r.id} style={{padding:'14px 0',borderBottom:'1px solid rgba(255,255,255,.08)'}}><strong>{r.title}</strong>{r.summary&&<p className="muted">{r.summary}</p>}<p>{r.content}</p></article>)}</div>
     </section>
