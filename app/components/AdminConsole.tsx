@@ -3,6 +3,7 @@
 import { useEffect,useMemo,useState } from 'react';
 import { AdminGameCMS } from '@/app/components/AdminGameCMS';
 import { AdminAssessmentWorkflow } from '@/app/components/AdminAssessmentWorkflow';
+import { AdminOabtFieldApprovals } from '@/app/components/AdminOabtFieldApprovals';
 
 type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
@@ -219,6 +220,7 @@ export function AdminConsole(){
 
     {tab==='workflow'&&<section className="adminPanelSection">
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">İKİ AŞAMALI ONAY AKIŞI</div><h2>Değerlendirme & Plan Onayı</h2><p className="muted">Önce KEKS Eğilim Taraması raporunu onaylayın; ön görüşme tamamlandıktan sonra birleşik yıllık/aylık/haftalık/günlük planı onaylayıp koça gönderin.</p></div></div>
+      <AdminOabtFieldApprovals/>
       <AdminAssessmentWorkflow/>
     </section>}
 
