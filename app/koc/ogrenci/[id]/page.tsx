@@ -13,6 +13,7 @@ import { CoachOperationsHub } from '@/app/components/CoachOperationsHub';
 import { CoachSessionWorkflow } from '@/app/components/CoachSessionWorkflow';
 import { CoachPreInterviewSummary } from '@/app/components/CoachPreInterviewSummary';
 import { AgsStudyArithmetic } from '@/app/components/AgsStudyArithmetic';
+import { PanelNavigator } from '@/app/components/PanelNavigator';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -63,19 +64,43 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     meta={<><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}{student.goal&&<span>Hedef tanımlı</span>}<a className="btn" href="/koc">← Öğrencilerim</a></>}
     wide
   >
-    <nav className="tabs no-print">
-      <a href="#genel">Genel Bakış</a><a href="#egilim-taramasi">Eğilim Taraması</a><a href="#ongorusme">Ön Görüşme</a>{showAgsStudyArithmetic&&<a href="#ags-calisma-aritmetigi">AGS Çalışma Aritmetiği</a>}<a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
+    <nav className="tabs coachPrimaryTabs no-print" aria-label="Koç öğrenci çalışma alanı ana bölümleri">
+      <a href="#egilim-taramasi">Profil & Değerlendirme</a>
+      <a href="#program">Planlama & Performans</a>
+      <a href="#seans-akisi">Koçluk & Müdahale</a>
+      <a href="#calisma">Öğrenme & Tekrar</a>
+      <a href="#aylik-gelisim">Raporlama & Gelişim</a>
+      {showAgsStudyArithmetic&&<a href="#ags-calisma-aritmetigi">AGS / ÖABT</a>}
     </nav>
+
     <section className="section">
-      <div className="coachStudentSystemOverview">
-        <a href="#egilim-taramasi"><span>01</span><div><small>EĞİTSEL PROFİL</small><strong>Profil & Ön Görüşme</strong><p>{coachAssessments.length&&student.preInterviewAttempts.length?'Yönetici onaylı profil verisi hazır':'Profil süreci tamamlanmayı bekliyor'}</p></div></a>
-        <a href="#program"><span>02</span><div><small>AKILLI PLANLAMA</small><strong>Kişisel Çalışma Planı</strong><p>{student.plans.filter(x=>x.active).length} aktif plan</p></div></a>
-        <a href="#denemeler"><span>03</span><div><small>PERFORMANS</small><strong>Akademik Performans</strong><p>{student.examResults.length} deneme · {student.practiceLogs.length} soru çözüm kaydı</p></div></a>
-        <a href="#calisma"><span>04</span><div><small>ÖĞRENME & TEKRAR</small><strong>Tekrar Motoru</strong><p>{student.reviewQueue.filter(x=>x.dueAt<=new Date()).length} vadesi gelmiş yanlış tekrar</p></div></a>
-        <a href="#seans-akisi"><span>05</span><div><small>KOÇ KOMUTA</small><strong>Görüşme & Müdahale</strong><p>Haftalık değişim, risk ve görüşme gündemi</p></div></a>
-        <a href="#aylik-gelisim"><span>06</span><div><small>AYLIK GELİŞİM</small><strong>Gelişim & Değerlendirme</strong><p>{student.weeklyReflections[0]?'Son öz değerlendirme '+new Date(student.weeklyReflections[0].weekStart).toLocaleDateString('tr-TR'):'Henüz öz değerlendirme kaydı yok'}</p></div></a>
-        {showAgsStudyArithmetic&&<a href="#ags-calisma-aritmetigi"><span>07</span><div><small>AGS / ÖABT STRATEJİ</small><strong>AGS Çalışma Aritmetiği</strong><p>Yönetici onaylı ders sırası, uygulama ve tekrar sistemi</p></div></a>}
-      </div>
+      <PanelNavigator roleLabel={'Koç · '+student.fullName} groups={[
+        {label:'PROFİL & DEĞERLENDİRME',description:'Öğrenciyi tanı, yönetici onaylı verileri birlikte yorumla.',items:[
+          {href:'#egilim-taramasi',title:'KEKS Eğilim Raporu',description:'Yönetici onaylı eğitsel profil ve davranış göstergeleri'},
+          {href:'#ongorusme',title:'Ön Görüşme',description:'Öğrenci yanıtları, planlama girdileri ve onay akışı'}
+        ]},
+        {label:'PLANLAMA & PERFORMANS',description:'Hedefi programa dönüştür ve akademik sonucu izle.',items:[
+          {href:'#program',title:'Kişisel Çalışma Planı',description:student.plans.filter(x=>x.active).length+' aktif plan'},
+          {href:'#denemeler',title:'Deneme & Soru Performansı',description:student.examResults.length+' deneme · '+student.practiceLogs.length+' soru çözüm kaydı'},
+          {href:'#hedef',title:'Hedef Yönetimi',description:student.goal?'Hedef tanımlı':'Hedef bilgisi bekleniyor'}
+        ]},
+        {label:'KOÇLUK & MÜDAHALE',description:'Görüşme, aksiyon ve risk müdahalelerini yönet.',items:[
+          {href:'#seans-akisi',title:'Seans Akışı',description:'Görüşme öncesi brifing ve haftalık değişim'},
+          {href:'#operasyon',title:'Seans & Aksiyon',description:'Takvim, görev, analitik ve koçluk operasyonları'}
+        ]},
+        {label:'ÖĞRENME & TEKRAR',description:'Yanlış, teknik ve tekrar yoğunluğunu takip et.',items:[
+          {href:'#calisma',title:'Çalışma & Tekrar',description:student.reviewQueue.filter(x=>x.dueAt<=new Date()).length+' vadesi gelmiş tekrar'},
+          {href:'#teknikler',title:'Teknik Kullanımı',description:student.techniqueSessions.length+' yakın dönem teknik oturumu'}
+        ]},
+        {label:'RAPORLAMA & PAYLAŞIM',description:'Aylık gelişimi, raporları ve veli erişimini yönet.',items:[
+          {href:'#aylik-gelisim',title:'Aylık Gelişim',description:student.weeklyReflections[0]?'Öz değerlendirme verisi hazır':'Veri birikimi bekleniyor'},
+          {href:'#raporlar',title:'Raporlar & Kütüphane',description:student.reports.length+' rapor · '+student.libraryItems.length+' kütüphane kaydı'},
+          {href:'#veli',title:'Veli Erişimi',description:student.parentProfiles.length+' aktif veli erişimi'}
+        ]},
+        ...(showAgsStudyArithmetic?[{label:'AGS / ÖABT UZMANLIK ALANI',description:'Yönetici onaylı AGS/ÖABT öğrenci stratejisi.',items:[
+          {href:'#ags-calisma-aritmetigi',title:'AGS Çalışma Aritmetiği',description:'Ders sırası, uygulama, analiz ve tekrar sistemi',badge:'ÖZEL'}
+        ]}]:[])
+      ]}/>
     </section>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
