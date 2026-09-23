@@ -67,6 +67,7 @@ model CoachProfile {
   cohorts Cohort[]
   coachTasks CoachTask[]
   preInterviewAssignments PreInterviewAssignment[]
+  coachAccessClaims CoachAccessCode[]
   createdAt DateTime  @default(now())
 }
 
@@ -132,6 +133,26 @@ model Student {
   coachTasks CoachTask[]
   preInterviewAttempts PreInterviewAttempt[]
   preInterviewAssignments PreInterviewAssignment[]
+  coachAccessCodes CoachAccessCode[]
+}
+
+model CoachAccessCode {
+  id               String        @id @default(cuid())
+  studentId        String
+  student          Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  codeHash         String        @unique
+  codeHint         String
+  codeCiphertext   String
+  active           Boolean       @default(true)
+  expiresAt        DateTime
+  usedAt           DateTime?
+  claimedByCoachId String?
+  claimedByCoach   CoachProfile? @relation(fields: [claimedByCoachId], references: [id], onDelete: SetNull)
+  assessmentId     String?
+  createdAt        DateTime      @default(now())
+
+  @@index([studentId, active])
+  @@index([claimedByCoachId, createdAt])
 }
 
 model StudyPlan {
