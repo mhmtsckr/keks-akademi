@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo,useState } from 'react';
+import { displayExamGroupWithTrack,getAdultExamGroup } from '@/lib/agsExamOptions';
 
 type StudentRow={
   id:string;
@@ -65,7 +66,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
         <td>{s.riskLevel?<span className={'riskBadge '+s.riskLevel.toLowerCase()}>{s.riskLevel==='HIGH'?'ACİL':s.riskLevel==='MEDIUM'?'İZLEM':'NORMAL'}{s.riskScore!=null?' · '+s.riskScore:''}</span>:<span className="muted">—</span>}</td>
         <td>{s.studentCode}</td>
         <td><a href={'/koc/ogrenci/'+s.id}><strong>{s.fullName}</strong></a></td>
-        <td><strong>{s.gradeLevel||'—'}</strong>{s.academicTrack&&<div className="muted">{s.academicTrack}</div>}</td>
+        <td><strong>{displayExamGroupWithTrack(s.gradeLevel,s.academicTrack)}</strong>{getAdultExamGroup(s.gradeLevel)&&<div className="muted">Sınav grubu</div>}</td>
         <td>{s.lastActivity?new Date(s.lastActivity).toLocaleDateString('tr-TR'):<span className="muted">Kayıt yok</span>}{s.overdueActions? <div className="riskText">{s.overdueActions} gecikmiş</div>:null}</td>
         <td><div className="row">
           <a className="btn" href={'/koc/ogrenci/'+s.id}>Aç</a>
