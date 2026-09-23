@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { verifySecret } from '@/lib/security';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
+import { currentKeksCodeHintPrefix,hasBlockingNonPaidTestAccess,keksCodeHashInput } from '@/lib/keksAccessCode';
 
 const schema = z.object({ code: z.string().max(128) });
 
@@ -19,10 +20,7 @@ async function POST__handler(req: Request) {
   const pendingCutoff=new Date(Math.max(month.start.getTime(),now.getTime()-45*60*1000));
 
   const [existingAccess,existingPayment,latestAssessment]=await Promise.all([
-    db.testAccess.findFirst({
-      where:{studentId:user.student.id,source:{not:'PAID'},createdAt:{gte:month.start,lt:month.end},status:{in:['READY','USED']}},
-      orderBy:{createdAt:'desc'}
-    }),
+    hasBlockingNonPaidTestAccess(user.student.id,month.start,month.end),
     db.payment.findFirst({
       where:{
         studentId:user.student.id,
@@ -47,12 +45,12 @@ async function POST__handler(req: Request) {
     return NextResponse.json({error:'Bu ayın KEKS test ürünü daha önce tamamlandı. Aynı kullanıcı aynı aylık ürünü ikinci kez çözemez.',product},{status:409});
   }
 
-  const candidates = await db.academyCode.findMany({ where: { active: true } });
+  const candidates = await db.academyCode.findMany({ where: { active: true, codeHint:{startsWith:currentKeksCodeHintPrefix()} } });
 
   for (const c of candidates) {
     if (c.expiresAt && c.expiresAt < now) continue;
     if (c.assignedStudentId && c.assignedStudentId !== user.student.id) continue;
-    if (!(await verifySecret(code, c.codeHash))) continue;
+    if (!(await verifySecret(keksCodeHashInput(code), c.codeHash))) continue;
 
     if (c.monthlyRecurring) {
       const already=await db.testAccess.findFirst({
