@@ -15,6 +15,7 @@ import { CoachPreInterviewSummary } from '@/app/components/CoachPreInterviewSumm
 import { AgsStudyArithmetic } from '@/app/components/AgsStudyArithmetic';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { displayExamGroupWithTrack,getAdultExamGroup } from '@/lib/agsExamOptions';
+import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -45,9 +46,11 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   const coachAssessments=student.assessments.filter(a=>['PLAN_ADMIN_APPROVED','COMPLETED'].includes(String(((a.report||{}) as any).workflowStatus||'')));
   const gradeLabel=(student.gradeLevel||'').toLocaleUpperCase('tr-TR');
   const adultExamGroup=getAdultExamGroup(student.gradeLevel);
-  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
+  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,isAgsOabt?approvedOabtField:student.academicTrack);
   const isAgsOabt=/ÖABT|OABT/.test(gradeLabel)||(/AGS/.test(gradeLabel)&&!/YDS/.test(gradeLabel));
-  const showAgsStudyArithmetic=isAgsOabt&&coachAssessments.length>0;
+  const oabtApproval=getOabtFieldApproval(student.profile);
+  const approvedOabtField=isAgsOabt&&oabtApproval.status==='APPROVED'?(oabtApproval.approvedField||student.academicTrack):null;
+  const showAgsStudyArithmetic=isAgsOabt&&Boolean(approvedOabtField)&&coachAssessments.length>0;
   const wrongTopicMap=new Map<string,{subject:string;topic:string;count:number;due:number}>();
   for(const row of student.reviewQueue){
     const q=row.question;
@@ -144,7 +147,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       </div>
     </section>
     <section id="ongorusme" className="section section-anchor"><CoachPreInterviewSummary studentId={student.id}/></section>
-    {showAgsStudyArithmetic&&<section id="ags-calisma-aritmetigi" className="section section-anchor"><AgsStudyArithmetic studentName={student.fullName} field={student.academicTrack}/></section>}
+    {showAgsStudyArithmetic&&<section id="ags-calisma-aritmetigi" className="section section-anchor"><AgsStudyArithmetic studentName={student.fullName} field={approvedOabtField}/></section>}
     <section id="seans-akisi" className="section section-anchor"><CoachSessionWorkflow studentId={student.id}/></section>
     <section id="operasyon" className="section section-anchor"><CoachOperationsHub studentId={student.id}/></section>
     <section id="genel" className="grid section-anchor">
