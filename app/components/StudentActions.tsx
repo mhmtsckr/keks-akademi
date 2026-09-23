@@ -214,6 +214,13 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
           <div className="field"><label>Adres</label><textarea name="userAddress" required/></div>
           <button className="btn primary" disabled={busy}>{busy?'Hazırlanıyor…':(product?.priceLabel||'400 TL')+' ile Güvenli Ödemeye Geç'}</button>
         </form>
+        <div className="checkoutLegalLinks">
+          <span>Satın alma öncesi:</span>
+          <a href="/mesafeli-satis-sozlesmesi" target="_blank" rel="noreferrer">Mesafeli Satış Sözleşmesi</a>
+          <a href="/gizlilik-guvenlik" target="_blank" rel="noreferrer">Gizlilik &amp; Güvenlik</a>
+          <a href="/iptal-iade" target="_blank" rel="noreferrer">İptal &amp; İade Koşulları</a>
+          <a href="/iletisim" target="_blank" rel="noreferrer">Açık İletişim Bilgileri</a>
+        </div>
       </div>
     </div>
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')} style={{marginTop:14}}>{msg}</div>}
