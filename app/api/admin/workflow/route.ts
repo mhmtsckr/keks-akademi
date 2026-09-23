@@ -42,13 +42,13 @@ async function GET__handler(){
   const [assessments,attempts,preInterviewForms]=await Promise.all([
     db.assessment.findMany({
       orderBy:{completedAt:'desc'},take:100,
-      include:{student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,coachId:true,coach:{select:{user:{select:{name:true,email:true}}}}}}}
+      include:{student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,coachId:true,coach:{select:{user:{select:{name:true,email:true}}}}}}}
     }),
     db.preInterviewAttempt.findMany({
       where:{reviewStatus:'ADMIN_REVIEW'},
       orderBy:{completedAt:'desc'},take:100,
       include:{
-        student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,coachId:true,coach:{select:{user:{select:{name:true,email:true}}}}}},
+        student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,coachId:true,coach:{select:{user:{select:{name:true,email:true}}}}}},
         form:{include:{questions:{orderBy:{orderNo:'asc'}}}},
         assignment:true
       }
@@ -134,7 +134,7 @@ async function POST__handler(req:Request){
   if(input.action==='approve_screening'){
     const assessment=await db.assessment.findUnique({
       where:{id:input.assessmentId},
-      include:{student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,coachId:true}}}
+      include:{student:{select:{id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,coachId:true}}}
     });
     if(!assessment)return NextResponse.json({error:'Tarama kaydı bulunamadı.'},{status:404});
     const report=obj(assessment.report);
