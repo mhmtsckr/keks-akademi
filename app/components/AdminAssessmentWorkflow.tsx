@@ -166,7 +166,7 @@ export function AdminAssessmentWorkflow(){
       const answerMap=new Map(answerRows.map((x:any)=>[x.questionId,x.value]));
       return <article className="card" key={a.id}>
         <div className="moduleHeaderRow">
-          <div><div className="moduleEyebrow">YÖNETİCİ İNCELEMESİ</div><h2>{a.student.fullName}</h2><p className="muted">Kod: {a.student.studentCode} · {a.student.gradeLevel||'Düzey belirtilmedi'} · {new Date(a.completedAt).toLocaleString('tr-TR')} · Koç: {a.student.coach?.user?.name||'Atanmamış'}</p></div>
+          <div><div className="moduleEyebrow">YÖNETİCİ İNCELEMESİ</div><h2>{a.student.fullName}</h2><p className="muted">Kod: {a.student.studentCode} · {a.student.gradeLevel||'Düzey belirtilmedi'}{a.student.academicTrack?' · Alan: '+a.student.academicTrack:''} · {new Date(a.completedAt).toLocaleString('tr-TR')} · Koç: {a.student.coach?.user?.name||'Atanmamış'}</p></div>
           <span className="pill">{report.dominance?.clarity||'DEĞERLENDİRME'}</span>
         </div>
         <div className="notice"><strong>Bilimsel kullanım sınırı:</strong> {report.disclaimer}</div>
