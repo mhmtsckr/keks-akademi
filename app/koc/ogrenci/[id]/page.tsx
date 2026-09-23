@@ -12,6 +12,7 @@ import { PortalShell } from '@/app/components/PortalShell';
 import { CoachOperationsHub } from '@/app/components/CoachOperationsHub';
 import { CoachSessionWorkflow } from '@/app/components/CoachSessionWorkflow';
 import { CoachPreInterviewSummary } from '@/app/components/CoachPreInterviewSummary';
+import { AgsStudyArithmetic } from '@/app/components/AgsStudyArithmetic';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -40,6 +41,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   if(!student) return notFound();
   const goalProgress=await computeGoalProgress(student.id);
   const coachAssessments=student.assessments.filter(a=>['PLAN_ADMIN_APPROVED','COMPLETED'].includes(String(((a.report||{}) as any).workflowStatus||'')));
+  const isAgsOabt=/AGS|ÖABT|OABT/i.test(student.gradeLevel||'');
+  const showAgsStudyArithmetic=isAgsOabt&&coachAssessments.length>0;
 
   return <PortalShell signedIn
     active="koc"
@@ -50,7 +53,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     wide
   >
     <nav className="tabs no-print">
-      <a href="#genel">Genel Bakış</a><a href="#egilim-taramasi">Eğilim Taraması</a><a href="#ongorusme">Ön Görüşme</a><a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
+      <a href="#genel">Genel Bakış</a><a href="#egilim-taramasi">Eğilim Taraması</a><a href="#ongorusme">Ön Görüşme</a>{showAgsStudyArithmetic&&<a href="#ags-calisma-aritmetigi">AGS Çalışma Aritmetiği</a>}<a href="#seans-akisi">Seans Akışı</a><a href="#operasyon">Seans & Aksiyon</a><a href="#program">Program</a><a href="#calisma">Çalışma</a><a href="#teknikler">Teknikler</a><a href="#denemeler">Denemeler</a><a href="#hedef">Hedef</a><a href="#raporlar">Raporlar</a><a href="#kutuphane">Kütüphane</a><a href="#veli">Veli</a>
     </nav>
     <section className="section">
       <div className="coachStudentSystemOverview">
@@ -60,6 +63,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
         <a href="#calisma"><span>04</span><div><small>ÖĞRENME & TEKRAR</small><strong>Tekrar Motoru</strong><p>{student.reviewQueue.filter(x=>x.dueAt<=new Date()).length} vadesi gelmiş yanlış tekrar</p></div></a>
         <a href="#seans-akisi"><span>05</span><div><small>KOÇ KOMUTA</small><strong>Görüşme & Müdahale</strong><p>Haftalık değişim, risk ve görüşme gündemi</p></div></a>
         <a href="#aylik-gelisim"><span>06</span><div><small>AYLIK GELİŞİM</small><strong>Gelişim & Değerlendirme</strong><p>{student.weeklyReflections[0]?'Son öz değerlendirme '+new Date(student.weeklyReflections[0].weekStart).toLocaleDateString('tr-TR'):'Henüz öz değerlendirme kaydı yok'}</p></div></a>
+        {showAgsStudyArithmetic&&<a href="#ags-calisma-aritmetigi"><span>07</span><div><small>AGS / ÖABT STRATEJİ</small><strong>AGS Çalışma Aritmetiği</strong><p>Yönetici onaylı ders sırası, uygulama ve tekrar sistemi</p></div></a>}
       </div>
     </section>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
@@ -100,6 +104,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       </div>
     </section>
     <section id="ongorusme" className="section section-anchor"><CoachPreInterviewSummary studentId={student.id}/></section>
+    {showAgsStudyArithmetic&&<section id="ags-calisma-aritmetigi" className="section section-anchor"><AgsStudyArithmetic studentName={student.fullName}/></section>}
     <section id="seans-akisi" className="section section-anchor"><CoachSessionWorkflow studentId={student.id}/></section>
     <section id="operasyon" className="section section-anchor"><CoachOperationsHub studentId={student.id}/></section>
     <section id="genel" className="grid section-anchor">
