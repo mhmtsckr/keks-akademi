@@ -772,3 +772,10 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .wrongTopicCoachGrid small{font-size:9px;color:#7f94a8}
 @media(max-width:900px){.wrongTopicCoachGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.wrongTopicCoachGrid{grid-template-columns:1fr}}
+
+
+.wrongQuestionDueCard{background:radial-gradient(circle at 8% 0%,rgba(219,169,56,.12),transparent 26%),linear-gradient(145deg,#0b2745,#081d34)!important;border-color:rgba(232,187,76,.17)!important}
+.wrongReviewTaskList{display:grid;gap:11px;margin-top:14px}
+.wrongReviewTask{display:grid;gap:10px;padding:15px;border-radius:14px;background:#071a30;border:1px solid rgba(229,182,68,.12)}
+.wrongReviewTask>p{margin:0;color:#c1ccd6;line-height:1.6}
+.wrongReviewTaskImage{display:block;width:100%;height:auto;max-height:520px;object-fit:contain;border-radius:12px;border:1px solid rgba(255,255,255,.07);background:#06182b}
