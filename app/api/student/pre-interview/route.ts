@@ -131,8 +131,10 @@ async function POST__handler(req:Request){
   const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
   const adultExamTrack=form.educationBand==='YETISKIN_SINAV'?(studentRecord?.academicTrack||'GENERAL'):null;
   const academicTrack=adultExamTrack|| (requiresTrack?input.academicTrack:'GENERAL');
+  const adultGrade=(studentRecord?.gradeLevel||'').toLocaleUpperCase('tr-TR');
+  const isAgsExam=/AGS|ÖABT|OABT/.test(adultGrade);
   if(requiresTrack&&academicTrack==='GENERAL')return NextResponse.json({error:'Hazırlık alanınızı seçin.'},{status:400});
-  if(form.educationBand==='YETISKIN_SINAV'&&academicTrack==='GENERAL')return NextResponse.json({error:'AGS/YDS veya AGS/ÖABT alan bilginiz bulunamadı. Kayıt bilgilerinizin güncellenmesi gerekiyor.'},{status:400});
+  if(form.educationBand==='YETISKIN_SINAV'&&isAgsExam&&academicTrack==='GENERAL')return NextResponse.json({error:'AGS/YDS veya AGS/ÖABT alan bilginiz bulunamadı. Kayıt bilgilerinizin güncellenmesi gerekiyor.'},{status:400});
 
   const interviewReport=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any,motivationSignals);
   const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores,motivationSignals);
