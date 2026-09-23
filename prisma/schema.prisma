@@ -134,6 +134,7 @@ model Student {
   preInterviewAttempts PreInterviewAttempt[]
   preInterviewAssignments PreInterviewAssignment[]
   coachAccessCodes CoachAccessCode[]
+  wrongQuestions QuestionBankItem[] @relation("StudentWrongQuestions")
 }
 
 model CoachAccessCode {
@@ -400,6 +401,13 @@ model QuestionBankItem {
   correctAnswer     String
   explanation       String?
   sourceKind        String   @default("ORIGINAL")
+  ownerStudentId    String?
+  ownerStudent      Student? @relation("StudentWrongQuestions", fields: [ownerStudentId], references: [id], onDelete: Cascade)
+  imageMimeType     String?
+  imageData         Bytes?
+  classificationConfidence Float?
+  classificationMethod String?
+  originalStudentAnswer String?
   sourceYear        Int?
   officialSourceUrl String?
   active            Boolean  @default(true)
@@ -411,6 +419,7 @@ model QuestionBankItem {
   reviewQueue       ReviewQueueItem[]
 
   @@index([examType, subject, topic, active])
+  @@index([ownerStudentId, createdAt])
 }
 
 model PracticeQuiz {
