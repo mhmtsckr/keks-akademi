@@ -6,7 +6,7 @@ import { FormEvent,useEffect,useMemo,useState } from 'react';
 type Question={id:string;orderNo:number;prompt:string;kind:'TENDENCY'|'HABIT';dimension:string};
 type FormDataState={title:string;version:string;educationBand:string;disclaimer:string;instruction:string;scale:string[];questionCount:number;questions:Question[]};
 type ProductState={key:string;monthName:string;name:string;listPriceKurus:number;listPriceLabel:string;priceKurus:number;priceLabel:string;discountPercent:number};
-type ScreeningState={status:'READY'|'COMPLETED'|'NO_ACCESS'|'ERROR';form?:FormDataState;workflowStatus?:string;product?:ProductState};
+type ScreeningState={status:'READY'|'COMPLETED'|'NO_ACCESS'|'ERROR';form?:FormDataState;workflowStatus?:string;product?:ProductState;coachAccessCode?:string|null;coachAccessCodeExpiresAt?:string|null};
 
 const PAGE_SIZE=10;
 
@@ -33,6 +33,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
   const [page,setPage]=useState(0);
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
+  const [copied,setCopied]=useState(false);
 
   async function load(){
     try{
@@ -107,6 +108,13 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
       <div className="moduleEyebrow">{copy.eyebrow}</div>
       <h2>{product?.name||'KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu'}</h2>
       <div className="notice"><strong>{copy.title}</strong><div className="muted">{copy.text}</div></div>
+      {state.coachAccessCode&&<div className="notice" style={{marginTop:12}}>
+        <div className="moduleEyebrow">KOÇ ERİŞİM KODU</div>
+        <h3 style={{margin:'6px 0'}}>{state.coachAccessCode}</h3>
+        <strong>Bu kodu koçunuza iletiniz.</strong>
+        <div className="muted">Koçunuz /coach sayfasındaki “Öğrenci Erişim Kodu” alanına bu kodu girerek test bağlantınızı doğrulayabilir. Kod tek kullanımlıktır{state.coachAccessCodeExpiresAt?' ve '+new Date(state.coachAccessCodeExpiresAt).toLocaleDateString('tr-TR')+' tarihine kadar geçerlidir.':'.'}</div>
+        <button className="btn" style={{marginTop:10}} onClick={async()=>{await navigator.clipboard.writeText(state.coachAccessCode||'');setCopied(true);setTimeout(()=>setCopied(false),1500)}}>{copied?'Kopyalandı':'Kodu Kopyala'}</button>
+      </div>}
       {msg&&<div className="notice" style={{marginTop:12}}>{msg}</div>}
     </div>;
   }
