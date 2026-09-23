@@ -710,3 +710,28 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .agsArithmeticRetention{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(215,161,53,.12),rgba(235,196,102,.04));border:1px solid rgba(226,179,68,.15)}.agsArithmeticRetention span{font-size:9px;color:#d8a94a;font-weight:900;letter-spacing:.11em}.agsArithmeticRetention strong{font-size:12px;color:#f0d17d}
 @media(max-width:1000px){.agsArithmeticHero{grid-template-columns:1fr}.agsArithmeticFlowSteps{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:760px){.agsArithmeticGrid{grid-template-columns:1fr}.agsArithmeticCard:nth-child(5){grid-column:auto}.agsArithmeticCardTop{grid-template-columns:38px minmax(0,1fr)}.agsArithmeticDuration{grid-column:2;text-align:left}.agsArithmeticTitleRow{display:grid}.agsArithmeticBadge{width:max-content}.agsArithmeticFlowSteps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* KEKS legal pages + checkout legal links */
+.legalFooterLinks{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.legalFooterLinks a{font-size:10px;font-weight:800;color:#9fb0c1;transition:.18s ease}
+.legalFooterLinks a:hover{color:#efca6c}
+.portalFooterBrand{display:grid;gap:3px}
+.portalFooterBrand strong{color:#f0ca6b;letter-spacing:.08em}
+.portalFooterBrand span{font-size:10px;color:#8195a8}
+.legalPage{max-width:1040px;margin:0 auto}
+.legalDoc{display:grid;gap:14px}
+.legalDoc>section{padding:20px 22px;border-radius:17px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(145deg,#0a223d,#071a30);box-shadow:0 12px 34px rgba(0,0,0,.08)}
+.legalDoc h2{margin:0 0 10px;color:#efca6d;font-size:18px}
+.legalDoc p{margin:0;color:#b7c4d0;line-height:1.75;font-size:13px}
+.legalContactCard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.legalContactCard>div{display:grid;gap:5px;padding:13px;border-radius:12px;background:#081d34;border:1px solid rgba(255,255,255,.06)}
+.legalContactCard span{font-size:9px;color:#8195aa;font-weight:900;letter-spacing:.08em}
+.legalContactCard strong{font-size:12px;color:#edf3f8;line-height:1.45;overflow-wrap:anywhere}
+.legalWarning{padding:12px 14px!important;border-radius:12px!important;border:1px solid rgba(230,181,67,.23)!important;background:linear-gradient(135deg,rgba(220,167,54,.12),rgba(255,255,255,.02))!important;color:#d8e0e7}
+.legalWarning h2{color:#efca6d!important}
+.checkoutLegalLinks{display:flex;gap:7px 10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07);font-size:10px}
+.checkoutLegalLinks span{width:100%;color:#8094a8;font-weight:900;letter-spacing:.08em}
+.checkoutLegalLinks a{color:#dfbd64;text-decoration:underline;text-underline-offset:3px}
+.checkoutLegalLinks a:hover{color:#f3d584}
+@media(max-width:760px){.legalContactCard{grid-template-columns:1fr}.legalFooterLinks{justify-content:flex-start}.portalFooter>div{align-items:flex-start!important}}
