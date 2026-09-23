@@ -7,6 +7,7 @@ type StudentRow={
   fullName:string;
   studentCode:string;
   gradeLevel:string|null;
+  academicTrack?:string|null;
   riskLevel?:'HIGH'|'MEDIUM'|'LOW';
   riskScore?:number;
   lastActivity?:string|null;
@@ -22,7 +23,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
   const [risk,setRisk]=useState<'ALL'|'HIGH'|'MEDIUM'|'LOW'>('ALL');
   const visible=useMemo(()=>students.filter(s=>{
     const q=search.trim().toLocaleLowerCase('tr-TR');
-    const match=!q||s.fullName.toLocaleLowerCase('tr-TR').includes(q)||s.studentCode.toLocaleLowerCase('tr-TR').includes(q)||(s.gradeLevel||'').toLocaleLowerCase('tr-TR').includes(q);
+    const match=!q||s.fullName.toLocaleLowerCase('tr-TR').includes(q)||s.studentCode.toLocaleLowerCase('tr-TR').includes(q)||(s.gradeLevel||'').toLocaleLowerCase('tr-TR').includes(q)||(s.academicTrack||'').toLocaleLowerCase('tr-TR').includes(q);
     return match&&(risk==='ALL'||s.riskLevel===risk);
   }),[students,search,risk]);
 
@@ -51,7 +52,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
 
   return <>
     <div className="studentTableTools">
-      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Öğrenci, kod veya sınıf ara…"/>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Öğrenci, kod, grup veya alan ara…"/>
       <select value={risk} onChange={e=>setRisk(e.target.value as any)}>
         <option value="ALL">Tüm öncelikler</option><option value="HIGH">Acil</option><option value="MEDIUM">İzlem</option><option value="LOW">Normal</option>
       </select>
@@ -59,12 +60,12 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
     </div>
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')} style={{marginBottom:12}}>{msg}</div>}
     <table className="table">
-      <thead><tr><th>Öncelik</th><th>Kod</th><th>Öğrenci</th><th>Grup</th><th>Son Aktivite</th><th>İşlem</th></tr></thead>
+      <thead><tr><th>Öncelik</th><th>Kod</th><th>Öğrenci</th><th>Grup / Alan</th><th>Son Aktivite</th><th>İşlem</th></tr></thead>
       <tbody>{visible.map(s=><tr key={s.id}>
         <td>{s.riskLevel?<span className={'riskBadge '+s.riskLevel.toLowerCase()}>{s.riskLevel==='HIGH'?'ACİL':s.riskLevel==='MEDIUM'?'İZLEM':'NORMAL'}{s.riskScore!=null?' · '+s.riskScore:''}</span>:<span className="muted">—</span>}</td>
         <td>{s.studentCode}</td>
         <td><a href={'/koc/ogrenci/'+s.id}><strong>{s.fullName}</strong></a></td>
-        <td>{s.gradeLevel||'—'}</td>
+        <td><strong>{s.gradeLevel||'—'}</strong>{s.academicTrack&&<div className="muted">{s.academicTrack}</div>}</td>
         <td>{s.lastActivity?new Date(s.lastActivity).toLocaleDateString('tr-TR'):<span className="muted">Kayıt yok</span>}{s.overdueActions? <div className="riskText">{s.overdueActions} gecikmiş</div>:null}</td>
         <td><div className="row">
           <a className="btn" href={'/koc/ogrenci/'+s.id}>Aç</a>
