@@ -7,6 +7,7 @@ import { sendStudentCredentials } from '@/lib/mailer';
 import { writeAudit } from '@/lib/audit';
 import { normalizeEducationLevelLabel } from '@/lib/taskEvaluation';
 import { AGS_OABT_FIELDS,isAgsOabtLabel,isAgsYdsLabel } from '@/lib/agsExamOptions';
+import { withOabtFieldApproval } from '@/lib/oabtFieldApproval';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -38,7 +39,18 @@ export async function POST(req:Request){
   if(isAgsOabt&&!AGS_OABT_FIELDS.includes(requestedTrack as any)){
     return NextResponse.json({error:'AGS/ÖABT için geçerli bir alan seçiniz.'},{status:400});
   }
-  const academicTrack=isAgsOabt?requestedTrack:isAgsYds?'YDS':(requestedTrack||null);
+  const academicTrack=isAgsOabt?null:isAgsYds?'YDS':(requestedTrack||null);
+  const initialProfile=isAgsOabt?withOabtFieldApproval(null,{
+    status:'PENDING',
+    requestedField:requestedTrack,
+    requestedAt:new Date().toISOString(),
+    approvedField:null,
+    approvedAt:null,
+    approvedByUserId:null,
+    rejectedAt:null,
+    rejectedByUserId:null,
+    rejectionNote:null
+  }):null;
 
   const existing=await db.user.findUnique({where:{email}});
   if(existing)return NextResponse.json({error:'Bu Gmail adresiyle daha önce hesap oluşturulmuş.'},{status:409});
@@ -71,6 +83,7 @@ export async function POST(req:Request){
         fullName:input.fullName,
         gradeLevel,
         academicTrack,
+        profile:initialProfile as any,
         coachId:coach.id
       }
     });
@@ -120,7 +133,7 @@ export async function POST(req:Request){
     entityType:'Student',
     entityId:created.student.id,
     summary:input.fullName+' öğrenci başvurusu oluşturuldu, seçtiği koça bağlandı ve yönetici kayıtlarına otomatik KEKS ürün kodu eklendi.',
-    metadata:{coachId:coach.id,gradeLevel,academicTrack,email,automaticKeksProductCode:true}
+    metadata:{coachId:coach.id,gradeLevel,academicTrack,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'PENDING':null,email,automaticKeksProductCode:true}
   });
 
   await createSession(created.user.id);
