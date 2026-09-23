@@ -71,7 +71,7 @@ export function StudentPreInterview(){
     </div>
     <form className="form preInterviewForm" onSubmit={submit}>
       {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
-      {data.form.educationBand==='YETISKIN_SINAV'&&<div className="notice">
+      {data.form.educationBand==='YETISKIN_SINAV'&&/AGS|ÖABT|OABT/i.test(String(data.studentSelection?.gradeLevel||''))&&<div className="notice">
         <strong>{data.studentSelection?.gradeLevel||'Yetişkin Sınav Grubu'}</strong>
         <div className="muted">Hazırlık alanınız: {data.studentSelection?.academicTrack||'Alan bilgisi bulunamadı'}. Bu seçim kayıt sırasında belirlenir ve kişisel planınızda otomatik kullanılır.</div>
       </div>}
