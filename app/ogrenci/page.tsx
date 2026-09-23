@@ -14,7 +14,9 @@ import { StudentPreInterview } from '@/app/components/StudentPreInterview';
 import { StudentCommandCenter } from '@/app/components/StudentCommandCenter';
 import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionBank';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
-import { displayExamGroupWithTrack,getAdultExamGroup } from '@/lib/agsExamOptions';
+import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtLabel } from '@/lib/agsExamOptions';
+import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
+import { StudentOabtFieldApproval } from '@/app/components/StudentOabtFieldApproval';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -85,7 +87,10 @@ export default async function StudentPage() {
   const allowedExams=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
   const adultExamGroup=getAdultExamGroup(student.gradeLevel);
   const defaultWrongExam=adultExamGroup||(grade.includes('8')||grade.includes('ortaokul')?'LGS':'TYT');
-  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
+  const isAgsOabt=isAgsOabtLabel(student.gradeLevel);
+  const oabtApproval=getOabtFieldApproval(student.profile);
+  const approvedOabtField=oabtApproval.status==='APPROVED'?(oabtApproval.approvedField||student.academicTrack):null;
+  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,isAgsOabt?approvedOabtField:student.academicTrack);
 
   return <PortalShell signedIn
     active="ogrenci"
@@ -117,6 +122,7 @@ export default async function StudentPage() {
           {href:'#kayitlar-raporlar',title:'Kayıtlar & Raporlar',description:'Çalışma geçmişi, denemeler, raporlar ve kütüphane'}
         ]},
         {label:'TEST & DEĞERLENDİRME',description:'KEKS aylık değerlendirme ürünleri.',items:[
+          ...(isAgsOabt?[{href:'#oabt-alan-onayi',title:'ÖABT Alan Onayı',description:oabtApproval.status==='APPROVED'?'Alan onaylandı ve kilitlendi':oabtApproval.status==='PENDING'?'Yönetici onayı bekleniyor':'Alan seçimini yönetici onayına gönder',badge:oabtApproval.status==='APPROVED'?'KİLİTLİ':'ZORUNLU'}]:[]),
           {href:'#keks-egilim-taramasi',title:'Aylık KEKS Test Ürünü',description:'Eğilim taraması ve ön görüşme',badge:'AYLIK'}
         ]}
       ]}/>
@@ -125,6 +131,11 @@ export default async function StudentPage() {
     <section id="genel-bakis" className="section section-anchor">
       <StudentCommandCenter/>
     </section>
+
+    {isAgsOabt&&<section id="oabt-alan-onayi" className="section section-anchor">
+      <PortalSectionTitle eyebrow="AGS/ÖABT PROFİLİ" title="ÖABT Alan Onayı" description="Alanınızı bir kez seçip yönetici onayına gönderin. Yönetici onayından sonra alan kalıcı olarak kilitlenir."/>
+      <StudentOabtFieldApproval/>
+    </section>}
 
     <section className="section">
       <div className="grid">
