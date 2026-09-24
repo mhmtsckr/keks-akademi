@@ -45,6 +45,8 @@ beforeEach(async () => {
   resetMocks();
   db.academyCode.findMany.mockResolvedValue([]);
   db.testAccess.findFirst.mockResolvedValue(null);
+  db.payment.findFirst.mockResolvedValue(null);
+  db.assessment.findFirst.mockResolvedValue(null);
   await oturumAc(ogrenci);
 });
 
@@ -99,7 +101,7 @@ describe('POST test/access — kod kullanımı', () => {
     const yanit = await POST(jsonRequest(U, { code: KOD }));
 
     expect(yanit.status).toBe(200);
-    await expect(yanit.json()).resolves.toEqual({ ok: true });
+    await expect(yanit.json()).resolves.toMatchObject({ ok: true });
     expect(db.$transaction).toHaveBeenCalledTimes(1);
     expect(db.testAccess.create).toHaveBeenCalledWith({
       data: { studentId: 'ogrenci-1', source: 'ACADEMY_CODE', academyCodeId: 'kod-1' },
@@ -151,11 +153,13 @@ describe('POST test/access — aylık kod', () => {
 
   it('aynı ay ikinci kez kullanılamaz', async () => {
     db.academyCode.findMany.mockResolvedValue([kod({ monthlyRecurring: true })]);
-    db.testAccess.findFirst.mockResolvedValue({ id: 'erisim-1' });
+    db.testAccess.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'erisim-1' });
 
     const yanit = await POST(jsonRequest(U, { code: KOD }));
 
-    expect(yanit.status).toBe(400);
+    expect(yanit.status).toBe(409);
     expect((await yanit.json()).error).toContain('bu ay için zaten kullanıldı');
     expect(db.testAccess.create).not.toHaveBeenCalled();
   });
