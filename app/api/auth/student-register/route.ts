@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
+import { passwordPolicyMessage } from '@/lib/passwordPolicy';
 import { createSession } from '@/lib/auth';
-import { sendStudentCredentials } from '@/lib/mailer';
+import { sendStudentRegistrationNotice } from '@/lib/mailer';
 import { writeAudit } from '@/lib/audit';
 import { normalizeEducationLevelLabel } from '@/lib/taskEvaluation';
 import { AGS_OABT_FIELDS,isAgsOabtLabel,isAgsYdsLabel } from '@/lib/agsExamOptions';
@@ -14,7 +15,8 @@ const schema=z.object({
   email:z.string().email().refine(v=>v.toLowerCase().endsWith('@gmail.com'),'Gmail adresi kullanın.'),
   gradeLevel:z.string().min(1).max(80),
   academicTrack:z.string().max(120).nullable().optional(),
-  coachId:z.string().min(1)
+  coachId:z.string().min(1),
+  password:z.string().min(12).max(128)
 });
 
 async function uniqueStudentCode(){
@@ -31,7 +33,9 @@ export async function POST(req:Request){
   const parsed=schema.safeParse(body);
   if(!parsed.success)return NextResponse.json({error:parsed.error.issues[0]?.message||'Kayıt bilgileri eksik.'},{status:400});
   const input=parsed.data;
-  const email=input.email.toLowerCase();
+  const passwordError=passwordPolicyMessage(input.password);
+  if(passwordError)return NextResponse.json({error:passwordError},{status:400});
+  const email=input.email.trim().toLowerCase();
   const gradeLevel=normalizeEducationLevelLabel(input.gradeLevel)||input.gradeLevel.trim();
   const isAgsOabt=isAgsOabtLabel(gradeLevel);
   const isAgsYds=isAgsYdsLabel(gradeLevel);
@@ -73,7 +77,7 @@ export async function POST(req:Request){
 
   const created=await db.$transaction(async tx=>{
     const user=await tx.user.create({
-      data:{name:input.fullName,email,role:'STUDENT',status:'ACTIVE'}
+      data:{name:input.fullName,email,passwordHash:await hashSecret(input.password),role:'STUDENT',status:'ACTIVE'}
     });
     const student=await tx.student.create({
       data:{
@@ -109,12 +113,10 @@ export async function POST(req:Request){
 
   let mailSent=false;
   try{
-    const mail:any=await sendStudentCredentials({
+    const mail:any=await sendStudentRegistrationNotice({
       email,
       studentName:input.fullName,
       studentCode,
-      accessKey,
-      accessKeyExpiresAt,
       coachName:coach.user.name
     });
     mailSent=!Boolean(mail?.skipped||mail?.error);
@@ -147,10 +149,10 @@ export async function POST(req:Request){
     emailStatus:mailSent?'SENT':'PENDING',
     message:mailSent
       ? (isAgsOabt
-          ? 'Başvurunuz alındı. AGS/ÖABT alanınız otomatik onaylandı ve kilitlendi. Öğrenci kodunuz ile 1 yıl geçerli giriş anahtarınız Gmail adresinize gönderildi.'
-          : 'Başvurunuz alınmıştır. Öğrenci kodunuz ve 1 yıl geçerli giriş anahtarınız Gmail adresinize gönderildi. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.')
+          ? 'Başvurunuz alındı. AGS/ÖABT alanınız otomatik onaylandı ve kilitlendi. Bundan sonra Gmail adresiniz ve oluşturduğunuz şifreyle giriş yapabilirsiniz.'
+          : 'Başvurunuz alınmıştır. Bundan sonra Gmail adresiniz ve oluşturduğunuz şifreyle giriş yapabilirsiniz. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.')
       : (isAgsOabt
-          ? 'Başvurunuz alındı. AGS/ÖABT alanınız otomatik onaylandı ve kilitlendi. Gmail gönderimi bekliyor; giriş bilgileriniz sistemde güvenli biçimde saklanıyor.'
-          : 'Başvurunuz alınmıştır ve seçtiğiniz koça bağlandınız. Gmail gönderimi şu anda bekliyor; bilgileriniz sistemde güvenli biçimde saklandı ve tekrar gönderilebilir.')
+          ? 'Başvurunuz alındı. AGS/ÖABT alanınız otomatik onaylandı ve kilitlendi. Bilgilendirme e-postası gönderilemedi; ancak Gmail adresiniz ve oluşturduğunuz şifreyle giriş yapabilirsiniz.'
+          : 'Başvurunuz alınmıştır ve seçtiğiniz koça bağlandınız. Bilgilendirme e-postası gönderilemedi; ancak Gmail adresiniz ve oluşturduğunuz şifreyle giriş yapabilirsiniz.')
   });
 }

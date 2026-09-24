@@ -57,6 +57,37 @@ export async function resendStudentAccessKey(input:{email:string;studentName:str
   return sendFromKeksGmail(input.email,'KEKS Akademi | Giriş anahtarınız',html);
 }
 
+export async function sendStudentRegistrationNotice(input:{email:string;studentName:string;studentCode:string;coachName:string}){
+  const html=`
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
+      <h1>KEKS Akademi Öğrenci Kaydı</h1>
+      <p>Merhaba <strong>${escapeHtml(input.studentName)}</strong>,</p>
+      <p>Kaydınız tamamlandı ve koçunuz <strong>${escapeHtml(input.coachName)}</strong> olarak tanımlandı.</p>
+      <div style="padding:16px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2">
+        <p><strong>Giriş e-postası:</strong> ${escapeHtml(input.email)}</p>
+        <p><strong>Öğrenci kodu:</strong> ${escapeHtml(input.studentCode)}</p>
+      </div>
+      <p>Şifreniz e-posta ile gönderilmez ve KEKS Akademi tarafından görüntülenmez. Girişte kayıt sırasında oluşturduğunuz şifreyi kullanın.</p>
+      <p>Şifrenizi unutursanız giriş ekranındaki “Şifremi unuttum” bağlantısından e-posta doğrulamasıyla yeni şifre oluşturabilirsiniz.</p>
+      <p>KEKS Akademi</p>
+    </div>`;
+  return sendFromKeksGmail(input.email,'KEKS Akademi | Kaydınız tamamlandı',html);
+}
+
+export async function sendPasswordResetCode(input:{email:string;name:string;code:string}){
+  const html=`
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
+      <h1>KEKS Akademi Şifre Yenileme</h1>
+      <p>Merhaba <strong>${escapeHtml(input.name)}</strong>,</p>
+      <p>Şifrenizi yenilemek için doğrulama kodunuz:</p>
+      <div style="font-size:30px;font-weight:800;letter-spacing:8px;padding:18px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2;text-align:center">${escapeHtml(input.code)}</div>
+      <p>Bu kod 10 dakika geçerlidir. Kodu hiç kimseyle paylaşmayın.</p>
+      <p>Bu talebi siz oluşturmadıysanız e-postayı dikkate almayın; mevcut şifreniz değişmez.</p>
+      <p>KEKS Akademi</p>
+    </div>`;
+  return sendFromKeksGmail(input.email,'KEKS Akademi | Şifre yenileme kodu',html);
+}
+
 export async function sendAssessmentReport(input: { studentCode: string; studentName: string; assessmentId: string; report: unknown }) {
   const recipient = KEKS_CONTACT_EMAIL;
   const body = `

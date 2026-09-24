@@ -14,3 +14,7 @@ Release retry: 2026-09-24 15:45 TRT
 - CSS responsive fix: restored admin max-width 760 media block
 - Account lifecycle: ACTIVE -> SUSPENDED (30-day retention) -> DELETED
 - Suspended accounts are no longer auto-deleted or auto-purged during registration
+- Student and coach login: email + strong password
+- Remember me: secure 30-day session cookie, no password stored in localStorage
+- Password reset: verified account info + 10-minute email code
+- Password policy: 12+ chars, 4 character classes, sequential/common pattern blocking

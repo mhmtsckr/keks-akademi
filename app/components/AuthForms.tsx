@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { ADULT_EXAM_GROUPS, AGS_OABT_FIELDS } from '@/lib/agsExamOptions';
+import { passwordPolicyErrors } from '@/lib/passwordPolicy';
 
 function Message({value}:{value:string}) {
   if (!value) return null;
@@ -9,139 +10,185 @@ function Message({value}:{value:string}) {
   return <div className={`notice ${bad ? 'error' : ''}`}>{value}</div>;
 }
 
-export function StudentLoginForm() {
+function PasswordRules({password}:{password:string}){
+  const errors=password?passwordPolicyErrors(password):[];
+  return <div className="notice">
+    <strong>Güçlü şifre kuralları</strong>
+    <div className="muted">En az 12 karakter; 16+ önerilir. Büyük harf, küçük harf, rakam ve özel karakter zorunludur. 123456, qwerty, asdfgh, 112233 ve ardışık dizilimler kullanılamaz.</div>
+    {password&&<div style={{marginTop:6}}>{errors.length?errors.map(x=><div key={x}>• {x}</div>):<strong>Şifre kurallara uygun.</strong>}</div>}
+  </div>;
+}
+
+function PasswordResetForm({role,onClose}:{role:'STUDENT'|'COACH';onClose:()=>void}){
+  const [stage,setStage]=useState<'request'|'confirm'>('request');
+  const [challenge,setChallenge]=useState('');
   const [msg,setMsg]=useState('');
-  const [studentCode,setStudentCode]=useState('');
-  const [accessKey,setAccessKey]=useState('');
-  const [remember,setRemember]=useState(false);
-  const [forgotOpen,setForgotOpen]=useState(false);
-  const [forgotMsg,setForgotMsg]=useState('');
-  const [forgotBusy,setForgotBusy]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const [newPassword,setNewPassword]=useState('');
+  const [showPassword,setShowPassword]=useState(false);
 
-  useEffect(()=>{
-    try{
-      const raw=localStorage.getItem('keks.studentLogin.v1');
-      if(!raw)return;
-      const saved=JSON.parse(raw);
-      if(typeof saved?.studentCode==='string'&&typeof saved?.accessKey==='string'){
-        setStudentCode(saved.studentCode);
-        setAccessKey(saved.accessKey);
-        setRemember(true);
-      }
-    }catch{
-      localStorage.removeItem('keks.studentLogin.v1');
-    }
-  },[]);
-
-  async function submit(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setMsg('');
-    const r=await fetch('/api/auth/student-login',{
-      method:'POST',
-      headers:{'content-type':'application/json'},
-      body:JSON.stringify({studentCode,accessKey})
-    });
-    const j=await r.json();
-    if(!r.ok){
-      if(j.code==='ACCESS_KEY_EXPIRED'){
-        try{localStorage.removeItem('keks.studentLogin.v1')}catch{}
-        setAccessKey('');
-        setRemember(false);
-      }
-      return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
-    }
-    try{
-      if(remember)localStorage.setItem('keks.studentLogin.v1',JSON.stringify({studentCode,accessKey}));
-      else localStorage.removeItem('keks.studentLogin.v1');
-    }catch{}
-    location.href='/ogrenci';
-  }
-
-  async function forgot(e:FormEvent<HTMLFormElement>){
-    e.preventDefault();setForgotMsg('');setForgotBusy(true);
+  async function requestCode(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();setBusy(true);setMsg('');
     const fd=new FormData(e.currentTarget);
     try{
-      const r=await fetch('/api/auth/student-access-key',{
+      const r=await fetch('/api/auth/password-reset/request',{
         method:'POST',
         headers:{'content-type':'application/json'},
         body:JSON.stringify({
-          studentCode:fd.get('studentCode'),
-          fullName:fd.get('fullName'),
-          email:fd.get('email')
+          role,
+          email:fd.get('email'),
+          studentCode:role==='STUDENT'?fd.get('studentCode'):undefined,
+          fullName:role==='COACH'?fd.get('fullName'):undefined
         })
       });
       const j=await r.json();
-      if(!r.ok)setForgotMsg('Hata: '+(j.error||'Giriş anahtarı gönderilemedi.'));
-      else setForgotMsg(j.message||'Giriş anahtarınız kayıtlı Gmail adresinize yeniden gönderildi.');
-    }finally{setForgotBusy(false)}
+      if(!r.ok)return setMsg('Hata: '+(j.error||'Doğrulama kodu gönderilemedi.'));
+      setMsg(j.message||'Bilgiler eşleşirse doğrulama kodu e-posta adresinize gönderilir.');
+      if(j.sent&&j.challenge){setChallenge(j.challenge);setStage('confirm')}
+    }finally{setBusy(false)}
   }
 
-  return <div className="stack">
-    <form className="form" onSubmit={submit}>
-      <div className="field"><label>Öğrenci kodu</label><input name="studentCode" required autoComplete="username" value={studentCode} onChange={e=>setStudentCode(e.target.value)}/></div>
-      <div className="field"><label>Giriş anahtarı</label><input name="accessKey" type="password" required autoComplete="current-password" value={accessKey} onChange={e=>setAccessKey(e.target.value)}/></div>
-      <label className="row" style={{justifyContent:'flex-start',gap:8,cursor:'pointer'}}>
-        <input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/>
-        <span>Beni unutma <small className="muted">· Bu cihazda öğrenci kodu ve giriş anahtarı otomatik doldurulur.</small></span>
-      </label>
-      <button className="btn primary" type="submit">Öğrenci Girişi</button>
-      <button className="btn" type="button" onClick={()=>{setForgotOpen(v=>!v);setForgotMsg('')}}>{forgotOpen?'Geri dön':'Giriş anahtarını unuttum'}</button>
-      <Message value={msg}/>
-    </form>
+  async function confirmReset(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();setBusy(true);setMsg('');
+    const fd=new FormData(e.currentTarget);
+    const errors=passwordPolicyErrors(newPassword);
+    if(errors.length){setBusy(false);return setMsg('Hata: '+errors[0])}
+    if(newPassword!==String(fd.get('passwordConfirm')||'')){setBusy(false);return setMsg('Hata: Şifreler eşleşmiyor.')}
+    try{
+      const r=await fetch('/api/auth/password-reset/confirm',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({challenge,code:fd.get('code'),password:newPassword})
+      });
+      const j=await r.json();
+      if(!r.ok)return setMsg('Hata: '+(j.error||'Şifre yenilenemedi.'));
+      setMsg(j.message||'Şifreniz yenilendi.');
+      setStage('request');setChallenge('');setNewPassword('');
+    }finally{setBusy(false)}
+  }
 
-    {forgotOpen&&<form className="form card" onSubmit={forgot}>
-      <div className="moduleEyebrow">GİRİŞ ANAHTARI YENİDEN GÖNDERİMİ</div>
-      <p className="muted">Bilgiler kayıtla eşleşirse ve anahtarın 1 yıllık süresi dolmamışsa mevcut giriş anahtarınız değiştirilmeden kayıtlı Gmail adresinize yeniden gönderilir.</p>
-      <div className="field"><label>Öğrenci kodu</label><input name="studentCode" required defaultValue={studentCode}/></div>
-      <div className="field"><label>Ad soyad</label><input name="fullName" required autoComplete="name"/></div>
-      <div className="field"><label>Kayıtlı Gmail adresi</label><input name="email" type="email" required autoComplete="email"/></div>
-      <button className="btn primary" type="submit" disabled={forgotBusy}>{forgotBusy?'Doğrulanıyor…':'Bilgileri Doğrula ve Anahtarı Gönder'}</button>
-      <Message value={forgotMsg}/>
+  return <div className="card form">
+    <div className="moduleEyebrow">ŞİFRE YENİLEME</div>
+    <h3>Şifremi unuttum</h3>
+    {stage==='request'?<form className="form" onSubmit={requestCode}>
+      <div className="field"><label>Kayıtlı e-posta</label><input name="email" type="email" required autoComplete="email"/></div>
+      {role==='STUDENT'
+        ?<div className="field"><label>Öğrenci kodu</label><input name="studentCode" required/></div>
+        :<div className="field"><label>Ad soyad</label><input name="fullName" required autoComplete="name"/></div>}
+      <button className="btn primary" type="submit" disabled={busy}>{busy?'Doğrulanıyor…':'Bilgileri Doğrula ve Kod Gönder'}</button>
+    </form>:<form className="form" onSubmit={confirmReset}>
+      <div className="field"><label>E-postadaki 6 haneli kod</label><input name="code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required autoComplete="one-time-code"/></div>
+      <div className="field"><label>Yeni şifre</label><input name="password" type={showPassword?'text':'password'} value={newPassword} onChange={e=>setNewPassword(e.target.value)} required autoComplete="new-password"/></div>
+      <div className="field"><label>Yeni şifre tekrar</label><input name="passwordConfirm" type={showPassword?'text':'password'} required autoComplete="new-password"/></div>
+      <label className="row" style={{justifyContent:'flex-start',gap:8}}><input type="checkbox" checked={showPassword} onChange={e=>setShowPassword(e.target.checked)}/><span>Şifreyi göster</span></label>
+      <PasswordRules password={newPassword}/>
+      <button className="btn primary" type="submit" disabled={busy}>{busy?'Kaydediliyor…':'Yeni Şifreyi Kaydet'}</button>
+      <button className="btn" type="button" onClick={()=>{setStage('request');setChallenge('');setMsg('')}}>Yeni Kod İste</button>
     </form>}
+    <button className="btn" type="button" onClick={onClose}>Giriş ekranına dön</button>
+    <Message value={msg}/>
   </div>;
+}
+
+export function StudentLoginForm() {
+  const [msg,setMsg]=useState('');
+  const [remember,setRemember]=useState(false);
+  const [forgotOpen,setForgotOpen]=useState(false);
+
+  if(forgotOpen)return <PasswordResetForm role="STUDENT" onClose={()=>setForgotOpen(false)}/>;
+
+  async function submit(e:FormEvent<HTMLFormElement>) {
+    e.preventDefault();setMsg('');
+    const fd=new FormData(e.currentTarget);
+    const r=await fetch('/api/auth/login',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({email:fd.get('email'),password:fd.get('password'),remember})
+    });
+    const j=await r.json();
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
+    if(j.role!=='STUDENT')return setMsg('Hata: Bu hesap öğrenci hesabı değil.');
+    location.href='/ogrenci';
+  }
+
+  return <form className="form" onSubmit={submit}>
+    <div className="field"><label>E-posta</label><input name="email" type="email" required autoComplete="email"/></div>
+    <div className="field"><label>Şifre</label><input name="password" type="password" required autoComplete="current-password"/></div>
+    <label className="row" style={{justifyContent:'flex-start',gap:8,cursor:'pointer'}}>
+      <input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/>
+      <span>Bunu hatırla <small className="muted">· Bu cihazdaki oturum 30 güne kadar açık kalır.</small></span>
+    </label>
+    <button className="btn primary" type="submit">Öğrenci Girişi</button>
+    <button className="btn" type="button" onClick={()=>setForgotOpen(true)}>Şifremi unuttum</button>
+    <Message value={msg}/>
+  </form>;
 }
 
 export function AccountLoginForm({redirect='/koc'}:{redirect?:string}) {
   const [msg,setMsg]=useState('');
+  const [remember,setRemember]=useState(false);
+  const [forgotOpen,setForgotOpen]=useState(false);
+  if(forgotOpen)return <PasswordResetForm role="COACH" onClose={()=>setForgotOpen(false)}/>;
+
   async function submit(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setMsg('');
+    e.preventDefault();setMsg('');
     const fd=new FormData(e.currentTarget);
-    const r=await fetch('/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:fd.get('email'),password:fd.get('password')})});
+    const r=await fetch('/api/auth/login',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({email:fd.get('email'),password:fd.get('password'),remember})
+    });
     const j=await r.json();
-    if(!r.ok) return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
-    location.href=j.role==='ADMIN'?'/yonetici':redirect;
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
+    if(j.role==='ADMIN')location.href='/yonetici';
+    else if(j.role==='COACH')location.href=redirect;
+    else if(j.role==='STUDENT')location.href='/ogrenci';
+    else location.href='/veli';
   }
   return <form className="form" onSubmit={submit}>
     <div className="field"><label>E-posta</label><input name="email" type="email" required autoComplete="email"/></div>
     <div className="field"><label>Şifre</label><input name="password" type="password" required autoComplete="current-password"/></div>
-    <button className="btn primary" type="submit">Giriş Yap</button><Message value={msg}/>
+    <label className="row" style={{justifyContent:'flex-start',gap:8,cursor:'pointer'}}>
+      <input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/>
+      <span>Bunu hatırla <small className="muted">· Bu cihazdaki oturum 30 güne kadar açık kalır.</small></span>
+    </label>
+    <button className="btn primary" type="submit">Giriş Yap</button>
+    <button className="btn" type="button" onClick={()=>setForgotOpen(true)}>Şifremi unuttum</button>
+    <Message value={msg}/>
   </form>;
 }
 
 export function CoachRegisterForm() {
   const [msg,setMsg]=useState('');
+  const [password,setPassword]=useState('');
   async function submit(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setMsg('');
+    e.preventDefault();setMsg('');
+    const errors=passwordPolicyErrors(password);
+    if(errors.length)return setMsg('Hata: '+errors[0]);
     const form=e.currentTarget;
     const fd=new FormData(form);
-    const r=await fetch('/api/auth/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:fd.get('name'),email:fd.get('email'),password:fd.get('password')})});
+    if(password!==String(fd.get('passwordConfirm')||''))return setMsg('Hata: Şifreler eşleşmiyor.');
+    const r=await fetch('/api/auth/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:fd.get('name'),email:fd.get('email'),password})});
     const j=await r.json();
-    if(!r.ok) return setMsg('Hata: '+(j.error||'Kayıt başarısız.'));
-    form.reset(); setMsg('Koç hesabı oluşturuldu. Yönetici onayından sonra giriş yapabilirsiniz.');
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Kayıt başarısız.'));
+    form.reset();setPassword('');setMsg('Koç hesabı oluşturuldu. Yönetici onayından sonra giriş yapabilirsiniz.');
   }
   return <form className="form" onSubmit={submit}>
-    <div className="field"><label>Ad soyad</label><input name="name" required/></div>
-    <div className="field"><label>E-posta</label><input name="email" type="email" required/></div>
-    <div className="field"><label>Şifre</label><input name="password" type="password" minLength={8} required/></div>
+    <div className="field"><label>Ad soyad</label><input name="name" required autoComplete="name"/></div>
+    <div className="field"><label>E-posta</label><input name="email" type="email" required autoComplete="email"/></div>
+    <div className="field"><label>Şifre</label><input name="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={12} required autoComplete="new-password"/></div>
+    <div className="field"><label>Şifre tekrar</label><input name="passwordConfirm" type="password" minLength={12} required autoComplete="new-password"/></div>
+    <PasswordRules password={password}/>
     <button className="btn" type="submit">Koç Hesabı Oluştur</button><Message value={msg}/>
   </form>;
 }
-
 
 export function StudentRegisterForm() {
   const [msg,setMsg]=useState('');
   const [coaches,setCoaches]=useState<Array<{id:string;name:string;studentCount:number}>>([]);
   const [loadingCoaches,setLoadingCoaches]=useState(true);
   const [gradeLevel,setGradeLevel]=useState('');
+  const [password,setPassword]=useState('');
   const isAgsOabt=gradeLevel==='AGS/ÖABT';
   const isAgsYds=gradeLevel==='AGS/YDS';
 
@@ -151,19 +198,17 @@ export function StudentRegisterForm() {
       const r=await fetch('/api/public/coaches');
       const j=await r.json();
       if(r.ok&&j.ok)setCoaches(j.coaches||[]);
-    }catch{
-      // Ag hatasi yakalanmazsa yakalanmamis promise reddi olusuyordu.
-      // Liste bos kalir; kullaniciya formda sebebi aciklanir.
-      setCoaches([]);
-    }finally{setLoadingCoaches(false)}
+    }catch{setCoaches([])}finally{setLoadingCoaches(false)}
   }
-
   useEffect(()=>{void loadCoaches()},[]);
 
   async function submit(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setMsg('');
+    e.preventDefault();setMsg('');
+    const errors=passwordPolicyErrors(password);
+    if(errors.length)return setMsg('Hata: '+errors[0]);
     const form=e.currentTarget;
     const fd=new FormData(form);
+    if(password!==String(fd.get('passwordConfirm')||''))return setMsg('Hata: Şifreler eşleşmiyor.');
     const r=await fetch('/api/auth/student-register',{
       method:'POST',
       headers:{'content-type':'application/json'},
@@ -172,19 +217,22 @@ export function StudentRegisterForm() {
         email:fd.get('email'),
         gradeLevel:fd.get('gradeLevel'),
         academicTrack:isAgsOabt?fd.get('academicTrack'):isAgsYds?'YDS':null,
-        coachId:fd.get('coachId')
+        coachId:fd.get('coachId'),
+        password
       })
     });
     const j=await r.json();
-    if(!r.ok) return setMsg('Hata: '+(j.error||'Başvuru oluşturulamadı.'));
-    form.reset();
-    setGradeLevel('');
-    setMsg(j.message||'Başvurunuz alınmıştır. Giriş bilgileriniz Gmail adresinize gönderildi.');
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Başvuru oluşturulamadı.'));
+    form.reset();setGradeLevel('');setPassword('');
+    setMsg(j.message||'Kaydınız tamamlandı. E-posta ve şifrenizle giriş yapabilirsiniz.');
   }
 
   return <form className="form" onSubmit={submit}>
-    <div className="field"><label>Ad soyad</label><input name="fullName" required/></div>
-    <div className="field"><label>Gmail adresi</label><input name="email" type="email" placeholder="ornek@gmail.com" required/></div>
+    <div className="field"><label>Ad soyad</label><input name="fullName" required autoComplete="name"/></div>
+    <div className="field"><label>Gmail adresi</label><input name="email" type="email" placeholder="ornek@gmail.com" required autoComplete="email"/></div>
+    <div className="field"><label>Şifre</label><input name="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={12} required autoComplete="new-password"/></div>
+    <div className="field"><label>Şifre tekrar</label><input name="passwordConfirm" type="password" minLength={12} required autoComplete="new-password"/></div>
+    <PasswordRules password={password}/>
     <div className="field"><label>Eğitim düzeyi / sınav grubu</label><select name="gradeLevel" required value={gradeLevel} onChange={e=>setGradeLevel(e.target.value)}>
       <option value="">Seçiniz</option>
       <optgroup label="Eğitim Düzeyi">
@@ -200,7 +248,7 @@ export function StudentRegisterForm() {
         {ADULT_EXAM_GROUPS.map(group=><option key={group} value={group}>{group}</option>)}
       </optgroup>
     </select>
-      <small className="muted">Sınav grupları: DGS, KPSS, EKPSS, ALES, AGS/YDS, YÖKDİL, AGS/ÖABT ve YDS. AGS/ÖABT seçildiğinde alan seçimi zorunludur.</small>
+      <small className="muted">AGS/ÖABT seçildiğinde alan seçimi zorunludur.</small>
     </div>
     {isAgsOabt&&<div className="field agsBranchField">
       <label>ÖABT alanı</label>
@@ -208,19 +256,16 @@ export function StudentRegisterForm() {
         <option value="">Alanınızı seçiniz</option>
         {AGS_OABT_FIELDS.map(field=><option key={field} value={field}>{field}</option>)}
       </select>
-      <small className="muted">Seçtiğiniz alan kayıt tamamlandığında otomatik olarak onaylanır ve kilitlenir. Öğrenci ve koç panelinde “AGS/ÖABT- ALAN ADI” biçiminde görünür.</small>
+      <small className="muted">Seçtiğiniz alan kayıt tamamlandığında otomatik olarak onaylanır ve kilitlenir.</small>
     </div>}
-    {isAgsYds&&<div className="notice">
-      <strong>AGS/YDS çalışma grubu</strong>
-      <div className="muted">Bu grupta alan bilgisi otomatik olarak YDS şeklinde kaydedilir. ÖABT branş seçimi gösterilmez.</div>
-    </div>}
+    {isAgsYds&&<div className="notice"><strong>AGS/YDS çalışma grubu</strong><div className="muted">Alan bilgisi otomatik YDS olarak kaydedilir.</div></div>}
     <div className="field"><label>Koçunu seç</label><select name="coachId" required defaultValue="">
       <option value="">{loadingCoaches?'Koçlar yükleniyor…':coaches.length?'Koç seçiniz':'Aktif koç yok'}</option>
       {coaches.map(c=><option value={c.id} key={c.id}>{c.name} · {c.studentCount} öğrenci</option>)}
     </select></div>
     {!loadingCoaches&&coaches.length===0&&<div className="notice error" role="alert">Şu anda başvuruya açık koç bulunmuyor. Lütfen daha sonra tekrar deneyin.</div>}
-    <div className="notice">Başvurunuz tamamlandığında öğrenci kodunuz ve özel giriş anahtarınız yalnızca bu Gmail adresine gönderilir. Seçtiğiniz koçun “Öğrencilerim” paneline otomatik eklenirsiniz.</div>
-    <button className="btn" type="submit" disabled={loadingCoaches||coaches.length===0}>Başvuruyu Gönder</button>
+    <div className="notice">Giriş bilgileriniz <strong>e-posta + oluşturduğunuz şifre</strong> olacaktır. Şifreniz e-posta ile gönderilmez. Öğrenci kodunuz sistem içi kimlik ve şifre yenileme doğrulaması için kullanılmaya devam eder.</div>
+    <button className="btn" type="submit" disabled={loadingCoaches||coaches.length===0}>Kaydı Tamamla</button>
     <Message value={msg}/>
   </form>;
 }

@@ -6,14 +6,15 @@ import { AuthError } from './apiGuard';
 const secret = () => new TextEncoder().encode(process.env.AUTH_SECRET!);
 const COOKIE = 'keks_session';
 
-export async function createSession(userId: string) {
+export async function createSession(userId: string, remember=false) {
+  const maxAge=remember?60*60*24*30:60*60*24;
   const token = await new SignJWT({ sub: userId })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
+    .setExpirationTime(remember?'30d':'1d')
     .sign(secret());
   const jar = await cookies();
-  jar.set(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60 * 60 * 24 * 7 });
+  jar.set(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge });
 }
 
 export async function destroySession() {
