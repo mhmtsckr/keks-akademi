@@ -12,7 +12,11 @@ export function AdminOabtFieldApprovals(){
     const j=await r.json();
     if(r.ok)setData(j);
   }
-  useEffect(()=>{void load()},[]);
+  useEffect(()=>{
+    void load();
+    const timer=window.setInterval(()=>{void load()},6000);
+    return ()=>window.clearInterval(timer);
+  },[]);
 
   async function decide(studentId:string,action:'APPROVE'|'REJECT'){
     let note: string|undefined;
@@ -25,7 +29,13 @@ export function AdminOabtFieldApprovals(){
     });
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'İşlem tamamlanamadı.'));
-    setMsg(action==='APPROVE'?'ÖABT alanı onaylandı ve kalıcı olarak kilitlendi.':'Alan seçimi öğrenciye yeniden gönderildi.');
+    setMsg(action==='APPROVE'?'ÖABT alanı onaylandı. Öğrenci ve koç paneli birkaç saniye içinde otomatik güncellenecek.':'Alan seçimi öğrenciye yeniden gönderildi.');
+    setData((prev:any)=>({...prev,items:(prev.items||[]).map((x:any)=>x.id===studentId?{
+      ...x,
+      status:action==='APPROVE'?'APPROVED':'REJECTED',
+      approvedField:action==='APPROVE'?x.requestedField:null,
+      approvedAt:action==='APPROVE'?new Date().toISOString():null
+    }:x)}));
     await load();
   }
 
@@ -35,7 +45,7 @@ export function AdminOabtFieldApprovals(){
   return <div className="card adminOabtApprovals">
     <div className="moduleHeaderRow">
       <div><div className="moduleEyebrow">AGS/ÖABT ALAN ONAYI</div><h2>ÖABT Alan Seçimleri</h2><p className="muted">Öğrencinin seçtiği branşı doğrulayın. Onaylanan alan öğrenci profilinde kilitlenir ve daha sonra öğrenci tarafından değiştirilemez.</p></div>
-      <span className="pill">{pending.length} onay bekliyor</span>
+      <div className="row"><button className="btn" type="button" onClick={()=>load()} disabled={Boolean(busy)}>Yenile</button><span className="pill">{pending.length} onay bekliyor</span></div>
     </div>
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
     {pending.length===0?<div className="notice">Şu anda onay bekleyen ÖABT alan seçimi yok.</div>:<div className="adminOabtList">
