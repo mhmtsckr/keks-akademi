@@ -52,3 +52,27 @@ export function withOabtFieldApproval(profile:unknown,state:Partial<OabtFieldApp
 export function isValidOabtField(field:string){
   return AGS_OABT_FIELDS.includes(field as any);
 }
+
+
+export function getEffectiveOabtField(academicTrack:string|null|undefined,profile:unknown){
+  const approval=getOabtFieldApproval(profile);
+  const candidates=[academicTrack,approval.approvedField,approval.requestedField];
+  for(const value of candidates){
+    if(typeof value==='string'&&isValidOabtField(value))return value;
+  }
+  return null;
+}
+
+export function withAutomaticOabtField(profile:unknown,field:string,at=new Date().toISOString()){
+  return withOabtFieldApproval(profile,{
+    status:'APPROVED',
+    requestedField:field,
+    requestedAt:getOabtFieldApproval(profile).requestedAt||at,
+    approvedField:field,
+    approvedAt:at,
+    approvedByUserId:null,
+    rejectedAt:null,
+    rejectedByUserId:null,
+    rejectionNote:null
+  });
+}

@@ -7,8 +7,7 @@ import { CoachCommandCenter } from '@/app/components/CoachCommandCenter';
 import { CoachAccessCodeClaim } from '@/app/components/CoachAccessCodeClaim';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
-import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
-import { CoachLiveApprovalSync } from '@/app/components/CoachLiveApprovalSync';
+import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -87,7 +86,7 @@ export default async function CoachPage() {
     return {
       id:s.id,fullName:s.fullName,studentCode:s.studentCode,gradeLevel:s.gradeLevel,
       academicTrack:isAgsOabtStudentRecord({gradeLevel:s.gradeLevel,academicTrack:s.academicTrack,profile:s.profile})
-        ?(getOabtFieldApproval(s.profile).status==='APPROVED'?s.academicTrack:null)
+        ?getEffectiveOabtField(s.academicTrack,s.profile)
         :s.academicTrack,
       riskScore,riskLevel:(riskScore>=50?'HIGH':riskScore>=20?'MEDIUM':'LOW') as 'HIGH'|'MEDIUM'|'LOW',
       reasons,overdueActions:overdue,openAlerts:s.coachAlerts.length,dueReviews,
@@ -113,7 +112,6 @@ export default async function CoachPage() {
     meta={<><span>{students.length} öğrenci</span><span>Kişisel takip</span><span>Akıllı uyarılar</span></>}
     wide
   >
-    <CoachLiveApprovalSync/>
     <section className="section">
       <PanelNavigator roleLabel="Koç" groups={[
         {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[

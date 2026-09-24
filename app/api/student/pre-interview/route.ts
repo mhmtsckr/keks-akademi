@@ -7,7 +7,7 @@ import { scoreInterview,scoreMotivationSignals,buildInterviewReport,buildTrackPl
 import { writeAudit } from '@/lib/audit';
 import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
-import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
+import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 
 const submitSchema=z.object({
   academicTrack:z.enum(['GENERAL','SAYISAL','ESIT_AGIRLIK','SOZEL']),
@@ -134,19 +134,15 @@ async function POST__handler(req:Request){
   const adultGrade=(studentRecord?.gradeLevel||'').toLocaleUpperCase('tr-TR');
   const isAgsExam=/AGS|ÖABT|OABT/.test(adultGrade);
   const isAgsOabt=isAgsOabtStudentRecord({gradeLevel:studentRecord?.gradeLevel,academicTrack:studentRecord?.academicTrack,profile:studentRecord?.profile});
-  const oabtApproval=getOabtFieldApproval(studentRecord?.profile);
-  const approvedOabtTrack=isAgsOabt&&oabtApproval.status==='APPROVED'
-    ?(oabtApproval.approvedField||studentRecord?.academicTrack||'GENERAL')
+  const oabtTrack=isAgsOabt
+    ?(getEffectiveOabtField(studentRecord?.academicTrack,studentRecord?.profile)||'GENERAL')
     :'GENERAL';
   const adultExamTrack=form.educationBand==='YETISKIN_SINAV'
-    ?(isAgsOabt?approvedOabtTrack:(studentRecord?.academicTrack||'GENERAL'))
+    ?(isAgsOabt?oabtTrack:(studentRecord?.academicTrack||'GENERAL'))
     :null;
   const academicTrack=adultExamTrack|| (requiresTrack?input.academicTrack:'GENERAL');
   if(requiresTrack&&academicTrack==='GENERAL')return NextResponse.json({error:'Hazırlık alanınızı seçin.'},{status:400});
-  if(form.educationBand==='YETISKIN_SINAV'&&isAgsOabt&&oabtApproval.status!=='APPROVED'){
-    return NextResponse.json({error:'ÖABT alanınızın yönetici tarafından onaylanması gerekiyor. Önce öğrenci panelindeki ÖABT Alan Onayı bölümünü tamamlayın.'},{status:409});
-  }
-  if(form.educationBand==='YETISKIN_SINAV'&&isAgsExam&&academicTrack==='GENERAL')return NextResponse.json({error:'AGS/YDS veya AGS/ÖABT alan bilginiz bulunamadı. Kayıt bilgilerinizin güncellenmesi gerekiyor.'},{status:400});
+  if(form.educationBand==='YETISKIN_SINAV'&&isAgsExam&&academicTrack==='GENERAL')return NextResponse.json({error:'AGS/YDS veya AGS/ÖABT alan bilginiz bulunamadı. Öğrenci panelinden alanınızı seçip kaydedin.'},{status:400});
 
   const interviewReport=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any,motivationSignals);
   const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores,motivationSignals);

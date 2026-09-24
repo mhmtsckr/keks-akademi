@@ -3,14 +3,13 @@
 import { useEffect,useMemo,useState } from 'react';
 import { AdminGameCMS } from '@/app/components/AdminGameCMS';
 import { AdminAssessmentWorkflow } from '@/app/components/AdminAssessmentWorkflow';
-import { AdminOabtFieldApprovals } from '@/app/components/AdminOabtFieldApprovals';
 import { AdminCoachQuickApprovals } from '@/app/components/AdminCoachQuickApprovals';
 
 type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
 const TAB_META:Record<Tab,{eyebrow:string;label:string;description:string}>={
   overview:{eyebrow:'SİSTEM DURUMU',label:'Genel Bakış',description:'Operasyon, kullanım ve ödeme göstergeleri'},
-  workflow:{eyebrow:'ONAY AKIŞI',label:'Değerlendirme & Plan',description:'ÖABT alanı, eğilim raporu ve kişisel plan onay merkezi'},
+  workflow:{eyebrow:'ONAY AKIŞI',label:'Değerlendirme & Plan',description:'Eğilim raporu ve kişisel çalışma planı onay merkezi'},
   users:{eyebrow:'HESAP & ROL',label:'Kullanıcı Yönetimi',description:'Koç, öğrenci, veli ve yönetici hesapları'},
   academic:{eyebrow:'AKADEMİK İÇERİK',label:'İçerik & Soru Bankası',description:'Soru onayı, kalite ve mikro içerik yönetimi'},
   payments:{eyebrow:'FİNANS & ERİŞİM',label:'Ödeme & Ürün Kodları',description:'PayTR işlemleri, ürün erişimleri ve kodlar'},
@@ -187,7 +186,6 @@ export function AdminConsole(){
 
     {tab==='overview'&&dashboard&&<section className="adminPanelSection">
       <AdminCoachQuickApprovals/>
-      <AdminOabtFieldApprovals/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">SİSTEM ÖZETİ</div><h2>Genel Bakış</h2><p className="muted">KEKS Akademi'nin güncel operasyon göstergeleri.</p></div><button className="btn" onClick={refresh}>Yenile</button></div>
       <div className="adminKpiGrid">
         <AdminKpi icon="👥" value={dashboard.users} label="Toplam kullanıcı"/>
@@ -222,8 +220,7 @@ export function AdminConsole(){
     </section>}
 
     {tab==='workflow'&&<section className="adminPanelSection">
-      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">YÖNETİCİ ONAY MERKEZİ</div><h2>ÖABT Alanı · Değerlendirme · Plan Onayı</h2><p className="muted">AGS/ÖABT alan seçimlerini doğrulayın; ardından KEKS Eğilim Taraması ve kişisel çalışma planı onay akışlarını yönetin.</p></div></div>
-      <AdminOabtFieldApprovals/>
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">YÖNETİCİ ONAY MERKEZİ</div><h2>Değerlendirme · Plan Onayı</h2><p className="muted">KEKS Eğilim Taraması ve kişisel çalışma planı onay akışlarını yönetin. AGS/ÖABT alanı öğrenci kaydında otomatik kesinleşir ve yönetici onayı gerektirmez.</p></div></div>
       <AdminAssessmentWorkflow/>
     </section>}
 
