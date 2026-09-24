@@ -30,6 +30,7 @@ export const db = {
   gameAttempt: { findMany: vi.fn() },
   badgeAward: { findMany: vi.fn() },
   taskSubmission: { findMany: vi.fn() },
+  auditLog: { create: vi.fn(), findFirst: vi.fn(), count: vi.fn() },
   $transaction: vi.fn(),
 };
 
