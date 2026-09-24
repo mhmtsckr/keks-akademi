@@ -62,3 +62,14 @@ export function displayExamGroupWithTrack(gradeLevel?:string|null,academicTrack?
   if(group==='AGS/ÖABT'&&academicTrack)return group+' · '+academicTrack;
   return group||gradeLevel||'—';
 }
+
+
+export function isAgsOabtStudentRecord(input:{gradeLevel?:string|null;academicTrack?:string|null;profile?:unknown}){
+  if(isAgsOabtLabel(input.gradeLevel))return true;
+  if(input.academicTrack&&AGS_OABT_FIELDS.includes(input.academicTrack as any))return true;
+  try{
+    const legacy=JSON.stringify(input.profile||{}).toLocaleUpperCase('tr-TR');
+    if(/ÖABT|OABT/.test(legacy))return true;
+  }catch{}
+  return false;
+}
