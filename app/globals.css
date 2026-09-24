@@ -813,15 +813,7 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .oabtApprovedField{display:grid;gap:5px;padding:15px 16px;border-radius:13px;background:#071b31;border:1px solid rgba(255,255,255,.06)}
 .oabtApprovedField span{font-size:9px;color:#8297aa;font-weight:900;letter-spacing:.1em}.oabtApprovedField strong{font-size:18px;color:#efca6d}
 .oabtApprovalForm{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}.oabtApprovalForm .field{margin:0}
-.adminOabtApprovals{margin-bottom:16px;border-color:rgba(229,182,69,.16)!important}
-.adminOabtList{display:grid;gap:10px;margin-top:13px}
-.adminOabtRow{display:grid;grid-template-columns:minmax(210px,1fr) minmax(220px,1fr) auto;gap:12px;align-items:center;padding:13px 14px;border-radius:13px;background:#071b31;border:1px solid rgba(255,255,255,.06)}
-.adminOabtRow.compact{grid-template-columns:minmax(180px,1fr) minmax(180px,1fr) auto}
-.adminOabtRow>div:first-child{display:grid;gap:3px}.adminOabtRow>div:first-child>span{font-size:9px;color:#7f93a7}
-.adminOabtField{display:grid;gap:3px;padding:9px 11px;border-radius:10px;background:#081d34}.adminOabtField small{font-size:8px;color:#d6a642;font-weight:900;letter-spacing:.1em}.adminOabtField strong{font-size:12px;color:#edf3f8}.adminOabtField span{font-size:8px;color:#71869b}
-.adminOabtApprovedHistory{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}.adminOabtApprovedHistory summary{cursor:pointer;color:#dce5ed}
-@media(max-width:840px){.adminOabtRow,.adminOabtRow.compact{grid-template-columns:1fr}.oabtApprovalForm{grid-template-columns:1fr}}
-
+@media(max-width:840px){.adminOabtRow,
 
 /* Fast coach approval queue */
 .adminCoachQuickCard{display:grid;gap:14px;margin-bottom:16px;border-color:rgba(92,184,137,.16)!important;background:radial-gradient(circle at 92% 0%,rgba(92,184,137,.10),transparent 28%),linear-gradient(145deg,#0a233f,#071a30)!important}
@@ -839,7 +831,5 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .oabtLiveStatus.rejected{border-color:rgba(210,92,92,.25)!important}
 
 
-/* OABT admin direct lookup */
-.adminOabtSearchBar{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:10px;align-items:end;padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:13px;background:#071b31}
-.adminOabtSearchBar .field{margin:0}
-@media(max-width:760px){.adminOabtSearchBar{grid-template-columns:1fr}}
+@media(max-width:760px){
+@media(max-width:840px){.oabtApprovalForm{grid-template-columns:1fr}}
