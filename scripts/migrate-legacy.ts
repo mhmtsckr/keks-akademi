@@ -7,11 +7,10 @@
  * Beklenen dosya: legacy-data/export.json (gitignore içinde)
  */
 import fs from 'node:fs/promises';
-import bcrypt from 'bcryptjs';
 import { db } from '../lib/db';
 
 type LegacyStudent = {
-  legacyId: string; studentCode: string; fullName: string; accessKey: string;
+  legacyId: string; studentCode: string; fullName: string; accessKey?: string;
   plans?: Array<{ legacyId: string; title: string; payload: unknown }>;
   dailyLogs?: Array<{ legacyId: string; date: string; payload: unknown }>;
   examResults?: Array<{ legacyId: string; examType: string; payload: unknown }>;
@@ -31,8 +30,6 @@ async function main() {
       create: {
         studentCode: s.studentCode,
         fullName: s.fullName,
-        accessKeyHash: await bcrypt.hash(s.accessKey,12),
-        accessKeyExpiresAt: new Date(Date.now()+365*24*60*60*1000),
         coachId: coach.id,
         legacyExternalId: s.legacyId
       }

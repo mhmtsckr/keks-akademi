@@ -29,3 +29,4 @@ Release retry: 2026-09-24 15:45 TRT
 - Prisma Student model no longer contains legacy access-key/credential-delivery fields
 - Transitional insert supports production until DROP migration is applied
 - Destructive DB migration prepared at prisma/migrations/20260925_remove_legacy_student_access_keys
+- Legacy migration script updated for email-password student auth
