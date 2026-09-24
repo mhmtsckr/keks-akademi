@@ -125,7 +125,30 @@ async function PATCH__handler(req:Request){
     ...(input.status?{status:input.status}:{}),
     ...(input.role?{role:input.role}:{}),
   },select:{id:true,name:true,email:true,role:true,status:true}});
-  await writeAudit({actorUserId:admin.id,action:'USER_UPDATE',entityType:'User',entityId:updated.id,summary:updated.name+' kullanıcısı güncellendi.',metadata:{before,after:updated}});
+
+  if(input.status&&input.status!==before.status){
+    const action=input.status==='ACTIVE'
+      ?(before.status==='SUSPENDED'?'USER_REACTIVATED':'USER_ACTIVATED')
+      :'USER_STATUS_CHANGED';
+    await writeAudit({
+      actorUserId:admin.id,
+      action,
+      entityType:'User',
+      entityId:updated.id,
+      summary:updated.name+' kullanıcısının hesap durumu '+before.status+' → '+updated.status+' olarak değiştirildi.',
+      metadata:{beforeStatus:before.status,afterStatus:updated.status}
+    });
+  }
+  if(input.role&&input.role!==before.role){
+    await writeAudit({
+      actorUserId:admin.id,
+      action:'USER_ROLE_CHANGED',
+      entityType:'User',
+      entityId:updated.id,
+      summary:updated.name+' kullanıcısının rolü yönetici tarafından değiştirildi.',
+      metadata:{beforeRole:before.role,afterRole:updated.role}
+    });
+  }
   return NextResponse.json({ok:true,user:updated,message:'Kullanıcı durumu güncellendi.'});
 }
 

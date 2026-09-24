@@ -14,6 +14,9 @@ export function AccountSecurity({loginPath}:{loginPath:string}){
   const [busy,setBusy]=useState(false);
   const [newPassword,setNewPassword]=useState('');
   const [logoutOtherSessions,setLogoutOtherSessions]=useState(true);
+  const [emailStage,setEmailStage]=useState<'request'|'confirm'>('request');
+  const [emailChallenge,setEmailChallenge]=useState('');
+  const [pendingEmail,setPendingEmail]=useState('');
 
   async function load(){
     const r=await fetch('/api/auth/security',{cache:'no-store'});
@@ -45,6 +48,36 @@ export function AccountSecurity({loginPath}:{loginPath:string}){
       if(!r.ok)return setMsg('Hata: '+(j.error||'Şifre değiştirilemedi.'));
       if(j.loggedOut){location.href=loginPath;return}
       form.reset();setNewPassword('');setMsg(j.message||'Şifre değiştirildi.');await load();
+    }finally{setBusy(false)}
+  }
+
+  async function requestEmailChange(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();setBusy(true);setMsg('');
+    const fd=new FormData(e.currentTarget);
+    try{
+      const r=await fetch('/api/auth/change-email/request',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({currentPassword:fd.get('currentPassword'),newEmail:fd.get('newEmail')})
+      });
+      const j=await r.json();
+      if(!r.ok)return setMsg('Hata: '+(j.error||'E-posta değişikliği başlatılamadı.'));
+      setEmailChallenge(j.challenge);setPendingEmail(j.newEmail);setEmailStage('confirm');setMsg(j.message||'Doğrulama kodu gönderildi.');
+    }finally{setBusy(false)}
+  }
+
+  async function confirmEmailChange(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();setBusy(true);setMsg('');
+    const fd=new FormData(e.currentTarget);
+    try{
+      const r=await fetch('/api/auth/change-email/confirm',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({challenge:emailChallenge,code:fd.get('code')})
+      });
+      const j=await r.json();
+      if(!r.ok)return setMsg('Hata: '+(j.error||'E-posta değiştirilemedi.'));
+      location.href=loginPath;
     }finally{setBusy(false)}
   }
 
@@ -81,6 +114,21 @@ export function AccountSecurity({loginPath}:{loginPath:string}){
         </div>
         <button className="btn danger" type="button" onClick={revokeAll} disabled={busy}>Tüm Cihazlardan Çıkış Yap</button>
       </>}
+    </div>
+
+    <div className="card form">
+      <div className="moduleEyebrow">E-POSTA GÜVENLİĞİ</div>
+      <h2>E-posta değiştir</h2>
+      {emailStage==='request'?<form className="form" onSubmit={requestEmailChange}>
+        <div className="field"><label>Mevcut şifre</label><input name="currentPassword" type="password" required autoComplete="current-password"/></div>
+        <div className="field"><label>Yeni e-posta</label><input name="newEmail" type="email" required autoComplete="email"/></div>
+        <button className="btn" type="submit" disabled={busy}>Yeni E-postayı Doğrula</button>
+      </form>:<form className="form" onSubmit={confirmEmailChange}>
+        <p className="muted">{pendingEmail} adresine gönderilen 6 haneli kodu girin.</p>
+        <div className="field"><label>Doğrulama kodu</label><input name="code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required autoComplete="one-time-code"/></div>
+        <button className="btn primary" type="submit" disabled={busy}>E-postayı Değiştir</button>
+        <button className="btn" type="button" onClick={()=>{setEmailStage('request');setEmailChallenge('');setPendingEmail('')}}>Vazgeç</button>
+      </form>}
     </div>
 
     <form className="card form" onSubmit={changePassword}>

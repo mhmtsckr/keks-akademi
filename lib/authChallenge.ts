@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { SignJWT,jwtVerify } from 'jose';
 
-export type AuthChallengePurpose='PASSWORD_RESET'|'EMAIL_VERIFY'|'ADMIN_2FA';
+export type AuthChallengePurpose='PASSWORD_RESET'|'EMAIL_VERIFY'|'ADMIN_2FA'|'EMAIL_CHANGE';
 
 function jwtSecret(){
   const secret=process.env.AUTH_SECRET;
@@ -28,6 +28,7 @@ export async function createAuthChallenge(input:{
   purpose:AuthChallengePurpose;
   expiresIn?:string;
   remember?:boolean;
+  data?:Record<string,string>;
 }){
   const code=String(crypto.randomInt(100000,1000000));
   const jti=crypto.randomUUID();
@@ -36,7 +37,8 @@ export async function createAuthChallenge(input:{
     purpose:input.purpose,
     nonce:input.user.updatedAt.toISOString(),
     codeHash:hash,
-    remember:Boolean(input.remember)
+    remember:Boolean(input.remember),
+    data:input.data||{}
   })
     .setProtectedHeader({alg:'HS256'})
     .setSubject(input.user.id)
@@ -61,7 +63,8 @@ export async function readAuthChallenge(token:string,purpose:AuthChallengePurpos
     jti:String(payload.jti),
     nonce:payload.nonce,
     codeHash:payload.codeHash,
-    remember:Boolean(payload.remember)
+    remember:Boolean(payload.remember),
+    data:(payload.data&&typeof payload.data==='object'&&!Array.isArray(payload.data)?payload.data:{}) as Record<string,string>
   };
 }
 

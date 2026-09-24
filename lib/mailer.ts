@@ -62,6 +62,20 @@ export async function sendAdminTwoFactorCode(input:{email:string;name:string;cod
   return sendFromKeksGmail(input.email,'KEKS Akademi | Yönetici 2FA kodu',html);
 }
 
+export async function sendEmailChangeCode(input:{email:string;name:string;code:string}){
+  const html=`
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
+      <h1>KEKS Akademi E-posta Değişikliği</h1>
+      <p>Merhaba <strong>${escapeHtml(input.name)}</strong>,</p>
+      <p>Bu adresi KEKS hesabınıza bağlamak için doğrulama kodunuz:</p>
+      <div style="font-size:30px;font-weight:800;letter-spacing:8px;padding:18px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2;text-align:center">${escapeHtml(input.code)}</div>
+      <p>Kod 10 dakika geçerlidir ve en fazla 5 kez denenebilir.</p>
+      <p>Bu değişikliği siz başlatmadıysanız kodu kullanmayın.</p>
+      <p>KEKS Akademi</p>
+    </div>`;
+  return sendFromKeksGmail(input.email,'KEKS Akademi | Yeni e-posta doğrulama kodu',html);
+}
+
 export async function sendPasswordResetCode(input:{email:string;name:string;code:string}){
   const html=`
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
