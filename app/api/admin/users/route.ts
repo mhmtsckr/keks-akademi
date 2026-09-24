@@ -48,6 +48,8 @@ function safeDecrypt(value:string){
   try{return decryptPrivateCode(value)}catch{return null}
 }
 
+const deleteSchema=z.object({userId:z.string().min(1)});
+
 async function PATCH__handler(req:Request){
   const admin=await requireRole(['ADMIN']);
   const input=await readJson(req, patchSchema);
@@ -62,5 +64,76 @@ async function PATCH__handler(req:Request){
   return NextResponse.json({ok:true,user:updated});
 }
 
+async function DELETE__handler(req:Request){
+  const admin=await requireRole(['ADMIN']);
+  const input=await readJson(req,deleteSchema);
+
+  if(admin.id===input.userId){
+    return NextResponse.json({error:'Kendi yönetici hesabınızı silemezsiniz.'},{status:400});
+  }
+
+  const target=await db.user.findUnique({
+    where:{id:input.userId},
+    select:{
+      id:true,name:true,email:true,role:true,status:true,
+      student:{select:{id:true,studentCode:true}},
+      coachProfile:{select:{id:true,_count:{select:{students:true}}}}
+    }
+  });
+  if(!target)return NextResponse.json({error:'Kullanıcı bulunamadı.'},{status:404});
+  if(target.status!=='SUSPENDED'){
+    return NextResponse.json({error:'Kalıcı silme yalnızca askıya alınmış kullanıcılar için kullanılabilir.'},{status:409});
+  }
+
+  if(target.role==='ADMIN'){
+    const otherActiveAdmins=await db.user.count({
+      where:{role:'ADMIN',status:'ACTIVE',id:{not:target.id}}
+    });
+    if(otherActiveAdmins<1){
+      return NextResponse.json({error:'Sistemde en az bir aktif yönetici kalmalıdır.'},{status:409});
+    }
+  }
+
+  const deletedEmail=target.email;
+  const deletedName=target.name;
+  const deletedRole=target.role;
+  const studentCode=target.student?.studentCode||null;
+  const detachedStudents=target.coachProfile?._count.students||0;
+
+  await db.$transaction(async tx=>{
+    if(target.student){
+      await tx.academyCode.deleteMany({where:{assignedStudentId:target.student.id}});
+      await tx.student.delete({where:{id:target.student.id}});
+    }
+    await tx.user.delete({where:{id:target.id}});
+  });
+
+  await writeAudit({
+    actorUserId:admin.id,
+    action:'SUSPENDED_USER_DELETED',
+    entityType:'User',
+    entityId:target.id,
+    summary:deletedName+' adlı askıya alınmış kullanıcı kalıcı olarak silindi.',
+    metadata:{
+      email:deletedEmail,
+      role:deletedRole,
+      studentCode,
+      detachedStudents,
+      emailReusable:Boolean(deletedEmail)
+    }
+  });
+
+  return NextResponse.json({
+    ok:true,
+    deletedUserId:target.id,
+    email:deletedEmail,
+    emailReusable:Boolean(deletedEmail),
+    message:deletedEmail
+      ?'Kullanıcı kalıcı olarak silindi. '+deletedEmail+' adresiyle yeniden kayıt yapılabilir.'
+      :'Kullanıcı kalıcı olarak silindi.'
+  });
+}
+
 export const GET = withApiErrors(GET__handler);
 export const PATCH = withApiErrors(PATCH__handler);
+export const DELETE = withApiErrors(DELETE__handler);

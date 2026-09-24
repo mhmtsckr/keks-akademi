@@ -103,6 +103,29 @@ export function AdminConsole(){
     setMsg('Kullanıcı durumu güncellendi.');await loadUsers();await loadOverview();
   }
 
+  async function deleteSuspendedUser(user:any){
+    if(user.status!=='SUSPENDED')return;
+    const identity=user.email||user.name;
+    const ok=window.confirm(
+      identity+' adlı askıya alınmış kullanıcı kalıcı olarak silinecek. Bu işlem geri alınamaz. Silinen e-posta ile yeniden kayıt yapılabilir. Devam edilsin mi?'
+    );
+    if(!ok)return;
+    setMsg('');
+    const r=await fetch('/api/admin/users',{
+      method:'DELETE',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({userId:user.id})
+    });
+    const j=await r.json();
+    if(!r.ok){
+      setMsg('Hata: '+(j.error||'Kullanıcı silinemedi.'));
+      return;
+    }
+    setMsg(j.message||'Askıya alınmış kullanıcı silindi.');
+    await loadUsers();
+    await loadOverview();
+  }
+
   async function reviewQuestion(id:string,action:'APPROVE'|'REJECT'|'PENDING'){
     const note=action==='REJECT'?window.prompt('Ret notu (isteğe bağlı):')||'':undefined;
     const r=await fetch('/api/admin/questions/review',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id,action,note})});
@@ -226,7 +249,7 @@ export function AdminConsole(){
 
     {tab==='users'&&<section className="adminPanelSection">
       <AdminCoachQuickApprovals/>
-      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet.</p></div><span className="pill">{users.length} sonuç · {pendingUsers} bekleyen</span></div>
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet. Askıya alınmış hesapları kalıcı silebilir; silinen hesabın Gmail adresi yeniden kayıt için serbest kalır.</p></div><span className="pill">{users.length} sonuç · {pendingUsers} bekleyen</span></div>
       <div className="card adminFilterBar">
         <div className="field"><label>Ara</label><input value={userQ} onChange={e=>setUserQ(e.target.value)} placeholder="Ad veya e-posta"/></div>
         <div className="field"><label>Rol</label><select value={userRole} onChange={e=>setUserRole(e.target.value)}><option value="ALL">Tümü</option><option value="COACH">Koç</option><option value="STUDENT">Öğrenci</option><option value="PARENT">Veli</option><option value="ADMIN">Yönetici</option></select></div>
@@ -245,7 +268,12 @@ export function AdminConsole(){
             <div className="muted">{u.student.credentialsDeliveryStatus==='SENT'?'E-posta gönderildi':'E-posta bekliyor'}{u.student.credentialsEmailedAt?' · '+dt(u.student.credentialsEmailedAt):''}</div>
           </>:u.coachProfile?u.coachProfile._count.students+' öğrenci':u.parentProfile?'Öğrenci: '+u.parentProfile.student.fullName:'—'}</td>
           <td><span className={'adminStatus '+u.status.toLowerCase()}>{u.status}</span></td>
-          <td><div className="row"><button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button><button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button><button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al</button></div></td>
+          <td><div className="row">
+            <button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button>
+            <button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button>
+            <button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al</button>
+            {u.status==='SUSPENDED'&&<button className="btn danger" onClick={()=>deleteSuspendedUser(u)}>Kalıcı Sil</button>}
+          </div></td>
         </tr>)}</tbody></table>
       </div>
     </section>}
