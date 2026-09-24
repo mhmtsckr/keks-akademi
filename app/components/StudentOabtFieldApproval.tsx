@@ -1,19 +1,32 @@
 'use client';
 
-import { FormEvent,useEffect,useState } from 'react';
+import { FormEvent,useEffect,useRef,useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AGS_OABT_FIELDS } from '@/lib/agsExamOptions';
 
 export function StudentOabtFieldApproval(){
+  const router=useRouter();
+  const previousStatus=useRef<string|null>(null);
   const [data,setData]=useState<any>(null);
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
 
   async function load(){
-    const r=await fetch('/api/student/oabt-field',{cache:'no-store'});
-    const j=await r.json();
-    setData(j);
+    try{
+      const r=await fetch('/api/student/oabt-field',{cache:'no-store'});
+      const j=await r.json();
+      if(!r.ok)return;
+      const old=previousStatus.current;
+      previousStatus.current=j.status;
+      setData(j);
+      if(old&&old!==j.status)router.refresh();
+    }catch{}
   }
-  useEffect(()=>{void load()},[]);
+  useEffect(()=>{
+    void load();
+    const timer=window.setInterval(()=>{void load()},4000);
+    return ()=>window.clearInterval(timer);
+  },[]);
 
   async function submit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setBusy(true);setMsg('');
@@ -27,7 +40,6 @@ export function StudentOabtFieldApproval(){
     if(!r.ok)return setMsg('Hata: '+(j.error||'Alan seçimi gönderilemedi.'));
     setMsg(j.message||'Alan seçiminiz yönetici onayına gönderildi.');
     await load();
-    setTimeout(()=>location.reload(),500);
   }
 
   if(!data)return <div className="card"><p className="muted">ÖABT alan durumu yükleniyor…</p></div>;
@@ -47,7 +59,7 @@ export function StudentOabtFieldApproval(){
   if(data.status==='PENDING'){
     return <div className="card oabtApprovalCard pending">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">AGS/ÖABT · ALAN ONAYI</div><h2>Yönetici onayı bekleniyor</h2><p className="muted">Alan seçiminiz gönderildi. Yönetici karar verene kadar yeni seçim yapılamaz.</p></div>
+        <div><div className="moduleEyebrow">AGS/ÖABT · ALAN ONAYI</div><h2>Yönetici onayı bekleniyor</h2><p className="muted">Alan seçiminiz gönderildi. Yönetici karar verdiğinde bu ekran otomatik güncellenir; sayfayı yenilemeniz gerekmez.</p></div>
         <span className="pill">ONAY BEKLİYOR</span>
       </div>
       <div className="oabtApprovedField"><span>Gönderilen alan</span><strong>{data.requestedField}</strong></div>
