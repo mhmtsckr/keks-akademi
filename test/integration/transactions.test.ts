@@ -138,7 +138,7 @@ describe('tarama gönderimi — gerçek eşzamanlılık', () => {
     expect(await db.assessment.count()).toBe(1);
     const guncel = await db.testAccess.findUnique({ where: { id: erisim.id } });
     expect(guncel!.status).toBe('USED');
-    expect(yanitlar.map(y => y.status)).toContain(200);
+    expect(yanitlar.map((y:Response) => y.status)).toContain(200);
   });
 });
 
@@ -179,7 +179,7 @@ describe('PayTR callback — çift bildirim', () => {
       paytrCallback(callbackIstegi(basarili)),
     ]);
 
-    expect(yanitlar.map(y => y.status)).toEqual([200, 200]);
+    expect(yanitlar.map((y:Response) => y.status)).toEqual([200, 200]);
     expect(await db.testAccess.count()).toBe(1);
     const odeme = await db.payment.findUnique({ where: { merchantOid: 'KEKS-TEST-OID-1' } });
     expect(odeme!.status).toBe('PAID');

@@ -36,3 +36,5 @@ Release retry: 2026-09-24 15:45 TRT
 - Security audit expanded: reset failures, email changes, activation/reactivation and role changes
 - Email change requires current password plus 6-digit verification on the new address
 - Audit metadata redaction prevents password/token/OTP/secret persistence
+- Restored secure external assessment token and submit integration removed by native-screening migration
+- Fixed integration TypeScript response callback typing
