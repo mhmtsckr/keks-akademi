@@ -1,42 +1,5 @@
 KEKS production release trigger
 
-Release: 2026-09-24
-Includes:
-- Existing AGS/ÖABT student field approval workflow
-- Admin approval and permanent field lock
-- Student 445212 compatibility path
-- Exam group normalization
-- Coach/admin display fixes
-- Vercel deployment batching
-Release retry: 2026-09-24 15:45 TRT
-- Ignore-build guard fix: missing previous SHA now forces build instead of failing
-- CSS build fix: removed malformed admin OABT media blocks
-- CSS responsive fix: restored admin max-width 760 media block
-- Account lifecycle: ACTIVE -> SUSPENDED (30-day retention) -> DELETED
-- Suspended accounts are no longer auto-deleted or auto-purged during registration
-- Student and coach login: email + strong password
-- Remember me: secure 30-day session cookie, no password stored in localStorage
-- Password reset: verified account info + 10-minute email code
-- Password policy: 12+ chars, 4 character classes, sequential/common pattern blocking
-- Legacy student access-key login and resend endpoints removed
-- Revocable JWT security stamp using User.updatedAt
-- Password reset/change and account suspension invalidate every previous session
-- Admin can revoke a user's sessions for security incidents
-- Persistent auth abuse protection via AuditLog: login, reset send and challenge attempt limits
-- Admin email 2FA before session creation
-- Student/coach email verification before activation/approval
-- Legacy access-key UI removed; database column removal prepared separately
-- Prisma Student model no longer contains legacy access-key/credential-delivery fields
-- Transitional insert supports production until DROP migration is applied
-- Destructive DB migration prepared at prisma/migrations/20260925_remove_legacy_student_access_keys
-- Legacy migration script updated for email-password student auth
-- Account security UI for student, coach and admin
-- Session inventory uses hashed session IDs and redacted audit metadata
-- Password change can revoke other devices while keeping current device
-- Security audit expanded: reset failures, email changes, activation/reactivation and role changes
-- Email change requires current password plus 6-digit verification on the new address
-- Audit metadata redaction prevents password/token/OTP/secret persistence
-- Restored secure external assessment token and submit integration removed by native-screening migration
-- Fixed integration TypeScript response callback typing
-- Unit test auth fixtures aligned with sid/security-stamp production model without weakening production checks
-- Updated UI/scoring assertions to current behavior
+CI-approved source: 3e8307aadb3376755e75617cd150719914cb6c63
+Approved at (UTC): 2026-09-24T23:01:42Z
+Quality gate: TypeScript PASS | Unit/Coverage PASS | Integration PASS | Build PASS
