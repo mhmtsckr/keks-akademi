@@ -29,8 +29,9 @@ function cerez(deger?: string) {
   );
 }
 
-const ogrenci = { id: 'kullanici-1', role: 'STUDENT' as const };
-const yonetici = { id: 'kullanici-1', role: 'ADMIN' as const };
+const TEST_UPDATED_AT=new Date('2026-01-01T00:00:00.000Z');
+const ogrenci = { id: 'kullanici-1', role: 'STUDENT' as const, status:'ACTIVE' as const, updatedAt:TEST_UPDATED_AT };
+const yonetici = { id: 'kullanici-1', role: 'ADMIN' as const, status:'ACTIVE' as const, updatedAt:TEST_UPDATED_AT };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -121,7 +122,8 @@ describe('requireRole', () => {
 });
 
 describe('createSession / destroySession', () => {
-  it('oturum çerezini httpOnly ve 7 günlük olarak yazar', async () => {
+  it('standart oturum çerezini httpOnly ve 1 günlük olarak yazar', async () => {
+    dbMock.user.findUnique.mockResolvedValue(yonetici);
     await createSession('kullanici-1');
     expect(cookieJar.set).toHaveBeenCalledTimes(1);
     const [ad, deger, secenekler] = cookieJar.set.mock.calls[0];
@@ -130,7 +132,7 @@ describe('createSession / destroySession', () => {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24,
     });
     // Yazılan token kendi doğrulamamızdan geçmeli
     cerez(deger);

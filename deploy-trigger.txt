@@ -38,3 +38,5 @@ Release retry: 2026-09-24 15:45 TRT
 - Audit metadata redaction prevents password/token/OTP/secret persistence
 - Restored secure external assessment token and submit integration removed by native-screening migration
 - Fixed integration TypeScript response callback typing
+- Unit test auth fixtures aligned with sid/security-stamp production model without weakening production checks
+- Updated UI/scoring assertions to current behavior

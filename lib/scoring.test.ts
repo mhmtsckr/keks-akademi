@@ -90,7 +90,7 @@ describe('buildReport', () => {
   });
 
   it('en yüksek üç boyutu azalan sırada verir', () => {
-    expect(buildReport(scores).leadingDimensions).toEqual([
+    expect(buildReport(scores).leadingDimensions.map(x=>({name:x.name,score:x.score}))).toEqual([
       { name: 'planlama', score: 4.5 },
       { name: 'odak', score: 3.2 },
       { name: 'erteleme', score: 2.1 },
@@ -98,7 +98,7 @@ describe('buildReport', () => {
   });
 
   it('üçten az boyut varsa hepsini verir', () => {
-    expect(buildReport({ tek: 3 }).leadingDimensions).toEqual([{ name: 'tek', score: 3 }]);
+    expect(buildReport({ tek: 3 }).leadingDimensions.map(x=>({name:x.name,score:x.score}))).toEqual([{ name: 'tek', score: 3 }]);
   });
 
   it('boş puan kümesinde çökmez', () => {

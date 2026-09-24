@@ -12,7 +12,7 @@ function koclariDondur(coaches: Array<{ id: string; name: string; studentCount: 
   );
 }
 
-const gonderButonu = () => screen.getByRole('button', { name: /başvuruyu gönder/i });
+const gonderButonu = () => screen.getByRole('button', { name: /kaydı başlat/i });
 const UYARI = /başvuruya açık koç bulunmuyor/i;
 
 afterEach(() => {
