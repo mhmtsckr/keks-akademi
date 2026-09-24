@@ -1,10 +1,14 @@
-name: Build Check
+name: CI & Production Gate
 
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
@@ -16,20 +20,36 @@ env:
   PAYTR_TEST_MODE: "1"
 
 jobs:
-  test:
+  typecheck:
+    name: TypeScript
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npx prisma generate
-      # Vitest tip kontrolu yapmaz; tsc ayri calismali.
       - run: npx tsc --noEmit
+
+  unit:
+    name: Unit & Coverage
+    needs: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx prisma generate
       - run: npm run test:coverage
 
   integration:
+    name: Integration / PostgreSQL
+    needs: unit
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://keks:keks@localhost:5433/keks_test
@@ -52,17 +72,46 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npx prisma generate
       - run: npm run test:integration
 
   build:
+    name: Production Build
+    needs: integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npx prisma generate
       - run: npm run build
+
+  approve-production:
+    name: Approve Production Deploy
+    needs: build
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      !startsWith(github.event.head_commit.message, 'ci: deploy approved ')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create CI-approved deployment marker
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          printf 'KEKS production release trigger\n\nCI-approved source: %s\nApproved at (UTC): %s\nQuality gate: TypeScript PASS | Unit/Coverage PASS | Integration PASS | Build PASS\n' "$SOURCE_SHA" "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" > deploy-trigger.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deploy-trigger.txt
+          git commit -m "ci: deploy approved $SOURCE_SHA [skip ci]"
+          git push origin HEAD:main
