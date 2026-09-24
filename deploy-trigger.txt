@@ -26,3 +26,6 @@ Release retry: 2026-09-24 15:45 TRT
 - Admin email 2FA before session creation
 - Student/coach email verification before activation/approval
 - Legacy access-key UI removed; database column removal prepared separately
+- Prisma Student model no longer contains legacy access-key/credential-delivery fields
+- Transitional insert supports production until DROP migration is applied
+- Destructive DB migration prepared at prisma/migrations/20260925_remove_legacy_student_access_keys

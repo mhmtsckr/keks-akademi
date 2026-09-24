@@ -79,31 +79,58 @@ export async function POST(req:Request){
   if(!coach)return NextResponse.json({error:'Seçilen koç aktif değil veya bulunamadı.'},{status:400});
 
   const studentCode=await uniqueStudentCode();
-  const accessKey=randomCode('STD');
-  const accessKeyExpiresAt=new Date();
-  accessKeyExpiresAt.setUTCFullYear(accessKeyExpiresAt.getUTCFullYear()+1);
   const monthlyCode=randomCode('KEKS');
 
   const created=await db.$transaction(async tx=>{
     const user=await tx.user.create({
       data:{name:input.fullName,email,passwordHash:await hashSecret(input.password),role:'STUDENT',status:'PENDING'}
     });
-    const student=await tx.student.create({
-      data:{
-        userId:user.id,
+    const legacyColumns=await tx.$queryRaw<Array<{exists:boolean}>>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema='public'
+          AND table_name='Student'
+          AND column_name='accessKeyHash'
+      ) AS "exists"
+    `;
+
+    let student;
+    if(legacyColumns[0]?.exists){
+      const studentId=crypto.randomUUID();
+      const now=new Date();
+      const profileJson=initialProfile?JSON.stringify(initialProfile):null;
+      await tx.$executeRawUnsafe(
+        `INSERT INTO "Student"
+          ("id","userId","coachId","studentCode","accessKeyHash","accessKeyExpiresAt","credentialsDeliveryStatus","fullName","gradeLevel","academicTrack","profile","createdAt","updatedAt")
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$12)`,
+        studentId,
+        user.id,
+        coach.id,
         studentCode,
-        accessKeyHash:await hashSecret(accessKey),
-        accessKeyCiphertext:encryptPrivateCode(accessKey),
-        accessKeyExpiresAt,
-        credentialsDeliveryStatus:'PENDING',
-        credentialEmailAttempts:0,
-        fullName:input.fullName,
+        'RETIRED_EMAIL_PASSWORD_AUTH',
+        new Date(0),
+        'RETIRED',
+        input.fullName,
         gradeLevel,
         academicTrack,
-        ...(initialProfile?{profile:initialProfile as any}:{}),
-        coachId:coach.id
-      }
-    });
+        profileJson,
+        now
+      );
+      student=await tx.student.findUniqueOrThrow({where:{id:studentId}});
+    }else{
+      student=await tx.student.create({
+        data:{
+          userId:user.id,
+          studentCode,
+          fullName:input.fullName,
+          gradeLevel,
+          academicTrack,
+          ...(initialProfile?{profile:initialProfile as any}:{}),
+          coachId:coach.id
+        }
+      });
+    }
     await tx.academyCode.create({
       data:{
         codeHash:await hashSecret(monthlyCode),

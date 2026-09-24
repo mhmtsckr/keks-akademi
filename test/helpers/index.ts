@@ -18,6 +18,6 @@ export function resetMocks() {
 
 export { db } from './db';
 export { cookieJar, setCookie } from './cookies';
-export { sendAssessmentReport, sendStudentCredentials } from './mailer';
+export { sendAssessmentReport, sendStudentRegistrationNotice, sendEmailVerificationCode, sendAdminTwoFactorCode, sendPasswordResetCode } from './mailer';
 export { writeAudit } from './audit';
 export { formRequest, jsonRequest } from './request';

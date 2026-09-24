@@ -47,7 +47,6 @@ async function ogrenciOlustur() {
     data: {
       userId: user.id,
       studentCode: 'KEKS-TEST0001',
-      accessKeyHash: 'test-hash',
       fullName: 'Ayşe Yılmaz',
       gradeLevel: '11',
     },
