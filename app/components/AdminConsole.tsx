@@ -187,6 +187,7 @@ export function AdminConsole(){
 
     {tab==='overview'&&dashboard&&<section className="adminPanelSection">
       <AdminCoachQuickApprovals/>
+      <AdminOabtFieldApprovals/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">SİSTEM ÖZETİ</div><h2>Genel Bakış</h2><p className="muted">KEKS Akademi'nin güncel operasyon göstergeleri.</p></div><button className="btn" onClick={refresh}>Yenile</button></div>
       <div className="adminKpiGrid">
         <AdminKpi icon="👥" value={dashboard.users} label="Toplam kullanıcı"/>
