@@ -18,3 +18,4 @@ Release retry: 2026-09-24 15:45 TRT
 - Remember me: secure 30-day session cookie, no password stored in localStorage
 - Password reset: verified account info + 10-minute email code
 - Password policy: 12+ chars, 4 character classes, sequential/common pattern blocking
+- Legacy student access-key login and resend endpoints removed
