@@ -38,7 +38,7 @@ async function POST__handler(req:Request){
 
   if(user.role==='STUDENT'){
     await db.user.update({where:{id:user.id},data:{status:'ACTIVE'}});
-    await createSession(user.id,false);
+    await createSession(user.id,false,req);
     return NextResponse.json({ok:true,role:'STUDENT',activated:true,message:'E-posta doğrulandı. Öğrenci hesabınız aktif edildi.'});
   }
   if(user.role==='COACH'){

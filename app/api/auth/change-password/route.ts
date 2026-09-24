@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { currentUser,destroySession } from '@/lib/auth';
+import { createSession,currentSessionClaims,currentUser,endCurrentSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { hashSecret,verifySecret } from '@/lib/security';
 import { passwordPolicyMessage } from '@/lib/passwordPolicy';
@@ -9,7 +9,8 @@ import { writeAudit } from '@/lib/audit';
 
 const schema=z.object({
   currentPassword:z.string().min(1).max(128),
-  newPassword:z.string().min(12).max(128)
+  newPassword:z.string().min(12).max(128),
+  logoutOtherSessions:z.boolean().optional().default(true)
 });
 
 async function POST__handler(req:Request){
@@ -18,6 +19,7 @@ async function POST__handler(req:Request){
   if(!user.passwordHash)return NextResponse.json({error:'Bu hesapta değiştirilebilir bir şifre bulunmuyor.'},{status:409});
 
   const input=await readJson(req,schema);
+  const priorSession=await currentSessionClaims();
   if(!(await verifySecret(input.currentPassword,user.passwordHash))){
     return NextResponse.json({error:'Mevcut şifre hatalı.'},{status:400});
   }
@@ -37,15 +39,28 @@ async function POST__handler(req:Request){
     action:'PASSWORD_CHANGED',
     entityType:'User',
     entityId:user.id,
-    summary:'Kullanıcı şifresini değiştirdi; tüm aktif oturumlar güvenlik amacıyla iptal edildi.',
-    metadata:{allSessionsRevoked:true}
+    summary:input.logoutOtherSessions
+      ?'Kullanıcı şifresini değiştirdi; tüm aktif oturumlar güvenlik amacıyla iptal edildi.'
+      :'Kullanıcı şifresini değiştirdi; diğer cihazlardaki oturumlar iptal edildi ve mevcut cihaz için yeni oturum oluşturuldu.',
+    metadata:{allSessionsRevoked:true,currentDeviceKept:!input.logoutOtherSessions}
   });
-  await destroySession();
 
+  if(input.logoutOtherSessions){
+    await endCurrentSession('PASSWORD_CHANGED');
+    return NextResponse.json({
+      ok:true,
+      loggedOut:true,
+      allSessionsRevoked:true,
+      message:'Şifreniz değiştirildi. Bu cihaz dahil tüm cihazlardaki oturumlar kapatıldı.'
+    });
+  }
+
+  await createSession(user.id,priorSession?.remember||false,req);
   return NextResponse.json({
     ok:true,
+    loggedOut:false,
     allSessionsRevoked:true,
-    message:'Şifreniz değiştirildi. Güvenlik için bu cihaz dahil tüm cihazlardaki oturumlar kapatıldı.'
+    message:'Şifreniz değiştirildi. Diğer cihazlardaki oturumlar kapatıldı; bu cihazda oturumunuz devam ediyor.'
   });
 }
 

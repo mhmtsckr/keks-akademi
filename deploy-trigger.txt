@@ -30,3 +30,6 @@ Release retry: 2026-09-24 15:45 TRT
 - Transitional insert supports production until DROP migration is applied
 - Destructive DB migration prepared at prisma/migrations/20260925_remove_legacy_student_access_keys
 - Legacy migration script updated for email-password student auth
+- Account security UI for student, coach and admin
+- Session inventory uses hashed session IDs and redacted audit metadata
+- Password change can revoke other devices while keeping current device

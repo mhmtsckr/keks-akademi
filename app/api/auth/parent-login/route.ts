@@ -21,7 +21,7 @@ async function POST__handler(req: Request) {
   for (const profile of student.parentProfiles) {
     if (await verifySecret(input.parentCode, profile.accessCodeHash)) {
       if (profile.user.status !== 'ACTIVE') return NextResponse.json({ error: 'Veli hesabı aktif değil.' }, { status: 403 });
-      await createSession(profile.userId);
+      await createSession(profile.userId,false,req);
       return NextResponse.json({ ok: true, role: 'PARENT' });
     }
   }

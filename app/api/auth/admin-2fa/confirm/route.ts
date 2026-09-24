@@ -30,7 +30,7 @@ async function POST__handler(req:Request){
   }
 
   await markChallengeUsed('ADMIN_2FA',challenge.jti,user.id);
-  await createSession(user.id,challenge.remember);
+  await createSession(user.id,challenge.remember,req);
   await recordLoginSuccess(req,user.email,user.id);
   return NextResponse.json({ok:true,role:'ADMIN'});
 }

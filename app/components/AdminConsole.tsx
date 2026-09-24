@@ -4,6 +4,7 @@ import { useEffect,useMemo,useState } from 'react';
 import { AdminGameCMS } from '@/app/components/AdminGameCMS';
 import { AdminAssessmentWorkflow } from '@/app/components/AdminAssessmentWorkflow';
 import { AdminCoachQuickApprovals } from '@/app/components/AdminCoachQuickApprovals';
+import { AccountSecurity } from '@/app/components/AccountSecurity';
 
 type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
@@ -370,6 +371,7 @@ export function AdminConsole(){
     </section>}
 
     {tab==='security'&&<section className="adminPanelSection">
+      <AccountSecurity loginPath="/yonetici"/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">SİSTEM YÖNETİMİ</div><h2>Sistem & Güvenlik</h2><p className="muted">Servis durumlarını ve yönetici işlem geçmişini güvenli biçimde izle.</p></div><button className="btn" onClick={loadSecurity}>Yenile</button></div>
       {health&&<div className="adminHealthGrid">
         <HealthCard label="Neon Veritabanı" ok={health.database==='OK'} detail={health.database}/>

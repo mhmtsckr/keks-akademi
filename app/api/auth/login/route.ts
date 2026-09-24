@@ -88,7 +88,7 @@ async function POST__handler(req: Request) {
     });
   }
 
-  await createSession(user.id,input.remember);
+  await createSession(user.id,input.remember,req);
   return NextResponse.json({ ok: true, role: user.role });
 }
 

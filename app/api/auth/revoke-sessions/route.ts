@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { currentUser,destroySession,revokeAllSessions } from '@/lib/auth';
+import { currentUser,endCurrentSession,revokeAllSessions } from '@/lib/auth';
 import { writeAudit } from '@/lib/audit';
 import { withApiErrors } from '@/lib/apiGuard';
 
@@ -16,7 +16,7 @@ async function POST__handler(){
     summary:'Kullanıcı tüm cihazlardaki aktif oturumlarını kapattı.',
     metadata:{reason:'USER_SECURITY_ACTION'}
   });
-  await destroySession();
+  await endCurrentSession('ALL_SESSIONS_REVOKED');
 
   return NextResponse.json({
     ok:true,

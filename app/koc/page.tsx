@@ -8,6 +8,7 @@ import { CoachAccessCodeClaim } from '@/app/components/CoachAccessCodeClaim';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
+import { AccountSecurity } from '@/app/components/AccountSecurity';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -120,6 +121,9 @@ export default async function CoachPage() {
         {label:'ÖĞRENCİ ERİŞİMİ',description:'Yeni öğrenciyi güvenli biçimde koç hesabına bağla.',items:[
           {href:'#ogrenci-erisim',title:'Erişim Kodu',description:'Öğrencinin tek kullanımlık koç kodunu doğrula'}
         ]},
+        {label:'HESAP & GÜVENLİK',description:'Koç hesabınızın şifresini ve aktif oturumlarını yönetin.',items:[
+          {href:'#hesap-guvenligi',title:'Hesap Güvenliği',description:'Şifre, oturumlar ve tüm cihazlardan çıkış'}
+        ]},
         {label:'ÖĞRENCİ YÖNETİMİ',description:'Tüm öğrencilerin durumunu karşılaştır ve detay ekranına geç.',items:[
           {href:'#ogrencilerim',title:'Öğrencilerim',description:'Risk, tekrar, plan ve aktivite durumunu birlikte gör'}
         ]}
@@ -149,6 +153,8 @@ export default async function CoachPage() {
         </div>
       </div>
     </section>
+
+    <section id="hesap-guvenligi" className="section section-anchor"><PortalSectionTitle eyebrow="HESAP & GÜVENLİK" title="Koç Hesap Güvenliği" description="Şifrenizi, son girişlerinizi ve aktif oturumlarınızı yönetin."/><AccountSecurity loginPath="/koc"/></section>
 
     {user.role==='ADMIN'&&<section className="section"><div className="card"><h2>Yönetici erişimi</h2><p className="muted">Bu hesap aynı zamanda yönetici yetkisine sahip.</p><a className="btn primary" href="/yonetici">Yönetici Paneline Git</a></div></section>}
   </PortalShell>;
