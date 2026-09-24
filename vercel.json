@@ -4,5 +4,7 @@
       "path": "/api/cron/meb-games",
       "schedule": "0 4 * * *"
     }
-  ]
+  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- deploy-trigger.txt"
 }
