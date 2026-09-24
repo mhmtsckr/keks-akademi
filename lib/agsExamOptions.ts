@@ -59,7 +59,7 @@ export function getAdultExamGroup(value?:string|null):AdultExamGroup|null{
 
 export function displayExamGroupWithTrack(gradeLevel?:string|null,academicTrack?:string|null){
   const group=getAdultExamGroup(gradeLevel);
-  if(group==='AGS/ÖABT'&&academicTrack)return group+' · '+academicTrack;
+  if(group==='AGS/ÖABT'&&academicTrack)return group+'- '+academicTrack;
   return group||gradeLevel||'—';
 }
 

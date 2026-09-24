@@ -91,7 +91,7 @@ export default async function StudentPage() {
   const oabtApproval=getOabtFieldApproval(student.profile);
   const approvedOabtField=oabtApproval.status==='APPROVED'?(oabtApproval.approvedField||student.academicTrack):null;
   const studentGroupLabel=isAgsOabt
-    ?('AGS/ÖABT'+(approvedOabtField?' · '+approvedOabtField:''))
+    ?('AGS/ÖABT'+(approvedOabtField?'- '+approvedOabtField:''))
     :displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
 
   return <PortalShell signedIn
@@ -135,7 +135,13 @@ export default async function StudentPage() {
     </section>
 
     {isAgsOabt&&<section id="oabt-alan-onayi" className="section section-anchor">
-      <PortalSectionTitle eyebrow="AGS/ÖABT PROFİLİ" title="ÖABT Alan Onayı" description="Alanınızı bir kez seçip yönetici onayına gönderin. Yönetici onayından sonra alan kalıcı olarak kilitlenir."/>
+      <PortalSectionTitle
+        eyebrow="AGS/ÖABT PROFİLİ"
+        title="ÖABT Alanı"
+        description={oabtApproval.status==='APPROVED'
+          ?'Alanınız onaylıdır ve kilitlenmiştir. Yeni kayıtlarda öğrencinin kayıt sırasında seçtiği alan otomatik onaylanır.'
+          :'Eski kayıtlarda alan doğrulaması tamamlanana kadar mevcut yönetici onay akışı kullanılır.'}
+      />
       <StudentOabtFieldApproval/>
     </section>}
 

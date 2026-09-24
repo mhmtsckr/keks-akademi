@@ -48,7 +48,7 @@ export function StudentOabtFieldApproval(){
   if(data.status==='APPROVED'){
     return <div className="card oabtApprovalCard approved">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">AGS/ÖABT · ALAN ONAYI</div><h2>ÖABT alanınız onaylandı</h2><p className="muted">Yönetici onayından sonra bu alan kilitlenmiştir ve öğrenci tarafından değiştirilemez.</p></div>
+        <div><div className="moduleEyebrow">AGS/ÖABT · ALAN</div><h2>ÖABT alanınız onaylı</h2><p className="muted">Bu alan onaylanmış ve kilitlenmiştir. Yeni kayıtlarda kayıt sırasında seçilen alan otomatik olarak kesinleşir ve öğrenci tarafından değiştirilemez.</p></div>
         <span className="adminStatus active">KİLİTLİ</span>
       </div>
       <div className="oabtApprovedField"><span>Onaylı alan</span><strong>{data.approvedField}</strong></div>

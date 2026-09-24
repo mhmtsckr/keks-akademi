@@ -52,7 +52,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   const oabtApproval=getOabtFieldApproval(student.profile);
   const approvedOabtField=isAgsOabt&&oabtApproval.status==='APPROVED'?(oabtApproval.approvedField||student.academicTrack):null;
   const studentGroupLabel=isAgsOabt
-    ?('AGS/ÖABT'+(approvedOabtField?' · '+approvedOabtField:''))
+    ?('AGS/ÖABT'+(approvedOabtField?'- '+approvedOabtField:''))
     :displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
   const showAgsStudyArithmetic=isAgsOabt&&Boolean(approvedOabtField)&&coachAssessments.length>0;
   const wrongTopicMap=new Map<string,{subject:string;topic:string;count:number;due:number}>();

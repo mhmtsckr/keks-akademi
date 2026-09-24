@@ -39,13 +39,14 @@ export async function POST(req:Request){
   if(isAgsOabt&&!AGS_OABT_FIELDS.includes(requestedTrack as any)){
     return NextResponse.json({error:'AGS/ÖABT için geçerli bir alan seçiniz.'},{status:400});
   }
-  const academicTrack=isAgsOabt?null:isAgsYds?'YDS':(requestedTrack||null);
+  const registrationTime=new Date().toISOString();
+  const academicTrack=isAgsOabt?requestedTrack:isAgsYds?'YDS':(requestedTrack||null);
   const initialProfile=isAgsOabt?withOabtFieldApproval(null,{
-    status:'PENDING',
+    status:'APPROVED',
     requestedField:requestedTrack,
-    requestedAt:new Date().toISOString(),
-    approvedField:null,
-    approvedAt:null,
+    requestedAt:registrationTime,
+    approvedField:requestedTrack,
+    approvedAt:registrationTime,
     approvedByUserId:null,
     rejectedAt:null,
     rejectedByUserId:null,
@@ -133,7 +134,7 @@ export async function POST(req:Request){
     entityType:'Student',
     entityId:created.student.id,
     summary:input.fullName+' öğrenci başvurusu oluşturuldu, seçtiği koça bağlandı ve yönetici kayıtlarına otomatik KEKS ürün kodu eklendi.',
-    metadata:{coachId:coach.id,gradeLevel,academicTrack,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'PENDING':null,email,automaticKeksProductCode:true}
+    metadata:{coachId:coach.id,gradeLevel,academicTrack,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'APPROVED':null,oabtAutoApproved:isAgsOabt,email,automaticKeksProductCode:true}
   });
 
   await createSession(created.user.id);
@@ -142,7 +143,11 @@ export async function POST(req:Request){
     ok:true,
     emailStatus:mailSent?'SENT':'PENDING',
     message:mailSent
-      ? 'Başvurunuz alınmıştır. Öğrenci kodunuz ve 1 yıl geçerli giriş anahtarınız Gmail adresinize gönderildi. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.'
-      : 'Başvurunuz alınmıştır ve seçtiğiniz koça bağlandınız. Gmail gönderimi şu anda bekliyor; bilgileriniz sistemde güvenli biçimde saklandı ve tekrar gönderilebilir.'
+      ? (isAgsOabt
+          ? 'Başvurunuz alındı. AGS/ÖABT alanınız otomatik onaylandı ve kilitlendi. Öğrenci kodunuz ile 1 yıl geçerli giriş anahtarınız Gmail adresinize gönderildi.'
+          : 'Başvurunuz alınmıştır. Öğrenci kodunuz ve 1 yıl geçerli giriş anahtarınız Gmail adresinize gönderildi. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.')
+      : (isAgsOabt
+          ? 'Başvurunuz alındı. AGS/ÖABT alanınız otomatik onaylandı ve kilitlendi. Gmail gönderimi bekliyor; giriş bilgileriniz sistemde güvenli biçimde saklanıyor.'
+          : 'Başvurunuz alınmıştır ve seçtiğiniz koça bağlandınız. Gmail gönderimi şu anda bekliyor; bilgileriniz sistemde güvenli biçimde saklandı ve tekrar gönderilebilir.')
   });
 }

@@ -208,7 +208,7 @@ export function StudentRegisterForm() {
         <option value="">Alanınızı seçiniz</option>
         {AGS_OABT_FIELDS.map(field=><option key={field} value={field}>{field}</option>)}
       </select>
-      <small className="muted">Seçtiğiniz alan koç panelinde ve kişisel AGS/ÖABT çalışma planınızda kullanılacaktır.</small>
+      <small className="muted">Seçtiğiniz alan kayıt tamamlandığında otomatik olarak onaylanır ve kilitlenir. Öğrenci ve koç panelinde “AGS/ÖABT- ALAN ADI” biçiminde görünür.</small>
     </div>}
     {isAgsYds&&<div className="notice">
       <strong>AGS/YDS çalışma grubu</strong>
