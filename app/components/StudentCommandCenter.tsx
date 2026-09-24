@@ -78,7 +78,13 @@ export function StudentCommandCenter(){
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
     {busy==='rebalance'&&<div className="notice">Kaçırılan görevleriniz dengeleniyor…</div>}
 
-    <div className="studentSystemJourney">
+    <div className="studentTodayHero" aria-label="Bugünkü çalışma özeti">
+      <div className="card todayMissionCard"><div className="moduleEyebrow">BUGÜN NE YAPACAĞIM?</div><h2>{t.totalTasks-t.completedTasks} görev kaldı</h2><p>{t.targetQuestions} hedef soru</p><a className="btn primary" href="#gunluk-gorevler">Günlük görevleri aç</a></div>
+      <div className="card"><div className="moduleEyebrow">KAÇINI TAMAMLADIM?</div><h2>{t.completedTasks} / {t.totalTasks}</h2><div className="goldProgress"><i style={{width:(t.totalTasks?Math.round(t.completedTasks/t.totalTasks*100):0)+'%'}}/></div></div>
+      <div className="card"><div className="moduleEyebrow">SIRADA HANGİ TEKRAR VAR?</div><h2>{t.dueReviews ? t.dueReviews+' tekrar bekliyor' : 'Bugün tekrar yok'}</h2><a className="btn" href="#yanlis-soru-bankasi">Tekrar kuyruğunu aç</a></div>
+    </div>
+
+    <details className="card"><summary>Diğer alanlar ve gelişim ayrıntıları</summary><div className="studentSystemJourney">
       <a href="#keks-egilim-taramasi" className="studentSystemTile">
         <span>01</span><div><small>EĞİTSEL PROFİL</small><strong>Profil & Ön Görüşme</strong><p>{system.screening?(system.preInterview?'Tarama ve ön görüşme verisi mevcut':'Tarama tamamlandı · ön görüşme bekleniyor'):'Eğilim taraması bekleniyor'}</p></div>
       </a>
@@ -97,9 +103,9 @@ export function StudentCommandCenter(){
       <a href="#aylik-gelisim" className="studentSystemTile">
         <span>06</span><div><small>AYLIK GELİŞİM</small><strong>Gelişim & Değerlendirme</strong><p>Süreklilik %{currentMonth.continuity||0} · görev %{currentMonth.taskCompletion||0}</p></div>
       </a>
-    </div>
+    </div></details>
 
-    <div className="studentTodayHero">
+    <details className="card"><summary>Hedef ve görüşme ayrıntıları</summary><div className="studentTodayHero">
       <div className="card todayMissionCard">
         <div className="moduleHeaderRow">
           <div><div className="moduleEyebrow">BUGÜN NE YAPACAĞIM?</div><h2>{t.completedTasks}/{t.totalTasks} görev tamamlandı</h2></div>
@@ -131,9 +137,9 @@ export function StudentCommandCenter(){
         <div className="moduleEyebrow">SONRAKİ KOÇLUK GÖRÜŞMESİ</div>
         {t.nextSession?<><h2>{new Date(t.nextSession.startsAt).toLocaleDateString('tr-TR',{day:'2-digit',month:'long'})}</h2><p>{new Date(t.nextSession.startsAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})} · {t.nextSession.title}</p>{t.nextSession.meetingUrl&&<a className="btn" href={t.nextSession.meetingUrl} target="_blank">Görüşmeye Katıl</a>}</>:<><h2>Planlı seans yok</h2><p className="muted">Yeni seans planlandığında burada görünecek.</p></>}
       </div>
-    </div>
+    </div></details>
 
-    <div className="studentInsightGrid">
+    <details className="card"><summary>Gelişim, eksik haritası ve haftalık değerlendirme</summary><div className="stack"><div className="studentInsightGrid">
       <div className="card">
         <div className="moduleEyebrow">GERÇEK İLERLEMEM</div><h2>Dört gelişim ekseni</h2>
         <div className="studentAxisList">
@@ -185,7 +191,7 @@ export function StudentCommandCenter(){
         </div>
         <button className="btn primary" disabled={busy==='reflection'}>{busy==='reflection'?'Kaydediliyor…':'Haftayı Değerlendir ve Koçuma Gönder'}</button>
       </form>
-    </div>
+    </div></div></details>
   </div>;
 }
 

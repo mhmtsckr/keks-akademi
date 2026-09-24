@@ -35,7 +35,8 @@ export function StudentDailyTasks(){
       totalQuestions:Number(fd.get('totalQuestions')),
       correct:Number(fd.get('correct')),
       wrong:Number(fd.get('wrong')),
-      blank:Number(fd.get('blank'))
+      blank:Number(fd.get('blank')),
+      errorReason:String(fd.get('errorReason')||'')||null
     };
     const r=await fetch('/api/student/task-submissions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();setBusy('');
@@ -73,6 +74,7 @@ export function StudentDailyTasks(){
             <label>Doğru<input name="correct" type="number" min="0" defaultValue={a.submission?.correct??0} required/></label>
             <label>Yanlış<input name="wrong" type="number" min="0" defaultValue={a.submission?.wrong??0} required/></label>
             <label>Boş<input name="blank" type="number" min="0" defaultValue={a.submission?.blank??0} required/></label>
+            <label>Yanlış nedeni<select name="errorReason" defaultValue={a.submission?.errorReason||''}><option value="">Belirtilmedi</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="DIKKAT">Dikkat</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="SURE">Süre</option><option value="SORUYU_ANLAMA">Soruyu anlama</option><option value="STRATEJI">Strateji</option><option value="DIGER">Diğer</option></select></label>
             <button className="btn primary" disabled={busy===a.id}>{busy===a.id?'Kaydediliyor…':a.submission?'Kaydı Güncelle':'Görevi Kaydet'}</button>
           </form>
         </div>)}</div>

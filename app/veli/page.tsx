@@ -13,7 +13,7 @@ function pretty(v: unknown) {
 export default async function ParentPage() {
   const user=await currentUser();
 
-  if(!user || user.role!=='PARENT' || !user.parentProfile) {
+  if(!user || user.role!=='PARENT' || !user.parentProfile || !user.parentProfile.active) {
     return <PortalShell
       active="veli"
       eyebrow="VELİ GİRİŞİ"
@@ -40,6 +40,7 @@ export default async function ParentPage() {
     </PortalShell>;
   }
 
+  if(!user.parentProfile.consentRecordedAt)return <PortalShell active="veli" eyebrow="VELİ ERİŞİMİ" title="Veli izni gerekli" description="Koçunuzdan izin kapsamı doğrulanmış yeni bir veli bağlantısı isteyin."><div className="card">Veriler henüz paylaşıma açık değil.</div></PortalShell>;
   const student=await db.student.findUnique({
     where:{id:user.parentProfile.studentId},
     include:{
@@ -47,7 +48,7 @@ export default async function ParentPage() {
       dailyLogs:{orderBy:{date:'desc'},take:14},
       examResults:{orderBy:{createdAt:'desc'},take:10},
       studyTechniques:{where:{active:true},orderBy:{createdAt:'desc'}},
-      reports:{where:{visibleToParent:true},orderBy:{createdAt:'desc'}},
+      reports:{where:{visibleToParent:true,...(user.parentProfile.allowReports?{}:{id:'__hidden__'})},orderBy:{createdAt:'desc'}},
       practiceLogs:{where:{date:{gte:new Date(Date.now()-7*24*60*60*1000)}},orderBy:{date:'desc'}},
       topicProgress:{},
       generatedContent:{where:{visibleToParent:true},orderBy:{createdAt:'desc'},take:30},

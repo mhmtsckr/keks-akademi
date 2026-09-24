@@ -11,6 +11,9 @@ import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { writeAudit } from '@/lib/audit';
 import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
 
+const SCORING_VERSION='keks-scoring-v1';
+const REPORT_VERSION='keks-report-v1';
+
 const schema=z.object({
   formVersion:z.string().min(1),
   educationBand:z.string().min(1),
@@ -108,6 +111,8 @@ async function POST__handler(req:Request){
     const assessment=await tx.assessment.create({data:{
       studentId:user.student!.id,
       formVersion:form.version,
+      scoringVersion:SCORING_VERSION,
+      reportVersion:REPORT_VERSION,
       answers:body.answers as any,
       scores:scores as any,
       report:report as any

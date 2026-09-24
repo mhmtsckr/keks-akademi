@@ -44,8 +44,15 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
   const completedCount=useMemo(()=>progress.filter(x=>x.examType===exam&&x.completed).length,[progress,exam]);
   const totalCount=useMemo(()=>Object.values(EXAM_CATALOG[exam]).reduce((a:any,b:any)=>a+b.length,0),[exam]);
   const pct=totalCount?Math.round((completedCount/totalCount)*100):0;
+  const topicTrends=useMemo(()=>{
+    const now=Date.now();const week=7*86400000;
+    const groups=new Map<string,{name:string;oldC:number;oldN:number;newC:number;newN:number}>();
+    for(const row of practice){if(!row.topic)continue;const age=now-new Date(row.date).getTime();if(age<0||age>=2*week)continue;const key=row.examType+'|'+row.subject+'|'+row.topic;const item=groups.get(key)||{name:row.subject+' · '+row.topic,oldC:0,oldN:0,newC:0,newN:0};if(age<week){item.newC+=row.correct;item.newN+=row.correct+row.wrong+row.blank}else{item.oldC+=row.correct;item.oldN+=row.correct+row.wrong+row.blank}groups.set(key,item)}
+    return [...groups.values()].filter(x=>x.oldN>=5&&x.newN>=5).map(x=>({...x,oldRate:Math.round(x.oldC/x.oldN*100),newRate:Math.round(x.newC/x.newN*100)}));
+  },[practice]);
 
   return <div className="studentProgressLayout">
+    {topicTrends.length>0&&<div className="card"><div className="moduleEyebrow">KONU BAZLI GELİŞİM</div><h2>Son iki haftada doğruluk değişimi</h2>{topicTrends.map(x=><p key={x.name}>{x.name}: %{x.oldRate} → %{x.newRate} <small className="muted">(önceki {x.oldN}, son hafta {x.newN} soru)</small></p>)}</div>}
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
     {lastSchedule&&<div className="card">
       <div className="moduleEyebrow">KONU TEKRAR TAKVİMİ</div>

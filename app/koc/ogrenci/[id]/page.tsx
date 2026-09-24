@@ -125,7 +125,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
           const report=(a.report||{}) as any;
           return <article className="card" key={a.id}>
             <div className="moduleHeaderRow">
-              <div><div className="moduleEyebrow">TARAMA KAYDI</div><h3>{report.title||'KEKS Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması'}</h3><p className="muted">{new Date(a.completedAt).toLocaleString('tr-TR')} · {a.formVersion}</p></div>
+              <div><div className="moduleEyebrow">TARAMA KAYDI</div><h3>{report.title||'KEKS Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması'}</h3><p className="muted">{new Date(a.completedAt).toLocaleString('tr-TR')} · Form: {a.formVersion} · Puanlama: {a.scoringVersion} · Rapor: {a.reportVersion}</p></div>
               <span className="pill">KOÇA ÖZEL</span>
             </div>
             <div className="interviewScoreGrid">

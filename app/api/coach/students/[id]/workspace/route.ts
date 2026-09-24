@@ -12,7 +12,8 @@ const actionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('exam'), examType: z.string().min(2).max(120), payload: z.any() }),
   z.object({ action: z.literal('profile'), goal: z.string().max(2000).optional(), profile: z.any().optional() }),
   z.object({ action: z.literal('report'), title: z.string().min(2).max(160), summary: z.string().max(2000).optional(), content: z.string().min(2).max(20000), visibleToStudent: z.boolean().default(true), visibleToParent: z.boolean().default(true) }),
-  z.object({ action: z.literal('parentCode'), parentName: z.string().min(2).max(120).optional() }),
+  z.object({ action: z.literal('parentCode'), parentName: z.string().min(2).max(120).optional(), guardianConsentConfirmed:z.literal(true), allowReports:z.boolean().default(false) }),
+  z.object({ action:z.literal('parentRevoke') }),
 ]);
 
 async function ownedStudent(user: any, studentId: string) {
@@ -27,6 +28,11 @@ async function POST__handler(req: Request, context: { params: Promise<{ id: stri
   if (!student) return NextResponse.json({ error: 'Öğrenci bulunamadı veya yetkiniz yok.' }, { status: 404 });
 
   const input = await readJson(req, actionSchema);
+
+  if(input.action==='parentRevoke'){
+    await db.parentProfile.updateMany({where:{studentId:student.id,active:true},data:{active:false,consentRecordedAt:null,allowReports:false}});
+    return NextResponse.json({ok:true});
+  }
 
   if (input.action === 'plan') {
     const row = await db.studyPlan.create({ data: { studentId: student.id, title: input.title, payload: input.payload ?? {}, active: true } });
@@ -56,7 +62,7 @@ async function POST__handler(req: Request, context: { params: Promise<{ id: stri
   const raw = randomCode('VELI');
   const existing = await db.parentProfile.findFirst({ where: { studentId: student.id, active: true }, include: { user: true } });
   if (existing) {
-    await db.parentProfile.update({ where: { id: existing.id }, data: { accessCodeHash: await hashSecret(raw), codeHint: raw.slice(-4) } });
+    await db.parentProfile.update({ where: { id: existing.id }, data: { accessCodeHash: await hashSecret(raw), codeHint: raw.slice(-4),consentRecordedAt:new Date(),consentRecordedByUserId:user.id,allowReports:input.allowReports } });
     if (input.parentName) await db.user.update({ where: { id: existing.userId }, data: { name: input.parentName } });
     return NextResponse.json({ ok: true, code: raw, studentCode: student.studentCode, parentUserId: existing.userId });
   }
@@ -65,7 +71,7 @@ async function POST__handler(req: Request, context: { params: Promise<{ id: stri
       name: input.parentName || ('Veli - ' + student.fullName),
       role: 'PARENT',
       status: 'ACTIVE',
-      parentProfile: { create: { studentId: student.id, accessCodeHash: await hashSecret(raw), codeHint: raw.slice(-4), active: true } },
+      parentProfile: { create: { studentId: student.id, accessCodeHash: await hashSecret(raw), codeHint: raw.slice(-4), active: true,consentRecordedAt:new Date(),consentRecordedByUserId:user.id,allowReports:input.allowReports } },
     },
   });
   return NextResponse.json({ ok: true, code: raw, studentCode: student.studentCode, parentUserId: parentUser.id });
