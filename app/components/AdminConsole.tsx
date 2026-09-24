@@ -310,9 +310,7 @@ export function AdminConsole(){
           <td>{u.student?<>
             <strong>Kod {u.student.studentCode}</strong>
             <div className="muted">{u.student.gradeLevel||'—'}{u.student.coach?.user?.name?' · Koç '+u.student.coach.user.name:''}</div>
-            <div style={{marginTop:8}}><span className="muted">Giriş anahtarı</span><br/>{u.student.accessKey?<code className="adminPrivateCode">{u.student.accessKey}</code>:<span className="muted">Eski kayıt · şifreli kopya yok</span>}</div>
-            <div className="muted">Geçerlilik: {u.student.accessKeyExpiresAt?dt(u.student.accessKeyExpiresAt):'—'} · {u.student.accessKeyExpired?'SÜRESİ DOLDU':'AKTİF'}</div>
-            <div className="muted">{u.student.credentialsDeliveryStatus==='SENT'?'E-posta gönderildi':'E-posta bekliyor'}{u.student.credentialsEmailedAt?' · '+dt(u.student.credentialsEmailedAt):''}</div>
+            <div className="muted">Giriş yöntemi: E-posta + kullanıcı şifresi</div>
           </>:u.coachProfile?u.coachProfile._count.students+' öğrenci':u.parentProfile?'Öğrenci: '+u.parentProfile.student.fullName:'—'}</td>
           <td><span className={'adminStatus '+u.status.toLowerCase()}>{u.status}</span></td>
           <td><div className="row">

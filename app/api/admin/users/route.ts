@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { writeAudit } from '@/lib/audit';
-import { decryptPrivateCode } from '@/lib/security';
 import { getSuspensionRetention, permanentlyDeleteSuspendedUserById, SUSPENSION_RETENTION_DAYS } from '@/lib/suspendedUserCleanup';
+import { requiresEmailVerification,isEmailVerified } from '@/lib/emailVerification';
 
 const patchSchema=z.object({
   userId:z.string(),
@@ -27,7 +27,7 @@ async function GET__handler(req:Request){
     where,orderBy:{createdAt:'desc'},take:200,
     select:{id:true,name:true,email:true,role:true,status:true,createdAt:true,updatedAt:true,
       coachProfile:{select:{_count:{select:{students:true}}}},
-      student:{select:{studentCode:true,gradeLevel:true,accessKeyCiphertext:true,accessKeyExpiresAt:true,credentialsDeliveryStatus:true,credentialsEmailedAt:true,coach:{select:{user:{select:{name:true}}}}}},
+      student:{select:{studentCode:true,gradeLevel:true,coach:{select:{user:{select:{name:true}}}}}},
       parentProfile:{select:{student:{select:{fullName:true,studentCode:true}}}}
     }
   });
@@ -42,12 +42,7 @@ async function GET__handler(req:Request){
     student:u.student?{
       studentCode:u.student.studentCode,
       gradeLevel:u.student.gradeLevel,
-      coach:u.student.coach,
-      credentialsDeliveryStatus:u.student.credentialsDeliveryStatus,
-      credentialsEmailedAt:u.student.credentialsEmailedAt,
-      accessKey:u.student.accessKeyCiphertext?safeDecrypt(u.student.accessKeyCiphertext):null,
-      accessKeyExpiresAt:u.student.accessKeyExpiresAt,
-      accessKeyExpired:u.student.accessKeyExpiresAt.getTime()<=Date.now()
+      coach:u.student.coach
     }:null
   }});
   return NextResponse.json({
@@ -55,10 +50,6 @@ async function GET__handler(req:Request){
     users:visibleUsers,
     suspensionRetentionDays:SUSPENSION_RETENTION_DAYS
   });
-}
-
-function safeDecrypt(value:string){
-  try{return decryptPrivateCode(value)}catch{return null}
 }
 
 const deleteSchema=z.union([
@@ -73,6 +64,13 @@ async function PATCH__handler(req:Request){
   const before=await db.user.findUnique({where:{id:input.userId},select:{id:true,name:true,email:true,role:true,status:true}});
 
   if(!before)return NextResponse.json({error:'Kullanıcı bulunamadı.'},{status:404});
+
+  if(input.status==='ACTIVE'){
+    const verificationRequired=await requiresEmailVerification(before.id);
+    if(verificationRequired&&!(await isEmailVerified(before.id))){
+      return NextResponse.json({error:'E-posta doğrulanmadan hesap aktif edilemez.'},{status:409});
+    }
+  }
 
   if(input.revokeSessions){
     await db.user.update({where:{id:input.userId},data:{updatedAt:new Date()}});

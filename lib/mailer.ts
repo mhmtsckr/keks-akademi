@@ -18,45 +18,6 @@ async function sendFromKeksGmail(to:string,subject:string,html:string){
   }
 }
 
-export async function sendStudentCredentials(input:{email:string;studentName:string;studentCode:string;accessKey:string;accessKeyExpiresAt:Date;coachName:string}){
-  const from=KEKS_CONTACT_EMAIL;
-  const html=`
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
-      <h1>KEKS Akademi Öğrenci Başvurusu</h1>
-      <p>Merhaba <strong>${escapeHtml(input.studentName)}</strong>,</p>
-      <p>Başvurunuz alınmıştır ve seçtiğiniz koç <strong>${escapeHtml(input.coachName)}</strong> hesabınıza atanmıştır.</p>
-      <p>KEKS Akademi öğrenci giriş bilgileriniz:</p>
-      <div style="padding:16px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2">
-        <p><strong>Öğrenci kodu:</strong> ${escapeHtml(input.studentCode)}</p>
-        <p><strong>Giriş anahtarı:</strong> ${escapeHtml(input.accessKey)}</p>
-        <p><strong>Son geçerlilik:</strong> ${escapeHtml(input.accessKeyExpiresAt.toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'}))}</p>
-      </div>
-      <p>Giriş anahtarınız oluşturulduğu tarihten itibaren 1 yıl geçerlidir. Süre dolduğunda bu anahtarla sisteme giriş yapılamaz.</p>
-      <p>Bu bilgileri güvenli bir yerde saklayın. Öğrenci paneline öğrenci kodu ve giriş anahtarıyla giriş yapabilirsiniz.</p>
-      <p>KEKS Akademi</p>
-    </div>`;
-  return sendFromKeksGmail(input.email,'KEKS Akademi | Öğrenci giriş bilgileriniz',html);
-}
-
-export async function resendStudentAccessKey(input:{email:string;studentName:string;studentCode:string;accessKey:string;accessKeyExpiresAt:Date}){
-  const from=KEKS_CONTACT_EMAIL;
-  const html=`
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
-      <h1>KEKS Akademi Giriş Anahtarı</h1>
-      <p>Merhaba <strong>${escapeHtml(input.studentName)}</strong>,</p>
-      <p>Giriş bilgileriniz doğrulandı. Mevcut giriş anahtarınız değiştirilmeden yeniden gönderilmiştir.</p>
-      <div style="padding:16px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2">
-        <p><strong>Öğrenci kodu:</strong> ${escapeHtml(input.studentCode)}</p>
-        <p><strong>Giriş anahtarı:</strong> ${escapeHtml(input.accessKey)}</p>
-        <p><strong>Son geçerlilik:</strong> ${escapeHtml(input.accessKeyExpiresAt.toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'}))}</p>
-      </div>
-      <p>Bu anahtar yalnızca kendi 1 yıllık geçerlilik süresinin sonuna kadar kullanılabilir.</p>
-      <p>Bu talebi siz oluşturmadıysanız KEKS Akademi ile iletişime geçin.</p>
-      <p>KEKS Akademi</p>
-    </div>`;
-  return sendFromKeksGmail(input.email,'KEKS Akademi | Giriş anahtarınız',html);
-}
-
 export async function sendStudentRegistrationNotice(input:{email:string;studentName:string;studentCode:string;coachName:string}){
   const html=`
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
@@ -72,6 +33,33 @@ export async function sendStudentRegistrationNotice(input:{email:string;studentN
       <p>KEKS Akademi</p>
     </div>`;
   return sendFromKeksGmail(input.email,'KEKS Akademi | Kaydınız tamamlandı',html);
+}
+
+export async function sendEmailVerificationCode(input:{email:string;name:string;code:string}){
+  const html=`
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
+      <h1>KEKS Akademi E-posta Doğrulama</h1>
+      <p>Merhaba <strong>${escapeHtml(input.name)}</strong>,</p>
+      <p>Kaydınızı tamamlamak için doğrulama kodunuz:</p>
+      <div style="font-size:30px;font-weight:800;letter-spacing:8px;padding:18px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2;text-align:center">${escapeHtml(input.code)}</div>
+      <p>Bu kod 10 dakika geçerlidir ve en fazla 5 kez denenebilir.</p>
+      <p>Bu kaydı siz başlatmadıysanız kodu kullanmayın.</p>
+      <p>KEKS Akademi</p>
+    </div>`;
+  return sendFromKeksGmail(input.email,'KEKS Akademi | E-posta doğrulama kodu',html);
+}
+
+export async function sendAdminTwoFactorCode(input:{email:string;name:string;code:string}){
+  const html=`
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
+      <h1>KEKS Akademi Yönetici Giriş Doğrulaması</h1>
+      <p>Merhaba <strong>${escapeHtml(input.name)}</strong>,</p>
+      <p>Yönetici paneline giriş için tek kullanımlık doğrulama kodunuz:</p>
+      <div style="font-size:30px;font-weight:800;letter-spacing:8px;padding:18px;border:1px solid #e0c16b;border-radius:12px;background:#faf8f2;text-align:center">${escapeHtml(input.code)}</div>
+      <p>Kod 10 dakika geçerlidir. Bu giriş size ait değilse şifrenizi değiştirin ve aktif oturumları kapatın.</p>
+      <p>KEKS Akademi</p>
+    </div>`;
+  return sendFromKeksGmail(input.email,'KEKS Akademi | Yönetici 2FA kodu',html);
 }
 
 export async function sendPasswordResetCode(input:{email:string;name:string;code:string}){

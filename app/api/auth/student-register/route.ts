@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
+import crypto from 'node:crypto';
+import { encryptPrivateCode, hashSecret, randomCode,verifySecret } from '@/lib/security';
 import { passwordPolicyMessage } from '@/lib/passwordPolicy';
-import { createSession } from '@/lib/auth';
-import { sendStudentRegistrationNotice } from '@/lib/mailer';
 import { writeAudit } from '@/lib/audit';
 import { normalizeEducationLevelLabel } from '@/lib/taskEvaluation';
 import { AGS_OABT_FIELDS,isAgsOabtLabel,isAgsYdsLabel } from '@/lib/agsExamOptions';
 import { withOabtFieldApproval } from '@/lib/oabtFieldApproval';
+import { isEmailVerified,issueEmailVerification,markEmailVerificationRequired } from '@/lib/emailVerification';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -61,7 +61,16 @@ export async function POST(req:Request){
   if(existing?.status==='SUSPENDED'){
     return NextResponse.json({error:'Bu Gmail adresi askıya alınmış bir hesaba bağlı. Hesap kalıcı olarak silinmeden aynı Gmail ile yeniden kayıt yapılamaz.'},{status:409});
   }
-  if(existing)return NextResponse.json({error:'Bu Gmail adresiyle daha önce hesap oluşturulmuş.'},{status:409});
+  if(existing){
+    if(existing.role==='STUDENT'&&existing.status==='PENDING'&&existing.passwordHash&&await verifySecret(input.password,existing.passwordHash)&&!(await isEmailVerified(existing.id))){
+      const pending=await db.user.findUnique({where:{id:existing.id},select:{id:true,email:true,name:true,updatedAt:true}});
+      if(!pending)return NextResponse.json({error:'Kayıt bulunamadı.'},{status:404});
+      const issued=await issueEmailVerification(req,pending);
+      if(!issued.ok)return NextResponse.json({error:issued.error,retryAfterSeconds:'retryAfterSeconds' in issued?issued.retryAfterSeconds:undefined},{status:issued.status});
+      return NextResponse.json({ok:true,verificationRequired:true,verificationChallenge:issued.challenge,email,message:issued.message});
+    }
+    return NextResponse.json({error:'Bu Gmail adresiyle daha önce hesap oluşturulmuş.'},{status:409});
+  }
 
   const coach=await db.coachProfile.findFirst({
     where:{id:input.coachId,user:{status:'ACTIVE',role:'COACH'}},
@@ -77,7 +86,7 @@ export async function POST(req:Request){
 
   const created=await db.$transaction(async tx=>{
     const user=await tx.user.create({
-      data:{name:input.fullName,email,passwordHash:await hashSecret(input.password),role:'STUDENT',status:'ACTIVE'}
+      data:{name:input.fullName,email,passwordHash:await hashSecret(input.password),role:'STUDENT',status:'PENDING'}
     });
     const student=await tx.student.create({
       data:{
@@ -111,26 +120,12 @@ export async function POST(req:Request){
     return {user,student};
   });
 
-  let mailSent=false;
-  try{
-    const mail:any=await sendStudentRegistrationNotice({
-      email,
-      studentName:input.fullName,
-      studentCode,
-      coachName:coach.user.name
-    });
-    mailSent=!Boolean(mail?.skipped||mail?.error);
-  }catch{
-    mailSent=false;
-  }
-
-  await db.student.update({
-    where:{id:created.student.id},
-    data:{
-      credentialsDeliveryStatus:mailSent?'SENT':'PENDING',
-      credentialsEmailedAt:mailSent?new Date():null,
-      credentialEmailAttempts:{increment:1}
-    }
+  await markEmailVerificationRequired(created.user.id);
+  const issued=await issueEmailVerification(req,{
+    id:created.user.id,
+    email:created.user.email,
+    name:created.user.name,
+    updatedAt:created.user.updatedAt
   });
 
   await writeAudit({
@@ -142,17 +137,14 @@ export async function POST(req:Request){
     metadata:{coachId:coach.id,gradeLevel,academicTrack,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'APPROVED':null,oabtAutoApproved:isAgsOabt,email,automaticKeksProductCode:true}
   });
 
-  await createSession(created.user.id);
-
   return NextResponse.json({
     ok:true,
-    emailStatus:mailSent?'SENT':'PENDING',
-    message:mailSent
-      ? (isAgsOabt
-          ? 'Başvurunuz alındı. AGS/ÖABT alanınız otomatik onaylandı ve kilitlendi. Bundan sonra Gmail adresiniz ve oluşturduğunuz şifreyle giriş yapabilirsiniz.'
-          : 'Başvurunuz alınmıştır. Bundan sonra Gmail adresiniz ve oluşturduğunuz şifreyle giriş yapabilirsiniz. Seçtiğiniz koçun Öğrencilerim paneline eklendiniz.')
-      : (isAgsOabt
-          ? 'Başvurunuz alındı. AGS/ÖABT alanınız otomatik onaylandı ve kilitlendi. Bilgilendirme e-postası gönderilemedi; ancak Gmail adresiniz ve oluşturduğunuz şifreyle giriş yapabilirsiniz.'
-          : 'Başvurunuz alınmıştır ve seçtiğiniz koça bağlandınız. Bilgilendirme e-postası gönderilemedi; ancak Gmail adresiniz ve oluşturduğunuz şifreyle giriş yapabilirsiniz.')
+    verificationRequired:true,
+    verificationChallenge:issued.ok?issued.challenge:null,
+    email,
+    message:issued.ok
+      ?'Başvurunuz oluşturuldu. Hesabınızı aktifleştirmek için Gmail adresinize gönderilen 6 haneli kodu doğrulayın.'
+      :'Başvurunuz oluşturuldu ancak doğrulama e-postası gönderilemedi. 60 saniye sonra yeni kod isteyebilirsiniz.'
   });
 }
+

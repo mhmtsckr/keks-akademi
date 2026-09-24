@@ -22,3 +22,7 @@ Release retry: 2026-09-24 15:45 TRT
 - Revocable JWT security stamp using User.updatedAt
 - Password reset/change and account suspension invalidate every previous session
 - Admin can revoke a user's sessions for security incidents
+- Persistent auth abuse protection via AuditLog: login, reset send and challenge attempt limits
+- Admin email 2FA before session creation
+- Student/coach email verification before activation/approval
+- Legacy access-key UI removed; database column removal prepared separately
