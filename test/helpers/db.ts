@@ -10,14 +10,15 @@ import { vi } from 'vitest';
  * doğrulamayın; yalnızca hangi çağrıların yapıldığını ve dönen yanıtı doğrulayın.
  */
 export const db = {
-  payment: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+  payment: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   testAccess: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   assessment: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
   student: { findUnique: vi.fn(), findFirst: vi.fn() },
   user: { findUnique: vi.fn(), create: vi.fn() },
   academyCode: { create: vi.fn(), findMany: vi.fn(), update: vi.fn() },
   preInterviewForm: { findFirst: vi.fn() },
-  preInterviewAssignment: { findFirst: vi.fn(), create: vi.fn() },
+  preInterviewAssignment: { findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
+  coachAccessCode: { updateMany: vi.fn(), create: vi.fn() },
   coachAlert: { create: vi.fn(), findFirst: vi.fn() },
   progressShare: { findFirst: vi.fn(), update: vi.fn() },
   testQuestion: { findMany: vi.fn() },
