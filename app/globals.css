@@ -378,7 +378,7 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .adminHealthGrid{grid-template-columns:repeat(2,1fr)}
   .adminPaymentStats{grid-template-columns:repeat(2,1fr)}
 }
-
+@media(max-width:760px){
   .adminOverviewSplit,.adminAccessGrid{grid-template-columns:1fr}
   .adminFilterBar{grid-template-columns:1fr}
   .adminQuestionOptions{grid-template-columns:1fr}
