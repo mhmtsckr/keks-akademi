@@ -8,3 +8,4 @@ Includes:
 - Exam group normalization
 - Coach/admin display fixes
 - Vercel deployment batching
+Release retry: 2026-09-24 15:45 TRT
