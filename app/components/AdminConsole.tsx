@@ -4,6 +4,7 @@ import { useEffect,useMemo,useState } from 'react';
 import { AdminGameCMS } from '@/app/components/AdminGameCMS';
 import { AdminAssessmentWorkflow } from '@/app/components/AdminAssessmentWorkflow';
 import { AdminOabtFieldApprovals } from '@/app/components/AdminOabtFieldApprovals';
+import { AdminCoachQuickApprovals } from '@/app/components/AdminCoachQuickApprovals';
 
 type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
@@ -185,6 +186,7 @@ export function AdminConsole(){
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
 
     {tab==='overview'&&dashboard&&<section className="adminPanelSection">
+      <AdminCoachQuickApprovals/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">SİSTEM ÖZETİ</div><h2>Genel Bakış</h2><p className="muted">KEKS Akademi'nin güncel operasyon göstergeleri.</p></div><button className="btn" onClick={refresh}>Yenile</button></div>
       <div className="adminKpiGrid">
         <AdminKpi icon="👥" value={dashboard.users} label="Toplam kullanıcı"/>
@@ -225,6 +227,7 @@ export function AdminConsole(){
     </section>}
 
     {tab==='users'&&<section className="adminPanelSection">
+      <AdminCoachQuickApprovals/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet.</p></div><span className="pill">{users.length} sonuç · {pendingUsers} bekleyen</span></div>
       <div className="card adminFilterBar">
         <div className="field"><label>Ara</label><input value={userQ} onChange={e=>setUserQ(e.target.value)} placeholder="Ad veya e-posta"/></div>
