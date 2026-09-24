@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { hashSecret } from '@/lib/security';
 import { passwordPolicyMessage } from '@/lib/passwordPolicy';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
+import { writeAudit } from '@/lib/audit';
 
 const schema=z.object({
   challenge:z.string().min(20),
@@ -55,8 +56,20 @@ async function POST__handler(req:Request){
     return NextResponse.json({error:'Doğrulama kodu hatalı.'},{status:400});
   }
 
-  await db.user.update({where:{id:user.id},data:{passwordHash:await hashSecret(input.password)}});
-  return NextResponse.json({ok:true,message:'Şifreniz yenilendi. Yeni şifrenizle giriş yapabilirsiniz.'});
+  const updated=await db.user.update({
+    where:{id:user.id},
+    data:{passwordHash:await hashSecret(input.password),updatedAt:new Date()},
+    select:{id:true}
+  });
+  await writeAudit({
+    actorUserId:updated.id,
+    action:'PASSWORD_RESET_COMPLETED',
+    entityType:'User',
+    entityId:updated.id,
+    summary:'Kullanıcı şifresini e-posta doğrulamasıyla yeniledi; tüm eski oturumlar geçersiz kılındı.',
+    metadata:{allSessionsRevoked:true}
+  });
+  return NextResponse.json({ok:true,message:'Şifreniz yenilendi. Güvenlik için diğer tüm cihazlardaki oturumlar kapatıldı. Yeni şifrenizle giriş yapabilirsiniz.'});
 }
 
 export const POST=withApiErrors(POST__handler);

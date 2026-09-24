@@ -10,7 +10,8 @@ import { getSuspensionRetention, permanentlyDeleteSuspendedUserById, SUSPENSION_
 const patchSchema=z.object({
   userId:z.string(),
   status:z.enum(['PENDING','ACTIVE','SUSPENDED']).optional(),
-  role:z.enum(['ADMIN','COACH','STUDENT','PARENT']).optional()
+  role:z.enum(['ADMIN','COACH','STUDENT','PARENT']).optional(),
+  revokeSessions:z.boolean().optional()
 });
 
 async function GET__handler(req:Request){
@@ -70,7 +71,21 @@ async function PATCH__handler(req:Request){
   const input=await readJson(req, patchSchema);
   if(admin.id===input.userId&&input.status==='SUSPENDED') return NextResponse.json({error:'Kendi hesabınızı askıya alamazsınız.'},{status:400});
   const before=await db.user.findUnique({where:{id:input.userId},select:{id:true,name:true,email:true,role:true,status:true}});
+
   if(!before)return NextResponse.json({error:'Kullanıcı bulunamadı.'},{status:404});
+
+  if(input.revokeSessions){
+    await db.user.update({where:{id:input.userId},data:{updatedAt:new Date()}});
+    await writeAudit({
+      actorUserId:admin.id,
+      action:'ADMIN_SESSION_REVOCATION',
+      entityType:'User',
+      entityId:input.userId,
+      summary:before.name+' kullanıcısının tüm aktif oturumları yönetici tarafından iptal edildi.',
+      metadata:{reason:'ADMIN_SECURITY_ACTION'}
+    });
+    return NextResponse.json({ok:true,message:'Kullanıcının tüm cihazlardaki oturumları iptal edildi.'});
+  }
 
   if(input.status==='SUSPENDED'){
     if(before.status==='SUSPENDED'){
@@ -86,7 +101,7 @@ async function PATCH__handler(req:Request){
     }
     const suspended=await db.user.update({
       where:{id:input.userId},
-      data:{status:'SUSPENDED',...(input.role?{role:input.role}:{})},
+      data:{status:'SUSPENDED',updatedAt:new Date(),...(input.role?{role:input.role}:{})},
       select:{id:true,name:true,email:true,role:true,status:true,updatedAt:true}
     });
     const retention=getSuspensionRetention(suspended.updatedAt);

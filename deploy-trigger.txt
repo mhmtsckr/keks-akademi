@@ -19,3 +19,6 @@ Release retry: 2026-09-24 15:45 TRT
 - Password reset: verified account info + 10-minute email code
 - Password policy: 12+ chars, 4 character classes, sequential/common pattern blocking
 - Legacy student access-key login and resend endpoints removed
+- Revocable JWT security stamp using User.updatedAt
+- Password reset/change and account suspension invalidate every previous session
+- Admin can revoke a user's sessions for security incidents

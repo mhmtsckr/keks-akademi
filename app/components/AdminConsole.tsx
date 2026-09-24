@@ -106,6 +106,20 @@ export function AdminConsole(){
     setMsg(j.message||'Kullanıcı durumu güncellendi.');await loadUsers();await loadOverview();
   }
 
+  async function revokeUserSessions(user:any){
+    const ok=window.confirm(user.name+' kullanıcısının tüm cihazlardaki aktif oturumları kapatılsın mı?');
+    if(!ok)return;
+    setMsg('');
+    const r=await fetch('/api/admin/users',{
+      method:'PATCH',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({userId:user.id,revokeSessions:true})
+    });
+    const j=await r.json();
+    if(!r.ok){setMsg('Hata: '+(j.error||'Oturumlar kapatılamadı.'));return}
+    setMsg(j.message||'Tüm oturumlar kapatıldı.');
+  }
+
   async function deleteSuspendedUser(user:any){
     if(user.status!=='SUSPENDED')return;
     const identity=user.email||user.name;
@@ -304,6 +318,7 @@ export function AdminConsole(){
           <td><div className="row">
             {u.status==='SUSPENDED'?<>
               <button className="btn primary" onClick={()=>updateUser(u.id,'ACTIVE')}>Yeniden Aktifleştir</button>
+              <button className="btn" onClick={()=>revokeUserSessions(u)}>Oturumları Kapat</button>
               <button className="btn danger" disabled={!u.canPermanentlyDelete} onClick={()=>deleteSuspendedUser(u)}>
                 {u.canPermanentlyDelete?'Kalıcı Sil':('Kalıcı Sil · '+u.retentionDaysRemaining+' gün')}
               </button>
@@ -311,6 +326,7 @@ export function AdminConsole(){
             </>:<>
               <button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button>
               <button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button>
+              <button className="btn" onClick={()=>revokeUserSessions(u)}>Oturumları Kapat</button>
               <button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al</button>
             </>}
           </div></td>
