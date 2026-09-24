@@ -8,6 +8,7 @@ import { CoachAccessCodeClaim } from '@/app/components/CoachAccessCodeClaim';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { isAgsOabtLabel } from '@/lib/agsExamOptions';
 import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
+import { CoachLiveApprovalSync } from '@/app/components/CoachLiveApprovalSync';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -112,6 +113,7 @@ export default async function CoachPage() {
     meta={<><span>{students.length} öğrenci</span><span>Kişisel takip</span><span>Akıllı uyarılar</span></>}
     wide
   >
+    <CoachLiveApprovalSync/>
     <section className="section">
       <PanelNavigator roleLabel="Koç" groups={[
         {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[
