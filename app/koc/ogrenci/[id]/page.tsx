@@ -16,6 +16,8 @@ import { AgsStudyArithmetic } from '@/app/components/AgsStudyArithmetic';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { displayExamGroupWithTrack,getAdultExamGroup } from '@/lib/agsExamOptions';
 import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
+import { CoachLiveApprovalSync } from '@/app/components/CoachLiveApprovalSync';
+import { CoachOabtApprovalStatus } from '@/app/components/CoachOabtApprovalStatus';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -71,6 +73,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     meta={<><span>Öğrenci kodu: {student.studentCode}</span>{student.gradeLevel&&<span>{adultExamGroup?'Sınav grubu: ':'Düzey: '}{studentGroupLabel}</span>}{student.goal&&<span>Hedef tanımlı</span>}<a className="btn" href="/koc">← Öğrencilerim</a></>}
     wide
   >
+    <CoachLiveApprovalSync/>
+    {isAgsOabt&&<section className="section"><CoachOabtApprovalStatus studentId={student.id}/></section>}
     <nav className="tabs coachPrimaryTabs no-print" aria-label="Koç öğrenci çalışma alanı ana bölümleri">
       <a href="#egilim-taramasi">Profil & Değerlendirme</a>
       <a href="#program">Planlama & Performans</a>
