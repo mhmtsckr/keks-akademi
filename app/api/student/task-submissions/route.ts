@@ -12,6 +12,7 @@ const schema=z.object({
   correct:z.number().int().min(0).max(2000),
   wrong:z.number().int().min(0).max(2000),
   blank:z.number().int().min(0).max(2000)
+  ,errorReason:z.enum(['BILGI_EKSIKLIGI','DIKKAT','ISLEM_HATASI','SURE','SORUYU_ANLAMA','STRATEJI','DIGER']).nullable().optional()
 });
 
 function deadlineForAction(action:{taskDate:Date|null;periodEnd:Date}){
@@ -56,12 +57,14 @@ async function POST__handler(req:Request){
     create:{
       actionId:action.id,studentId:user.student.id,subject,topic,
       totalQuestions:input.totalQuestions,correct:input.correct,wrong:input.wrong,blank:input.blank,
+      errorReason:input.errorReason||null,
       net:evaluation.net,accuracy:evaluation.accuracy,completionRate:evaluation.completionRate,
       submittedAt:now,late,alarmLevel:late?'RED':evaluation.level==='MÜDAHALE GEREKLİ'?'HIGH':evaluation.level==='İZLEM'?'MEDIUM':'NORMAL',
       evaluation
     },
     update:{
       subject,topic,totalQuestions:input.totalQuestions,correct:input.correct,wrong:input.wrong,blank:input.blank,
+      errorReason:input.errorReason||null,
       net:evaluation.net,accuracy:evaluation.accuracy,completionRate:evaluation.completionRate,
       submittedAt:now,late,alarmLevel:late?'RED':evaluation.level==='MÜDAHALE GEREKLİ'?'HIGH':evaluation.level==='İZLEM'?'MEDIUM':'NORMAL',
       evaluation
@@ -73,10 +76,10 @@ async function POST__handler(req:Request){
     status:input.totalQuestions>=action.targetValue?'COMPLETED':'ACTIVE'
   }});
 
-  await db.practiceLog.create({data:{
-    studentId:user.student.id,examType:'GÖREV',subject,topic,
-    correct:input.correct,wrong:input.wrong,blank:input.blank,total:input.totalQuestions,net:evaluation.net,date:now
-  }});
+  await db.practiceLog.upsert({where:{taskSubmissionId:submission.id},create:{
+    taskSubmissionId:submission.id,studentId:user.student.id,examType:'GÖREV',subject,topic,
+    correct:input.correct,wrong:input.wrong,blank:input.blank,total:input.totalQuestions,net:evaluation.net,errorReason:input.errorReason||null,date:now
+  },update:{correct:input.correct,wrong:input.wrong,blank:input.blank,total:input.totalQuestions,net:evaluation.net,errorReason:input.errorReason||null,date:now}});
 
   const content=[
     late?'KIRMIZI ALARM: Öğrenci görevi 23.00 sonrasında kaydetti.':'Teslim zamanında kaydedildi.',

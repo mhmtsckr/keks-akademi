@@ -5,6 +5,7 @@ import { useMemo,useState } from 'react';
 type PriorityStudent={
   id:string;fullName:string;studentCode:string;gradeLevel:string|null;
   riskScore:number;riskLevel:'HIGH'|'MEDIUM'|'LOW';reasons:string[];
+  suggestedAction:string;
   overdueActions:number;openAlerts:number;dueReviews:number;lastActivity:string|null;
   activePlans?:number;profileReady?:boolean;screeningReady?:boolean;preInterviewReady?:boolean;
   monthlyDevelopmentReady?:boolean;hasExamData?:boolean;
@@ -56,8 +57,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
         <div className="row"><button className={'btn '+(filter==='ALL'?'primary':'')} onClick={()=>setFilter('ALL')}>Tümü</button><button className={'btn '+(filter==='HIGH'?'primary':'')} onClick={()=>setFilter('HIGH')}>Acil</button><button className={'btn '+(filter==='MEDIUM'?'primary':'')} onClick={()=>setFilter('MEDIUM')}>İzlem</button></div></div>
         <div className="priorityQueue">{visible.slice(0,12).map(s=><a className="priorityStudent" href={'/koc/ogrenci/'+s.id} key={s.id}>
           <div className={'riskDot '+s.riskLevel.toLowerCase()}/>
-          <div className="priorityStudentMain"><strong>{s.fullName}</strong><span>{s.gradeLevel||'Grup yok'} · {s.studentCode}</span><small>{s.reasons.slice(0,2).join(' · ')||'Aktif risk sinyali yok'}</small></div>
-          <div className="priorityScore"><b>{s.riskScore}</b><span>puan</span></div>
+          <div className="priorityStudentMain"><strong>{s.fullName}</strong><span>{s.gradeLevel||'Grup yok'} · {s.studentCode}</span><small>{s.reasons.join(' · ')||'Aktif uyarı yok'}</small><small><strong>Önerilen koç aksiyonu:</strong> {s.suggestedAction}</small></div>
         </a>)}</div>
       </div>
 

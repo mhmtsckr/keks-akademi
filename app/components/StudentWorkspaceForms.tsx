@@ -38,7 +38,7 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
   async function parentCode(e:FormEvent<HTMLFormElement>) {
     e.preventDefault(); const fd=new FormData(e.currentTarget); setMsg('');
     try {
-      const j=await postJson(studentId,{action:'parentCode',parentName:fd.get('parentName')});
+      const j=await postJson(studentId,{action:'parentCode',parentName:fd.get('parentName'),guardianConsentConfirmed:fd.get('guardianConsentConfirmed')==='on',allowReports:fd.get('allowReports')==='on'});
       setMsg('Veli giriş bilgileri — Öğrenci kodu: '+j.studentCode+' · Veli kodu: '+j.code);
     } catch(err:any){setMsg('Hata: '+err.message)}
   }
@@ -74,6 +74,6 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
 
     <details className="card"><summary><strong>Kütüphane / Not / Dosya</strong></summary><form className="form" onSubmit={library} style={{marginTop:12}}><div className="field"><label>Başlık</label><input name="title" required/></div><div className="field"><label>Not</label><textarea name="note" rows={4}/></div><div className="field"><label>Dosya (en fazla 5 MB)</label><input name="file" type="file"/></div><button className="btn primary">Kütüphaneye Ekle</button></form></details>
 
-    <details className="card"><summary><strong>Veli Girişi Oluştur</strong></summary><form className="form" onSubmit={parentCode} style={{marginTop:12}}><div className="field"><label>Veli adı</label><input name="parentName" placeholder="Ad Soyad"/></div><button className="btn primary">Yeni Veli Giriş Kodu Oluştur</button><p className="muted">Yeni kod üretildiğinde önceki veli kodu geçersiz olur.</p></form></details>
+    <details className="card"><summary><strong>Veli Girişi Oluştur</strong></summary><form className="form" onSubmit={parentCode} style={{marginTop:12}}><div className="field"><label>Veli adı</label><input name="parentName" placeholder="Ad Soyad" required/></div><label><input name="guardianConsentConfirmed" type="checkbox" required/> Veli kimliğini ve öğrencinin verilerinin eğitim takibi için paylaşılmasına ilişkin izni doğruladım.</label><label><input name="allowReports" type="checkbox"/> Koçun veliye açtığı raporları da göster</label><button className="btn primary">Yeni Veli Giriş Kodu Oluştur</button><p className="muted">Veli yalnızca gelişim özetini görür; ham test yanıtları gösterilmez. Yeni kod önceki kodu geçersiz kılar.</p></form><button className="btn danger" type="button" onClick={async()=>{if(!window.confirm('Veli erişimini hemen iptal etmek istiyor musunuz?'))return;try{await postJson(studentId,{action:'parentRevoke'});setMsg('Veli erişimi iptal edildi.')}catch(err:any){setMsg('Hata: '+err.message)}}}>Veli erişimini iptal et</button></details>
   </div>;
 }

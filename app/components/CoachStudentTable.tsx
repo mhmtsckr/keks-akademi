@@ -10,7 +10,7 @@ type StudentRow={
   gradeLevel:string|null;
   academicTrack?:string|null;
   riskLevel?:'HIGH'|'MEDIUM'|'LOW';
-  riskScore?:number;
+  reasons?:string[];
   lastActivity?:string|null;
   overdueActions?:number;
 };
@@ -63,7 +63,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
     <table className="table">
       <thead><tr><th>Öncelik</th><th>Kod</th><th>Öğrenci</th><th>Grup / Alan</th><th>Son Aktivite</th><th>İşlem</th></tr></thead>
       <tbody>{visible.map(s=><tr key={s.id}>
-        <td>{s.riskLevel?<span className={'riskBadge '+s.riskLevel.toLowerCase()}>{s.riskLevel==='HIGH'?'ACİL':s.riskLevel==='MEDIUM'?'İZLEM':'NORMAL'}{s.riskScore!=null?' · '+s.riskScore:''}</span>:<span className="muted">—</span>}</td>
+        <td>{s.riskLevel?<><span className={'riskBadge '+s.riskLevel.toLowerCase()}>{s.riskLevel==='HIGH'?'ACİL':s.riskLevel==='MEDIUM'?'İZLEM':'NORMAL'}</span><div className="muted">{s.reasons?.slice(0,2).join(' · ')}</div></>:<span className="muted">—</span>}</td>
         <td>{s.studentCode}</td>
         <td><a href={'/koc/ogrenci/'+s.id}><strong>{s.fullName}</strong></a></td>
         <td><strong>{displayExamGroupWithTrack(s.gradeLevel,s.academicTrack)}</strong>{getAdultExamGroup(s.gradeLevel)&&<div className="muted">Sınav grubu</div>}</td>

@@ -107,6 +107,8 @@ export async function POST(req:Request){
       const assessment=await tx.assessment.create({data:{
         studentId:student.id,
         formVersion:input.formVersion,
+        scoringVersion:'external-unverified',
+        reportVersion:'external-unverified',
         answers:(input.answers??{}) as any,
         scores:input.scores as any,
         report:report as any,

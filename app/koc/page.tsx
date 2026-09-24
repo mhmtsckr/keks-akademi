@@ -66,6 +66,7 @@ export default async function CoachPage() {
     orderBy:[{status:'asc'},{dueAt:'asc'},{createdAt:'desc'}],
     take:80
   });
+  const weeklyActions=await db.coachingAction.findMany({where:{studentId:{in:students.map(s=>s.id)},taskDate:{gte:sevenDaysAgo,lte:now}},select:{studentId:true,status:true,submission:{select:{id:true}}}});
   const priorityStudents=students.map(s=>{
     const overdue=s.coachingActions.filter(a=>a.periodEnd<now).length;
     const high=s.coachAlerts.filter(a=>a.severity==='HIGH').length;
@@ -78,19 +79,26 @@ export default async function CoachPage() {
     const lastActivity=lastDates.length?new Date(Math.max(...lastDates)):null;
     const inactive=lastActivity?lastActivity<sevenDaysAgo:true;
     const dueReviews=s.reviewQueue.length;
+    const week=weeklyActions.filter(a=>a.studentId===s.id);
+    const completion=week.length?Math.round(week.filter(a=>a.submission||a.status==='COMPLETED').length/week.length*100):null;
+    const examGap=s.examResults[0]?Math.floor((now.getTime()-s.examResults[0].createdAt.getTime())/86400000):null;
     const riskScore=Math.min(100,high*30+medium*12+Math.min(overdue,3)*15+(inactive?20:0)+Math.min(dueReviews,10)*2);
     const reasons:string[]=[];
     if(high)reasons.push(high+' yüksek uyarı');
     if(overdue)reasons.push(overdue+' geciken aksiyon');
     if(inactive)reasons.push('7+ gündür düşük aktivite');
     if(dueReviews)reasons.push(dueReviews+' yanlış tekrar');
+    if(examGap===null)reasons.push('Henüz deneme kaydı yok');
+    else if(examGap>=7)reasons.push(examGap+' gündür deneme girilmedi');
+    if(completion!==null)reasons.push('Haftalık görev tamamlama %'+completion);
+    const suggestedAction=inactive||dueReviews>=3||completion!==null&&completion<50?'15 dakikalık takip görüşmesi':examGap===null||examGap>=7?'Deneme tarihi ve yanlış analizini planla':'Haftalık ilerlemeyi gözden geçir';
     return {
       id:s.id,fullName:s.fullName,studentCode:s.studentCode,gradeLevel:s.gradeLevel,
       academicTrack:isAgsOabtStudentRecord({gradeLevel:s.gradeLevel,academicTrack:s.academicTrack,profile:s.profile})
         ?getEffectiveOabtField(s.academicTrack,s.profile)
         :s.academicTrack,
       riskScore,riskLevel:(riskScore>=50?'HIGH':riskScore>=20?'MEDIUM':'LOW') as 'HIGH'|'MEDIUM'|'LOW',
-      reasons,overdueActions:overdue,openAlerts:s.coachAlerts.length,dueReviews,
+      reasons,suggestedAction,overdueActions:overdue,openAlerts:s.coachAlerts.length,dueReviews,
       activePlans:s.plans.length,
       profileReady:Boolean(s.assessments[0]&&s.preInterviewAttempts[0]),
       screeningReady:Boolean(s.assessments[0]),

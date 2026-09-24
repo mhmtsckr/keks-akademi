@@ -13,7 +13,7 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
   if(user.role==='ADMIN') allowed=true;
   if(user.role==='STUDENT' && user.student?.id===item.studentId) allowed=true;
   if(user.role==='COACH' && user.coachProfile?.id===item.student.coachId) allowed=true;
-  if(user.role==='PARENT' && user.parentProfile?.studentId===item.studentId && user.parentProfile.active) allowed=true;
+  if(user.role==='PARENT' && user.parentProfile?.studentId===item.studentId && user.parentProfile.active && user.parentProfile.consentRecordedAt && user.parentProfile.allowReports) allowed=true;
   if(!allowed) return new NextResponse('Yetkisiz.',{status:403});
 
   return new NextResponse(item.fileData,{

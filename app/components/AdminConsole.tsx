@@ -381,6 +381,7 @@ export function AdminConsole(){
         <HealthCard label="Rapor E-postası / Gmail" ok={health.reportEmail} detail={health.reportEmail?(health.reportEmailAddress||'keksakademi@gmail.com')+' · Gönderim hazır':'Gmail bağlantısı bekleniyor'}/>
         <HealthCard label="Uygulama URL" ok={health.appUrl} detail={health.appUrl?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="Son 24 saat audit" ok={true} detail={String(health.recentAudit)+' kayıt'}/>
+        <HealthCard label="Son başarılı yedek" ok={health.backup?.status==='RECENT'} detail={health.backup?.lastSuccessfulAt?new Date(health.backup.lastSuccessfulAt).toLocaleString('tr-TR')+(health.backup.status==='STALE'?' · 48 saati aştı':''): 'Başarılı yedek kaydı yok'}/>
       </div>}
       <div className="card" style={{marginBottom:16}}>
         <div className="moduleEyebrow">ÖDEME ENTEGRASYONU</div>

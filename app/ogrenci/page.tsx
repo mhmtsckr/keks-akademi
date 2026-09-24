@@ -102,7 +102,13 @@ export default async function StudentPage() {
     meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{adultExamGroup?'Sınav grubu: ':'Düzey: '}{studentGroupLabel}</span>}<span>{student.plans.length} aktif program</span></>}
     wide
   >
-    <section className="section">
+    <section id="genel-bakis" className="section section-anchor">
+      <StudentCommandCenter/>
+    </section>
+
+    <section id="gunluk-gorevler" className="section section-anchor"><PortalSectionTitle eyebrow="BUGÜN" title="Günlük Görevlerim" description="Koçunuzun verdiği görevleri soru sonuçlarıyla birlikte kaydedin."/><StudentDailyTasks/></section>
+
+    <section className="section"><details className="card"><summary>Diğer bölümler ve ayrıntılı araçlar</summary>
       <PanelNavigator roleLabel="Öğrenci" groups={[
         {label:'BUGÜN & PLANLAMA',description:'Günün öncelikleri, görevleri ve kişisel program.',items:[
           {href:'#genel-bakis',title:'Kontrol Merkezi',description:'Bugünkü durum ve hızlı aksiyonlar'},
@@ -127,11 +133,7 @@ export default async function StudentPage() {
           ...(isAgsOabt?[{href:'#oabt-alani',title:'ÖABT Alanı',description:oabtField?('AGS/ÖABT- '+oabtField):'Alanınızı seçip kaydedin',badge:oabtField?'KİLİTLİ':'ZORUNLU'}]:[]),
           {href:'#keks-egilim-taramasi',title:'Aylık KEKS Test Ürünü',description:'Eğilim taraması ve ön görüşme',badge:'AYLIK'}
         ]}
-      ]}/>
-    </section>
-
-    <section id="genel-bakis" className="section section-anchor">
-      <StudentCommandCenter/>
+      ]}/></details>
     </section>
 
     {isAgsOabt&&<section id="oabt-alani" className="section section-anchor">
@@ -153,7 +155,6 @@ export default async function StudentPage() {
       </div>
     </section>
 
-    <section id="gunluk-gorevler" className="section section-anchor"><PortalSectionTitle eyebrow="BUGÜN" title="Günlük Görevlerim" description="Koçunuzun verdiği görevleri en geç 23.00'a kadar soru sonuçlarıyla birlikte kaydedin."/><StudentDailyTasks/></section>
     <section id="yanlis-soru-bankasi" className="section section-anchor"><PortalSectionTitle eyebrow="0–1–3–7–14–28 TEKRAR MOTORU" title="Günlük Yanlış Soru Bankam" description="Her derste yanlış yaptığın soruyu yükle. KEKS konuyu otomatik sınıflandırır ve tekrar gününde soruyu yeniden görev olarak önüne getirir."/><StudentWrongQuestionBank defaultExam={defaultWrongExam}/></section>
     <section className="section"><AdaptiveRecommendation/></section>
     <section id="akilli-koc" className="section section-anchor"><SmartCoachDashboard/></section>
