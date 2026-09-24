@@ -10,3 +10,4 @@ Includes:
 - Vercel deployment batching
 Release retry: 2026-09-24 15:45 TRT
 - Ignore-build guard fix: missing previous SHA now forces build instead of failing
+- CSS build fix: removed malformed admin OABT media blocks
