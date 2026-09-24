@@ -76,14 +76,34 @@ async function PATCH__handler(req:Request){
   const admin=await requireRole(['ADMIN']);
   const input=await readJson(req, patchSchema);
   if(admin.id===input.userId&&input.status==='SUSPENDED') return NextResponse.json({error:'Kendi hesabınızı askıya alamazsınız.'},{status:400});
-  const before=await db.user.findUnique({where:{id:input.userId},select:{id:true,name:true,role:true,status:true}});
+  const before=await db.user.findUnique({where:{id:input.userId},select:{id:true,name:true,email:true,role:true,status:true}});
   if(!before)return NextResponse.json({error:'Kullanıcı bulunamadı.'},{status:404});
+
+  if(input.status==='SUSPENDED'){
+    await db.user.update({
+      where:{id:input.userId},
+      data:{status:'SUSPENDED',...(input.role?{role:input.role}:{})}
+    });
+    const deleted=await purgeSuspendedUserById(input.userId,admin.id);
+    if(!deleted.ok)return NextResponse.json({error:'Kullanıcı askıya alındı ancak kalıcı temizleme tamamlanamadı.'},{status:500});
+    return NextResponse.json({
+      ok:true,
+      deleted:true,
+      deletedUserId:deleted.userId,
+      email:deleted.email,
+      emailReusable:Boolean(deleted.email),
+      message:deleted.email
+        ?'Kullanıcı askıya alındı ve kalıcı olarak silindi. '+deleted.email+' adresiyle hemen yeniden kayıt yapılabilir.'
+        :'Kullanıcı askıya alındı ve kalıcı olarak silindi.'
+    });
+  }
+
   const updated=await db.user.update({where:{id:input.userId},data:{
     ...(input.status?{status:input.status}:{}),
     ...(input.role?{role:input.role}:{}),
   },select:{id:true,name:true,email:true,role:true,status:true}});
   await writeAudit({actorUserId:admin.id,action:'USER_UPDATE',entityType:'User',entityId:updated.id,summary:updated.name+' kullanıcısı güncellendi.',metadata:{before,after:updated}});
-  return NextResponse.json({ok:true,user:updated});
+  return NextResponse.json({ok:true,user:updated,message:'Kullanıcı durumu güncellendi.'});
 }
 
 async function DELETE__handler(req:Request){

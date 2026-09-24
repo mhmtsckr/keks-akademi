@@ -103,7 +103,7 @@ export function AdminConsole(){
     const r=await fetch('/api/admin/users',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({userId,status})});
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Kullanıcı güncellenemedi.'));return}
-    setMsg('Kullanıcı durumu güncellendi.');await loadUsers();await loadOverview();
+    setMsg(j.message||'Kullanıcı durumu güncellendi.');await loadUsers();await loadOverview();
   }
 
   async function deleteSuspendedUser(user:any){
@@ -303,7 +303,7 @@ export function AdminConsole(){
           <td><div className="row">
             <button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button>
             <button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button>
-            <button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al</button>
+            <button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al ve Sil</button>
             {u.status==='SUSPENDED'&&<button className="btn danger" onClick={()=>deleteSuspendedUser(u)}>Kalıcı Sil</button>}
           </div></td>
         </tr>)}</tbody></table>
