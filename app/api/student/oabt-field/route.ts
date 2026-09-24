@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { writeAudit } from '@/lib/audit';
-import { isAgsOabtLabel } from '@/lib/agsExamOptions';
+import { isAgsOabtLabel,isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getOabtFieldApproval,isValidOabtField,withOabtFieldApproval } from '@/lib/oabtFieldApproval';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
 
@@ -14,11 +14,43 @@ async function GET__handler(){
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const student=await db.student.findUnique({
     where:{id:user.student.id},
-    select:{id:true,gradeLevel:true,academicTrack:true,profile:true}
+    select:{id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,profile:true}
   });
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  const applicable=isAgsOabtLabel(student.gradeLevel);
-  const approval=getOabtFieldApproval(student.profile);
+  const applicable=isAgsOabtStudentRecord({gradeLevel:student.gradeLevel,academicTrack:student.academicTrack,profile:student.profile});
+  let approval=getOabtFieldApproval(student.profile);
+  let repaired=false;
+  if(applicable&&approval.status==='NONE'){
+    const normalizedGrade=isAgsOabtLabel(student.gradeLevel)?student.gradeLevel:'Yetişkin Sınav Grubu · AGS/ÖABT';
+    if(student.academicTrack&&isValidOabtField(student.academicTrack)){
+      const now=new Date().toISOString();
+      const nextProfile=withOabtFieldApproval(student.profile,{
+        status:'PENDING',
+        requestedField:student.academicTrack,
+        requestedAt:now,
+        approvedField:null,
+        approvedAt:null,
+        approvedByUserId:null,
+        rejectedAt:null,
+        rejectedByUserId:null,
+        rejectionNote:null
+      });
+      await db.student.update({where:{id:student.id},data:{gradeLevel:normalizedGrade,academicTrack:null,profile:nextProfile as any}});
+      approval=getOabtFieldApproval(nextProfile);
+      repaired=true;
+      await writeAudit({
+        actorUserId:user.id,
+        action:'LEGACY_OABT_APPROVAL_MIGRATED',
+        entityType:'Student',
+        entityId:student.id,
+        summary:student.fullName+' için eski ÖABT alan kaydı yönetici onay akışına taşındı.',
+        metadata:{studentId:student.id,studentCode:student.studentCode,requestedField:approval.requestedField}
+      });
+    }else if(!isAgsOabtLabel(student.gradeLevel)){
+      await db.student.update({where:{id:student.id},data:{gradeLevel:normalizedGrade}});
+      repaired=true;
+    }
+  }
   return NextResponse.json({
     ok:true,
     applicable,
@@ -27,7 +59,8 @@ async function GET__handler(){
     approvedField:approval.status==='APPROVED'?(approval.approvedField||student.academicTrack):null,
     approvedAt:approval.approvedAt,
     rejectionNote:approval.rejectionNote,
-    locked:approval.status==='APPROVED'
+    locked:approval.status==='APPROVED',
+    repaired
   });
 }
 
@@ -42,7 +75,7 @@ async function POST__handler(req:Request){
     select:{id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,profile:true}
   });
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  if(!isAgsOabtLabel(student.gradeLevel))return NextResponse.json({error:'Bu alan yalnız AGS/ÖABT öğrencileri içindir.'},{status:403});
+  if(!isAgsOabtStudentRecord({gradeLevel:student.gradeLevel,academicTrack:student.academicTrack,profile:student.profile}))return NextResponse.json({error:'Bu alan yalnız AGS/ÖABT öğrencileri içindir.'},{status:403});
 
   const approval=getOabtFieldApproval(student.profile);
   if(approval.status==='APPROVED'){

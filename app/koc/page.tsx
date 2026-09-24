@@ -6,7 +6,7 @@ import { CoachStudentTable } from '@/app/components/CoachStudentTable';
 import { CoachCommandCenter } from '@/app/components/CoachCommandCenter';
 import { CoachAccessCodeClaim } from '@/app/components/CoachAccessCodeClaim';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
-import { isAgsOabtLabel } from '@/lib/agsExamOptions';
+import { isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
 import { CoachLiveApprovalSync } from '@/app/components/CoachLiveApprovalSync';
 
@@ -86,7 +86,7 @@ export default async function CoachPage() {
     if(dueReviews)reasons.push(dueReviews+' yanlış tekrar');
     return {
       id:s.id,fullName:s.fullName,studentCode:s.studentCode,gradeLevel:s.gradeLevel,
-      academicTrack:isAgsOabtLabel(s.gradeLevel)
+      academicTrack:isAgsOabtStudentRecord({gradeLevel:s.gradeLevel,academicTrack:s.academicTrack,profile:s.profile})
         ?(getOabtFieldApproval(s.profile).status==='APPROVED'?s.academicTrack:null)
         :s.academicTrack,
       riskScore,riskLevel:(riskScore>=50?'HIGH':riskScore>=20?'MEDIUM':'LOW') as 'HIGH'|'MEDIUM'|'LOW',

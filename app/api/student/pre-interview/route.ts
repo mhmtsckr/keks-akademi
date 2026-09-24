@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import { scoreInterview,scoreMotivationSignals,buildInterviewReport,buildTrackPlans } from '@/lib/taskEvaluation';
 import { writeAudit } from '@/lib/audit';
 import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
-import { isAgsOabtLabel } from '@/lib/agsExamOptions';
+import { isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
 
 const submitSchema=z.object({
@@ -133,7 +133,7 @@ async function POST__handler(req:Request){
   const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(form.educationBand);
   const adultGrade=(studentRecord?.gradeLevel||'').toLocaleUpperCase('tr-TR');
   const isAgsExam=/AGS|ÖABT|OABT/.test(adultGrade);
-  const isAgsOabt=isAgsOabtLabel(studentRecord?.gradeLevel);
+  const isAgsOabt=isAgsOabtStudentRecord({gradeLevel:studentRecord?.gradeLevel,academicTrack:studentRecord?.academicTrack,profile:studentRecord?.profile});
   const oabtApproval=getOabtFieldApproval(studentRecord?.profile);
   const approvedOabtTrack=isAgsOabt&&oabtApproval.status==='APPROVED'
     ?(oabtApproval.approvedField||studentRecord?.academicTrack||'GENERAL')

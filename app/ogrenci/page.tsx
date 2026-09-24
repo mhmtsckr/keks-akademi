@@ -14,7 +14,7 @@ import { StudentPreInterview } from '@/app/components/StudentPreInterview';
 import { StudentCommandCenter } from '@/app/components/StudentCommandCenter';
 import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionBank';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
-import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtLabel } from '@/lib/agsExamOptions';
+import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getOabtFieldApproval } from '@/lib/oabtFieldApproval';
 import { StudentOabtFieldApproval } from '@/app/components/StudentOabtFieldApproval';
 
@@ -85,12 +85,14 @@ export default async function StudentPage() {
   const activeTarget = student.targets[0];
   const grade=(student.gradeLevel||'').toLowerCase();
   const allowedExams=(grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
-  const adultExamGroup=getAdultExamGroup(student.gradeLevel);
+  const isAgsOabt=isAgsOabtStudentRecord({gradeLevel:student.gradeLevel,academicTrack:student.academicTrack,profile:student.profile});
+  const adultExamGroup=isAgsOabt?'AGS/ÖABT':getAdultExamGroup(student.gradeLevel);
   const defaultWrongExam=adultExamGroup||(grade.includes('8')||grade.includes('ortaokul')?'LGS':'TYT');
-  const isAgsOabt=isAgsOabtLabel(student.gradeLevel);
   const oabtApproval=getOabtFieldApproval(student.profile);
   const approvedOabtField=oabtApproval.status==='APPROVED'?(oabtApproval.approvedField||student.academicTrack):null;
-  const studentGroupLabel=displayExamGroupWithTrack(student.gradeLevel,isAgsOabt?approvedOabtField:student.academicTrack);
+  const studentGroupLabel=isAgsOabt
+    ?('AGS/ÖABT'+(approvedOabtField?' · '+approvedOabtField:''))
+    :displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
 
   return <PortalShell signedIn
     active="ogrenci"
