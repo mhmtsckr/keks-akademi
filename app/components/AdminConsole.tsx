@@ -188,6 +188,29 @@ export function AdminConsole(){
   }
 
   const pendingUsers=useMemo(()=>users.filter(x=>x.status==='PENDING').length,[users]);
+  const suspendedUsers=useMemo(()=>users.filter(x=>x.status==='SUSPENDED').length,[users]);
+
+  async function deleteAllSuspendedUsers(){
+    if(!suspendedUsers)return;
+    const ok=window.confirm(
+      suspendedUsers+' askıya alınmış kullanıcı kalıcı olarak silinecek. Bu işlem geri alınamaz. Silinen hesapların Gmail adresleri yeniden kayıt için kullanılabilir. Devam edilsin mi?'
+    );
+    if(!ok)return;
+    setMsg('');
+    const r=await fetch('/api/admin/users',{
+      method:'DELETE',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({deleteAll:true})
+    });
+    const j=await r.json();
+    if(!r.ok){
+      setMsg('Hata: '+(j.error||'Askıya alınmış kullanıcılar silinemedi.'));
+      return;
+    }
+    setMsg(j.message||'Askıya alınmış kullanıcılar silindi.');
+    await loadUsers();
+    await loadOverview();
+  }
 
   return <div className="adminConsole">
     <div className="adminPanelNavigator">
@@ -249,7 +272,13 @@ export function AdminConsole(){
 
     {tab==='users'&&<section className="adminPanelSection">
       <AdminCoachQuickApprovals/>
-      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet. Askıya alınmış hesapları kalıcı silebilir; silinen hesabın Gmail adresi yeniden kayıt için serbest kalır.</p></div><span className="pill">{users.length} sonuç · {pendingUsers} bekleyen</span></div>
+      <div className="moduleHeaderRow">
+        <div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet. Askıya alınmış hesaplar silindiğinde aynı Gmail adresi yeniden kayıt için serbest kalır. Yeni kayıt sırasında aynı Gmail askıya alınmış eski hesaba bağlıysa sistem eski hesabı otomatik temizleyerek kayda devam eder.</p></div>
+        <div className="row">
+          <span className="pill">{users.length} sonuç · {pendingUsers} bekleyen · {suspendedUsers} askıda</span>
+          {suspendedUsers>0&&<button className="btn danger" onClick={deleteAllSuspendedUsers}>Askıdakilerin Tümünü Sil</button>}
+        </div>
+      </div>
       <div className="card adminFilterBar">
         <div className="field"><label>Ara</label><input value={userQ} onChange={e=>setUserQ(e.target.value)} placeholder="Ad veya e-posta"/></div>
         <div className="field"><label>Rol</label><select value={userRole} onChange={e=>setUserRole(e.target.value)}><option value="ALL">Tümü</option><option value="COACH">Koç</option><option value="STUDENT">Öğrenci</option><option value="PARENT">Veli</option><option value="ADMIN">Yönetici</option></select></div>
