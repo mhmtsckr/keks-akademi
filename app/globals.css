@@ -821,3 +821,12 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .adminOabtField{display:grid;gap:3px;padding:9px 11px;border-radius:10px;background:#081d34}.adminOabtField small{font-size:8px;color:#d6a642;font-weight:900;letter-spacing:.1em}.adminOabtField strong{font-size:12px;color:#edf3f8}.adminOabtField span{font-size:8px;color:#71869b}
 .adminOabtApprovedHistory{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}.adminOabtApprovedHistory summary{cursor:pointer;color:#dce5ed}
 @media(max-width:840px){.adminOabtRow,.adminOabtRow.compact{grid-template-columns:1fr}.oabtApprovalForm{grid-template-columns:1fr}}
+
+
+/* Fast coach approval queue */
+.adminCoachQuickCard{display:grid;gap:14px;margin-bottom:16px;border-color:rgba(92,184,137,.16)!important;background:radial-gradient(circle at 92% 0%,rgba(92,184,137,.10),transparent 28%),linear-gradient(145deg,#0a233f,#071a30)!important}
+.adminCoachQuickList{display:grid;gap:9px}
+.adminCoachQuickRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px 14px;border-radius:13px;background:#071b31;border:1px solid rgba(255,255,255,.06)}
+.adminCoachQuickRow>div:first-child{display:grid;gap:3px}
+.adminCoachQuickRow strong{font-size:12px;color:#edf3f8}.adminCoachQuickRow span{font-size:10px;color:#8fa2b4}.adminCoachQuickRow small{font-size:9px;color:#6f8497}
+@media(max-width:680px){.adminCoachQuickRow{grid-template-columns:1fr}.adminCoachQuickRow .row{justify-content:flex-start}}
