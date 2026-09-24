@@ -21,7 +21,11 @@ export function AdminCoachQuickApprovals(){
     const j=await r.json();
     if(r.ok)setItems(j.coaches||[]);
   }
-  useEffect(()=>{void load()},[]);
+  useEffect(()=>{
+    void load();
+    const timer=window.setInterval(()=>{void load()},30000);
+    return ()=>window.clearInterval(timer);
+  },[]);
 
   async function act(action:'APPROVE_ONE'|'APPROVE_ALL'|'SUSPEND_ONE',userId?:string){
     setBusy(action+(userId||''));setMsg('');
@@ -46,6 +50,7 @@ export function AdminCoachQuickApprovals(){
         <p className="muted">Yeni koç hesaplarını kullanıcı listesinde aramadan doğrudan buradan aktif edin.</p>
       </div>
       <div className="row">
+        <button className="btn" type="button" disabled={Boolean(busy)} onClick={()=>load()}>Yenile</button>
         <span className="pill">{items.length} bekleyen</span>
         {items.length>1&&<button className="btn primary" disabled={Boolean(busy)} onClick={()=>act('APPROVE_ALL')}>{busy==='APPROVE_ALL'?'Onaylanıyor…':'Tümünü Onayla'}</button>}
       </div>
