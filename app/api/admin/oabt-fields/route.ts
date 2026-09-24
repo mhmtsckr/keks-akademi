@@ -13,8 +13,10 @@ const schema=z.object({
   note:z.string().max(500).optional()
 });
 
-async function GET__handler(){
+async function GET__handler(req:Request){
   await requireRole(['ADMIN']);
+  const {searchParams}=new URL(req.url);
+  const studentCode=(searchParams.get('studentCode')||'').trim();
   const students=await db.student.findMany({
     select:{
       id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,profile:true,
@@ -24,7 +26,9 @@ async function GET__handler(){
   });
   const rows:any[]=[];
   for(const s of students){
-    if(!isAgsOabtStudentRecord({gradeLevel:s.gradeLevel,academicTrack:s.academicTrack,profile:s.profile}))continue;
+    const exactCodeMatch=Boolean(studentCode&&s.studentCode===studentCode);
+    const recognized=isAgsOabtStudentRecord({gradeLevel:s.gradeLevel,academicTrack:s.academicTrack,profile:s.profile});
+    if(!recognized&&!exactCodeMatch)continue;
     let approval=getOabtFieldApproval(s.profile);
     let academicTrack=s.academicTrack;
     let gradeLevel=s.gradeLevel;
@@ -54,13 +58,18 @@ async function GET__handler(){
       academicTrack,
       coachName:s.coach?.user?.name||null,
       coachEmail:s.coach?.user?.email||null,
+      recognized,
+      exactCodeMatch,
+      needsStudentSelection:approval.status==='NONE'&&!academicTrack,
       ...approval
     });
   }
   return NextResponse.json({
     ok:true,
     items:rows,
-    pending:rows.filter(x=>x.status==='PENDING').length
+    pending:rows.filter(x=>x.status==='PENDING').length,
+    searchedCode:studentCode||null,
+    foundExact:studentCode?rows.some(x=>x.studentCode===studentCode):null
   });
 }
 

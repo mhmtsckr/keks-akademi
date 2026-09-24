@@ -837,3 +837,9 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .oabtLiveStatus.approved{border-color:rgba(92,184,137,.28)!important}
 .oabtLiveStatus.pending{border-color:rgba(225,181,69,.28)!important}
 .oabtLiveStatus.rejected{border-color:rgba(210,92,92,.25)!important}
+
+
+/* OABT admin direct lookup */
+.adminOabtSearchBar{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:10px;align-items:end;padding:12px;border:1px solid rgba(255,255,255,.06);border-radius:13px;background:#071b31}
+.adminOabtSearchBar .field{margin:0}
+@media(max-width:760px){.adminOabtSearchBar{grid-template-columns:1fr}}
