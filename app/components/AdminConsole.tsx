@@ -60,7 +60,7 @@ export function AdminConsole(){
     const j=await fetch('/api/admin/users?'+p.toString()).then(r=>r.json());
     if(j.ok){
       setUsers(j.users||[]);
-      if(j.cleanupMessage)setMsg(j.cleanupMessage);
+
     }
   }
   async function loadQuestions(){
@@ -110,7 +110,7 @@ export function AdminConsole(){
     if(user.status!=='SUSPENDED')return;
     const identity=user.email||user.name;
     const ok=window.confirm(
-      identity+' adlı askıya alınmış kullanıcı kalıcı olarak silinecek. Bu işlem geri alınamaz. Silinen e-posta ile yeniden kayıt yapılabilir. Devam edilsin mi?'
+      identity+' adlı askıya alınmış kullanıcı 30 günlük koruma süresi dolduğu için kalıcı olarak silinecek. Bu işlem geri alınamaz. Silmeden sonra e-posta yeniden kayıt için kullanılabilir. Devam edilsin mi?'
     );
     if(!ok)return;
     setMsg('');
@@ -192,11 +192,12 @@ export function AdminConsole(){
 
   const pendingUsers=useMemo(()=>users.filter(x=>x.status==='PENDING').length,[users]);
   const suspendedUsers=useMemo(()=>users.filter(x=>x.status==='SUSPENDED').length,[users]);
+  const deletableSuspendedUsers=useMemo(()=>users.filter(x=>x.status==='SUSPENDED'&&x.canPermanentlyDelete).length,[users]);
 
   async function deleteAllSuspendedUsers(){
-    if(!suspendedUsers)return;
+    if(!deletableSuspendedUsers)return;
     const ok=window.confirm(
-      suspendedUsers+' askıya alınmış kullanıcı kalıcı olarak silinecek. Bu işlem geri alınamaz. Silinen hesapların Gmail adresleri yeniden kayıt için kullanılabilir. Devam edilsin mi?'
+      deletableSuspendedUsers+' askıya alınmış hesabın 30 günlük koruma süresi doldu ve kalıcı olarak silinecek. Bu işlem geri alınamaz. Devam edilsin mi?'
     );
     if(!ok)return;
     setMsg('');
@@ -276,10 +277,10 @@ export function AdminConsole(){
     {tab==='users'&&<section className="adminPanelSection">
       <AdminCoachQuickApprovals/>
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet. Bu ekran açıldığında askıya alınmış hesaplar otomatik olarak kalıcı silinir ve Gmail adresleri yeniden kayıt için serbest bırakılır. Aynı Gmail ile yeni kayıt yapılırken de askıya alınmış eski hesap otomatik temizlenir.</p></div>
+        <div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet. Askıya alma hesap verilerini silmez. Askıya alınan hesap 30 gün korunur; kalıcı silme ayrı bir işlemdir. Aynı Gmail ancak kalıcı silmeden sonra yeniden kullanılabilir.</p></div>
         <div className="row">
           <span className="pill">{users.length} sonuç · {pendingUsers} bekleyen · {suspendedUsers} askıda</span>
-          {suspendedUsers>0&&<button className="btn danger" onClick={deleteAllSuspendedUsers}>Askıdakilerin Tümünü Sil</button>}
+          {deletableSuspendedUsers>0&&<button className="btn danger" onClick={deleteAllSuspendedUsers}>Süresi Dolanları Kalıcı Sil</button>}
         </div>
       </div>
       <div className="card adminFilterBar">
@@ -301,10 +302,17 @@ export function AdminConsole(){
           </>:u.coachProfile?u.coachProfile._count.students+' öğrenci':u.parentProfile?'Öğrenci: '+u.parentProfile.student.fullName:'—'}</td>
           <td><span className={'adminStatus '+u.status.toLowerCase()}>{u.status}</span></td>
           <td><div className="row">
-            <button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button>
-            <button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button>
-            <button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al ve Sil</button>
-            {u.status==='SUSPENDED'&&<button className="btn danger" onClick={()=>deleteSuspendedUser(u)}>Kalıcı Sil</button>}
+            {u.status==='SUSPENDED'?<>
+              <button className="btn primary" onClick={()=>updateUser(u.id,'ACTIVE')}>Yeniden Aktifleştir</button>
+              <button className="btn danger" disabled={!u.canPermanentlyDelete} onClick={()=>deleteSuspendedUser(u)}>
+                {u.canPermanentlyDelete?'Kalıcı Sil':('Kalıcı Sil · '+u.retentionDaysRemaining+' gün')}
+              </button>
+              <span className="muted">Koruma bitişi: {u.deleteAvailableAt?dt(u.deleteAvailableAt):'—'}</span>
+            </>:<>
+              <button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button>
+              <button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button>
+              <button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al</button>
+            </>}
           </div></td>
         </tr>)}</tbody></table>
       </div>

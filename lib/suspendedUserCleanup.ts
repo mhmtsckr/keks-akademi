@@ -1,11 +1,25 @@
 import { db } from '@/lib/db';
 import { writeAudit } from '@/lib/audit';
 
-export async function purgeSuspendedUserById(userId:string,actorUserId?:string|null){
+export const SUSPENSION_RETENTION_DAYS=30;
+const RETENTION_MS=SUSPENSION_RETENTION_DAYS*24*60*60*1000;
+
+export function getSuspensionRetention(suspendedAt:Date,now=new Date()){
+  const deleteAvailableAt=new Date(suspendedAt.getTime()+RETENTION_MS);
+  const remainingMs=Math.max(0,deleteAvailableAt.getTime()-now.getTime());
+  return {
+    suspendedAt,
+    deleteAvailableAt,
+    canPermanentlyDelete:remainingMs===0,
+    retentionDaysRemaining:Math.ceil(remainingMs/(24*60*60*1000))
+  };
+}
+
+export async function permanentlyDeleteSuspendedUserById(userId:string,actorUserId?:string|null){
   const target=await db.user.findUnique({
     where:{id:userId},
     select:{
-      id:true,name:true,email:true,role:true,status:true,
+      id:true,name:true,email:true,role:true,status:true,updatedAt:true,
       student:{select:{id:true,studentCode:true}},
       coachProfile:{select:{id:true,_count:{select:{students:true}}}}
     }
@@ -13,11 +27,25 @@ export async function purgeSuspendedUserById(userId:string,actorUserId?:string|n
   if(!target)return {ok:false as const,reason:'NOT_FOUND' as const};
   if(target.status!=='SUSPENDED')return {ok:false as const,reason:'NOT_SUSPENDED' as const};
 
+  const retention=getSuspensionRetention(target.updatedAt);
+  if(!retention.canPermanentlyDelete){
+    return {
+      ok:false as const,
+      reason:'RETENTION_ACTIVE' as const,
+      deleteAvailableAt:retention.deleteAvailableAt,
+      retentionDaysRemaining:retention.retentionDaysRemaining
+    };
+  }
+
+  const releasedEmail=target.email;
   const metadata={
-    email:target.email,
     role:target.role,
     studentCode:target.student?.studentCode||null,
-    detachedStudents:target.coachProfile?._count.students||0
+    detachedStudents:target.coachProfile?._count.students||0,
+    suspendedAt:target.updatedAt.toISOString(),
+    retentionDays:SUSPENSION_RETENTION_DAYS,
+    emailReusable:Boolean(releasedEmail),
+    terminalStatus:'DELETED'
   };
 
   await db.$transaction(async tx=>{
@@ -30,27 +58,21 @@ export async function purgeSuspendedUserById(userId:string,actorUserId?:string|n
 
   await writeAudit({
     actorUserId:actorUserId||null,
-    action:'SUSPENDED_USER_DELETED',
+    action:'USER_PERMANENTLY_DELETED',
     entityType:'User',
     entityId:target.id,
-    summary:target.name+' adlı askıya alınmış kullanıcı kalıcı olarak silindi.',
-    metadata:{...metadata,emailReusable:Boolean(target.email)}
+    summary:target.name+' kullanıcısı 30 günlük askı koruma süresi sonrasında kalıcı olarak silindi.',
+    metadata
   });
 
   return {
     ok:true as const,
+    status:'DELETED' as const,
     userId:target.id,
     name:target.name,
-    email:target.email,
+    email:releasedEmail,
     role:target.role,
     studentCode:target.student?.studentCode||null,
     detachedStudents:target.coachProfile?._count.students||0
   };
-}
-
-export async function purgeSuspendedUserByEmail(email:string){
-  const normalized=email.trim().toLowerCase();
-  const target=await db.user.findUnique({where:{email:normalized},select:{id:true,status:true}});
-  if(!target||target.status!=='SUSPENDED')return null;
-  return purgeSuspendedUserById(target.id,null);
 }

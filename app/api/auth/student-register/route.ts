@@ -8,7 +8,6 @@ import { writeAudit } from '@/lib/audit';
 import { normalizeEducationLevelLabel } from '@/lib/taskEvaluation';
 import { AGS_OABT_FIELDS,isAgsOabtLabel,isAgsYdsLabel } from '@/lib/agsExamOptions';
 import { withOabtFieldApproval } from '@/lib/oabtFieldApproval';
-import { purgeSuspendedUserByEmail } from '@/lib/suspendedUserCleanup';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -54,10 +53,9 @@ export async function POST(req:Request){
     rejectionNote:null
   }):null;
 
-  let existing=await db.user.findUnique({where:{email}});
+  const existing=await db.user.findUnique({where:{email}});
   if(existing?.status==='SUSPENDED'){
-    await purgeSuspendedUserByEmail(email);
-    existing=await db.user.findUnique({where:{email}});
+    return NextResponse.json({error:'Bu Gmail adresi askıya alınmış bir hesaba bağlı. Hesap kalıcı olarak silinmeden aynı Gmail ile yeniden kayıt yapılamaz.'},{status:409});
   }
   if(existing)return NextResponse.json({error:'Bu Gmail adresiyle daha önce hesap oluşturulmuş.'},{status:409});
 

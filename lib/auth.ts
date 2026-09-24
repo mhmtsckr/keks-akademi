@@ -28,7 +28,9 @@ export async function currentUser() {
   try {
     const { payload } = await jwtVerify(token, secret());
     if (!payload.sub) return null;
-    return db.user.findUnique({ where: { id: payload.sub }, include: { coachProfile: true, student: true, parentProfile: true } });
+    const user=await db.user.findUnique({ where: { id: payload.sub }, include: { coachProfile: true, student: true, parentProfile: true } });
+    if(!user||user.status!=='ACTIVE')return null;
+    return user;
   } catch {
     return null;
   }
