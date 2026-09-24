@@ -1,1 +1,10 @@
-Redeploy trigger for KEKS monthly product image and 400 TL copy.
+KEKS production release trigger
+
+Release: 2026-09-24
+Includes:
+- Existing AGS/ÖABT student field approval workflow
+- Admin approval and permanent field lock
+- Student 445212 compatibility path
+- Exam group normalization
+- Coach/admin display fixes
+- Vercel deployment batching
