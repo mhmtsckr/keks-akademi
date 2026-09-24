@@ -58,7 +58,10 @@ export function AdminConsole(){
     if(userRole!=='ALL')p.set('role',userRole);
     if(userQ.trim())p.set('q',userQ.trim());
     const j=await fetch('/api/admin/users?'+p.toString()).then(r=>r.json());
-    if(j.ok)setUsers(j.users||[]);
+    if(j.ok){
+      setUsers(j.users||[]);
+      if(j.cleanupMessage)setMsg(j.cleanupMessage);
+    }
   }
   async function loadQuestions(){
     const j=await fetch('/api/admin/questions/review?status='+questionStatus).then(r=>r.json());
@@ -273,7 +276,7 @@ export function AdminConsole(){
     {tab==='users'&&<section className="adminPanelSection">
       <AdminCoachQuickApprovals/>
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet. Askıya alınmış hesaplar silindiğinde aynı Gmail adresi yeniden kayıt için serbest kalır. Yeni kayıt sırasında aynı Gmail askıya alınmış eski hesaba bağlıysa sistem eski hesabı otomatik temizleyerek kayda devam eder.</p></div>
+        <div><div className="moduleEyebrow">HESAP YÖNETİMİ</div><h2>Kullanıcılar</h2><p className="muted">Koç, öğrenci, veli ve yönetici hesaplarını ara ve durumlarını yönet. Bu ekran açıldığında askıya alınmış hesaplar otomatik olarak kalıcı silinir ve Gmail adresleri yeniden kayıt için serbest bırakılır. Aynı Gmail ile yeni kayıt yapılırken de askıya alınmış eski hesap otomatik temizlenir.</p></div>
         <div className="row">
           <span className="pill">{users.length} sonuç · {pendingUsers} bekleyen · {suspendedUsers} askıda</span>
           {suspendedUsers>0&&<button className="btn danger" onClick={deleteAllSuspendedUsers}>Askıdakilerin Tümünü Sil</button>}

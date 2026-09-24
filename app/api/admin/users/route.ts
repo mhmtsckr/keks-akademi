@@ -14,7 +14,18 @@ const patchSchema=z.object({
 });
 
 async function GET__handler(req:Request){
-  await requireRole(['ADMIN']);
+  const admin=await requireRole(['ADMIN']);
+
+  const suspended=await db.user.findMany({
+    where:{status:'SUSPENDED',id:{not:admin.id}},
+    select:{id:true}
+  });
+  let autoDeletedSuspended=0;
+  for(const row of suspended){
+    const result=await purgeSuspendedUserById(row.id,admin.id);
+    if(result.ok)autoDeletedSuspended+=1;
+  }
+
   const {searchParams}=new URL(req.url);
   const role=searchParams.get('role') as any;
   const q=(searchParams.get('q')||'').trim();
@@ -42,7 +53,14 @@ async function GET__handler(req:Request){
       accessKeyExpired:u.student.accessKeyExpiresAt.getTime()<=Date.now()
     }:null
   }));
-  return NextResponse.json({ok:true,users:visibleUsers});
+  return NextResponse.json({
+    ok:true,
+    users:visibleUsers,
+    autoDeletedSuspended,
+    cleanupMessage:autoDeletedSuspended>0
+      ?autoDeletedSuspended+' askıya alınmış kullanıcı kalıcı olarak silindi. Gmail adresleri yeniden kayıt için kullanılabilir.'
+      :null
+  });
 }
 
 function safeDecrypt(value:string){
