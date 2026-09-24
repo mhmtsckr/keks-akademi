@@ -830,3 +830,10 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .adminCoachQuickRow>div:first-child{display:grid;gap:3px}
 .adminCoachQuickRow strong{font-size:12px;color:#edf3f8}.adminCoachQuickRow span{font-size:10px;color:#8fa2b4}.adminCoachQuickRow small{font-size:9px;color:#6f8497}
 @media(max-width:680px){.adminCoachQuickRow{grid-template-columns:1fr}.adminCoachQuickRow .row{justify-content:flex-start}}
+
+
+/* Live admin approval status */
+.oabtLiveStatus{display:grid;gap:12px;border-color:rgba(225,181,69,.16)!important;background:linear-gradient(145deg,#0a233f,#071a30)!important}
+.oabtLiveStatus.approved{border-color:rgba(92,184,137,.28)!important}
+.oabtLiveStatus.pending{border-color:rgba(225,181,69,.28)!important}
+.oabtLiveStatus.rejected{border-color:rgba(210,92,92,.25)!important}
