@@ -41,7 +41,7 @@ function exportedGetHandlers(sf:ts.SourceFile):ts.Node[]{
   });
 
   sf.forEachChild(node=>{
-    const exported=Boolean(node.modifiers?.some(m=>m.kind===ts.SyntaxKind.ExportKeyword));
+    const exported=Boolean(ts.canHaveModifiers(node)&&ts.getModifiers(node)?.some(m=>m.kind===ts.SyntaxKind.ExportKeyword));
     if(ts.isFunctionDeclaration(node)&&exported&&node.name?.text==='GET'){
       handlers.push(node);
       return;
