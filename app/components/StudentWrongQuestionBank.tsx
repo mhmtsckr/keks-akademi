@@ -36,7 +36,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     const r=await fetch('/api/student/wrong-questions',{method:'POST',body:fd});
     const j=await r.json();setBusy(false);
     if(!r.ok)return setMsg('Hata: '+(j.error||'Yanlış soru yüklenemedi.'));
-    setMsg(j.message+' · Tekrar döngüsü: 0–1–3–7–14–28 gün.');
+    setMsg(j.message+' · Tekrar motoru 0–1–3–7–14–28 gün tabanlıdır; sonraki aralık performansına göre otomatik değişir.');
     form.reset();
     await load();
   }
@@ -52,8 +52,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     if(!r.ok)return setMsg('Hata: '+(j.error||'Tekrar görevi kaydedilemedi.'));
     setReviewAnswers(x=>({...x,[id]:''}));
     setMsg(j.correct
-      ? (j.completed?'Doğru. Bu yanlış soru için 0–1–3–7–14–28 tekrar döngüsü tamamlandı.':'Doğru. Bir sonraki tekrar günü otomatik planlandı.')
-      : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+' · Döngü 0. güne döndü.');
+      ? (j.completed?'Doğru. Bu soru için aktif tekrar döngüsü tamamlandı.':'Doğru. Bir sonraki tekrar aralığı performansına göre otomatik planlandı.')
+      : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+' · Bir sonraki tekrar daha yakın tarihe çekildi.');
     await load();
   }
 
@@ -78,7 +78,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
     <div className="card wrongQuestionDueCard">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. Doğru cevap bir sonraki aşamaya geçirir; tekrar yanlışsa döngü 0. güne döner.</p></div>
+        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. Doğru cevap tekrar aralığını açabilir; tekrar yanlışsa sistem bir sonraki tekrarı daha yakın tarihe çeker.</p></div>
         <span className="pill">{dueReviews.length} görev</span>
       </div>
       {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış soru yok.</strong><div className="muted">Yeni yanlış yüklediğinde 0. gün görevi hemen burada görünür.</div></div>:<div className="wrongReviewTaskList">
@@ -102,7 +102,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         <div>
           <div className="moduleEyebrow">GÜNLÜK YANLIŞ SORU BANKASI</div>
           <h2>Yanlış yaptığın soruyu yükle</h2>
-          <p className="muted">Dersi seç, soru fotoğrafını veya metnini ekle. KEKS konuyu otomatik sınıflandırır ve soruyu 0–1–3–7–14–28 gün tekrar görevine dönüştürür.</p>
+          <p className="muted">Dersi seç, soru fotoğrafını veya metnini ekle. KEKS konuyu otomatik sınıflandırır. 0–1–3–7–14–28 gün tabanlı tekrar motoru, doğru/yanlış performansına göre sonraki aralığı kişiselleştirir.</p>
         </div>
         <span className="moduleIcon">↺</span>
       </div>
