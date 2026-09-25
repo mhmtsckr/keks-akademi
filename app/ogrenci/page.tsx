@@ -20,6 +20,7 @@ import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { StudentOabtFieldApproval } from '@/app/components/StudentOabtFieldApproval';
 import { AccountSecurity } from '@/app/components/AccountSecurity';
 import { StudentTodayPlan } from '@/app/components/StudentTodayPlan';
+import { StudentResourceTracker } from '@/app/components/StudentResourceTracker';
 
 function pretty(v: unknown) {
   if (!v) return '';
