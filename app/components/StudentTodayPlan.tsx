@@ -86,6 +86,15 @@ export function StudentTodayPlan(){
         <strong>Hedef mesafesi:</strong> {goal.target}
         <div className="muted">Mevcut: {goal.currentPerformance??'—'} · Hedef ölçüt: {goal.targetValue??'—'} · Fark: {goal.gap??'—'} · Açık konu tahmini: {goal.estimatedOpenTopics}</div>
       </div>}
+      {data.examReport&&<div className="card" style={{marginTop:12}}>
+        <div className="moduleEyebrow">DENEME SONRASI OTOMATİK RAPOR</div>
+        <strong>{data.examReport.examType}</strong>
+        <p>Değişim: {data.examReport.overall?.delta==null?'Karşılaştırma için önceki deneme yok':(data.examReport.overall.delta>=0?'+':'')+data.examReport.overall.delta}</p>
+        {data.examReport.biggestGain&&<p className="muted">En fazla kazanç: {data.examReport.biggestGain.subject} · {data.examReport.biggestGain.delta>0?'+':''}{data.examReport.biggestGain.delta}</p>}
+        {data.examReport.biggestLoss&&<p className="muted">En fazla kayıp: {data.examReport.biggestLoss.subject} · {data.examReport.biggestLoss.delta}</p>}
+        <p className="muted">{data.examReport.timeSignal?.message}</p>
+        {data.examReport.sevenDayPlan?.length>0&&<details><summary>7 günlük müdahale planı</summary>{data.examReport.sevenDayPlan.map((x:any,i:number)=><div key={i}>Gün {x.day}: {x.subject}{x.topic?' · '+x.topic:''} — {x.task}</div>)}</details>}
+      </div>}
       {weakest.length>0&&<div style={{marginTop:12}}>
         <strong>Bilgi hâkimiyeti odağı</strong>
         <div className="stack" style={{marginTop:8}}>
