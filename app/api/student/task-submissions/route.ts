@@ -12,7 +12,7 @@ const schema=z.object({
   correct:z.number().int().min(0).max(2000),
   wrong:z.number().int().min(0).max(2000),
   blank:z.number().int().min(0).max(2000)
-  ,errorReason:z.enum(['BILGI_EKSIKLIGI','DIKKAT','ISLEM_HATASI','SURE','SORUYU_ANLAMA','STRATEJI','DIGER']).nullable().optional()
+  ,errorReason:z.enum(['BILGI_EKSIKLIGI','ISLEM_HATASI','DIKKAT','SORU_KOKU','SURE','YONTEM_BILMEME','UNUTMA','SORUYU_ANLAMA','STRATEJI','DIGER']).nullable().optional()
 });
 
 function deadlineForAction(action:{taskDate:Date|null;periodEnd:Date}){
