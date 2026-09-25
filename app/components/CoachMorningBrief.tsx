@@ -35,6 +35,17 @@ export function CoachMorningBrief(){
         <div className="notice" style={{marginTop:10}}><strong>Önerilen koç aksiyonu:</strong> {s.suggestedAction}</div>
       </div>)}</div>
       :<div className="notice">Bugün acil müdahale gerektiren somut sinyal oluşmadı.</div>}
+    {brief.coachQuality&&<details style={{marginTop:14}}>
+      <summary><strong>KOÇ OPERASYON KALİTESİ · PUANLAMA YOK</strong></summary>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',marginTop:10}}>
+        <div className="card"><strong>Görüşme tamamlandı</strong><p>{brief.coachQuality.completedSessions}/{brief.coachQuality.pastSessions}</p></div>
+        <div className="card"><strong>Sonraki adım kaydı</strong><p>{brief.coachQuality.sessionsWithNextStep}</p></div>
+        <div className="card"><strong>Bağlı aksiyon</strong><p>{brief.coachQuality.sessionsWithActions}</p></div>
+        <div className="card"><strong>Geciken koç görevi</strong><p>{brief.coachQuality.overdueCoachTasks}</p></div>
+      </div>
+      {(brief.coachQuality.signals||[]).map((x:string,i:number)=><div className="notice" key={i}>{x}</div>)}
+      <p className="muted">{brief.coachQuality.note}</p>
+    </details>}
     {brief.cohortGroups&&<details style={{marginTop:14}}>
       <summary><strong>KOHORT / GRUP GÖRÜNÜMÜ</strong></summary>
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',marginTop:10}}>
