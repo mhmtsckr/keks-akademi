@@ -27,28 +27,13 @@ async function GET__handler(){
   if(!applicable)return NextResponse.json({ok:true,applicable:false,status:'NONE',field:null,locked:false});
 
   const field=getEffectiveOabtField(student.academicTrack,student.profile);
-  let repaired=false;
-  if(field){
-    const normalizedGrade=isAgsOabtLabel(student.gradeLevel)?student.gradeLevel:'AGS/ÖABT';
-    const nextProfile=withAutomaticOabtField(student.profile,field);
-    const currentProfile=JSON.stringify(student.profile||{});
-    const nextProfileText=JSON.stringify(nextProfile);
-    if(student.academicTrack!==field||student.gradeLevel!==normalizedGrade||currentProfile!==nextProfileText){
-      await db.student.update({
-        where:{id:student.id},
-        data:{gradeLevel:normalizedGrade,academicTrack:field,profile:nextProfile as any}
-      });
-      repaired=true;
-      await writeAudit({
-        actorUserId:user.id,
-        action:'OABT_FIELD_AUTO_CONFIRMED',
-        entityType:'Student',
-        entityId:student.id,
-        summary:student.fullName+' öğrencisinin AGS/ÖABT alanı otomatik olarak kesinleştirildi: '+field,
-        metadata:{studentCode:student.studentCode,field,legacyRepair:true}
-      });
-    }
-  }
+  const normalizedGrade=field?(isAgsOabtLabel(student.gradeLevel)?student.gradeLevel:'AGS/ÖABT'):student.gradeLevel;
+  const nextProfile=field?withAutomaticOabtField(student.profile,field):student.profile;
+  const repairRequired=Boolean(field&&(
+    student.academicTrack!==field
+    ||student.gradeLevel!==normalizedGrade
+    ||JSON.stringify(student.profile||{})!==JSON.stringify(nextProfile||{})
+  ));
 
   return NextResponse.json({
     ok:true,
@@ -57,7 +42,8 @@ async function GET__handler(){
     field,
     approvedField:field,
     locked:Boolean(field),
-    repaired
+    repaired:false,
+    repairRequired
   });
 }
 
