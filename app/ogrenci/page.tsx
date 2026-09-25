@@ -19,6 +19,7 @@ import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtStudentRecord } fr
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { StudentOabtFieldApproval } from '@/app/components/StudentOabtFieldApproval';
 import { AccountSecurity } from '@/app/components/AccountSecurity';
+import { StudentTodayPlan } from '@/app/components/StudentTodayPlan';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -104,6 +105,10 @@ export default async function StudentPage() {
     meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{adultExamGroup?'Sınav grubu: ':'Düzey: '}{studentGroupLabel}</span>}<span>{student.plans.length} aktif program</span></>}
     wide
   >
+    <section id="bugunun-plani" className="section section-anchor">
+      <StudentTodayPlan/>
+    </section>
+
     <section id="genel-bakis" className="section section-anchor">
       <StudentCommandCenter/>
     </section>
@@ -113,6 +118,7 @@ export default async function StudentPage() {
     <section className="section"><details className="card"><summary>Diğer bölümler ve ayrıntılı araçlar</summary>
       <PanelNavigator roleLabel="Öğrenci" groups={[
         {label:'BUGÜN & PLANLAMA',description:'Günün öncelikleri, görevleri ve kişisel program.',items:[
+          {href:'#bugunun-plani',title:'Bugünün Planı',description:'Gerçek kapasiteye göre sıralanmış günlük akış',badge:'ŞİMDİ'},
           {href:'#genel-bakis',title:'Kontrol Merkezi',description:'Bugünkü durum ve hızlı aksiyonlar'},
           {href:'#gunluk-gorevler',title:'Günlük Görevler',description:'Koç görevleri ve günlük kayıt'},
           {href:'#programlar',title:'Kişisel Planlar',description:'Yıllık, aylık, haftalık ve günlük plan'}
