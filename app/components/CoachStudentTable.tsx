@@ -25,7 +25,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
   const visible=useMemo(()=>students.filter(s=>{
     const q=search.trim().toLocaleLowerCase('tr-TR');
     const match=!q||s.fullName.toLocaleLowerCase('tr-TR').includes(q)||s.studentCode.toLocaleLowerCase('tr-TR').includes(q)||(s.gradeLevel||'').toLocaleLowerCase('tr-TR').includes(q)||(s.academicTrack||'').toLocaleLowerCase('tr-TR').includes(q);
-    return match&&(priority==='ALL'||s.priorityLevel===risk);
+    return match&&(priority==='ALL'||s.priorityLevel===priority);
   }),[students,search,priority]);
 
   async function remove(){
