@@ -38,14 +38,11 @@ export function trDayStart(date:Date){
 
 export function weekKey(date:Date){
   const localStart=trDayStart(date);
-  const localDay=Number(new Intl.DateTimeFormat('en-US',{
+  const dayName=new Intl.DateTimeFormat('en-US',{
     timeZone:'Europe/Istanbul',weekday:'short'
-  }).format(date)==='Sun'?0:
-  ['Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{
-    timeZone:'Europe/Istanbul',weekday:'short'
-  }).format(date))+1);
-  const mondayOffset=localDay===0?6:localDay-1;
-  const monday=new Date(localStart.getTime()-mondayOffset*86400000);
+  }).format(date);
+  const mondayOffset=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].indexOf(dayName);
+  const monday=new Date(localStart.getTime()-Math.max(0,mondayOffset)*86400000);
   return trDateKey(monday);
 }
 
