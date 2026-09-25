@@ -620,7 +620,8 @@ export async function buildCoachMorningBrief(coachId:string,now=new Date()){
     summary:items.length
       ?'Bugün '+items.length+' öğrenci somut takip sinyali nedeniyle müdahale gerektiriyor.'
       :'Bugün acil müdahale gerektiren öğrenci sinyali oluşmadı.',
-    students:items.sort((a,b)=>(b.overdue+b.dueReviews)-(a.overdue+a.dueReviews))
+    students:items.sort((a,b)=>(b.overdue+b.dueReviews)-(a.overdue+a.dueReviews)),
+    coachQuality:await buildCoachOperationalQuality(coachId,now)
   };
 }
 
@@ -807,4 +808,58 @@ export async function buildCoachStudentAlignmentSignals(studentId:string,now=new
   if(sessionContinuity!=null)signals.push('Planlanan geçmiş görüşmelerin tamamlanma oranı %'+sessionContinuity+'.');
   if(held)signals.push(held+' tamamlanan görüşmenin '+nextStepSessions+' tanesinde sonraki adım kaydı var.');
   return {assignedTasks:assigned,completedTasks:completed,followThrough,rescheduledTasks:rescheduled,sessionContinuity,completedSessions:held,signals};
+}
+
+
+export async function buildCoachOperationalQuality(coachId:string,now=new Date()){
+  const since=new Date(now.getTime()-30*86400000);
+  const [sessions,tasks,students]=await Promise.all([
+    db.coachingSession.findMany({
+      where:{coachId,startsAt:{gte:since}},
+      select:{
+        id:true,status:true,startsAt:true,completedAt:true,nextStep:true,
+        actions:{select:{id:true}}
+      }
+    }),
+    db.coachTask.findMany({
+      where:{coachId,createdAt:{gte:since}},
+      select:{status:true,dueAt:true,createdAt:true,completedAt:true}
+    }),
+    db.student.findMany({
+      where:{coachId},
+      select:{
+        id:true,
+        coachAlerts:{where:{resolved:false,severity:'HIGH'},select:{id:true}}
+      }
+    })
+  ]);
+  const past=sessions.filter(x=>x.startsAt<=now);
+  const completed=past.filter(x=>x.status==='COMPLETED');
+  const withNextStep=completed.filter(x=>Boolean(x.nextStep)).length;
+  const withAction=completed.filter(x=>x.actions.length>0).length;
+  const overdueTasks=tasks.filter(x=>x.status==='OPEN'&&x.dueAt&&x.dueAt<now).length;
+  const completedTasks=tasks.filter(x=>x.status==='COMPLETED').length;
+  const openHighSignals=students.reduce((n,x)=>n+x.coachAlerts.length,0);
+  const upcoming=sessions.filter(x=>x.status==='SCHEDULED'&&x.startsAt>now).length;
+
+  const signals:string[]=[];
+  signals.push('Son 30 günde '+completed.length+'/'+past.length+' geçmiş görüşme tamamlandı.');
+  if(completed.length)signals.push(completed.length+' tamamlanan görüşmenin '+withNextStep+' tanesinde somut sonraki adım kaydı var.');
+  if(completed.length)signals.push(completed.length+' tamamlanan görüşmenin '+withAction+' tanesinde bağlı koçluk aksiyonu oluşturuldu.');
+  if(overdueTasks)signals.push(overdueTasks+' koç takip görevinin vadesi geçti.');
+  if(openHighSignals)signals.push(openHighSignals+' açık yüksek öncelikli öğrenci sinyali takip bekliyor.');
+
+  return {
+    windowDays:30,
+    pastSessions:past.length,
+    completedSessions:completed.length,
+    sessionsWithNextStep:withNextStep,
+    sessionsWithActions:withAction,
+    completedCoachTasks:completedTasks,
+    overdueCoachTasks:overdueTasks,
+    openHighStudentSignals:openHighSignals,
+    upcomingSessions:upcoming,
+    signals,
+    note:'Bu göstergeler koçu sıralamak veya etiketlemek için değil, takip sürecindeki operasyonel boşlukları görünür kılmak için kullanılır.'
+  };
 }
