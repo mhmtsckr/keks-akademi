@@ -12,6 +12,7 @@ import {
   buildSubjectLearningModels,
   buildTopicMastery
 } from '@/lib/learningEngine';
+import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -30,16 +31,17 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   const student=await ownedStudent(id,user.coachProfile.id);
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
 
-  const [capacity,mastery,subjects,goal,impact,timeline]=await Promise.all([
+  const [capacity,mastery,subjects,goal,impact,timeline,examReport]=await Promise.all([
     buildCapacityProfile(id),
     buildTopicMastery(id),
     buildSubjectLearningModels(id),
     buildGoalDistance(id),
     buildInterventionImpact(id),
-    buildStudentTimeline(id)
+    buildStudentTimeline(id),
+    buildLatestExamInterventionReport(id)
   ]);
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
