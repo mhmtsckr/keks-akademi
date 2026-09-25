@@ -173,8 +173,11 @@ describe('KEKS production safety policies',()=>{
 
   it('Vercel production builds require the CI-approved marker',()=>{
     const vercel=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8')) as {ignoreCommand?:string};
+    const ignoreScript=fs.readFileSync(path.join(ROOT,'scripts','vercel-ignore-build.sh'),'utf8');
     const workflow=fs.readFileSync(path.join(ROOT,'.github','workflows','build.yml'),'utf8');
-    expect(vercel.ignoreCommand||'').toContain('ci: deploy approved ');
+    expect(vercel.ignoreCommand).toBe('bash scripts/vercel-ignore-build.sh');
+    expect(ignoreScript).toContain('ci: deploy approved ');
+    expect(ignoreScript).toContain('CI-approved source:');
     expect(workflow).toContain('approve-production:');
     expect(workflow).toContain('ci: deploy approved $SOURCE_SHA [skip ci]');
     expect(workflow).toContain('needs: build');
