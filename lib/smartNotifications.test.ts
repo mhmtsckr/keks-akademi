@@ -121,7 +121,7 @@ describe('buildSmartNotifications',()=>{
 
     const items=await buildSmartNotifications('s1',now);
     expect(items.some(x=>x.kind==='EXAM_STALE')).toBe(false);
-    expect(items.map(x=>x.kind)).toEqual(['PARTIAL_TASK','REVIEW_DUE','PLAN_UPDATED']);
+    expect(items.map(x=>x.kind)).toEqual(['PARTIAL_TASK','PLAN_UPDATED','REVIEW_DUE']);
     expect(mocks.actionFindMany).toHaveBeenCalledTimes(1);
   });
 
