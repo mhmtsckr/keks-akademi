@@ -97,6 +97,7 @@ export default async function StudentPage() {
   const studentGroupLabel=isAgsOabt
     ?('AGS/ÖABT'+(oabtField?'- '+oabtField:''))
     :displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
+  const ordinaryLibraryItems=student.libraryItems.filter(i=>!String(i.note||'').startsWith('KEKS_RESOURCE_V1:'));
 
   return <PortalShell signedIn
     active="ogrenci"
@@ -128,9 +129,10 @@ export default async function StudentPage() {
           {href:'#yanlis-soru-bankasi',title:'Yanlış Soru Bankası',description:'Fotoğraf/metin yükle ve tekrar görevine dönüştür',badge:'0–1–3–7–14–28'},
           {href:'#ogrenme-tekrar',title:'Çalışma Teknikleri',description:'Pomodoro, aktif hatırlama, Feynman ve diğer teknikler'}
         ]},
-        {label:'AKADEMİK PERFORMANS',description:'Net, konu, doğruluk ve hedef gelişimini izle.',items:[
+        {label:'AKADEMİK PERFORMANS',description:'Net, konu, doğruluk, kaynak ve hedef gelişimini izle.',items:[
           ...(featureFlags.SMART_COACH?[{href:'#akilli-koc',title:'Akıllı Koç',description:'Hedefe yaklaşma, trend ve haftalık öneriler'}]:[]),
-          {href:'#akademik-performans',title:'Konu & Soru Analizi',description:'Doğru, yanlış, boş, net ve hata nedenleri'}
+          {href:'#akademik-performans',title:'Konu & Soru Analizi',description:'Doğru, yanlış, boş, net ve hata nedenleri'},
+          {href:'#kaynak-takibi',title:'Kaynak Takibi',description:'Kitap, konu, sayfa, soru ve doğruluk takibi',badge:'YENİ'}
         ]},
         ...(featureFlags.GAMIFICATION?[{label:'KOÇLUK & OYUNLAŞTIRMA',description:'Koçluk aksiyonları, seanslar, XP ve mikro tekrar.',items:[
           {href:'#kocluk-oyunlastirma',title:'Koçluk & Oyunlaştırma',description:'Aksiyon, seans, XP, rozet ve mikro tekrar'}
@@ -188,8 +190,10 @@ export default async function StudentPage() {
 
     <section className="section"><div className="grid" style={{gridTemplateColumns:'2fr 1fr'}}>
       <div className="card"><h2>Koç Raporlarım</h2>{student.reports.length===0?<p className="muted">Henüz rapor yayınlanmadı.</p>:student.reports.map(r=><article key={r.id} style={{padding:'12px 0',borderBottom:'1px solid var(--line)'}}><strong>{r.title}</strong>{r.summary&&<p className="muted">{r.summary}</p>}<p>{r.content}</p></article>)}</div>
-      <div className="card"><h2>Kütüphanem</h2>{student.libraryItems.length===0?<p className="muted">Henüz not veya dosya yok.</p>:student.libraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
+      <div className="card"><h2>Kütüphanem</h2>{ordinaryLibraryItems.length===0?<p className="muted">Henüz not veya dosya yok.</p>:ordinaryLibraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
     </div></section>
+
+    <section id="kaynak-takibi" className="section section-anchor"><PortalSectionTitle eyebrow="KAYNAK TAKİP SİSTEMİ" title="Kitap ve Kaynak Çalışmalarım" description="Kullandığın kaynağı ekle; konu, sayfa, soru ve doğruluk ilerlemesini kaydet. Koçun da kaynak kullanım ritmini görebilsin."/><StudentResourceTracker/></section>
 
     <section id="akademik-performans" className="section section-anchor"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><PortalSectionTitle eyebrow="AKADEMİK PERFORMANS MERKEZİ" title="Konu, Soru ve Hata Analizi" description="Doğru, yanlış, boş, net, konu ilerlemesi ve hata nedenlerini birlikte takip et."/><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>({id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString(),errorReason:x.errorReason}))}/></section>
 
