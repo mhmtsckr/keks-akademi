@@ -26,7 +26,7 @@ const progressSchema=z.object({
   if(v.correct+v.wrong+v.blank!==v.questions)ctx.addIssue({code:'custom',message:'Doğru + yanlış + boş, soru sayısına eşit olmalıdır.'});
   if(v.pageStart&&v.pageEnd&&v.pageEnd<v.pageStart)ctx.addIssue({code:'custom',message:'Bitiş sayfası başlangıç sayfasından küçük olamaz.'});
 });
-const schema=z.discriminatedUnion('action',[createSchema,progressSchema]);
+const schema=z.union([createSchema,progressSchema]);
 
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
