@@ -21,6 +21,7 @@ import { StudentOabtFieldApproval } from '@/app/components/StudentOabtFieldAppro
 import { AccountSecurity } from '@/app/components/AccountSecurity';
 import { StudentTodayPlan } from '@/app/components/StudentTodayPlan';
 import { StudentResourceTracker } from '@/app/components/StudentResourceTracker';
+import { StudentSmartNotifications } from '@/app/components/StudentSmartNotifications';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -111,6 +112,10 @@ export default async function StudentPage() {
       <StudentTodayPlan/>
     </section>
 
+    <section id="akilli-bildirimler" className="section section-anchor">
+      <StudentSmartNotifications/>
+    </section>
+
     <section id="genel-bakis" className="section section-anchor">
       <StudentCommandCenter/>
     </section>
@@ -121,6 +126,7 @@ export default async function StudentPage() {
       <PanelNavigator roleLabel="Öğrenci" groups={[
         {label:'BUGÜN & PLANLAMA',description:'Günün öncelikleri, görevleri ve kişisel program.',items:[
           {href:'#bugunun-plani',title:'Bugünün Planı',description:'Gerçek kapasiteye göre sıralanmış günlük akış',badge:'ŞİMDİ'},
+          {href:'#akilli-bildirimler',title:'Akıllı Bildirimler',description:'Yalnız eylem gerektiren çalışma sinyalleri'},
           {href:'#genel-bakis',title:'Kontrol Merkezi',description:'Bugünkü durum ve hızlı aksiyonlar'},
           {href:'#gunluk-gorevler',title:'Günlük Görevler',description:'Koç görevleri ve günlük kayıt'},
           {href:'#programlar',title:'Kişisel Planlar',description:'Yıllık, aylık, haftalık ve günlük plan'}
