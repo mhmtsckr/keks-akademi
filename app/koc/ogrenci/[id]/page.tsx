@@ -17,6 +17,7 @@ import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { CoachLearningIntelligence } from '@/app/components/CoachLearningIntelligence';
+import { CoachResourceSummary } from '@/app/components/CoachResourceSummary';
 
 export default async function CoachStudentPage({params}:{params:Promise<{id:string}>}) {
   const user=await currentUser();
@@ -91,6 +92,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
         ]},
         {label:'PLANLAMA & PERFORMANS',description:'Hedefi programa dönüştür ve akademik sonucu izle.',items:[
           {href:'#learning-engine',title:'KEKS Learning Engine',description:'Kapasite, hâkimiyet, hedef mesafesi ve simülasyon',badge:'YENİ'},
+          {href:'#kaynak-takibi',title:'Kaynak Takibi',description:'Kitap, sayfa, soru ve kaynak tempo sinyalleri'},
           {href:'#program',title:'Kişisel Çalışma Planı',description:student.plans.filter(x=>x.active).length+' aktif plan'},
           {href:'#denemeler',title:'Deneme & Soru Performansı',description:student.examResults.length+' deneme · '+student.practiceLogs.length+' soru çözüm kaydı'},
           {href:'#hedef',title:'Hedef Yönetimi',description:student.goal?'Hedef tanımlı':'Hedef bilgisi bekleniyor'}
@@ -114,6 +116,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       ]}/>
     </section>
     <section id="learning-engine" className="section section-anchor"><CoachLearningIntelligence studentId={student.id}/></section>
+    <section id="kaynak-takibi" className="section section-anchor"><CoachResourceSummary studentId={student.id}/></section>
     <section className="section"><CoachSmartPlan studentId={student.id} goalPercent={goalProgress.percent} goalLabel={goalProgress.label}/></section>
     <section className="section"><CoachAlerts studentId={student.id}/></section>
     <section className="section"><CoachTrendSummary exams={student.examResults.slice().reverse().map(x=>({createdAt:x.createdAt.toISOString(),examType:x.examType,payload:x.payload}))} reviewDue={student.reviewQueue.filter(x=>x.dueAt<=new Date()).length}/></section>
