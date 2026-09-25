@@ -23,7 +23,6 @@ async function GET__handler(req:Request){
       method:String(m.method||'UNKNOWN'),
       errorClass:String(m.errorClass||'UnknownError'),
       errorCode:m.errorCode?String(m.errorCode):null,
-      message:m.message?String(m.message):null,
       environment:m.environment?String(m.environment):null,
       deployment:m.deployment?String(m.deployment):null,
       createdAt:row.createdAt

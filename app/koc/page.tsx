@@ -82,9 +82,9 @@ export default async function CoachPage() {
     const week=weeklyActions.filter(a=>a.studentId===s.id);
     const completion=week.length?Math.round(week.filter(a=>a.submission||a.status==='COMPLETED').length/week.length*100):null;
     const examGap=s.examResults[0]?Math.floor((now.getTime()-s.examResults[0].createdAt.getTime())/86400000):null;
-    const riskScore=Math.min(100,high*30+medium*12+Math.min(overdue,3)*15+(inactive?20:0)+Math.min(dueReviews,10)*2);
+    const priorityScore=Math.min(100,high*30+medium*12+Math.min(overdue,3)*15+(inactive?20:0)+Math.min(dueReviews,10)*2);
     const reasons:string[]=[];
-    if(high)reasons.push(high+' yüksek uyarı');
+    if(high)reasons.push(high+' önemli takip sinyali');
     if(overdue)reasons.push(overdue+' geciken aksiyon');
     if(inactive)reasons.push('7+ gündür düşük aktivite');
     if(dueReviews)reasons.push(dueReviews+' yanlış tekrar');
@@ -97,7 +97,7 @@ export default async function CoachPage() {
       academicTrack:isAgsOabtStudentRecord({gradeLevel:s.gradeLevel,academicTrack:s.academicTrack,profile:s.profile})
         ?getEffectiveOabtField(s.academicTrack,s.profile)
         :s.academicTrack,
-      riskScore,riskLevel:(riskScore>=50?'HIGH':riskScore>=20?'MEDIUM':'LOW') as 'HIGH'|'MEDIUM'|'LOW',
+      priorityScore,priorityLevel:(priorityScore>=50?'HIGH':priorityScore>=20?'MEDIUM':'LOW') as 'HIGH'|'MEDIUM'|'LOW',
       reasons,suggestedAction,overdueActions:overdue,openAlerts:s.coachAlerts.length,dueReviews,
       activePlans:s.plans.length,
       profileReady:Boolean(s.assessments[0]&&s.preInterviewAttempts[0]),
@@ -107,7 +107,7 @@ export default async function CoachPage() {
       hasExamData:Boolean(s.examResults[0]),
       lastActivity:lastActivity?lastActivity.toISOString():null
     };
-  }).sort((a,b)=>b.riskScore-a.riskScore);
+  }).sort((a,b)=>b.priorityScore-a.priorityScore);
   const agenda=students.flatMap(s=>s.coachingSessions.map(x=>({
     id:x.id,studentId:s.id,studentName:s.fullName,title:x.title,
     startsAt:x.startsAt.toISOString(),endsAt:x.endsAt.toISOString(),meetingUrl:x.meetingUrl
@@ -124,7 +124,7 @@ export default async function CoachPage() {
     <section className="section">
       <PanelNavigator roleLabel="Koç" groups={[
         {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[
-          {href:'#koc-komuta',title:'Koç Komuta Merkezi',description:'Risk sinyalleri, seanslar ve geciken aksiyonlar',badge:'BUGÜN'}
+          {href:'#koc-komuta',title:'Koç Komuta Merkezi',description:'Takip sinyalleri, seanslar ve geciken aksiyonlar',badge:'BUGÜN'}
         ]},
         {label:'ÖĞRENCİ ERİŞİMİ',description:'Yeni öğrenciyi güvenli biçimde koç hesabına bağla.',items:[
           {href:'#ogrenci-erisim',title:'Erişim Kodu',description:'Öğrencinin tek kullanımlık koç kodunu doğrula'}

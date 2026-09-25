@@ -9,7 +9,7 @@ type StudentRow={
   studentCode:string;
   gradeLevel:string|null;
   academicTrack?:string|null;
-  riskLevel?:'HIGH'|'MEDIUM'|'LOW';
+  priorityLevel?:'HIGH'|'MEDIUM'|'LOW';
   reasons?:string[];
   lastActivity?:string|null;
   overdueActions?:number;
@@ -21,12 +21,12 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState('');
   const [search,setSearch]=useState('');
-  const [risk,setRisk]=useState<'ALL'|'HIGH'|'MEDIUM'|'LOW'>('ALL');
+  const [priority,setPriority]=useState<'ALL'|'HIGH'|'MEDIUM'|'LOW'>('ALL');
   const visible=useMemo(()=>students.filter(s=>{
     const q=search.trim().toLocaleLowerCase('tr-TR');
     const match=!q||s.fullName.toLocaleLowerCase('tr-TR').includes(q)||s.studentCode.toLocaleLowerCase('tr-TR').includes(q)||(s.gradeLevel||'').toLocaleLowerCase('tr-TR').includes(q)||(s.academicTrack||'').toLocaleLowerCase('tr-TR').includes(q);
-    return match&&(risk==='ALL'||s.riskLevel===risk);
-  }),[students,search,risk]);
+    return match&&(priority==='ALL'||s.priorityLevel===risk);
+  }),[students,search,priority]);
 
   async function remove(){
     if(!deleting)return;
@@ -54,7 +54,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
   return <>
     <div className="studentTableTools">
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Öğrenci, kod, grup veya alan ara…"/>
-      <select value={risk} onChange={e=>setRisk(e.target.value as any)}>
+      <select value={priority} onChange={e=>setPriority(e.target.value as any)}>
         <option value="ALL">Tüm öncelikler</option><option value="HIGH">Acil</option><option value="MEDIUM">İzlem</option><option value="LOW">Normal</option>
       </select>
       <span className="pill">{visible.length} öğrenci</span>
@@ -63,11 +63,11 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
     <table className="table">
       <thead><tr><th>Öncelik</th><th>Kod</th><th>Öğrenci</th><th>Grup / Alan</th><th>Son Aktivite</th><th>İşlem</th></tr></thead>
       <tbody>{visible.map(s=><tr key={s.id}>
-        <td>{s.riskLevel?<><span className={'riskBadge '+s.riskLevel.toLowerCase()}>{s.riskLevel==='HIGH'?'ACİL':s.riskLevel==='MEDIUM'?'İZLEM':'NORMAL'}</span><div className="muted">{s.reasons?.slice(0,2).join(' · ')}</div></>:<span className="muted">—</span>}</td>
+        <td>{s.priorityLevel?<><span className={'priorityBadge '+s.priorityLevel.toLowerCase()}>{s.priorityLevel==='HIGH'?'ACİL':s.priorityLevel==='MEDIUM'?'İZLEM':'NORMAL'}</span><div className="muted">{s.reasons?.slice(0,2).join(' · ')}</div></>:<span className="muted">—</span>}</td>
         <td>{s.studentCode}</td>
         <td><a href={'/koc/ogrenci/'+s.id}><strong>{s.fullName}</strong></a></td>
         <td><strong>{displayExamGroupWithTrack(s.gradeLevel,s.academicTrack)}</strong>{getAdultExamGroup(s.gradeLevel)&&<div className="muted">Sınav grubu</div>}</td>
-        <td>{s.lastActivity?new Date(s.lastActivity).toLocaleDateString('tr-TR'):<span className="muted">Kayıt yok</span>}{s.overdueActions? <div className="riskText">{s.overdueActions} gecikmiş</div>:null}</td>
+        <td>{s.lastActivity?new Date(s.lastActivity).toLocaleDateString('tr-TR'):<span className="muted">Kayıt yok</span>}{s.overdueActions? <div className="priorityText">{s.overdueActions} gecikmiş</div>:null}</td>
         <td><div className="row">
           <a className="btn" href={'/koc/ogrenci/'+s.id}>Aç</a>
           <button className="btn danger" title="Öğrenci kaydını kalıcı olarak sil" onClick={()=>{setDeleting(s);setCode('');setMsg('')}}>Kaydı Sil</button>

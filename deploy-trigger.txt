@@ -3,3 +3,7 @@ KEKS production release trigger
 CI-approved source: d10e202a8c5f99871122a20f669c9fb3c9aebbfc
 Approved at (UTC): 2026-09-25T00:58:44Z
 Quality gate: TypeScript PASS | Unit/Coverage PASS | Integration PASS | Build PASS
+- Production error monitor hardened: no raw error messages stored
+- Coach smart-plan now obeys SMART_COACH feature flag
+- Coach UI uses explainable follow-up priority terminology instead of risk labels
+- Unwrapped registration and cron routes now feed centralized 500 monitoring

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { publishMebMicroGames } from '@/lib/mebGameScheduler';
+import { withApiErrors } from '@/lib/apiGuard';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 
-export async function GET(req:Request){
+async function GET__handler(req:Request){
   const secret=process.env.CRON_SECRET;
   const auth=req.headers.get('authorization');
   const userAgent=req.headers.get('user-agent')||'';
@@ -19,3 +20,5 @@ export async function GET(req:Request){
   const result=await publishMebMicroGames();
   return NextResponse.json({...result,cronAuth:secret?'CRON_SECRET':'VERCEL_CRON_FALLBACK'});
 }
+
+export const GET=withApiErrors(GET__handler);

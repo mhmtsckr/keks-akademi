@@ -4,7 +4,7 @@ import { useMemo,useState } from 'react';
 
 type PriorityStudent={
   id:string;fullName:string;studentCode:string;gradeLevel:string|null;
-  riskScore:number;riskLevel:'HIGH'|'MEDIUM'|'LOW';reasons:string[];
+  priorityScore:number;priorityLevel:'HIGH'|'MEDIUM'|'LOW';reasons:string[];
   suggestedAction:string;
   overdueActions:number;openAlerts:number;dueReviews:number;lastActivity:string|null;
   activePlans?:number;profileReady?:boolean;screeningReady?:boolean;preInterviewReady?:boolean;
@@ -17,7 +17,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
   const [tasks,setTasks]=useState(initialTasks);
   const [filter,setFilter]=useState<'ALL'|'HIGH'|'MEDIUM'>('ALL');
 
-  const visible=useMemo(()=>students.filter(s=>filter==='ALL'||s.riskLevel===filter),[students,filter]);
+  const visible=useMemo(()=>students.filter(s=>filter==='ALL'||s.priorityLevel===filter),[students,filter]);
   const openTasks=tasks.filter(t=>t.status==='OPEN');
   const overdueTasks=openTasks.filter(t=>t.dueAt&&new Date(t.dueAt)<new Date());
   const systemSummary={
@@ -25,7 +25,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
     plans:students.filter(x=>(x.activePlans||0)>0).length,
     performance:students.filter(x=>x.hasExamData).length,
     reviews:students.reduce((n,x)=>n+x.dueReviews,0),
-    intervention:students.filter(x=>x.riskLevel==='HIGH'||x.riskLevel==='MEDIUM').length,
+    intervention:students.filter(x=>x.priorityLevel==='HIGH'||x.priorityLevel==='MEDIUM').length,
     monthly:students.filter(x=>x.monthlyDevelopmentReady).length
   };
 
@@ -37,7 +37,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
   return <div className="stack">
     <div className="coachCommandKpis">
       <div className="card"><div className="moduleEyebrow">BUGÜN / YAKIN</div><div className="kpi">{agenda.length}</div><span className="muted">planlı seans</span></div>
-      <div className="card"><div className="moduleEyebrow">MÜDAHALE</div><div className="kpi">{students.filter(x=>x.riskLevel==='HIGH').length}</div><span className="muted">yüksek öncelikli öğrenci</span></div>
+      <div className="card"><div className="moduleEyebrow">MÜDAHALE</div><div className="kpi">{students.filter(x=>x.priorityLevel==='HIGH').length}</div><span className="muted">acil takip gereken öğrenci</span></div>
       <div className="card"><div className="moduleEyebrow">GECİKEN</div><div className="kpi">{students.reduce((n,x)=>n+x.overdueActions,0)}</div><span className="muted">öğrenci aksiyonu</span></div>
       <div className="card"><div className="moduleEyebrow">KOÇ GÖREVLERİ</div><div className="kpi">{openTasks.length}</div><span className="muted">{overdueTasks.length} gecikmiş görev</span></div>
     </div>
@@ -53,10 +53,10 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
 
     <div className="coachCommandGrid">
       <div className="card">
-        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">MÜDAHALE KUYRUĞU</div><h2>Öncelikli Öğrenciler</h2><p className="muted">Açık uyarı, geciken aksiyon, aktivite düşüşü ve yanlış tekrar birikimine göre sıralanır.</p></div>
+        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">MÜDAHALE KUYRUĞU</div><h2>Öncelikli Öğrenciler</h2><p className="muted">Her öncelik, altında gösterilen somut sinyallerden hesaplanır: geciken aksiyonlar, aktivite, tekrarlar ve deneme/görev kayıtları.</p></div>
         <div className="row"><button className={'btn '+(filter==='ALL'?'primary':'')} onClick={()=>setFilter('ALL')}>Tümü</button><button className={'btn '+(filter==='HIGH'?'primary':'')} onClick={()=>setFilter('HIGH')}>Acil</button><button className={'btn '+(filter==='MEDIUM'?'primary':'')} onClick={()=>setFilter('MEDIUM')}>İzlem</button></div></div>
         <div className="priorityQueue">{visible.slice(0,12).map(s=><a className="priorityStudent" href={'/koc/ogrenci/'+s.id} key={s.id}>
-          <div className={'riskDot '+s.riskLevel.toLowerCase()}/>
+          <div className={'priorityDot '+s.priorityLevel.toLowerCase()}/>
           <div className="priorityStudentMain"><strong>{s.fullName}</strong><span>{s.gradeLevel||'Grup yok'} · {s.studentCode}</span><small>{s.reasons.join(' · ')||'Aktif uyarı yok'}</small><small><strong>Önerilen koç aksiyonu:</strong> {s.suggestedAction}</small></div>
         </a>)}</div>
       </div>

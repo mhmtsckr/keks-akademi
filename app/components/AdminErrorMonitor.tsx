@@ -24,7 +24,6 @@ export function AdminErrorMonitor(){
       <div style={{minWidth:0}}>
         <strong>{x.method} {x.endpoint} · {x.errorClass}{x.errorCode?' · '+x.errorCode:''}</strong>
         <span>{new Date(x.createdAt).toLocaleString('tr-TR')} · Request ID: <code>{x.requestId}</code>{x.deployment?' · Deploy '+x.deployment:''}</span>
-        {x.message&&<small className="muted">{x.message}</small>}
       </div>
     </div>)}</div>}
     {msg&&<div className="notice error">{msg}</div>}

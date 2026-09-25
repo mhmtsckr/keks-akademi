@@ -9,6 +9,7 @@ import { normalizeEducationLevelLabel } from '@/lib/taskEvaluation';
 import { AGS_OABT_FIELDS,isAgsOabtLabel,isAgsYdsLabel } from '@/lib/agsExamOptions';
 import { withOabtFieldApproval } from '@/lib/oabtFieldApproval';
 import { isEmailVerified,issueEmailVerification,markEmailVerificationRequired } from '@/lib/emailVerification';
+import { withApiErrors } from '@/lib/apiGuard';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -27,7 +28,7 @@ async function uniqueStudentCode(){
   throw new Error('STUDENT_CODE_EXHAUSTED');
 }
 
-export async function POST(req:Request){
+async function POST__handler(req:Request){
   let body:unknown;
   try{body=await req.json()}catch{return NextResponse.json({error:'Geçersiz kayıt isteği.'},{status:400})}
   const parsed=schema.safeParse(body);
@@ -175,3 +176,4 @@ export async function POST(req:Request){
   });
 }
 
+export const POST=withApiErrors(POST__handler);
