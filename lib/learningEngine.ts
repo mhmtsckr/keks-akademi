@@ -607,9 +607,16 @@ export async function buildCoachMorningBrief(coachId:string,now=new Date()){
     };
   }).filter(x=>x.needsAction);
 
+  const cohortGroups={
+    mostOverdue:[...items].filter(x=>x.overdue>0||x.dueReviews>0).sort((a,b)=>(b.overdue+b.dueReviews)-(a.overdue+a.dueReviews)).slice(0,5),
+    accuracyDecline:[...items].filter(x=>x.accuracyDelta!=null&&x.accuracyDelta<0).sort((a,b)=>(a.accuracyDelta||0)-(b.accuracyDelta||0)).slice(0,5),
+    examFollowUp:[...items].filter(x=>x.examGap==null||(x.examGap!=null&&x.examGap>=7)).slice(0,5),
+    needsMeeting:[...items].filter(x=>x.overdue>=2||x.dueReviews>=3).slice(0,5)
+  };
   return {
     generatedAt:now.toISOString(),
     interventionCount:items.length,
+    cohortGroups,
     summary:items.length
       ?'Bugün '+items.length+' öğrenci somut takip sinyali nedeniyle müdahale gerektiriyor.'
       :'Bugün acil müdahale gerektiren öğrenci sinyali oluşmadı.',
@@ -721,4 +728,83 @@ export async function buildStudentTimeline(studentId:string){
   for(const x of sessions)events.push({type:'SESSION',at:x.startsAt,title:'Koç görüşmesi · '+x.title,status:x.status});
   for(const x of reflections)events.push({type:'REFLECTION',at:x.weekStart,title:'Haftalık öz değerlendirme'});
   return events.sort((a,b)=>new Date(a.at).getTime()-new Date(b.at).getTime());
+}
+
+
+export async function buildExamKnowledgeMap(studentId:string){
+  const [progress,analytics]=await Promise.all([
+    db.topicProgress.findMany({
+      where:{studentId},
+      select:{examType:true,subject:true,topic:true,completed:true,updatedAt:true}
+    }),
+    db.examAnalyticsRecord.findMany({
+      where:{studentId},
+      select:{examType:true,subject:true,topic:true,questionType:true,correct:true,wrong:true,blank:true,avgSeconds:true,examDate:true},
+      orderBy:{examDate:'desc'},take:1000
+    })
+  ]);
+  type TopicNode={topic:string;completed:boolean;questionTypes:Set<string>;correct:number;total:number;avgSeconds:number[];lastAt:Date|null};
+  const exams=new Map<string,Map<string,Map<string,TopicNode>>>();
+  const ensure=(examType:string,subject:string,topic:string)=>{
+    let subjects=exams.get(examType);if(!subjects){subjects=new Map();exams.set(examType,subjects)}
+    let topics=subjects.get(subject);if(!topics){topics=new Map();subjects.set(subject,topics)}
+    let node=topics.get(topic);
+    if(!node){node={topic,completed:false,questionTypes:new Set(),correct:0,total:0,avgSeconds:[],lastAt:null};topics.set(topic,node)}
+    return node;
+  };
+  for(const row of progress){
+    const node=ensure(row.examType,row.subject,row.topic);
+    node.completed=row.completed;
+    if(!node.lastAt||row.updatedAt>node.lastAt)node.lastAt=row.updatedAt;
+  }
+  for(const row of analytics){
+    const node=ensure(row.examType,row.subject,row.topic);
+    node.questionTypes.add(row.questionType||'GENEL');
+    const total=row.correct+row.wrong+row.blank;
+    node.correct+=row.correct;node.total+=total;
+    if(row.avgSeconds&&row.avgSeconds>0)node.avgSeconds.push(row.avgSeconds);
+    if(!node.lastAt||row.examDate>node.lastAt)node.lastAt=row.examDate;
+  }
+  return [...exams.entries()].map(([examType,subjects])=>({
+    examType,
+    subjects:[...subjects.entries()].map(([subject,topics])=>({
+      subject,
+      topics:[...topics.values()].map(node=>({
+        topic:node.topic,
+        completed:node.completed,
+        accuracy:node.total?Math.round(node.correct/node.total*100):null,
+        avgSeconds:node.avgSeconds.length?Number(average(node.avgSeconds).toFixed(1)):null,
+        questionTypes:[...node.questionTypes],
+        lastEvidenceAt:node.lastAt
+      }))
+    }))
+  }));
+}
+
+export async function buildCoachStudentAlignmentSignals(studentId:string,now=new Date()){
+  const since=new Date(now.getTime()-42*86400000);
+  const [actions,sessions]=await Promise.all([
+    db.coachingAction.findMany({
+      where:{studentId,createdAt:{gte:since}},
+      select:{status:true,planSource:true,taskDate:true,periodEnd:true,submission:{select:{id:true,submittedAt:true,completionRate:true}}}
+    }),
+    db.coachingSession.findMany({
+      where:{studentId,startsAt:{gte:since}},
+      select:{status:true,startsAt:true,completedAt:true,nextStep:true}
+    })
+  ]);
+  const assigned=actions.length;
+  const completed=actions.filter(x=>x.submission||x.status==='COMPLETED').length;
+  const rescheduled=actions.filter(x=>x.status==='RESCHEDULED'||x.planSource==='CAPACITY_AWARE_RESCHEDULE').length;
+  const followThrough=assigned?Math.round(completed/assigned*100):null;
+  const held=sessions.filter(x=>x.status==='COMPLETED').length;
+  const scheduledPast=sessions.filter(x=>x.startsAt<=now).length;
+  const sessionContinuity=scheduledPast?Math.round(held/scheduledPast*100):null;
+  const nextStepSessions=sessions.filter(x=>x.status==='COMPLETED'&&x.nextStep).length;
+  const signals:string[]=[];
+  if(followThrough!=null)signals.push('Koçun önerdiği yakın dönem görevlerin uygulanma oranı %'+followThrough+'.');
+  if(rescheduled)signals.push(rescheduled+' görev kapasite/kaçırma nedeniyle yeniden planlandı.');
+  if(sessionContinuity!=null)signals.push('Planlanan geçmiş görüşmelerin tamamlanma oranı %'+sessionContinuity+'.');
+  if(held)signals.push(held+' tamamlanan görüşmenin '+nextStepSessions+' tanesinde sonraki adım kaydı var.');
+  return {assignedTasks:assigned,completedTasks:completed,followThrough,rescheduledTasks:rescheduled,sessionContinuity,completedSessions:held,signals};
 }
