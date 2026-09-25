@@ -10,7 +10,9 @@ import {
   buildPlanSimulation,
   buildStudentTimeline,
   buildSubjectLearningModels,
-  buildTopicMastery
+  buildTopicMastery,
+  buildExamKnowledgeMap,
+  buildCoachStudentAlignmentSignals
 } from '@/lib/learningEngine';
 import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 
@@ -31,17 +33,19 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   const student=await ownedStudent(id,user.coachProfile.id);
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
 
-  const [capacity,mastery,subjects,goal,impact,timeline,examReport]=await Promise.all([
+  const [capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment]=await Promise.all([
     buildCapacityProfile(id),
     buildTopicMastery(id),
     buildSubjectLearningModels(id),
     buildGoalDistance(id),
     buildInterventionImpact(id),
     buildStudentTimeline(id),
-    buildLatestExamInterventionReport(id)
+    buildLatestExamInterventionReport(id),
+    buildExamKnowledgeMap(id),
+    buildCoachStudentAlignmentSignals(id)
   ]);
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
