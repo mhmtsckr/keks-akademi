@@ -1,5 +1,5 @@
 KEKS production release trigger
 
-CI-approved source: c8b12cad3755cdfe4b6f892b6c53f62657087b18
-Approved at (UTC): 2026-09-25T08:55:29Z
+CI-approved source: bad9a7b9b4ccdad0c99ff8ca2404a6dda59dd6ec
+Approved at (UTC): 2026-09-25T09:10:00Z
 Quality gate: TypeScript PASS | Unit/Coverage PASS | Integration PASS | Build PASS
