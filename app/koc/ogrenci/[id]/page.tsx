@@ -53,6 +53,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   const studentGroupLabel=isAgsOabt
     ?('AGS/ÖABT'+(oabtField?'- '+oabtField:''))
     :displayExamGroupWithTrack(student.gradeLevel,student.academicTrack);
+  const ordinaryLibraryItems=student.libraryItems.filter(i=>!String(i.note||'').startsWith('KEKS_RESOURCE_V1:'));
   const showAgsStudyArithmetic=isAgsOabt&&Boolean(oabtField)&&coachAssessments.length>0;
   const wrongTopicMap=new Map<string,{subject:string;topic:string;count:number;due:number}>();
   for(const row of student.reviewQueue){
@@ -107,7 +108,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
         ]},
         {label:'RAPORLAMA & PAYLAŞIM',description:'Aylık gelişimi, raporları ve veli erişimini yönet.',items:[
           {href:'#aylik-gelisim',title:'Aylık Gelişim',description:student.weeklyReflections[0]?'Öz değerlendirme verisi hazır':'Veri birikimi bekleniyor'},
-          {href:'#raporlar',title:'Raporlar & Kütüphane',description:student.reports.length+' rapor · '+student.libraryItems.length+' kütüphane kaydı'},
+          {href:'#raporlar',title:'Raporlar & Kütüphane',description:student.reports.length+' rapor · '+ordinaryLibraryItems.length+' kütüphane kaydı'},
           {href:'#veli',title:'Veli Erişimi',description:student.parentProfiles.length+' aktif veli erişimi'}
         ]},
         ...(showAgsStudyArithmetic?[{label:'AGS / ÖABT UZMANLIK ALANI',description:'AGS/ÖABT alanına göre kişisel öğrenci stratejisi.',items:[
@@ -196,7 +197,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
 
     <section id="raporlar" className="section section-anchor"><div className="grid" style={{gridTemplateColumns:'2fr 1fr'}}>
       <div className="card"><h2>Raporlar</h2>{student.reports.length===0?<p className="muted">Henüz rapor yok.</p>:student.reports.map(r=><article key={r.id} style={{padding:'12px 0',borderBottom:'1px solid var(--line)'}}><strong>{r.title}</strong><p className="muted">{r.summary}</p><p>{r.content}</p><a className="btn" href={'/koc/ogrenci/'+student.id+'/rapor/'+r.id}>Raporu Yazdır</a></article>)}</div>
-      <div id="kutuphane" className="card section-anchor"><h2>Kütüphane</h2>{student.libraryItems.length===0?<p className="muted">Henüz kayıt yok.</p>:student.libraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
+      <div id="kutuphane" className="card section-anchor"><h2>Kütüphane</h2>{ordinaryLibraryItems.length===0?<p className="muted">Henüz kayıt yok.</p>:ordinaryLibraryItems.map(i=><div key={i.id} style={{marginBottom:14}}><strong>{i.title}</strong>{i.note&&<div className="muted">{i.note}</div>}{i.fileName&&<a href={'/api/library/'+i.id}>Dosyayı Aç · {i.fileName}</a>}</div>)}</div>
     </div></section>
     <section id="hedef" className="section section-anchor"><TargetManager studentId={student.id} initial={student.targets[0]||null}/></section>
     <section id="veli" className="section section-anchor"><div className="card"><h2>Veli Erişimi</h2><p className="muted">Aktif veli erişimi: {student.parentProfiles.length}</p><p>Yeni veya yenilenmiş veli giriş kodunu yukarıdaki “Veli Girişi Oluştur” bölümünden oluşturabilirsiniz.</p></div></section>
