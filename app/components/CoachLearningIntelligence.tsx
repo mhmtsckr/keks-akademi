@@ -131,6 +131,30 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       </div>}
     </div>
 
+    {data.alignment&&<div className="card">
+      <div className="moduleEyebrow">ÖĞRENCİ–KOÇ ÇALIŞMA UYUMU · PUAN YOK, SOMUT SİNYAL VAR</div>
+      <h2>Önerilerin uygulanma ve görüşme devamlılığı</h2>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))'}}>
+        <div><strong>Görev uygulama</strong><p>{data.alignment.followThrough==null?'—':'%'+data.alignment.followThrough}</p></div>
+        <div><strong>Yeniden planlanan görev</strong><p>{data.alignment.rescheduledTasks}</p></div>
+        <div><strong>Görüşme devamlılığı</strong><p>{data.alignment.sessionContinuity==null?'—':'%'+data.alignment.sessionContinuity}</p></div>
+      </div>
+      {(data.alignment.signals||[]).map((x:string,i:number)=><div className="notice" key={i}>{x}</div>)}
+    </div>}
+
+    {data.examMap?.length>0&&<details className="card">
+      <summary><strong>ÖSYM / MEB sınav haritası · ders → konu → soru tipi</strong></summary>
+      <div className="stack" style={{marginTop:12}}>
+        {data.examMap.map((exam:any)=><div key={exam.examType}>
+          <h3>{exam.examType}</h3>
+          {exam.subjects.map((subject:any)=><div key={subject.subject} style={{marginBottom:10}}>
+            <strong>{subject.subject}</strong>
+            <div className="muted">{subject.topics.slice(0,12).map((t:any)=>t.topic+(t.accuracy==null?'':' %'+t.accuracy)+(t.questionTypes?.length?' ['+t.questionTypes.join(', ')+']':'')).join(' · ')}</div>
+          </div>)}
+        </div>)}
+      </div>
+    </details>}
+
     <div className="card">
       <div className="moduleEyebrow">PLAN SİMÜLATÖRÜ</div>
       <h2>Koç için senaryo denemesi</h2>
