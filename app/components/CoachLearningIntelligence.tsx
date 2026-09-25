@@ -105,6 +105,19 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       </div>
     </div>
 
+    {data.examReport&&<div className="card">
+      <div className="moduleEyebrow">DENEME ANALİZİ & 7 GÜNLÜK MÜDAHALE</div>
+      <h2>{data.examReport.examType}</h2>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))'}}>
+        <div><strong>Toplam değişim</strong><p>{data.examReport.overall?.delta==null?'—':(data.examReport.overall.delta>=0?'+':'')+data.examReport.overall.delta}</p></div>
+        <div><strong>En fazla net kazandıran</strong><p>{data.examReport.biggestGain?data.examReport.biggestGain.subject+' +'+data.examReport.biggestGain.delta:'—'}</p></div>
+        <div><strong>En fazla kayıp</strong><p>{data.examReport.biggestLoss?data.examReport.biggestLoss.subject+' '+data.examReport.biggestLoss.delta:'—'}</p></div>
+      </div>
+      <p className="muted">{data.examReport.timeSignal?.message}</p>
+      {data.examReport.sevenDayPlan?.length>0&&<div className="stack">{data.examReport.sevenDayPlan.map((x:any,i:number)=><div className="row" key={i}><strong>Gün {x.day}</strong><span>{x.subject}{x.topic?' · '+x.topic:''} — {x.task}</span></div>)}</div>}
+      <p className="muted">{data.examReport.note}</p>
+    </div>}
+
     <div className="card">
       <div className="moduleEyebrow">KOÇ KARARLARININ ETKİSİ</div>
       <h2>Müdahale sonrası gözlemsel değişim</h2>
