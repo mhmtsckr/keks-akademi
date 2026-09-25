@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { rebalanceMissedTasksCapacityAware } from '@/lib/learningEngine';
 
 function trKey(d:Date){
   return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
@@ -32,69 +33,8 @@ function examValue(row:any){
 }
 
 export async function rebalanceMissedTasks(studentId:string){
-  const todayKey=trKey(new Date());
-  const today=utcDateFromKey(todayKey);
-  const missed=await db.coachingAction.findMany({
-    where:{
-      studentId,
-      status:'ACTIVE',
-      taskDate:{not:null,lt:today},
-      submission:null,
-      rescheduleSource:null
-    },
-    orderBy:{taskDate:'asc'},
-    take:12
-  });
-  const created:any[]=[];
-  for(const action of missed){
-    const remaining=Math.max(0,Number(action.targetValue)-Number(action.currentValue));
-    if(remaining<=0)continue;
-    const firstDate=addDaysKey(todayKey,1);
-    const secondDate=addDaysKey(todayKey,3);
-    const parts=remaining>=20
-      ? [Math.ceil(remaining*.6),Math.floor(remaining*.4)]
-      : [remaining];
-    const made=await db.$transaction(async tx=>{
-      const ids:string[]=[];
-      for(let i=0;i<parts.length;i++){
-        if(parts[i]<=0)continue;
-        const taskDate=i===0?firstDate:secondDate;
-        const periodEnd=new Date(taskDate);periodEnd.setUTCDate(periodEnd.getUTCDate()+1);
-        const row=await tx.coachingAction.create({data:{
-          studentId,
-          createdByUserId:action.createdByUserId,
-          title:action.title+' · Telafi',
-          description:(action.description? action.description+' · ':'')+'Kaçırılan görev otomatik olarak yeniden planlandı.',
-          metricType:action.metricType,
-          targetValue:parts[i],
-          currentValue:0,
-          cadence:'DAILY',
-          periodStart:taskDate,
-          periodEnd,
-          status:'ACTIVE',
-          subject:action.subject,
-          topic:action.topic,
-          taskDate,
-          planSource:'AUTO_RESCHEDULE'
-        }});
-        ids.push(row.id);
-      }
-      await tx.coachingAction.update({where:{id:action.id},data:{status:'RESCHEDULED'}});
-      await tx.taskReschedule.create({data:{
-        studentId,
-        sourceActionId:action.id,
-        createdActionId:ids[0]||null,
-        createdActionIds:ids as any,
-        originalDate:action.taskDate||action.periodEnd,
-        newDate:firstDate,
-        movedTarget:remaining,
-        reason:'AUTO_MISSED'
-      }});
-      return ids;
-    });
-    created.push({sourceActionId:action.id,createdActionIds:made,movedTarget:remaining});
-  }
-  return created;
+  const result=await rebalanceMissedTasksCapacityAware(studentId);
+  return result.created;
 }
 
 export async function buildStudentCommandCenter(studentId:string){
