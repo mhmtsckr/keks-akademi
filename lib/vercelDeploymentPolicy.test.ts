@@ -13,6 +13,7 @@ describe('Vercel deployment policy',()=>{
   it('builds previews but requires the GitHub CI approval marker for production',()=>{
     const config=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8'));
     const script=fs.readFileSync(path.join(ROOT,'scripts/vercel-ignore-build.sh'),'utf8');
+    expect(config.git?.deploymentEnabled).toEqual({'*':false,main:true});
     expect(config.ignoreCommand).toBe('bash scripts/vercel-ignore-build.sh');
     expect(script).toContain('VERCEL_ENV');
     expect(script).toContain('!= "production"');
