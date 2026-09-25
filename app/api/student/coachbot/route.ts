@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { buildWeeklyPlan } from '@/lib/smartCoach';
+import { isFeatureEnabled } from '@/lib/systemConfig';
 
 const schema=z.object({message:z.string().min(2).max(2000)});
 
@@ -24,23 +25,19 @@ function fallbackReply(message:string,student:any){
 async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('SMART_COACH',user.student.studentCode)))return NextResponse.json({error:'KEKS Rehber bu hesap için etkin değil.'},{status:403});
   const {message}=await readJson(req, schema);
   const student=await db.student.findUnique({where:{id:user.student.id},include:{practiceLogs:{orderBy:{date:'desc'},take:20},coachingActions:{where:{status:'ACTIVE'},orderBy:{periodEnd:'asc'},take:10},plans:{where:{active:true},orderBy:{updatedAt:'desc'},take:3}}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
   await db.coachBotMessage.create({data:{studentId:student.id,role:'user',content:message}});
   let reply=fallbackReply(message,student);
-  let revisedPlan=false;
+  let planPreview='';
   if(/(plan|program).*(revize|güncelle|yenile)|(?:revize|güncelle|yenile).*(plan|program)/i.test(message)){
     try{
       const plan=await buildWeeklyPlan(student.id);
-      await db.studyPlan.create({data:{
-        studentId:student.id,
-        title:'Rehber Bot · Revize Haftalık Program · '+new Date().toLocaleDateString('tr-TR'),
-        payload:plan,
-        active:true
-      }});
-      revisedPlan=true;
-      reply+=' Yeni 7 günlük çalışma programını performans verilerine göre oluşturdum ve öğrenci paneline kaydettim.';
+      const preview=plan.days.slice(0,3).flatMap((day:any)=>day.tasks.slice(0,2).map((task:any)=>task.title)).slice(0,5);
+      planPreview=' Koçunla değerlendirmek üzere plan taslağı önerisi: '+(preview.join(' · ')||'mevcut verilerle yeterli görev önerisi oluşmadı')+'. Bu taslak mevcut programını otomatik değiştirmez.';
+      reply+=planPreview;
     }catch{}
   }
   if(process.env.OPENAI_API_KEY&&process.env.OPENAI_MODEL){
@@ -49,7 +46,7 @@ async function POST__handler(req:Request){
       if(r.ok){
         const j:any=await r.json();
         const ai=j.output_text||reply;
-        reply=revisedPlan?ai+' Ayrıca revize edilmiş 7 günlük program öğrenci paneline kaydedildi.':ai;
+        reply=ai+(planPreview?planPreview:'');
       }
     }catch{}
   }

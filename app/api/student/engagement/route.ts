@@ -6,6 +6,7 @@ import { requireRole } from '@/lib/auth';
 import { awardXp } from '@/lib/gamification';
 import { chooseWeakTopic,generateMicroGame } from '@/lib/microGameGenerator';
 import { gameAudiencesForGradeLevel } from '@/lib/mebCoreQuestionBank';
+import { isFeatureEnabled } from '@/lib/systemConfig';
 
 const actionSchema=z.object({action:z.literal('progress'),id:z.string(),currentValue:z.number().min(0)});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
@@ -17,6 +18,7 @@ const schema=z.discriminatedUnion('action',[actionSchema,gameSchema,analyticSche
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('GAMIFICATION',user.student.studentCode)))return NextResponse.json({error:'Oyunlaştırma bu hesap için etkin değil.'},{status:403});
   const id=user.student.id;
   const studentRow=await db.student.findUnique({where:{id},select:{gradeLevel:true}});
   const gameAudiences=gameAudiencesForGradeLevel(studentRow?.gradeLevel);
@@ -58,6 +60,7 @@ async function GET__handler(){
 async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('GAMIFICATION',user.student.studentCode)))return NextResponse.json({error:'Oyunlaştırma bu hesap için etkin değil.'},{status:403});
   const input=await readJson(req, schema);
   if(input.action==='generate_game'){
     const weak=await chooseWeakTopic(user.student.id);

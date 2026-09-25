@@ -34,9 +34,11 @@ function safeMessage(error:unknown){
     .slice(0,500);
 }
 
-export async function recordApiError(req:Request|null,error:unknown,requestId:string){
-  const endpoint=req?new URL(req.url).pathname:'unknown';
-  const method=req?.method||'UNKNOWN';
+export async function recordServerError(input:{endpoint:string;method:string;requestId:string;error:unknown}){
+  const endpoint=input.endpoint.split('?')[0].slice(0,500)||'unknown';
+  const method=input.method.slice(0,16)||'UNKNOWN';
+  const requestId=input.requestId;
+  const error=input.error;
   const metadata={
     requestId,
     endpoint,
@@ -61,4 +63,13 @@ export async function recordApiError(req:Request|null,error:unknown,requestId:st
     console.error('API_ERROR_LOG_FAILED',requestId);
   }
   return metadata;
+}
+
+export async function recordApiError(req:Request|null,error:unknown,requestId:string){
+  return recordServerError({
+    endpoint:req?new URL(req.url).pathname:'unknown',
+    method:req?.method||'UNKNOWN',
+    requestId,
+    error
+  });
 }
