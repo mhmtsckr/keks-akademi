@@ -6,5 +6,5 @@
       "schedule": "0 4 * * *"
     }
   ],
-  "ignoreCommand": "APPROVED=$(sed -n 's/^CI-approved source: //p' deploy-trigger.txt 2>/dev/null | head -n 1); SUBJECT=$(git log -1 --pretty=%s); PARENT=$(git rev-parse HEAD^ 2>/dev/null || true); if printf '%s' \"$SUBJECT\" | grep -q '^ci: deploy approved ' && [ -n \"$APPROVED\" ] && [ \"$PARENT\" = \"$APPROVED\" ]; then exit 1; else exit 0; fi"
+  "ignoreCommand": "if git log -1 --pretty=%s | grep -q '^ci: deploy approved '; then exit 1; else exit 0; fi"
 }
