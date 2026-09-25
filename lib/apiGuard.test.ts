@@ -53,22 +53,27 @@ describe('withApiErrors', () => {
     expect(govde.details.length).toBeGreaterThan(0);
   });
 
-  // Sarmalayıcının asıl riski, beklenmedik arızaları 400/401 arkasına
-  // gizlemesidir. Bunun olmadığı açıkça doğrulanıyor.
-  it('bilinmeyen hataları yutmaz, yukarı iletir', async () => {
-    await expect(
-      withApiErrors(async () => {
-        throw new Error('veritabani patladi');
-      })(),
-    ).rejects.toThrow('veritabani patladi');
+  it('bilinmeyen hatayı güvenli 500 yanıtına ve request IDye çevirir', async () => {
+    const req=new Request('http://localhost/api/test-error');
+    const yanit=await withApiErrors(async (_req:Request) => {
+      throw new Error('veritabani patladi');
+    })(req);
+    expect(yanit.status).toBe(500);
+    const body=await yanit.json() as {error:string;requestId:string};
+    expect(body.error).toBe('Beklenmeyen bir sunucu hatası oluştu.');
+    expect(typeof body.requestId).toBe('string');
+    expect(yanit.headers.get('x-request-id')).toBe(body.requestId);
   });
 
-  it('Error olmayan fırlatmaları da yukarı iletir', async () => {
-    await expect(
-      withApiErrors(async () => {
-        throw 'ham metin';
-      })(),
-    ).rejects.toBe('ham metin');
+  it('Error olmayan fırlatmaları da ayrıntı sızdırmadan 500e çevirir', async () => {
+    const req=new Request('http://localhost/api/raw-error');
+    const yanit=await withApiErrors(async (_req:Request) => {
+      throw 'ham metin';
+    })(req);
+    expect(yanit.status).toBe(500);
+    const body=await yanit.json() as {error:string;requestId:string};
+    expect(body.error).toBe('Beklenmeyen bir sunucu hatası oluştu.');
+    expect(body).not.toHaveProperty('details');
   });
 });
 

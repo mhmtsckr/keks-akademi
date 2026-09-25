@@ -172,7 +172,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
         priority
         unoptimized
       />
-      <div className="keksProductVisualBadge">%{product?.discountPercent||50} İNDİRİM</div>
+      <div className="keksProductVisualBadge">%{product?.discountPercent!=null?product.discountPercent:'—'} İNDİRİM</div>
     </div>
     <div className="keksProductHero">
       <div>
@@ -185,10 +185,10 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
         </div>
       </div>
       <div className="keksProductPrice">
-        <small>%{product?.discountPercent||50} İNDİRİMLİ SATIŞ</small>
-        <span className="keksProductOldPrice">{product?.listPriceLabel||'800 TL'}</span>
-        <strong>{product?.priceLabel||'400 TL'}</strong>
-        <span>Normal fiyat {product?.listPriceLabel||'800 TL'} · Tek kullanıcı · tek çözüm</span>
+        <small>%{product?.discountPercent!=null?product.discountPercent:'—'} İNDİRİMLİ SATIŞ</small>
+        <span className="keksProductOldPrice">{product?.listPriceLabel||'Fiyat yükleniyor'}</span>
+        <strong>{product?.priceLabel||'Fiyat yükleniyor'}</strong>
+        <span>Normal fiyat {product?.listPriceLabel||'Fiyat yükleniyor'} · Tek kullanıcı · tek çözüm</span>
       </div>
     </div>
 
@@ -205,14 +205,14 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
 
       <div className="keksProductAccess">
         <div className="moduleEyebrow">KOD GEREKMEZ</div>
-        <h3><span className="keksProductOldPrice inline">{product?.listPriceLabel||'800 TL'}</span> {product?.priceLabel||'400 TL'} ile satın al</h3>
-        <p className="muted">Kodunuz yoksa %{product?.discountPercent||50} indirimli fiyatla PayTR üzerinden güvenli ödeme yapabilirsiniz. Aşağıdaki iletişim bilgilerini doldurup devam ettiğinizde kart bilgilerinizi bir sonraki güvenli PayTR ödeme ekranında girersiniz. Ödeme doğrulandığında ürün hesabınıza otomatik tanımlanır; kart bilgileriniz KEKS Akademi sunucularında saklanmaz.</p>
+        <h3><span className="keksProductOldPrice inline">{product?.listPriceLabel||'Fiyat yükleniyor'}</span> {product?.priceLabel||'Fiyat yükleniyor'} ile satın al</h3>
+        <p className="muted">Kodunuz yoksa %{product?.discountPercent!=null?product.discountPercent:'—'} indirimli fiyatla PayTR üzerinden güvenli ödeme yapabilirsiniz. Aşağıdaki iletişim bilgilerini doldurup devam ettiğinizde kart bilgilerinizi bir sonraki güvenli PayTR ödeme ekranında girersiniz. Ödeme doğrulandığında ürün hesabınıza otomatik tanımlanır; kart bilgileriniz KEKS Akademi sunucularında saklanmaz.</p>
         <form className="form" onSubmit={pay}>
           <div className="field"><label>E-posta</label><input name="email" type="email" required/></div>
           <div className="field"><label>Ad soyad</label><input name="userName" required/></div>
           <div className="field"><label>Telefon</label><input name="userPhone" required/></div>
           <div className="field"><label>Adres</label><textarea name="userAddress" required/></div>
-          <button className="btn primary" disabled={busy}>{busy?'Hazırlanıyor…':(product?.priceLabel||'400 TL')+' ile Güvenli Ödemeye Geç'}</button>
+          <button className="btn primary" disabled={busy}>{busy?'Hazırlanıyor…':(product?.priceLabel?product.priceLabel+' ile Güvenli Ödemeye Geç':'Güvenli Ödemeye Geç')}</button>
         </form>
         <div className="checkoutLegalLinks">
           <span>Satın alma öncesi:</span>

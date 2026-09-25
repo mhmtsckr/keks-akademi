@@ -74,7 +74,7 @@ export function SmartCoachDashboard(){
       <div className="card planActionCard">
         <div className="moduleEyebrow">HAFTALIK PLAN</div>
         <h2>Akıllı programı güncelle</h2>
-        <p className="muted">Zayıf ders, tamamlanmamış konu ve tekrar kuyruğuna göre 7 günlük çalışma akışı oluşturur.</p>
+        <p className="muted">Son doğruluk verileri, tamamlanmamış konular ve tekrar kuyruğuna göre açıklanabilir 7 günlük çalışma akışı oluşturur. Bu öneri kesin karar değildir.</p>
         <button className="btn primary" onClick={savePlan}>Bu Haftanın Programını Oluştur</button>
       </div>
 
@@ -85,7 +85,7 @@ export function SmartCoachDashboard(){
       </div>
     </div>
 
-    {plan&&<div className="card weeklyPlanCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">7 GÜNLÜK PLAN</div><h2>Bu haftanın çalışma akışı</h2></div><span className="moduleIcon">▦</span></div><div className="weeklyPlanGrid">{plan.days.map((d:any)=><div className="dayPlan" key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR',{weekday:'long'})}</strong><span className="dayDate">{new Date(d.date).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}</span>{d.tasks.length===0?<p className="muted">Dinlenme / telafi</p>:d.tasks.map((t:any,i:number)=><div className="dayTask" key={i}><span>{t.type}</span><b>{t.title}</b><small>{t.duration} dk{t.questions?' · '+t.questions+' soru':''}</small></div>)}</div>)}</div></div>}
+    {plan&&<div className="card weeklyPlanCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">7 GÜNLÜK PLAN</div><h2>Bu haftanın çalışma akışı</h2></div><span className="moduleIcon">▦</span></div>{plan.explanation&&<div className="notice"><strong>Plan neden böyle?</strong><div className="muted">{plan.explanation}</div></div>}<div className="weeklyPlanGrid">{plan.days.map((d:any)=><div className="dayPlan" key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR',{weekday:'long'})}</strong><span className="dayDate">{new Date(d.date).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}</span>{d.tasks.length===0?<p className="muted">Dinlenme / telafi</p>:d.tasks.map((t:any,i:number)=><div className="dayTask" key={i}><span>{t.type}</span><b>{t.title}</b><small>{t.duration} dk{t.questions?' · '+t.questions+' soru':''}</small>{t.reason&&<small className="muted">{t.reason}</small>}</div>)}</div>)}</div></div>}
 
     <div className="card trendCard">
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">NET TRENDLERİ</div><h2>Ders bazlı gelişim</h2></div><span className="moduleIcon">⌁</span></div>

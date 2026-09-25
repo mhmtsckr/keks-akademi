@@ -5,6 +5,9 @@ import { AdminGameCMS } from '@/app/components/AdminGameCMS';
 import { AdminAssessmentWorkflow } from '@/app/components/AdminAssessmentWorkflow';
 import { AdminCoachQuickApprovals } from '@/app/components/AdminCoachQuickApprovals';
 import { AccountSecurity } from '@/app/components/AccountSecurity';
+import { AdminProductConfig } from '@/app/components/AdminProductConfig';
+import { AdminFeatureFlags } from '@/app/components/AdminFeatureFlags';
+import { AdminErrorMonitor } from '@/app/components/AdminErrorMonitor';
 
 type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
@@ -348,7 +351,8 @@ export function AdminConsole(){
     </section>}
 
     {tab==='payments'&&<section className="adminPanelSection">
-      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">FİNANS & AYLIK ÜRÜN ERİŞİMİ</div><h2>KEKS Test Ürünü · Ödeme & Kodlar</h2><p className="muted">“KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu” için PayTR ödemelerini ve ürün erişim kodlarını tek yerde yönetin. Normal fiyat 800 TL, %50 indirimli satış fiyatı 400 TL’dir. Yeni öğrenci kaydında öğrenciye bağlı aylık KEKS ürün kodu otomatik oluşturulur ve burada yöneticiye görünür. Ürün her kullanıcı için ay bazında yalnızca bir kez tamamlanabilir.</p></div><button className="btn primary" onClick={makeCode}>Yeni Ürün Kodu Oluştur</button></div>
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">FİNANS & AYLIK ÜRÜN ERİŞİMİ</div><h2>KEKS Test Ürünü · Ödeme & Kodlar</h2><p className="muted">PayTR ödemelerini, merkezi ürün fiyatını ve aylık ürün erişim kodlarını tek yerde yönetin. Fiyat rakamları arayüzde sabit tutulmaz; ödeme ve ürün ekranları aşağıdaki merkezi kaynaktan beslenir.</p></div><button className="btn primary" onClick={makeCode}>Yeni Ürün Kodu Oluştur</button></div>
+      <AdminProductConfig/>
       <div className="adminPaymentStats">{paymentTotals.map((x:any)=><div className="card" key={x.status}><div className="moduleEyebrow">{x.status}</div><div className="kpi">{x._count._all}</div><div className="muted">{money(x._sum.amountKurus||0)}</div></div>)}</div>
       <div className="card adminTableCard"><h3>Son Ödemeler</h3><table className="table"><thead><tr><th>Öğrenci</th><th>İşlem</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>{payments.map(p=><tr key={p.id}><td><strong>{p.student.fullName}</strong><div className="muted">{p.student.studentCode}</div></td><td>{p.merchantOid}<div className="muted">{dt(p.createdAt)}</div></td><td>{money(p.amountKurus)}</td><td><span className={'adminStatus '+p.status.toLowerCase()}>{p.status}</span></td><td><div className="row"><button className="btn" onClick={()=>setPayment(p.id,'PENDING')}>Bekleyen</button><button className="btn danger" onClick={()=>setPayment(p.id,'FAILED')}>Başarısız</button><button className="btn" onClick={()=>setPayment(p.id,'REFUNDED')}>İade</button></div></td></tr>)}</tbody></table></div>
       <div className="adminAccessGrid">
@@ -381,8 +385,11 @@ export function AdminConsole(){
         <HealthCard label="Rapor E-postası / Gmail" ok={health.reportEmail} detail={health.reportEmail?(health.reportEmailAddress||'keksakademi@gmail.com')+' · Gönderim hazır':'Gmail bağlantısı bekleniyor'}/>
         <HealthCard label="Uygulama URL" ok={health.appUrl} detail={health.appUrl?'Yapılandırıldı':'Eksik'}/>
         <HealthCard label="Son 24 saat audit" ok={true} detail={String(health.recentAudit)+' kayıt'}/>
+        <HealthCard label="API 500 · Son 24 saat" ok={(health.apiErrors?.last24h||0)===0} detail={String(health.apiErrors?.last24h||0)+' hata'+(health.apiErrors?.lastRequestId?' · son ID '+health.apiErrors.lastRequestId:'')}/>
         <HealthCard label="Son başarılı yedek" ok={health.backup?.status==='RECENT'} detail={health.backup?.lastSuccessfulAt?new Date(health.backup.lastSuccessfulAt).toLocaleString('tr-TR')+(health.backup.status==='STALE'?' · 48 saati aştı':''): 'Başarılı yedek kaydı yok'}/>
       </div>}
+      <AdminFeatureFlags/>
+      <AdminErrorMonitor/>
       <div className="card" style={{marginBottom:16}}>
         <div className="moduleEyebrow">ÖDEME ENTEGRASYONU</div>
         <h3>PayTR iFrame API Yapılandırması</h3>
@@ -399,7 +406,7 @@ export function AdminConsole(){
       <div className="card" style={{marginBottom:16}}>
         <div className="moduleEyebrow">ÖĞRENCİ KAYIT E-POSTASI</div>
         <h3>keksakademi@gmail.com Gönderici Bağlantısı</h3>
-        <p className="muted">Öğrenci kayıt olduğunda öğrenci kodu, 1 yıl geçerli giriş anahtarı ve son geçerlilik tarihi doğrudan bu Gmail hesabından kayıt sırasında girilen Gmail adresine otomatik gönderilir.</p>
+        <p className="muted">Öğrenci kayıt ve şifre yenileme doğrulama e-postaları bu hesaptan gönderilir. Kullanıcı şifresi hiçbir zaman e-postayla gönderilmez veya yöneticiye gösterilmez.</p>
         {health?.gmail
           ? <div className="notice"><strong>Bağlı:</strong> {health.gmailAddress||'keksakademi@gmail.com'} · Otomatik kayıt e-postaları aktif.</div>
           : <div className="notice">Google hesabında 2 Adımlı Doğrulamayı açıp KEKS Akademi için 16 karakterli bir Uygulama Şifresi oluşturun. Şifre yalnızca güvenli, şifrelenmiş biçimde saklanır.</div>}

@@ -51,7 +51,7 @@ export async function computeGoalProgress(studentId:string){
   }
   if(!scores.length) return {percent:null,label:'Karşılaştırma için veri yetersiz',details};
   const percent=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
-  return {percent,label:percent>=100?'Hedef seviyesinde':percent>=80?'Hedefe yakın':percent>=60?'Gelişim gerekli':'Hedefe uzak',details};
+  return {percent,label:percent>=100?'Hedef referansına ulaşıldı':percent>=80?'Hedef referansına yakın':percent>=60?'Hedef referansına doğru ilerliyor':'Hedef referansıyla arada fark var',details};
 }
 
 export async function buildWeeklyPlan(studentId:string){
@@ -65,7 +65,7 @@ export async function buildWeeklyPlan(studentId:string){
   if(!student) throw new Error('Öğrenci bulunamadı');
   const bySubject=new Map<string,{q:number;c:number;w:number;n:number}>();
   for(const p of practice){const x=bySubject.get(p.subject)||{q:0,c:0,w:0,n:0};x.q+=p.total;x.c+=p.correct;x.w+=p.wrong;x.n+=p.net;bySubject.set(p.subject,x);}
-  const weak=[...bySubject.entries()].map(([subject,x])=>({subject,accuracy:x.q?x.c/x.q:1,net:x.n})).sort((a,b)=>a.accuracy-b.accuracy);
+  const weak=[...bySubject.entries()].map(([subject,x])=>({subject,accuracy:x.q?x.c/x.q:1,net:x.n,questions:x.q})).sort((a,b)=>a.accuracy-b.accuracy);
   const incomplete=topics.filter(x=>!x.completed);
   const today=new Date();today.setHours(0,0,0,0);
   const days=[] as any[];
@@ -73,13 +73,18 @@ export async function buildWeeklyPlan(studentId:string){
     const date=new Date(today);date.setDate(date.getDate()+i);
     const tasks:any[]=[];
     const due=reviews.filter(r=>new Date(r.dueAt).toDateString()===date.toDateString());
-    if(due.length) tasks.push({type:'REVIEW',title:`${due.length} yanlış soru tekrarı`,duration:20});
+    if(due.length) tasks.push({type:'REVIEW',title:`${due.length} yanlış soru tekrarı`,duration:20,reason:'Bu soruların tekrar tarihi bugün olduğu için plana alındı.'});
     const weakSub=weak[i%Math.max(weak.length,1)];
     const topic=incomplete.find(t=>!weakSub||t.subject===weakSub.subject)||incomplete[i%Math.max(incomplete.length,1)];
-    if(topic) tasks.push({type:'TOPIC',title:`${topic.subject} · ${topic.topic}`,duration:40});
-    if(weakSub) tasks.push({type:'PRACTICE',title:`${weakSub.subject} kısa test`,duration:30,questions:weakSub.accuracy<.5?10:15});
-    if(i===6) tasks.push({type:'REVIEW_WEEK',title:'Haftalık değerlendirme ve yeni hedef kontrolü',duration:20});
+    if(topic) tasks.push({type:'TOPIC',title:`${topic.subject} · ${topic.topic}`,duration:40,reason:'Konu ilerleme kaydında henüz tamamlanmadığı için plana alındı.'});
+    if(weakSub) tasks.push({type:'PRACTICE',title:`${weakSub.subject} kısa test`,duration:30,questions:weakSub.accuracy<.5?10:15,reason:`Son kayıtlarındaki ${weakSub.questions} soruda doğruluk %${Math.round(weakSub.accuracy*100)} olduğu için kısa ölçüm önerildi.`});
+    if(i===6) tasks.push({type:'REVIEW_WEEK',title:'Haftalık değerlendirme ve yeni hedef kontrolü',duration:20,reason:'Haftanın sonunda uygulanan plan ile gerçekleşen performansı karşılaştırmak için.'});
     days.push({date:date.toISOString(),tasks});
   }
-  return {goal,days};
+  return {
+    goal,
+    explanation:'Bu plan; vadesi gelen tekrarlar, tamamlanmamış konular ve son soru kayıtlarındaki doğruluk verileri kullanılarak oluşturulur. Bir kesin başarı tahmini veya kişilik kararı değildir.',
+    inputs:{practiceRecords:practice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length},
+    days
+  };
 }

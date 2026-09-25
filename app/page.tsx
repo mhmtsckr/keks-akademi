@@ -80,7 +80,7 @@ export default function Home() {
             </svg>
           </div>
           <div className="homeAcademy">AKADEMİ</div>
-          <p className="homeTagline">Enneagram yöntemiyle kişiye özel eğitim, akıllı çalışma planı ve sürekli koçluk takibi.</p>
+          <p className="homeTagline">Eğitsel eğilim, çalışma davranışı ve akademik performans verileriyle kişiye özel planlama ve sürekli koçluk takibi.</p>
           <div className="homeActions">
             <a className="homeBtn homeBtnGold" href="/ogrenci">Öğrenci Girişi</a>
             <a className="homeBtn homeBtnGhost" href="/koc">Koç Paneli</a>

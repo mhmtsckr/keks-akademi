@@ -88,14 +88,14 @@ const systems=[
     lead:'Koçun yalnızca kayıt tutmasını değil; hangi öğrenciye, hangi konuda ve ne zaman müdahale etmesi gerektiğini görmesini sağlar.',
     accent:'Görüşme öncesi otomatik özet, haftanın kritik değişimlerini tek ekranda toplar.',
     features:[
-      'Öğrenci risk uyarıları ve önceliklendirme',
+      'Açıklanabilir müdahale sinyalleri ve önceliklendirme',
       'Ön görüşme ve eğilim sonuçlarının kontrollü görünümü',
       'Günlük görev ve tamamlanmamış iş takibi',
       'Koç notları, görüşme kararları ve sonraki adımlar',
       'Program düzenleme ve öğrenciye görev atama',
       'Bu hafta ne değişti? + görüşülecek 3 konu özeti'
     ],
-    metrics:['Risk','Görüşme','Görev','Müdahale']
+    metrics:['Öncelik','Görüşme','Görev','Müdahale']
   },
   {
     no:'06',

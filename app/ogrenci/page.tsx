@@ -7,7 +7,8 @@ import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation'
 import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
 import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
-import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
+import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
+import { getStudentFeatureSnapshot } from '@/lib/systemConfig';
 import { StudentEngagementHub } from '@/app/components/StudentEngagementHub';
 import { StudentDailyTasks } from '@/app/components/StudentDailyTasks';
 import { StudentPreInterview } from '@/app/components/StudentPreInterview';
@@ -73,11 +74,12 @@ export default async function StudentPage() {
   });
   if (!student) return null;
 
+  const featureFlags=await getStudentFeatureSnapshot(student.studentCode);
   const access = student.testAccesses[0];
   const latestAssessment=student.assessments[0];
   const latestReport=(latestAssessment?.report&&typeof latestAssessment.report==='object'&&!Array.isArray(latestAssessment.report)?latestAssessment.report:{}) as Record<string,any>;
   const latestWorkflow=String(latestReport.workflowStatus||'');
-  const currentProduct=keksMonthlyProduct();
+  const currentProduct=await getKeksMonthlyProduct();
   const latestProductKey=latestAssessment?productKeyFromReport(latestAssessment.report,latestAssessment.completedAt):null;
   const showPreInterview=Boolean(latestAssessment&&
     ['PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED','COMPLETED'].includes(latestWorkflow)&&
@@ -120,12 +122,12 @@ export default async function StudentPage() {
           {href:'#ogrenme-tekrar',title:'Çalışma Teknikleri',description:'Pomodoro, aktif hatırlama, Feynman ve diğer teknikler'}
         ]},
         {label:'AKADEMİK PERFORMANS',description:'Net, konu, doğruluk ve hedef gelişimini izle.',items:[
-          {href:'#akilli-koc',title:'Akıllı Koç',description:'Hedefe yaklaşma, trend ve haftalık öneriler'},
+          ...(featureFlags.SMART_COACH?[{href:'#akilli-koc',title:'Akıllı Koç',description:'Hedefe yaklaşma, trend ve haftalık öneriler'}]:[]),
           {href:'#akademik-performans',title:'Konu & Soru Analizi',description:'Doğru, yanlış, boş, net ve hata nedenleri'}
         ]},
-        {label:'KOÇLUK & OYUNLAŞTIRMA',description:'Koçluk aksiyonları, seanslar, XP ve mikro tekrar.',items:[
+        ...(featureFlags.GAMIFICATION?[{label:'KOÇLUK & OYUNLAŞTIRMA',description:'Koçluk aksiyonları, seanslar, XP ve mikro tekrar.',items:[
           {href:'#kocluk-oyunlastirma',title:'Koçluk & Oyunlaştırma',description:'Aksiyon, seans, XP, rozet ve mikro tekrar'}
-        ]},
+        ]}]:[]),
         {label:'RAPORLAR & KAYITLAR',description:'Geçmiş çalışmalar, denemeler ve koç raporları.',items:[
           {href:'#kayitlar-raporlar',title:'Kayıtlar & Raporlar',description:'Çalışma geçmişi, denemeler, raporlar ve kütüphane'}
         ]},
@@ -156,9 +158,9 @@ export default async function StudentPage() {
     </section>
 
     <section id="yanlis-soru-bankasi" className="section section-anchor"><PortalSectionTitle eyebrow="0–1–3–7–14–28 TEKRAR MOTORU" title="Günlük Yanlış Soru Bankam" description="Her derste yanlış yaptığın soruyu yükle. KEKS konuyu otomatik sınıflandırır ve tekrar gününde soruyu yeniden görev olarak önüne getirir."/><StudentWrongQuestionBank defaultExam={defaultWrongExam}/></section>
-    <section className="section"><AdaptiveRecommendation/></section>
-    <section id="akilli-koc" className="section section-anchor"><SmartCoachDashboard/></section>
-    <section id="kocluk-oyunlastirma" className="section section-anchor"><PortalSectionTitle eyebrow="KOÇLUK & OYUNLAŞTIRMA" title="Aksiyonlar, seanslar, XP ve mikro tekrar" description="Koçluk sürecindeki görevleri, seansları, puanları, rozetleri ve kısa öğrenme oyunlarını tek alanda yönet."/><StudentEngagementHub/></section>
+    {featureFlags.ADAPTIVE_RECOMMENDATION&&<section className="section"><AdaptiveRecommendation/></section>}
+    {featureFlags.SMART_COACH&&<section id="akilli-koc" className="section section-anchor"><SmartCoachDashboard/></section>}
+    {featureFlags.GAMIFICATION&&<section id="kocluk-oyunlastirma" className="section section-anchor"><PortalSectionTitle eyebrow="KOÇLUK & OYUNLAŞTIRMA" title="Aksiyonlar, seanslar, XP ve mikro tekrar" description="Koçluk sürecindeki görevleri, seansları, puanları, rozetleri ve kısa öğrenme oyunlarını tek alanda yönet."/><StudentEngagementHub/></section>}
 
     <section id="ogrenme-tekrar" className="section section-anchor">
       <PortalSectionTitle eyebrow="AKILLI ÖĞRENME LABORATUVARI" title="Ders Çalışma Teknikleri ve Tekrar Motoru" description="Tekniği seç, hemen uygula; yanlış soru ve aralıklı tekrarlarını aynı öğrenme döngüsünde yönet."/>
@@ -186,7 +188,7 @@ export default async function StudentPage() {
 
     <section id="hesap-guvenligi" className="section section-anchor"><PortalSectionTitle eyebrow="HESAP & GÜVENLİK" title="Hesap Güvenliği" description="Şifrenizi, son girişlerinizi ve aktif oturumlarınızı yönetin."/><AccountSecurity loginPath="/ogrenci"/></section>
 
-    <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="KEKS AKADEMİ TEST ÜRÜNLERİ" title="Aylık KEKS Akademi Test Ürünü" description="Ürün erişiminiz yoksa test soruları görünmez. Yönetici/koç tarafından verilen kodla veya 400 TL ödeme ile aylık ürünü hesabınıza tanımlayabilirsiniz."/><StudentActions hasAccess={Boolean(access)}/></section>
+    <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="KEKS AKADEMİ TEST ÜRÜNLERİ" title="Aylık KEKS Akademi Test Ürünü" description={'Ürün erişiminiz yoksa test soruları görünmez. Yönetici/koç kodu veya merkezi satış fiyatı '+currentProduct.priceLabel+' ile aylık ürünü hesabınıza tanımlayabilirsiniz.'}/><StudentActions hasAccess={Boolean(access)}/></section>
     {showPreInterview&&<section className="section"><PortalSectionTitle eyebrow="ÜRÜN AŞAMASI 2/2" title="Eğitim Düzeyine Göre Ön Görüşme" description="Bu bölüm yalnızca aynı aylık ürünün KEKS Eğilim Taraması tamamlandıktan sonra açılır. Form bir kez tamamlanabilir."/><StudentPreInterview/></section>}
   </PortalShell>;
 }
