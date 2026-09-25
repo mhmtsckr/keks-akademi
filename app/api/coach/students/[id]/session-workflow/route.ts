@@ -92,6 +92,23 @@ async function buildBrief(studentId:string){
   if(regressedArea)agenda.push(regressedArea.subject+' doğruluğu önceki haftaya göre '+Math.abs(regressedArea.delta||0)+' puan geriledi.');
   if(developedArea)agenda.push(developedArea.subject+' doğruluğu önceki haftaya göre '+Math.abs(developedArea.delta||0)+' puan gelişti; sürdürülebilirliği konuş.');
   const talkTopics=agenda.slice(0,3);
+  const questions=[
+    developedArea
+      ? developedArea.subject+' alanındaki gelişimde bu hafta en çok ne işe yaradı?'
+      : 'Bu hafta en iyi giden çalışma davranışı neydi?',
+    regressedArea
+      ? regressedArea.subject+' alanındaki gerilemenin ana nedeni sence neydi?'
+      : 'Bu hafta seni en çok zorlayan ders veya görev neydi?',
+    overdueActions[0]
+      ? 'Geciken “'+overdueActions[0].title+'” görevinin tamamlanmasını ne engelledi?'
+      : 'Programın günlük kapasiten açısından gerçekçi miydi?',
+    reviews.length
+      ? reviews.length+' bekleyen tekrarın içinden en çok zorlandığın konu hangisi?'
+      : 'Tekrar sisteminde hangi konuyu daha sık görmek istiyorsun?',
+    lastSession?.nextStep
+      ? 'Geçen görüşmede belirlenen “'+lastSession.nextStep+'” adımında ne kadar ilerledin?'
+      : 'Gelecek hafta tek bir şeyi değiştirsen en yüksek katkıyı ne sağlar?'
+  ];
   return {
     generatedAt:now.toISOString(),
     last7Days:{practiceEntries:practice.length,totalQuestions:currentPractice.totalQuestions},
@@ -111,7 +128,8 @@ async function buildBrief(studentId:string){
     latestExam:recentExams[0]?{examType:recentExams[0].examType,createdAt:recentExams[0].createdAt,payload:recentExams[0].payload}:null,
     previousSession:lastSession?{startsAt:lastSession.startsAt,outcome:lastSession.outcome,nextStep:lastSession.nextStep}:null,
     agenda,
-    talkTopics
+    talkTopics,
+    questions
   };
 }
 

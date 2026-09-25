@@ -64,6 +64,7 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
         </div>
       </div>}
       {brief?.talkTopics?.length>0&&<div className="briefAgenda"><h3>Bu görüşmede konuşulması gereken 3 konu</h3>{brief.talkTopics.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
+      {brief?.questions?.length>0&&<div className="briefAgenda"><h3>GÖRÜŞMEDE SORULACAK 5 SORU</h3>{brief.questions.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
       {brief?.weakSubjects?.length>0&&<div className="row" style={{flexWrap:'wrap',marginTop:12}}>{brief.weakSubjects.map((x:any)=><span className="pill" key={x.subject}>{x.subject} · %{x.accuracy}</span>)}</div>}
     </div>
 

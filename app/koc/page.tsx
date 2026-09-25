@@ -9,6 +9,7 @@ import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { AccountSecurity } from '@/app/components/AccountSecurity';
+import { CoachMorningBrief } from '@/app/components/CoachMorningBrief';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -121,10 +122,15 @@ export default async function CoachPage() {
     meta={<><span>{students.length} öğrenci</span><span>Kişisel takip</span><span>Akıllı uyarılar</span></>}
     wide
   >
+    <section id="morning-brief" className="section section-anchor">
+      <CoachMorningBrief/>
+    </section>
+
     <section className="section">
       <PanelNavigator roleLabel="Koç" groups={[
         {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[
-          {href:'#koc-komuta',title:'Koç Komuta Merkezi',description:'Takip sinyalleri, seanslar ve geciken aksiyonlar',badge:'BUGÜN'}
+          {href:'#morning-brief',title:'Morning Brief',description:'Bugün müdahale gerektiren öğrenciler',badge:'BUGÜN'},
+          {href:'#koc-komuta',title:'Koç Komuta Merkezi',description:'Takip sinyalleri, seanslar ve geciken aksiyonlar'}
         ]},
         {label:'ÖĞRENCİ ERİŞİMİ',description:'Yeni öğrenciyi güvenli biçimde koç hesabına bağla.',items:[
           {href:'#ogrenci-erisim',title:'Erişim Kodu',description:'Öğrencinin tek kullanımlık koç kodunu doğrula'}

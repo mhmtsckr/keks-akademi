@@ -4,10 +4,10 @@ import { ParentLoginForm } from '@/app/components/AuthForms';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 
-function pretty(v: unknown) {
-  if (!v) return '';
-  if (typeof v === 'string') return v;
-  try { return JSON.stringify(v); } catch { return String(v); }
+function trDay(v:Date){
+  return new Intl.DateTimeFormat('en-CA',{
+    timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'
+  }).format(v);
 }
 
 export default async function ParentPage() {
@@ -18,17 +18,17 @@ export default async function ParentPage() {
       active="veli"
       eyebrow="VELİ GİRİŞİ"
       title="Öğrencinin gelişimini sade ve güvenli biçimde takip et."
-      description="Haftalık özet, hedef durumu, denemeler ve koç raporları tek panelde."
+      description="Haftalık devamlılık, görev uygulama, çalışma süresi ve koç değerlendirmeleri tek panelde."
     >
       <section className="portalLoginGrid">
         <div className="portalLoginIntro">
           <span className="portalEyebrow">VELİ GELİŞİM PANELİ</span>
-          <h2>Teknik ayrıntıya boğulmadan anlamlı gelişim özetleri.</h2>
-          <p>Koçun paylaştığı bilgiler, haftalık çalışma verileri ve öğrenciye açık raporlar sade bir görünümde sunulur.</p>
+          <h2>Sonucu denetlemek yerine öğrenme davranışını destekle.</h2>
+          <p>Veli paneli öğrencinin tek tek yanlışlarını veya ham test cevaplarını göstermez. Amaç; çalışma düzenini, sürekliliği ve koçun veliye açtığı rehberliği görünür kılmaktır.</p>
           <div className="portalLoginBullets">
-            <span>Haftalık çalışma ve soru özeti</span>
-            <span>Hedef ve konu ilerleme durumu</span>
-            <span>Koç raporları ve paylaşılan içerikler</span>
+            <span>Haftalık devamlılık ve görev tamamlama</span>
+            <span>Çalışma süresi trendi ve program ritmi</span>
+            <span>Koç notu ve veli için destek önerileri</span>
           </div>
         </div>
         <div className="card">
@@ -41,85 +41,140 @@ export default async function ParentPage() {
   }
 
   if(!user.parentProfile.consentRecordedAt)return <PortalShell active="veli" eyebrow="VELİ ERİŞİMİ" title="Veli izni gerekli" description="Koçunuzdan izin kapsamı doğrulanmış yeni bir veli bağlantısı isteyin."><div className="card">Veriler henüz paylaşıma açık değil.</div></PortalShell>;
+
+  const now=new Date();
+  const sevenDaysAgo=new Date(now.getTime()-7*86400000);
+  const fourteenDaysAgo=new Date(now.getTime()-14*86400000);
+
   const student=await db.student.findUnique({
     where:{id:user.parentProfile.studentId},
     include:{
-      plans:{where:{active:true},orderBy:{updatedAt:'desc'}},
-      dailyLogs:{orderBy:{date:'desc'},take:14},
-      examResults:{orderBy:{createdAt:'desc'},take:10},
-      studyTechniques:{where:{active:true},orderBy:{createdAt:'desc'}},
-      reports:{where:{visibleToParent:true,...(user.parentProfile.allowReports?{}:{id:'__hidden__'})},orderBy:{createdAt:'desc'}},
-      practiceLogs:{where:{date:{gte:new Date(Date.now()-7*24*60*60*1000)}},orderBy:{date:'desc'}},
-      topicProgress:{},
-      generatedContent:{where:{visibleToParent:true},orderBy:{createdAt:'desc'},take:30},
+      plans:{where:{active:true},orderBy:{updatedAt:'desc'},select:{id:true,title:true,updatedAt:true}},
+      examResults:{orderBy:{createdAt:'desc'},take:5,select:{id:true,examType:true,createdAt:true}},
+      studyTechniques:{where:{active:true},orderBy:{createdAt:'desc'},select:{id:true,title:true,description:true}},
+      reports:{where:{visibleToParent:true,...(user.parentProfile.allowReports?{}:{id:'__hidden__'})},orderBy:{createdAt:'desc'},take:10},
+      topicProgress:{select:{completed:true}},
+      generatedContent:{where:{visibleToParent:true},orderBy:{createdAt:'desc'},take:20},
+      coachingActions:{
+        where:{taskDate:{gte:fourteenDaysAgo,lte:now}},
+        select:{taskDate:true,status:true,submission:{select:{submittedAt:true,completionRate:true}}}
+      },
+      techniqueSessions:{
+        where:{createdAt:{gte:fourteenDaysAgo,lte:now}},
+        select:{createdAt:true,activeSeconds:true,completed:true}
+      },
+      weeklyReflections:{orderBy:{weekStart:'desc'},take:1,select:{weekStart:true,selfRating:true,bestThing:true,biggestChallenge:true,nextWeekChange:true}}
     }
   });
   if(!student) return null;
 
-  const week=student.practiceLogs.reduce((a,x)=>({c:a.c+x.correct,w:a.w+x.wrong,b:a.b+x.blank,n:a.n+x.net}),{c:0,w:0,b:0,n:0});
+  const currentActions=student.coachingActions.filter(x=>x.taskDate&&x.taskDate>=sevenDaysAgo);
+  const previousActions=student.coachingActions.filter(x=>x.taskDate&&x.taskDate<sevenDaysAgo);
+  const completed=(rows:typeof currentActions)=>rows.filter(x=>x.submission||x.status==='COMPLETED').length;
+  const completionRate=(rows:typeof currentActions)=>rows.length?Math.round(completed(rows)/rows.length*100):0;
+
+  const currentSessions=student.techniqueSessions.filter(x=>x.createdAt>=sevenDaysAgo);
+  const previousSessions=student.techniqueSessions.filter(x=>x.createdAt<sevenDaysAgo);
+  const focusMinutes=(rows:typeof currentSessions)=>Math.round(rows.reduce((n,x)=>n+(x.activeSeconds||0),0)/60);
+  const currentFocus=focusMinutes(currentSessions);
+  const previousFocus=focusMinutes(previousSessions);
+  const focusDelta=currentFocus-previousFocus;
+
+  const activeDays=new Set<string>();
+  for(const action of currentActions){
+    if(action.submission)activeDays.add(trDay(action.submission.submittedAt));
+  }
+  for(const session of currentSessions){
+    if((session.activeSeconds||0)>0)activeDays.add(trDay(session.createdAt));
+  }
+
   const completedTopics=student.topicProgress.filter(x=>x.completed).length;
   const totalTopics=student.topicProgress.length;
-  const progressRate=totalTopics?Math.round((completedTopics/totalTopics)*100):0;
+  const progressRate=totalTopics?Math.round(completedTopics/totalTopics*100):0;
+  const currentCompletion=completionRate(currentActions);
+  const previousCompletion=completionRate(previousActions);
+  const completionDelta=currentCompletion-previousCompletion;
+  const latestCoachReport=student.reports[0]||null;
+  const reflection=student.weeklyReflections[0]||null;
+  const latestExam=student.examResults[0]||null;
+
+  const parentDo=currentCompletion<60
+    ?'Görev sayısını evde artırmaya çalışmayın. Düzenli çalışma saatini koruyun ve koçun program hacmini yeniden değerlendirmesine alan açın.'
+    :activeDays.size<4
+      ?'Belirli bir çalışma saatini ve dikkat dağıtmayan ortamı destekleyin; öğrencinin programa başlama ritmini güçlendirin.'
+      :'Mevcut düzeni koruyun; tamamlanan çalışmayı fark edin ve öğrencinin kendi plan sorumluluğunu sürdürmesine alan bırakın.';
+  const parentAvoid='Tek tek yanlışları sorgulamayın, deneme sonucunu ceza/ödül aracına çevirmeyin ve koç planına habersiz ek görev bindirmeyin.';
 
   return <PortalShell signedIn
     active="veli"
     eyebrow="VELİ PANELİ"
-    title={student.fullName+' · Gelişim Özeti'}
-    description="Öğrencinin güncel çalışma durumu, hedefi ve koç değerlendirmeleri."
-    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}<span>%{progressRate} konu ilerleme</span></>}
+    title={student.fullName+' · Davranışsal Gelişim Özeti'}
+    description="Sonuç baskısı yerine devamlılık, görev uygulama, çalışma süresi ve koç yönlendirmesini izleyin."
+    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{student.gradeLevel}</span>}<span>{activeDays.size}/7 aktif gün</span></>}
     wide
   >
     <section className="section">
       <PanelNavigator roleLabel="Veli" groups={[
-        {label:'GENEL DURUM',description:'Öğrencinin güncel gelişim fotoğrafını hızlıca gör.',items:[
-          {href:'#veli-genel',title:'Genel Gelişim Özeti',description:'Konu ilerleme, program ve çalışma kayıtları'}
+        {label:'BU HAFTA',description:'Öğrencinin çalışma davranışını hızlıca gör.',items:[
+          {href:'#veli-genel',title:'Haftalık Davranış Özeti',description:'Devamlılık, görev tamamlama ve çalışma süresi',badge:'ÖNCELİKLİ'}
         ]},
-        {label:'HAFTALIK PERFORMANS',description:'Son 7 günün soru ve net özetini incele.',items:[
-          {href:'#haftalik-ozet',title:'Haftalık Özet',description:'Doğru, yanlış, boş ve toplam net'}
+        {label:'VELİ REHBERLİĞİ',description:'Destek ver; baskı ve mikro-yönetim üretme.',items:[
+          {href:'#veli-rehberligi',title:'Bu Hafta Ne Yapmalı?',description:'Koçluk çizgisini bozmadan destek önerileri'}
         ]},
-        {label:'HEDEF & PLANLAMA',description:'Öğrencinin hedefi ve uygulanan programları takip et.',items:[
-          {href:'#hedef-plan',title:'Hedef & Programlar',description:'Ana hedef, aktif program ve çalışma yaklaşımı'}
+        {label:'HEDEF & PLANLAMA',description:'Hedefi ve aktif çalışma düzenini genel düzeyde takip et.',items:[
+          {href:'#hedef-plan',title:'Hedef & Program Ritmi',description:'Aktif planlar, deneme ritmi ve çalışma yaklaşımı'}
         ]},
-        {label:'ÖĞRENME & İÇERİK',description:'Öğrenme teknikleri ve veliye açılan içerikler.',items:[
-          {href:'#ogrenme-icerik',title:'Teknikler & İçerikler',description:'Uygulanan teknikler ve paylaşılan öğrenme içerikleri'}
-        ]},
-        {label:'KOÇ DEĞERLENDİRMESİ',description:'Koçun veliye açtığı profesyonel raporları gör.',items:[
-          {href:'#koc-raporlari',title:'Koç Raporları',description:'Gelişim değerlendirmeleri ve öneriler'}
+        {label:'KOÇ DEĞERLENDİRMESİ',description:'Koçun veliye açtığı profesyonel notları gör.',items:[
+          {href:'#koc-raporlari',title:'Koç Notları',description:'Paylaşıma açılmış gelişim değerlendirmeleri'}
         ]}
       ]}/>
     </section>
 
     <section id="veli-genel" className="section section-anchor">
+      <PortalSectionTitle eyebrow="HAFTALIK DAVRANIŞ ÖZETİ" title="Bu hafta nasıl ilerledi?"/>
       <div className="grid">
-        <div className="card"><div className="kpi">%{progressRate}</div><div className="muted">Konu ilerleme oranı</div></div>
-        <div className="card"><div className="kpi">{student.plans.length}</div><div className="muted">Aktif program</div></div>
-        <div className="card"><div className="kpi">{student.dailyLogs.length}</div><div className="muted">Son çalışma kaydı</div></div>
-        <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme kaydı</div></div>
+        <div className="card"><div className="kpi">{activeDays.size}/7</div><div className="muted">Aktif çalışma günü</div></div>
+        <div className="card"><div className="kpi">%{currentCompletion}</div><div className="muted">Görev tamamlama</div><small>{completionDelta===0?'Önceki haftayla aynı':(completionDelta>0?'+':'')+completionDelta+' puan önceki haftaya göre'}</small></div>
+        <div className="card"><div className="kpi">{currentFocus}</div><div className="muted">Kayıtlı odak dakikası</div><small>{focusDelta===0?'Önceki haftayla aynı':(focusDelta>0?'+':'')+focusDelta+' dk önceki haftaya göre'}</small></div>
+        <div className="card"><div className="kpi">%{progressRate}</div><div className="muted">İşaretlenmiş konu ilerlemesi</div></div>
       </div>
+      {reflection&&<div className="card" style={{marginTop:14}}>
+        <div className="moduleEyebrow">ÖĞRENCİNİN KENDİ DEĞERLENDİRMESİ</div>
+        <p><strong>Bu hafta iyi giden:</strong> {reflection.bestThing||'Belirtilmedi'}</p>
+        <p><strong>En çok zorlayan:</strong> {reflection.biggestChallenge||'Belirtilmedi'}</p>
+        {reflection.nextWeekChange&&<p><strong>Gelecek hafta değiştirmek istediği:</strong> {reflection.nextWeekChange}</p>}
+      </div>}
     </section>
 
-    <section id="haftalik-ozet" className="section section-anchor">
-      <PortalSectionTitle eyebrow="HAFTALIK PERFORMANS" title="Son 7 gün"/>
-      <div className="card"><div className="row"><span className="pill">Doğru {week.c}</span><span className="pill">Yanlış {week.w}</span><span className="pill">Boş {week.b}</span><span className="pill">Toplam Net {Number(week.n.toFixed(2))}</span></div></div>
+    <section id="veli-rehberligi" className="section section-anchor">
+      <PortalSectionTitle eyebrow="VELİ REHBERLİĞİ" title="Bu hafta ne yapmalı, ne yapmamalı?"/>
+      <div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
+        <div className="card"><div className="moduleEyebrow">YAPIN</div><p>{parentDo}</p></div>
+        <div className="card"><div className="moduleEyebrow">KAÇININ</div><p>{parentAvoid}</p></div>
+      </div>
+      {latestCoachReport&&<div className="card" style={{marginTop:14}}>
+        <div className="moduleEyebrow">KOÇUN VELİYE NOTU</div>
+        <strong>{latestCoachReport.title}</strong>
+        {latestCoachReport.summary&&<p>{latestCoachReport.summary}</p>}
+      </div>}
     </section>
 
-    <section id="hedef-plan" className="section section-anchor"><div className="panelSectionBand"><div><small>HEDEF & PLANLAMA</small><strong>Hedef, program ve çalışma yaklaşımı</strong><p>Öğrencinin yönünü ve uygulanan çalışma düzenini tek bölümde izleyin.</p></div><span>VELİ ÖZETİ</span></div><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
-      <div className="card"><h2>Hedef ve Genel Durum</h2><p>{student.goal||'Henüz hedef bilgisi eklenmedi.'}</p>{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
-      <div className="card"><h2>Uygulanan Teknikler</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik yok.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:10}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
-    </div></section>
-
-    <section className="section"><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
-      <div className="card"><h2>Programlar</h2>{student.plans.length===0?<p className="muted">Henüz program yok.</p>:student.plans.map(p=><div key={p.id} style={{marginBottom:12}}><strong>{p.title}</strong><div className="muted">{pretty(p.payload)}</div></div>)}</div>
-      <div className="card"><h2>Denemeler</h2>{student.examResults.length===0?<p className="muted">Henüz deneme yok.</p>:student.examResults.map(x=><div key={x.id} style={{marginBottom:12}}><strong>{x.examType}</strong><div className="muted">{pretty(x.payload)}</div></div>)}</div>
-    </div></section>
+    <section id="hedef-plan" className="section section-anchor">
+      <div className="panelSectionBand"><div><small>HEDEF & PROGRAM RİTMİ</small><strong>Yönü görün, ayrıntıyı koç ve öğrenciye bırakın</strong><p>Veli paneli ham soru yanıtları ve ayrıntılı yanlış dökümlerini göstermez.</p></div><span>VELİ ÖZETİ</span></div>
+      <div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
+        <div className="card"><h2>Hedef</h2><p>{student.goal||'Henüz hedef bilgisi eklenmedi.'}</p><p className="muted">Aktif plan: {student.plans.length} · Son deneme: {latestExam?latestExam.examType+' · '+latestExam.createdAt.toLocaleDateString('tr-TR'):'Henüz deneme kaydı yok'}</p></div>
+        <div className="card"><h2>Aktif Çalışma Teknikleri</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik yok.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:10}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
+      </div>
+      {student.plans.length>0&&<div className="card" style={{marginTop:14}}><h2>Aktif Programlar</h2>{student.plans.map(p=><div key={p.id} className="row" style={{justifyContent:'space-between'}}><strong>{p.title}</strong><span className="muted">{p.updatedAt.toLocaleDateString('tr-TR')}</span></div>)}</div>}
+    </section>
 
     <section id="ogrenme-icerik" className="section section-anchor">
-      <PortalSectionTitle eyebrow="ÖĞRENME & İÇERİK" title="Öğrenme İçerikleri"/>
-      <div className="card">{student.generatedContent.length===0?<p className="muted">Henüz veliye açılmış içerik yok.</p>:<div className="grid">{student.generatedContent.map(x=><a className="card" key={x.id} href={'/icerik/'+x.id}><span className="pill">{x.type}</span><h3>{x.title}</h3><p className="muted">Kalite: {x.qualityScore??'—'} / 100</p></a>)}</div>}</div>
+      <PortalSectionTitle eyebrow="ÖĞRENME & İÇERİK" title="Veliye Açılan Öğrenme İçerikleri"/>
+      <div className="card">{student.generatedContent.length===0?<p className="muted">Henüz veliye açılmış içerik yok.</p>:<div className="grid">{student.generatedContent.map(x=><a className="card" key={x.id} href={'/icerik/'+x.id}><span className="pill">{x.type}</span><h3>{x.title}</h3><p className="muted">Kalite kontrolünden geçmiş paylaşım</p></a>)}</div>}</div>
     </section>
 
     <section id="koc-raporlari" className="section section-anchor">
-      <PortalSectionTitle eyebrow="KOÇ DEĞERLENDİRMESİ" title="Raporlar"/>
+      <PortalSectionTitle eyebrow="KOÇ DEĞERLENDİRMESİ" title="Veliye Açılmış Koç Notları"/>
       <div className="card">{student.reports.length===0?<p className="muted">Henüz veliye açık rapor yayınlanmadı.</p>:student.reports.map(r=><article key={r.id} style={{padding:'14px 0',borderBottom:'1px solid rgba(255,255,255,.08)'}}><strong>{r.title}</strong>{r.summary&&<p className="muted">{r.summary}</p>}<p>{r.content}</p></article>)}</div>
     </section>
   </PortalShell>;

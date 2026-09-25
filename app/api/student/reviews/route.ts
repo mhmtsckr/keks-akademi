@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
+import { adaptiveReviewIntervalDays } from '@/lib/learningEngine';
 
 const schema=z.object({id:z.string(),answer:z.string().min(1)});
 
@@ -65,12 +66,17 @@ async function POST__handler(req:Request){
   const correct=String(item.question.sourceKind).startsWith('STUDENT_WRONG:')
     ? normalizeAnswer(input.answer)===normalizeAnswer(item.question.correctAnswer)
     : input.answer===item.question.correctAnswer;
+  const previousCorrect=item.lastCorrect;
   let step=item.stepIndex;
   if(correct) step=Math.min(step+1,REVIEW_DAYS.length);
-  else step=0;
+  else step=Math.max(0,step-1);
   const completed=correct && step>=REVIEW_DAYS.length;
   const due=new Date();
-  const nextIntervalDays=completed?null:REVIEW_DAYS[step];
+  const nextIntervalDays=completed?null:adaptiveReviewIntervalDays({
+    nextStep:step,
+    correct,
+    previousCorrect
+  });
   if(!completed) due.setDate(due.getDate()+Number(nextIntervalDays||0));
   const row=await db.reviewQueueItem.update({where:{id:item.id},data:{
     stepIndex:step,lastCorrect:correct,status:completed?'COMPLETED':(Number(nextIntervalDays||0)===0?'DUE':'PENDING'),

@@ -97,7 +97,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
             <div className="field"><label>Yanlış</label><input name="wrong" type="number" min="0" required/></div>
             <div className="field"><label>Boş</label><input name="blank" type="number" min="0" required/></div>
           </div>
-          <div className="field"><label>Baskın hata nedeni</label><select name="errorReason"><option value="">Seçiniz</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="DIKKAT">Dikkat</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="SURE">Süre problemi</option><option value="SORUYU_ANLAMA">Soruyu anlama</option><option value="STRATEJI">Yanlış strateji</option><option value="DIGER">Diğer</option></select></div>
+          <div className="field"><label>Baskın hata nedeni</label><select name="errorReason"><option value="">Seçiniz</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="DIKKAT">Dikkat</option><option value="SORU_KOKU">Soru kökünü yanlış okuma</option><option value="SURE">Süre problemi</option><option value="YONTEM_BILMEME">Yöntem bilmeme</option><option value="UNUTMA">Unutma</option><option value="SORUYU_ANLAMA">Soruyu anlama</option><option value="STRATEJI">Yanlış strateji</option><option value="DIGER">Diğer</option></select></div>
           <button className="btn primary">Kaydet ve Neti Hesapla</button>
         </form>
       </div>
