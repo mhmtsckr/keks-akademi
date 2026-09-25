@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import { recordServerError } from '@/lib/errorMonitoring';
 
 type InstrumentationRequest={
