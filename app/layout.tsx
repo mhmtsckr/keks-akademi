@@ -1,4 +1,5 @@
 import './globals.css';
+import { PwaRegister } from '@/app/components/PwaRegister';
 
 export const metadata = {
   title: 'KEKS Akademi',
@@ -7,5 +8,5 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="tr"><body>{children}</body></html>;
+  return <html lang="tr"><body><PwaRegister/>{children}</body></html>;
 }
