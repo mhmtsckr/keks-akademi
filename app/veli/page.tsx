@@ -100,7 +100,7 @@ export default async function ParentPage() {
 
   const parentDo=currentCompletion<60
     ?'Görev sayısını evde artırmaya çalışmayın. Düzenli çalışma saatini koruyun ve koçun program hacmini yeniden değerlendirmesine alan açın.'
-    :activeDays<4
+    :activeDays.size<4
       ?'Belirli bir çalışma saatini ve dikkat dağıtmayan ortamı destekleyin; öğrencinin programa başlama ritmini güçlendirin.'
       :'Mevcut düzeni koruyun; tamamlanan çalışmayı fark edin ve öğrencinin kendi plan sorumluluğunu sürdürmesine alan bırakın.';
   const parentAvoid='Tek tek yanlışları sorgulamayın, deneme sonucunu ceza/ödül aracına çevirmeyin ve koç planına habersiz ek görev bindirmeyin.';
