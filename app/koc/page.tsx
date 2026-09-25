@@ -26,7 +26,7 @@ export default async function CoachPage() {
           <h2>Veriyi gör, öğrenciyi yönlendir, gelişimi ölç.</h2>
           <p>KEKS koç paneli yalnız öğrenci listesi değildir; hedef açığını, çalışma davranışını ve müdahale gerektiren durumları tek ekranda toplar.</p>
           <div className="portalLoginBullets">
-            <span>Eğitsel profil, ön görüşme ve öğrenci risk özeti</span>
+            <span>Eğitsel profil, ön görüşme ve öğrenci takip özeti</span>
             <span>Kişisel plan, performans, tekrar ve görüşme öncesi otomatik brifing</span>
             <span>Aylık gelişim, veli görünümü ve rol bazlı veri erişimi</span>
           </div>
@@ -133,13 +133,13 @@ export default async function CoachPage() {
           {href:'#hesap-guvenligi',title:'Hesap Güvenliği',description:'Şifre, oturumlar ve tüm cihazlardan çıkış'}
         ]},
         {label:'ÖĞRENCİ YÖNETİMİ',description:'Tüm öğrencilerin durumunu karşılaştır ve detay ekranına geç.',items:[
-          {href:'#ogrencilerim',title:'Öğrencilerim',description:'Risk, tekrar, plan ve aktivite durumunu birlikte gör'}
+          {href:'#ogrencilerim',title:'Öğrencilerim',description:'Öncelik, tekrar, plan ve aktivite durumunu birlikte gör'}
         ]}
       ]}/>
     </section>
 
     <section id="koc-komuta" className="section section-anchor">
-      <PortalSectionTitle eyebrow="KOÇ KOMUTA MERKEZİ" title="Bugün neye müdahale etmeliyim?" description="Seanslar, risk sinyalleri, geciken aksiyonlar ve kişisel takip görevleriniz tek ekranda."/>
+      <PortalSectionTitle eyebrow="KOÇ KOMUTA MERKEZİ" title="Bugün neye müdahale etmeliyim?" description="Seanslar, takip sinyalleri, geciken aksiyonlar ve kişisel takip görevleriniz tek ekranda."/>
       <CoachCommandCenter
         students={priorityStudents}
         agenda={agenda}

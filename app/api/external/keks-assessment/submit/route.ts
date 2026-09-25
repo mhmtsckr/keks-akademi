@@ -5,6 +5,8 @@ import { verifyExternalAssessmentToken } from '@/lib/externalAssessment';
 import { buildReport } from '@/lib/scoring';
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { sendAssessmentReport } from '@/lib/mailer';
+import { SCREENING_DISCLAIMER } from '@/lib/screeningForms';
+import { createRequestId,recordApiError } from '@/lib/errorMonitoring';
 
 const ALLOWED_ORIGIN='https://kazandiran-egitim-kocluk.mhmtsckr029.chatgpt.site';
 
@@ -84,7 +86,10 @@ export async function POST(req:Request){
     scores:input.scores,
     source:'CHATGPT_SITE',
     externalSubmissionId:input.externalSubmissionId||null,
-    receivedAt:new Date().toISOString()
+    receivedAt:new Date().toISOString(),
+    validationStatus:'UNVERIFIED_EXTERNAL',
+    disclaimer:SCREENING_DISCLAIMER,
+    interpretationNote:'Bu dış aktarımın puanlama ve rapor sürümü KEKS tarafından psikometrik olarak doğrulanmamıştır. Sonuçlar tek başına kesin kişilik, psikolojik durum, başarısızlık veya risk etiketi olarak kullanılmamalı; koç/yönetici incelemesi, görüşme ve akademik performans verileriyle birlikte değerlendirilmelidir.'
   };
 
   const educationBand=detectEducationBand(student.gradeLevel);
@@ -155,8 +160,12 @@ export async function POST(req:Request){
       });
       if(existing)return json({ok:true,alreadySubmitted:true,assessmentId:existing.id});
     }
-    console.error('EXTERNAL_ASSESSMENT_SAVE_FAILED',error);
-    return json({error:'Tarama sonucu KEKS sistemine kaydedilemedi.'},500);
+    const requestId=createRequestId(req);
+    await recordApiError(req,error,requestId);
+    return NextResponse.json(
+      {error:'Tarama sonucu KEKS sistemine kaydedilemedi.',requestId},
+      {status:500,headers:{...corsHeaders(),'x-request-id':requestId}}
+    );
   }
 
   try{
@@ -167,8 +176,8 @@ export async function POST(req:Request){
       report
     });
     await db.assessment.update({where:{id:assessmentId},data:{emailedAt:new Date()}});
-  }catch(error){
-    console.error('EXTERNAL_ASSESSMENT_EMAIL_FAILED',error);
+  }catch{
+    console.error('EXTERNAL_ASSESSMENT_EMAIL_FAILED');
   }
 
   return json({
