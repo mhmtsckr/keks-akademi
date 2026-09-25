@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { buildWeeklyPlan } from '@/lib/smartCoach';
+import { isFeatureEnabled } from '@/lib/featureFlags';
 
 const schema=z.object({message:z.string().min(2).max(2000)});
 
@@ -24,6 +25,9 @@ function fallbackReply(message:string,student:any){
 async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('ai_coach',{studentId:user.student.id}))){
+    return NextResponse.json({error:'AI Koç şu anda hesabınızda etkin değil. Bu özellik kademeli olarak açılıyor.'},{status:403});
+  }
   const {message}=await readJson(req, schema);
   const student=await db.student.findUnique({where:{id:user.student.id},include:{practiceLogs:{orderBy:{date:'desc'},take:20},coachingActions:{where:{status:'ACTIVE'},orderBy:{periodEnd:'asc'},take:10},plans:{where:{active:true},orderBy:{updatedAt:'desc'},take:3}}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});

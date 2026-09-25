@@ -6,7 +6,7 @@ import { AdminAssessmentWorkflow } from '@/app/components/AdminAssessmentWorkflo
 import { AdminCoachQuickApprovals } from '@/app/components/AdminCoachQuickApprovals';
 import { AccountSecurity } from '@/app/components/AccountSecurity';
 
-type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
+type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'flags'|'errors'|'security';
 
 const TAB_META:Record<Tab,{eyebrow:string;label:string;description:string}>={
   overview:{eyebrow:'SİSTEM DURUMU',label:'Genel Bakış',description:'Operasyon, kullanım ve ödeme göstergeleri'},
@@ -14,6 +14,8 @@ const TAB_META:Record<Tab,{eyebrow:string;label:string;description:string}>={
   users:{eyebrow:'HESAP & ROL',label:'Kullanıcı Yönetimi',description:'Koç, öğrenci, veli ve yönetici hesapları'},
   academic:{eyebrow:'AKADEMİK İÇERİK',label:'İçerik & Soru Bankası',description:'Soru onayı, kalite ve mikro içerik yönetimi'},
   payments:{eyebrow:'FİNANS & ERİŞİM',label:'Ödeme & Ürün Kodları',description:'PayTR işlemleri, ürün erişimleri ve kodlar'},
+  flags:{eyebrow:'SÜRÜM KONTROLÜ',label:'Özellik Bayrakları',description:'Yeni modülleri kademeli aç/kapat, pilot gruba ver'},
+  errors:{eyebrow:'GÖZLEMLENEBİLİRLİK',label:'Hata İzleme',description:'Production API hataları: endpoint, tarih, request ID, hata sınıfı'},
   security:{eyebrow:'ALTYAPI & GÜVENLİK',label:'Sistem & Güvenlik',description:'Servisler, bağlantılar ve işlem geçmişi'}
 };
 
@@ -38,6 +40,13 @@ export function AdminConsole(){
   const [paymentTotals,setPaymentTotals]=useState<any[]>([]);
   const [codes,setCodes]=useState<any[]>([]);
   const [accesses,setAccesses]=useState<any[]>([]);
+
+  const [errorEvents,setErrorEvents]=useState<any[]>([]);
+  const [errorOpenCount,setErrorOpenCount]=useState(0);
+  const [errorScope,setErrorScope]=useState('open');
+
+  const [flags,setFlags]=useState<any[]>([]);
+  const [flagCodes,setFlagCodes]=useState<Record<string,string>>({});
 
   const [health,setHealth]=useState<any>(null);
   const [logs,setLogs]=useState<any[]>([]);
@@ -76,6 +85,19 @@ export function AdminConsole(){
     if(p.ok){setPayments(p.payments||[]);setPaymentTotals(p.totals||[])}
     if(a.ok){setCodes(a.codes||[]);setAccesses(a.accesses||[])}
   }
+  async function loadErrors(){
+    const j=await fetch('/api/admin/errors?scope='+errorScope).then(r=>r.json());
+    if(j.ok){setErrorEvents(j.events||[]);setErrorOpenCount(j.openCount||0)}
+  }
+  async function loadFlags(){
+    const j=await fetch('/api/admin/feature-flags').then(r=>r.json());
+    if(j.ok){
+      setFlags(j.flags||[]);
+      const draft:Record<string,string>={};
+      (j.flags||[]).forEach((f:any)=>{draft[f.key]=(f.rollout||[]).map((r:any)=>r.code).join(', ')});
+      setFlagCodes(draft);
+    }
+  }
   async function loadSecurity(){
     const p=new URLSearchParams(); if(auditQ.trim())p.set('q',auditQ.trim());
     const [s,a]=await Promise.all([
@@ -93,11 +115,41 @@ export function AdminConsole(){
       if(tab==='users')await loadUsers();
       if(tab==='academic')await loadQuestions();
       if(tab==='payments')await loadPayments();
+      if(tab==='flags')await loadFlags();
+      if(tab==='errors')await loadErrors();
       if(tab==='security')await loadSecurity();
     }finally{setLoading(false)}
   }
 
-  useEffect(()=>{refresh()},[tab,questionStatus]);
+  useEffect(()=>{refresh()},[tab,questionStatus,errorScope]);
+
+  async function resolveError(id:string,resolved:boolean){
+    setMsg('');
+    const r=await fetch('/api/admin/errors',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id,resolved})});
+    const j=await r.json();
+    if(!r.ok){setMsg('Hata: '+(j.error||'Kayıt güncellenemedi.'));return}
+    setMsg(resolved?'Hata kaydı çözüldü olarak işaretlendi.':'Hata kaydı yeniden açıldı.');
+    await loadErrors();
+  }
+  async function toggleFlag(key:string,enabled:boolean){
+    setMsg('');
+    const r=await fetch('/api/admin/feature-flags',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({key,enabled})});
+    const j=await r.json();
+    if(!r.ok){setMsg('Hata: '+(j.error||'Bayrak güncellenemedi.'));return}
+    setMsg('Özellik '+(enabled?'herkese açıldı':'kapatıldı')+'.');
+    await loadFlags();
+  }
+  async function savePilot(key:string){
+    setMsg('');
+    const codes=(flagCodes[key]||'').split(/[\s,;\n]+/).map(s=>s.trim()).filter(Boolean);
+    const r=await fetch('/api/admin/feature-flags',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({key,rolloutStudentCodes:codes})});
+    const j=await r.json();
+    if(!r.ok){setMsg('Hata: '+(j.error||'Pilot listesi güncellenemedi.'));return}
+    let m='Pilot listesi güncellendi ('+(j.rollout?.length||0)+' öğrenci).';
+    if(j.unknownCodes?.length)m+=' Bulunamayan kod: '+j.unknownCodes.join(', ');
+    setMsg(m);
+    await loadFlags();
+  }
 
   async function updateUser(userId:string,status:string){
     setMsg('');
@@ -235,7 +287,7 @@ export function AdminConsole(){
     <div className="adminPanelNavigator">
       <div className="adminPanelNavigatorHead">
         <div><div className="moduleEyebrow">YÖNETİM ALANLARI</div><h2>KEKS Yönetim Haritası</h2><p className="muted">İşlem türüne göre yönetim alanını seçin. Her bölüm kendi operasyonuna odaklanır.</p></div>
-        <span className="pill">6 ana alan</span>
+        <span className="pill">{Object.keys(TAB_META).length} ana alan</span>
       </div>
       <div className="adminPanelNavGrid">
         {(Object.keys(TAB_META) as Tab[]).map(k=>{const meta=TAB_META[k];return <button key={k} className={'adminPanelNavItem '+(tab===k?'active':'')} onClick={()=>{setTab(k);setMsg('')}}>
@@ -277,7 +329,7 @@ export function AdminConsole(){
           <div className="moduleEyebrow">ÖDEME DURUMU</div><h3>İşlem özeti</h3>
           <div className="adminActivityRows">
             <MetricLine label="Toplam ödeme" value={dashboard.payments}/>
-            <MetricLine label="Başarılı" value={dashboard.paidPayments}/>
+            <MetricLine label="Başar��lı" value={dashboard.paidPayments}/>
             <MetricLine label="Bekleyen" value={dashboard.pendingPayments}/>
           </div>
         </div>
@@ -368,6 +420,22 @@ export function AdminConsole(){
         </div>
         <div className="card"><h3>Son Test Erişimleri</h3>{accesses.slice(0,20).map(a=><div className="adminSimpleRow" key={a.id}><div><strong>{a.student.fullName}</strong><span>{a.source} · {a.status}</span></div><span>{dt(a.createdAt)}</span></div>)}</div>
       </div>
+    </section>}
+
+    {tab==='flags'&&<section className="adminPanelSection">
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">KADEMELİ SÜRÜM YÖNETİMİ</div><h2>Özellik Bayrakları</h2><p className="muted">Yeni bir modülü tüm öğrencilere anında açmak yerine buradan kontrollü açın. Kapalıyken özellik gizlenir; yalnızca pilot listesine eklediğiniz öğrencilere açılır. Production'da sorun çıkarsa kodu geri almadan buradan kapatabilirsiniz.</p></div><button className="btn" onClick={loadFlags}>Yenile</button></div>
+      <div className="stack">{flags.length===0?<div className="card muted">Tanımlı özellik bayrağı yok.</div>:flags.map(f=><div className="card" key={f.key}>
+        <div className="moduleHeaderRow"><div><div className="moduleEyebrow">{f.enabled?'HERKESE AÇIK':(f.rollout?.length?'PİLOT':'KAPALI')}</div><h3>{f.label}</h3><p className="muted">{f.description}</p></div><label className="row" style={{gap:8,alignItems:'center'}}><input type="checkbox" checked={f.enabled} onChange={e=>toggleFlag(f.key,e.target.checked)}/><span>{f.enabled?'Herkese açık':'Kapalı'}</span></label></div>
+        <div className="field"><label>Pilot öğrenci kodları (virgül veya satırla ayır)</label><textarea rows={2} value={flagCodes[f.key]||''} onChange={e=>setFlagCodes(v=>({...v,[f.key]:e.target.value}))} placeholder="ör. KEKS-0001, KEKS-0002" disabled={f.enabled}/></div>
+        {f.enabled&&<p className="muted">Özellik herkese açıkken pilot listesi uygulanmaz; kapattığınızda pilot listesi yeniden geçerli olur.</p>}
+        <div className="row"><button className="btn primary" onClick={()=>savePilot(f.key)} disabled={f.enabled}>Pilot Listesini Kaydet</button><span className="pill">{f.rollout?.length||0} pilot öğrenci</span>{f.updatedAt&&<span className="muted">Son güncelleme: {dt(f.updatedAt)}</span>}</div>
+        {(f.rollout?.length||0)>0&&<div className="muted" style={{marginTop:8}}>Pilot öğrenciler: {f.rollout.map((r:any)=>r.code+' ('+r.name+')').join(' · ')}</div>}
+      </div>)}</div>
+    </section>}
+
+    {tab==='errors'&&<section className="adminPanelSection">
+      <div className="moduleHeaderRow"><div><div className="moduleEyebrow">PRODUCTION HATA İZLEME</div><h2>API Hataları</h2><p className="muted">Bir API 500 verdiğinde öğrencinin bildirmesini beklemeyin. Beklenmedik her arıza; endpoint, tarih, request ID ve hata sınıfıyla burada görünür. Şifre, token veya doğrulama kodu gibi gizli veriler kaydedilmez.</p></div><div className="row"><span className={'pill '+(errorOpenCount>0?'warn':'')}>{errorOpenCount} açık kayıt</span><select value={errorScope} onChange={e=>setErrorScope(e.target.value)}><option value="open">Açık kayıtlar</option><option value="all">Tümü</option></select><button className="btn" onClick={loadErrors}>Yenile</button></div></div>
+      <div className="card adminTableCard">{errorEvents.length===0?<p className="muted">Bu görünümde hata kaydı yok.</p>:<table className="table"><thead><tr><th>Tarih</th><th>Endpoint</th><th>Hata sınıfı</th><th>Request ID</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>{errorEvents.map(e=><tr key={e.id}><td>{dt(e.createdAt)}</td><td><strong>{e.method}</strong> <code>{e.path}</code>{e.message&&<div className="muted">{e.message}</div>}</td><td><span className="pill">{e.errorClass}</span>{typeof e.statusCode==='number'&&<div className="muted">HTTP {e.statusCode}</div>}</td><td><code>{e.requestId}</code></td><td><span className={'adminStatus '+(e.resolvedAt?'active':'pending')}>{e.resolvedAt?'Çözüldü':'Açık'}</span></td><td>{e.resolvedAt?<button className="btn" onClick={()=>resolveError(e.id,false)}>Yeniden Aç</button>:<button className="btn primary" onClick={()=>resolveError(e.id,true)}>Çözüldü İşaretle</button>}</td></tr>)}</tbody></table>}</div>
     </section>}
 
     {tab==='security'&&<section className="adminPanelSection">

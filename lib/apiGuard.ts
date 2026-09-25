@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ZodError, type z } from 'zod';
+import { recordApiError } from '@/lib/errorTracking';
 
 /** HTTP durumu taşıyan, istemciye gösterilebilir hata. */
 export class HttpError extends Error {
@@ -78,6 +79,10 @@ export function withApiErrors<A extends unknown[], R extends Response>(
           { status: 400 },
         );
       }
+      // Beklenmedik arıza: yönetici panelinde görünür olması için kaydet, sonra
+      // olduğu gibi yukarı ilet — hatayı gizleme (bkz. withApiErrors testleri).
+      const req = args.find((a): a is Request => a instanceof Request);
+      await recordApiError(error, { req });
       throw error;
     }
   };

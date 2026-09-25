@@ -1020,3 +1020,33 @@ model PaytrConfig {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 }
+
+/// Production'da beklenmedik API arızalarının (500) izlenmesi için kayıt.
+/// Gizli veri (şifre, token, salt) asla bu tabloya yazılmaz.
+model ErrorEvent {
+  id           String    @id @default(cuid())
+  requestId    String
+  method       String
+  path         String
+  errorClass   String
+  message      String
+  statusCode   Int       @default(500)
+  actorUserId  String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([resolvedAt])
+}
+
+/// Yeni modüllerin kademeli açılması için özellik bayrakları.
+/// Kod geri alınmadan yeni geliştirme kapatılabilir; pilot gruba açılabilir.
+model FeatureFlag {
+  id                String   @id @default(cuid())
+  key               String   @unique
+  enabled           Boolean  @default(false)
+  rolloutStudentIds String[] @default([])
+  updatedByUserId   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

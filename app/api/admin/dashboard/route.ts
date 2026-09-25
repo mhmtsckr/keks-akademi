@@ -2,6 +2,7 @@ import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { keksPricingSummary } from '@/lib/monthlyProduct';
 
 async function GET__handler(){
   await requireRole(['ADMIN']);
@@ -34,7 +35,8 @@ async function GET__handler(){
   return NextResponse.json({ok:true,stats:{
     users,students,coaches,parents,payments,paidPayments,pendingPayments,
     pendingCoaches,pendingQuestions,openAlerts,practice7,tech7,pendingScreenings,pendingPlans,
-    revenueKurus:revenue._sum.amountKurus||0
+    revenueKurus:revenue._sum.amountKurus||0,
+    pricing:keksPricingSummary()
   }});
 }
 

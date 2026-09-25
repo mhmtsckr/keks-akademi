@@ -6,6 +6,7 @@ import { requireRole } from '@/lib/auth';
 import { awardXp } from '@/lib/gamification';
 import { chooseWeakTopic,generateMicroGame } from '@/lib/microGameGenerator';
 import { gameAudiencesForGradeLevel } from '@/lib/mebCoreQuestionBank';
+import { isFeatureEnabled } from '@/lib/featureFlags';
 
 const actionSchema=z.object({action:z.literal('progress'),id:z.string(),currentValue:z.number().min(0)});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
@@ -52,7 +53,8 @@ async function GET__handler(){
   const map=new Map(students.map(x=>[x.id,x]));
   const weeklyLeaderboard=weeklyLedger.map(x=>({studentId:x.studentId,xp:x._sum.xp||0,student:map.get(x.studentId)}));
   const monthlyLeaderboard=monthlyLedger.map(x=>({studentId:x.studentId,xp:x._sum.xp||0,student:map.get(x.studentId)}));
-  return NextResponse.json({ok:true,actions,gamification,badges,games:visibleGames,weeklyLeaderboard,monthlyLeaderboard,sessions,cohorts});
+  const aiCoachEnabled=await isFeatureEnabled('ai_coach',{studentId:id});
+  return NextResponse.json({ok:true,actions,gamification,badges,games:visibleGames,weeklyLeaderboard,monthlyLeaderboard,sessions,cohorts,aiCoachEnabled});
 }
 
 async function POST__handler(req:Request){

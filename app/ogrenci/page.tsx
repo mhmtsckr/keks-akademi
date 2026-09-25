@@ -123,7 +123,7 @@ export default async function StudentPage() {
           {href:'#akilli-koc',title:'Akıllı Koç',description:'Hedefe yaklaşma, trend ve haftalık öneriler'},
           {href:'#akademik-performans',title:'Konu & Soru Analizi',description:'Doğru, yanlış, boş, net ve hata nedenleri'}
         ]},
-        {label:'KOÇLUK & OYUNLAŞTIRMA',description:'Koçluk aksiyonları, seanslar, XP ve mikro tekrar.',items:[
+        {label:'KOÇLUK & OYUNLAŞTIRMA',description:'Ko��luk aksiyonları, seanslar, XP ve mikro tekrar.',items:[
           {href:'#kocluk-oyunlastirma',title:'Koçluk & Oyunlaştırma',description:'Aksiyon, seans, XP, rozet ve mikro tekrar'}
         ]},
         {label:'RAPORLAR & KAYITLAR',description:'Geçmiş çalışmalar, denemeler ve koç raporları.',items:[
@@ -186,7 +186,7 @@ export default async function StudentPage() {
 
     <section id="hesap-guvenligi" className="section section-anchor"><PortalSectionTitle eyebrow="HESAP & GÜVENLİK" title="Hesap Güvenliği" description="Şifrenizi, son girişlerinizi ve aktif oturumlarınızı yönetin."/><AccountSecurity loginPath="/ogrenci"/></section>
 
-    <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="KEKS AKADEMİ TEST ÜRÜNLERİ" title="Aylık KEKS Akademi Test Ürünü" description="Ürün erişiminiz yoksa test soruları görünmez. Yönetici/koç tarafından verilen kodla veya 400 TL ödeme ile aylık ürünü hesabınıza tanımlayabilirsiniz."/><StudentActions hasAccess={Boolean(access)}/></section>
+    <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="KEKS AKADEMİ TEST ÜRÜNLERİ" title="Aylık KEKS Akademi Test Ürünü" description={`Ürün erişiminiz yoksa test soruları görünmez. Yönetici/koç tarafından verilen kodla veya ${keksMonthlyProduct().priceLabel} ödeme ile aylık ürünü hesabınıza tanımlayabilirsiniz.`}/><StudentActions hasAccess={Boolean(access)}/></section>
     {showPreInterview&&<section className="section"><PortalSectionTitle eyebrow="ÜRÜN AŞAMASI 2/2" title="Eğitim Düzeyine Göre Ön Görüşme" description="Bu bölüm yalnızca aynı aylık ürünün KEKS Eğilim Taraması tamamlandıktan sonra açılır. Form bir kez tamamlanabilir."/><StudentPreInterview/></section>}
   </PortalShell>;
 }
