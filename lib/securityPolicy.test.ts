@@ -132,12 +132,32 @@ describe('KEKS production safety policies',()=>{
 
   it('list and sale prices have one literal source of truth',()=>{
     const allowed='lib/systemConfig.ts';
-    const pattern=/(?:\b40000\b|\b80000\b|\b400\s*TL\b|\b800\s*TL\b)/i;
-    const files=[...walk(path.join(ROOT,'app')),...walk(path.join(ROOT,'lib'))];
-    const violations=files
-      .filter(file=>rel(file)!==allowed&&!rel(file).endsWith('.test.ts')&&pattern.test(source(file)))
+    const kuruşPattern=/(?:\b40000\b|\b80000\b)/i;
+    const tlLiteralPattern=/\b\d{2,6}(?:[.,]\d{1,2})?\s*TL\b/i;
+    const runtimeFiles=[...walk(path.join(ROOT,'app')),...walk(path.join(ROOT,'lib'))];
+    const runtimeViolations=runtimeFiles
+      .filter(file=>rel(file)!==allowed&&!rel(file).endsWith('.test.ts')&&(kuruşPattern.test(source(file))||tlLiteralPattern.test(source(file))))
       .map(rel);
-    expect(violations,'400/800 TL literals must live only in lib/systemConfig.ts.').toEqual([]);
+
+    const documentationFiles=[path.join(ROOT,'README.md')];
+    const docsDir=path.join(ROOT,'docs');
+    if(fs.existsSync(docsDir)){
+      const collectMarkdown=(dir:string):string[]=>
+        fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{
+          const full=path.join(dir,entry.name);
+          if(entry.isDirectory())return collectMarkdown(full);
+          return entry.name.endsWith('.md')?[full]:[];
+        });
+      documentationFiles.push(...collectMarkdown(docsDir));
+    }
+    const documentationViolations=documentationFiles
+      .filter(file=>fs.existsSync(file)&&tlLiteralPattern.test(fs.readFileSync(file,'utf8')))
+      .map(rel);
+
+    expect(
+      [...runtimeViolations,...documentationViolations],
+      'Product prices must come from lib/systemConfig.ts; runtime copy and documentation must not hard-code TL amounts.'
+    ).toEqual([]);
   });
 
   it('AI/adaptive endpoints enforce server-side feature flags',()=>{
@@ -153,8 +173,11 @@ describe('KEKS production safety policies',()=>{
 
   it('Vercel production builds require the CI-approved marker',()=>{
     const vercel=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8')) as {ignoreCommand?:string};
+    const ignoreScript=fs.readFileSync(path.join(ROOT,'scripts','vercel-ignore-build.sh'),'utf8');
     const workflow=fs.readFileSync(path.join(ROOT,'.github','workflows','build.yml'),'utf8');
-    expect(vercel.ignoreCommand||'').toContain('ci: deploy approved ');
+    expect(vercel.ignoreCommand).toBe('bash scripts/vercel-ignore-build.sh');
+    expect(ignoreScript).toContain('ci: deploy approved ');
+    expect(ignoreScript).toContain('CI-approved source:');
     expect(workflow).toContain('approve-production:');
     expect(workflow).toContain('ci: deploy approved $SOURCE_SHA [skip ci]');
     expect(workflow).toContain('needs: build');
