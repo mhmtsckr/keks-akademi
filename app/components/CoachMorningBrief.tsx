@@ -35,5 +35,14 @@ export function CoachMorningBrief(){
         <div className="notice" style={{marginTop:10}}><strong>Önerilen koç aksiyonu:</strong> {s.suggestedAction}</div>
       </div>)}</div>
       :<div className="notice">Bugün acil müdahale gerektiren somut sinyal oluşmadı.</div>}
+    {brief.cohortGroups&&<details style={{marginTop:14}}>
+      <summary><strong>KOHORT / GRUP GÖRÜNÜMÜ</strong></summary>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',marginTop:10}}>
+        <div className="card"><strong>En fazla tekrar/görev geciktirenler</strong><p className="muted">{brief.cohortGroups.mostOverdue?.length?brief.cohortGroups.mostOverdue.map((x:any)=>x.studentName).join(' · '):'Yok'}</p></div>
+        <div className="card"><strong>Doğruluğu düşenler</strong><p className="muted">{brief.cohortGroups.accuracyDecline?.length?brief.cohortGroups.accuracyDecline.map((x:any)=>x.studentName).join(' · '):'Yok'}</p></div>
+        <div className="card"><strong>Deneme takibi gerekenler</strong><p className="muted">{brief.cohortGroups.examFollowUp?.length?brief.cohortGroups.examFollowUp.map((x:any)=>x.studentName).join(' · '):'Yok'}</p></div>
+        <div className="card"><strong>Görüşme önerilenler</strong><p className="muted">{brief.cohortGroups.needsMeeting?.length?brief.cohortGroups.needsMeeting.map((x:any)=>x.studentName).join(' · '):'Yok'}</p></div>
+      </div>
+    </details>}
   </div>;
 }
