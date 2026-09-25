@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import { createPaytrToken,resolvePaytrCredentials } from '@/lib/paytr';
 import { merchantOid } from '@/lib/security';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
-import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
+import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 
 const schema = z.object({
   email: z.string().email(),
@@ -28,7 +28,7 @@ async function POST__handler(req: Request) {
   const input = await readJson(req, schema);
   const now=new Date();
   const month=turkeyMonthWindow(now);
-  const product=keksMonthlyProduct(now);
+  const product=await getKeksMonthlyProduct(now);
 
   const pendingCutoff=new Date(Math.max(month.start.getTime(),now.getTime()-45*60*1000));
   const [existingPayment,existingAccess,latestAssessment]=await Promise.all([

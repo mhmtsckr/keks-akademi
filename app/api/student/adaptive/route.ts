@@ -2,10 +2,12 @@ import { withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { buildStudentInsights } from '@/lib/analytics';
+import { isFeatureEnabled } from '@/lib/systemConfig';
 
 async function GET__handler(){
  const user=await requireRole(['STUDENT']);
  if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+ if(!(await isFeatureEnabled('ADAPTIVE_RECOMMENDATION',user.student.studentCode)))return NextResponse.json({error:'Adaptif öneri bu hesap için etkin değil.'},{status:403});
  const insights=await buildStudentInsights(user.student.id);
  const weak=insights.weakSubjects[0];
  const incomplete=insights.incomplete.find(x=>!weak||x.subject===weak.subject)||insights.incomplete[0];

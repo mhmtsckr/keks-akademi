@@ -1,6 +1,6 @@
 import { db } from './db';
 
-const SENSITIVE_KEYS=/^(password|currentPassword|newPassword|passwordConfirm|token|authToken|accessToken|refreshToken|challenge|verificationCode|otp|appPassword|merchantKey|merchantSalt|accessKey)$/i;
+const SENSITIVE_KEYS=/(password|passphrase|token|secret|authorization|cookie|challenge|verification.?code|otp|app.?password|merchant.?key|merchant.?salt|access.?key|passwordHash|codeHash|ciphertext)/i;
 
 function sanitize(value:unknown,depth=0):unknown{
   if(depth>6)return '[TRUNCATED]';
@@ -13,7 +13,12 @@ function sanitize(value:unknown,depth=0):unknown{
     }
     return out;
   }
-  if(typeof value==='string'&&value.length>2000)return value.slice(0,2000)+'…';
+  if(typeof value==='string'){
+    const clean=value
+      .replace(/Bearer\s+[A-Za-z0-9._~-]+/gi,'Bearer [REDACTED]')
+      .replace(/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}/g,'[REDACTED_JWT]');
+    return clean.length>2000?clean.slice(0,2000)+'…':clean;
+  }
   return value;
 }
 
@@ -35,6 +40,6 @@ export async function writeAudit(input:{
       metadata:sanitize(input.metadata) as any
     }});
   }catch(e){
-    console.error('AUDIT_LOG_FAILED',e);
+    console.error('AUDIT_LOG_FAILED');
   }
 }

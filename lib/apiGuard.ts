@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ZodError, type z } from 'zod';
+import { createRequestId,recordApiError } from './errorMonitoring';
 
 /** HTTP durumu taşıyan, istemciye gösterilebilir hata. */
 export class HttpError extends Error {
@@ -78,7 +79,13 @@ export function withApiErrors<A extends unknown[], R extends Response>(
           { status: 400 },
         );
       }
-      throw error;
+      const req=args[0] instanceof Request?args[0] as Request:null;
+      const requestId=createRequestId(req);
+      await recordApiError(req,error,requestId);
+      return NextResponse.json(
+        {error:'Beklenmeyen bir sunucu hatası oluştu.',requestId},
+        {status:500,headers:{'x-request-id':requestId}}
+      );
     }
   };
 }

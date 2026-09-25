@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { buildReport, scoreAssessment } from '@/lib/scoring';
 import { sendAssessmentReport } from '@/lib/mailer';
-import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
+import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
 import { readJson, withApiErrors } from '@/lib/apiGuard';
@@ -35,7 +35,7 @@ async function POST__handler(req:Request){
     const payment=await db.payment.findUnique({where:{id:access.paymentId},select:{createdAt:true}});
     if(payment?.createdAt)acquiredAt=payment.createdAt;
   }
-  const product=keksMonthlyProduct(acquiredAt);
+  const product=await getKeksMonthlyProduct(acquiredAt);
   const latestAssessment=await db.assessment.findFirst({
     where:{studentId:user.student.id},
     orderBy:{completedAt:'desc'},
@@ -180,7 +180,7 @@ async function POST__handler(req:Request){
     });
     await db.assessment.update({where:{id:assessment.id},data:{emailedAt:new Date()}});
   }catch(error){
-    console.error('SCREENING_ADMIN_EMAIL_FAILED',error);
+    console.error('SCREENING_ADMIN_EMAIL_FAILED');
   }
 
   return NextResponse.json({

@@ -7,9 +7,12 @@ async function GET__handler(){
   await requireRole(['ADMIN']);
   let database='OK';
   try{await db.$queryRawUnsafe('SELECT 1')}catch{database='ERROR'}
-  const recentAudit=await db.auditLog.count({where:{createdAt:{gte:new Date(Date.now()-24*60*60*1000)}}});
-  const lastBackup=await db.auditLog.findFirst({where:{action:'BACKUP_SUCCEEDED'},orderBy:{createdAt:'desc'},select:{createdAt:true}});
-  const [gmailConfig,paytrConfig]=await Promise.all([
+  const since24h=new Date(Date.now()-24*60*60*1000);
+  const [recentAudit,lastBackup,recentApiErrors,lastApiError,gmailConfig,paytrConfig]=await Promise.all([
+    db.auditLog.count({where:{createdAt:{gte:since24h}}}),
+    db.auditLog.findFirst({where:{action:'BACKUP_SUCCEEDED'},orderBy:{createdAt:'desc'},select:{createdAt:true}}),
+    db.auditLog.count({where:{action:'API_ERROR_500',entityType:'ApiError',createdAt:{gte:since24h}}}),
+    db.auditLog.findFirst({where:{action:'API_ERROR_500',entityType:'ApiError'},orderBy:{createdAt:'desc'},select:{createdAt:true,entityId:true,metadata:true}}),
     db.emailSenderConfig.findUnique({where:{id:'gmail'}}),
     db.paytrConfig.findUnique({where:{id:'paytr'}})
   ]);
@@ -32,8 +35,13 @@ async function GET__handler(){
     reportEmailProvider:'GMAIL',
     reportEmailStatus:gmailReady?'READY':'GMAIL_CONNECTION_REQUIRED',
     appUrl:Boolean(process.env.APP_URL||process.env.VERCEL_URL||process.env.VERCEL_PROJECT_PRODUCTION_URL),
-    recentAudit
-    ,backup:{lastSuccessfulAt:lastBackup?.createdAt?.toISOString()||null,configured:Boolean(process.env.BACKUP_STATUS_SECRET),status:!lastBackup?'NEVER_RECORDED':Date.now()-lastBackup.createdAt.getTime()>48*3600000?'STALE':'RECENT'}
+    recentAudit,
+    apiErrors:{
+      last24h:recentApiErrors,
+      lastAt:lastApiError?.createdAt?.toISOString()||null,
+      lastRequestId:lastApiError?.entityId||null
+    },
+    backup:{lastSuccessfulAt:lastBackup?.createdAt?.toISOString()||null,configured:Boolean(process.env.BACKUP_STATUS_SECRET),status:!lastBackup?'NEVER_RECORDED':Date.now()-lastBackup.createdAt.getTime()>48*3600000?'STALE':'RECENT'}
   }});
 }
 

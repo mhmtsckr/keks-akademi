@@ -1,9 +1,9 @@
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
+import { DEFAULT_PRODUCT_PRICING,getProductPricing,type ProductPricing } from '@/lib/systemConfig';
 
 export const KEKS_TEST_BASE_NAME='KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu';
-export const KEKS_TEST_LIST_PRICE_KURUS=80000;
-export const KEKS_TEST_PRICE_KURUS=40000;
-export const KEKS_TEST_DISCOUNT_PERCENT=50;
+export const KEKS_TEST_LIST_PRICE_KURUS=DEFAULT_PRODUCT_PRICING.listPriceKurus;
+export const KEKS_TEST_PRICE_KURUS=DEFAULT_PRODUCT_PRICING.priceKurus;
 
 export type KeksMonthlyProduct={
   key:string;
@@ -16,23 +16,32 @@ export type KeksMonthlyProduct={
   discountPercent:number;
 };
 
-export function keksMonthlyProduct(date=new Date()):KeksMonthlyProduct{
+function priceLabel(kurus:number){
+  return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2}).format(kurus/100)+' TL';
+}
+
+export function keksMonthlyProduct(date=new Date(),pricing:Pick<ProductPricing,'listPriceKurus'|'priceKurus'>=DEFAULT_PRODUCT_PRICING):KeksMonthlyProduct{
   const window=turkeyMonthWindow(date);
   const monthName=new Intl.DateTimeFormat('tr-TR',{
     timeZone:'Europe/Istanbul',
     month:'long'
   }).format(date).toLocaleUpperCase('tr-TR');
+  const discountPercent=Math.max(0,Math.round((1-pricing.priceKurus/pricing.listPriceKurus)*100));
 
   return {
     key:window.key,
     monthName,
     name:`${monthName} AYI ${KEKS_TEST_BASE_NAME}`,
-    listPriceKurus:KEKS_TEST_LIST_PRICE_KURUS,
-    listPriceLabel:'800 TL',
-    priceKurus:KEKS_TEST_PRICE_KURUS,
-    priceLabel:'400 TL',
-    discountPercent:KEKS_TEST_DISCOUNT_PERCENT
+    listPriceKurus:pricing.listPriceKurus,
+    listPriceLabel:priceLabel(pricing.listPriceKurus),
+    priceKurus:pricing.priceKurus,
+    priceLabel:priceLabel(pricing.priceKurus),
+    discountPercent
   };
+}
+
+export async function getKeksMonthlyProduct(date=new Date()){
+  return keksMonthlyProduct(date,await getProductPricing());
 }
 
 export function productKeyFromReport(report:unknown,completedAt:Date){
@@ -40,5 +49,5 @@ export function productKeyFromReport(report:unknown,completedAt:Date){
     const product=(report as Record<string,any>).product;
     if(product&&typeof product==='object'&&typeof product.key==='string')return product.key;
   }
-  return keksMonthlyProduct(completedAt).key;
+  return turkeyMonthWindow(completedAt).key;
 }

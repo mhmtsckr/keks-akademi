@@ -3,10 +3,12 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { buildWeeklyPlan } from '@/lib/smartCoach';
+import { isFeatureEnabled } from '@/lib/systemConfig';
 
 async function POST__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('SMART_COACH',user.student.studentCode)))return NextResponse.json({error:'Akıllı Koç bu hesap için etkin değil.'},{status:403});
   const plan=await buildWeeklyPlan(user.student.id);
   const title='Akıllı Haftalık Program · '+new Date().toLocaleDateString('tr-TR');
   const row=await db.studyPlan.create({data:{studentId:user.student.id,title,payload:plan,active:true}});
@@ -15,6 +17,7 @@ async function POST__handler(){
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('SMART_COACH',user.student.studentCode)))return NextResponse.json({error:'Akıllı Koç bu hesap için etkin değil.'},{status:403});
   const plan=await buildWeeklyPlan(user.student.id);
   return NextResponse.json({ok:true,plan});
 }

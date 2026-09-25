@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { withApiErrors } from '@/lib/apiGuard';
-import { keksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
+import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm } from '@/lib/screeningForms';
 import { decryptPrivateCode } from '@/lib/security';
@@ -11,7 +11,7 @@ async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
 
-  const currentProduct=keksMonthlyProduct();
+  const currentProduct=await getKeksMonthlyProduct();
   const latest=await db.assessment.findFirst({
     where:{studentId:user.student.id},
     orderBy:{completedAt:'desc'},
@@ -36,7 +36,7 @@ async function GET__handler(){
       return NextResponse.json({
         ok:true,
         status:'COMPLETED',
-        product:report.product||keksMonthlyProduct(latest.completedAt),
+        product:report.product||await getKeksMonthlyProduct(latest.completedAt),
         assessment:{id:latest.id,completedAt:latest.completedAt,formVersion:latest.formVersion},
         workflowStatus:workflow||'ADMIN_REVIEW',
         coachAccessCode,
@@ -59,7 +59,7 @@ async function GET__handler(){
     const payment=await db.payment.findUnique({where:{id:access.paymentId},select:{createdAt:true}});
     if(payment?.createdAt)acquiredAt=payment.createdAt;
   }
-  const product=keksMonthlyProduct(acquiredAt);
+  const product=await getKeksMonthlyProduct(acquiredAt);
   const educationBand=detectEducationBand(user.student.gradeLevel);
   const form=getScreeningForm(educationBand);
   return NextResponse.json({

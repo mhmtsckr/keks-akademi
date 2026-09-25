@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { resolvePaytrCredentials,verifyPaytrCallback } from '@/lib/paytr';
+import { withApiErrors } from '@/lib/apiGuard';
 
-export async function POST(req: Request) {
+async function POST__handler(req: Request) {
   const text = await req.text();
   const params=Object.fromEntries(new URLSearchParams(text).entries());
   const paytr=await resolvePaytrCredentials();
@@ -27,3 +28,5 @@ export async function POST(req: Request) {
   }
   return new NextResponse('OK');
 }
+
+export const POST=withApiErrors(POST__handler);
