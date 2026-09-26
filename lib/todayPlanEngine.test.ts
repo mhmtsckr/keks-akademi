@@ -60,12 +60,12 @@ describe('Bugünün Planı motoru',()=>{
     expect(engine).toContain('db.topicProgress.findMany');
   });
 
-  it('günlük sıralamayı öğrenci başına bir snapshot olarak sabitler',()=>{
-    const schema=read('prisma/schema.prisma');
+  it('günlük sıralamayı öğrenci ve tarih anahtarıyla audit snapshot olarak sabitler',()=>{
     const engine=read('lib/learningEngine.ts');
-    expect(schema).toContain('model DailyPlanSnapshot');
-    expect(schema).toContain('@@unique([studentId, dateKey])');
-    expect(engine).toContain('db.dailyPlanSnapshot.upsert');
+    expect(engine).toContain("TODAY_PLAN_SNAPSHOT_ACTION='STUDENT_TODAY_PLAN_SNAPSHOT'");
+    expect(engine).toContain("entityType:TODAY_PLAN_SNAPSHOT_ENTITY");
+    expect(engine).toContain('db.auditLog.findFirst');
+    expect(engine).toContain('db.auditLog.create');
     expect(engine).toContain('ensureTodayLearningPlan');
     expect(engine).toContain('readTodayLearningPlan');
   });
