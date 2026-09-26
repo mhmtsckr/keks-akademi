@@ -553,6 +553,151 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   };
 }
 
+export type TodayPlanGenerationSource='MORNING_SCHEDULE'|'ON_DEMAND';
+
+type TodayLearningPlan=Awaited<ReturnType<typeof buildTodayLearningPlan>>;
+
+function asTodayLearningPlan(value:unknown):TodayLearningPlan|null{
+  if(!value||typeof value!=='object'||Array.isArray(value))return null;
+  const plan=value as Record<string,unknown>;
+  if(typeof plan.date!=='string'||!Array.isArray(plan.plan))return null;
+  return value as TodayLearningPlan;
+}
+
+async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningPlan){
+  const today=utcDateFromKey(stored.date);
+  const tomorrow=addDays(today,1);
+  const actionIds=stored.plan.map((x:any)=>x.actionId).filter((x:any):x is string=>typeof x==='string');
+  const reviewIds=stored.plan.flatMap((x:any)=>Array.isArray(x.reviewIds)?x.reviewIds:[]).filter((x:any):x is string=>typeof x==='string');
+  const topicPairs=stored.plan
+    .filter((x:any)=>x.source==='TOPIC'&&typeof x.subject==='string'&&typeof x.topic==='string')
+    .map((x:any)=>({subject:x.subject as string,topic:x.topic as string}));
+
+  const [actions,reviews,topics,practice]=await Promise.all([
+    actionIds.length?db.coachingAction.findMany({
+      where:{studentId,id:{in:actionIds}},
+      select:{id:true,status:true,submission:{select:{id:true}}}
+    }):Promise.resolve([]),
+    reviewIds.length?db.reviewQueueItem.findMany({
+      where:{studentId,id:{in:reviewIds}},
+      select:{id:true,status:true}
+    }):Promise.resolve([]),
+    topicPairs.length?db.topicProgress.findMany({
+      where:{studentId,OR:topicPairs.map(x=>({subject:x.subject,topic:x.topic}))},
+      select:{subject:true,topic:true,completed:true}
+    }):Promise.resolve([]),
+    db.practiceLog.findMany({
+      where:{studentId,date:{gte:today,lt:tomorrow}},
+      select:{subject:true,topic:true,total:true}
+    })
+  ]);
+
+  const completedActions=new Set(actions.filter(x=>x.status==='COMPLETED'||Boolean(x.submission)).map(x=>x.id));
+  const reviewStatus=new Map(reviews.map(x=>[x.id,x.status]));
+  const completedTopics=new Set(topics.filter(x=>x.completed).map(x=>x.subject+'|'+x.topic));
+  const practiceTotals=new Map<string,number>();
+  for(const row of practice){
+    const key=row.subject+'|'+(row.topic||'Genel/Karma');
+    practiceTotals.set(key,(practiceTotals.get(key)||0)+row.total);
+  }
+
+  const plan=stored.plan.map((raw:any)=>{
+    const item={...raw};
+    if(item.source==='ACTION'&&typeof item.actionId==='string'){
+      item.completed=completedActions.has(item.actionId);
+    }else if(item.source==='REVIEW_BATCH'&&Array.isArray(item.reviewIds)){
+      const remaining=item.reviewIds.filter((id:string)=>reviewStatus.get(id)!=='COMPLETED');
+      item.completed=remaining.length===0;
+      item.targetValue=remaining.length;
+      item.title=remaining.length?remaining.length+' gecikmiş tekrar':'Tekrarlar tamamlandı';
+    }else if(item.source==='TOPIC'&&typeof item.subject==='string'&&typeof item.topic==='string'){
+      item.completed=completedTopics.has(item.subject+'|'+item.topic);
+    }else if(item.source==='PRACTICE'&&typeof item.subject==='string'){
+      const key=item.subject+'|'+(item.topic||'Genel/Karma');
+      item.completed=(practiceTotals.get(key)||0)>=Number(item.targetValue||0);
+    }
+    return item;
+  });
+
+  return {...stored,plan};
+}
+
+export async function saveTodayLearningPlanSnapshot(
+  studentId:string,
+  now=new Date(),
+  generationSource:TodayPlanGenerationSource='ON_DEMAND'
+){
+  const plan=await buildTodayLearningPlan(studentId,now);
+  await db.dailyPlanSnapshot.upsert({
+    where:{studentId_dateKey:{studentId,dateKey:plan.date}},
+    create:{
+      studentId,
+      dateKey:plan.date,
+      engineVersion:plan.engineVersion,
+      generationSource,
+      payload:plan as any,
+      generatedAt:now
+    },
+    update:{
+      engineVersion:plan.engineVersion,
+      generationSource,
+      payload:plan as any,
+      generatedAt:now
+    }
+  });
+  return plan;
+}
+
+export async function ensureTodayLearningPlan(studentId:string,now=new Date()){
+  const dateKey=trDateKey(now);
+  const existing=await db.dailyPlanSnapshot.findUnique({
+    where:{studentId_dateKey:{studentId,dateKey}},
+    select:{payload:true}
+  });
+  const stored=asTodayLearningPlan(existing?.payload);
+  if(stored)return hydrateTodayPlanCompletion(studentId,stored);
+  const created=await saveTodayLearningPlanSnapshot(studentId,now,'ON_DEMAND');
+  return hydrateTodayPlanCompletion(studentId,created);
+}
+
+export async function readTodayLearningPlan(studentId:string,now=new Date()){
+  const dateKey=trDateKey(now);
+  const existing=await db.dailyPlanSnapshot.findUnique({
+    where:{studentId_dateKey:{studentId,dateKey}},
+    select:{payload:true}
+  });
+  const stored=asTodayLearningPlan(existing?.payload);
+  return stored?hydrateTodayPlanCompletion(studentId,stored):null;
+}
+
+export async function generateMorningTodayPlans(now=new Date()){
+  const students=await db.student.findMany({
+    select:{id:true,user:{select:{status:true}}}
+  });
+  const eligible=students.filter(x=>!x.user||x.user.status==='ACTIVE');
+  let generated=0;
+  let failed=0;
+
+  for(let offset=0;offset<eligible.length;offset+=5){
+    const chunk=eligible.slice(offset,offset+5);
+    const results=await Promise.allSettled(
+      chunk.map(student=>saveTodayLearningPlanSnapshot(student.id,now,'MORNING_SCHEDULE'))
+    );
+    for(const result of results){
+      if(result.status==='fulfilled')generated++;
+      else failed++;
+    }
+  }
+
+  return {
+    date:trDateKey(now),
+    generated,
+    failed,
+    skipped:students.length-eligible.length,
+    engineVersion:'TODAY_PLAN_V2'
+  };
+}
+
 export function adaptiveReviewIntervalDays(input:{nextStep:number;correct:boolean;previousCorrect:boolean|null}){
   const base=[0,1,3,7,14,28];
   if(!input.correct){
