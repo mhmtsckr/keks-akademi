@@ -6,7 +6,7 @@ import { buildReport, scoreAssessment } from '@/lib/scoring';
 import { sendAssessmentReport } from '@/lib/mailer';
 import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
-import { getScreeningForm } from '@/lib/screeningForms';
+import { getScreeningForm,SCREENING_DISCLAIMER } from '@/lib/screeningForms';
 import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { writeAudit } from '@/lib/audit';
 import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
@@ -81,6 +81,9 @@ async function POST__handler(req:Request){
     educationBand,
     questionCount:form.questions.length,
     source:'KEKS_NATIVE',
+    validationStatus:'EDUCATIONAL_SCREENING',
+    disclaimer:SCREENING_DISCLAIMER,
+    interpretationNote:'Bu sonuçlar eğitimsel eğilim taramasıdır; psikolojik tanı, kesin kişilik tipi, başarı/başarısızlık veya yüksek risk etiketi değildir. Görüşme, gözlem ve akademik performans verileriyle birlikte değerlendirilmelidir.',
     product:{
       ...product,
       acquiredAt:acquiredAt.toISOString(),
