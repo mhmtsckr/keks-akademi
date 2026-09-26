@@ -96,6 +96,42 @@ function estimatedTaskMinutes(input:{metricType?:string|null;targetValue:number;
   return Math.max(5,Math.round(input.targetValue*5));
 }
 
+export type TodayPlanSource='ROUTINE'|'REVIEW_BATCH'|'TOPIC'|'PRACTICE'|'ACTION'|'MICRO';
+
+function normalizedPlanText(value:string|null|undefined){
+  return (value||'').toLocaleUpperCase('tr-TR').replace(/\s+/g,' ').trim();
+}
+
+export function todayPlanSequenceRank(item:{source:TodayPlanSource|string;title?:string|null;subject?:string|null;metricType?:string|null}){
+  const text=normalizedPlanText((item.title||'')+' '+(item.subject||''));
+  if(item.source==='ROUTINE'||item.source==='ACTION'){
+    if(/PARAGRAF/.test(text))return 10;
+    if(/PROBLEM/.test(text))return 20;
+  }
+  if(item.source==='ROUTINE')return 25;
+  if(item.source==='REVIEW_BATCH')return 30;
+  if(item.source==='TOPIC')return 40;
+  if(item.source==='PRACTICE')return 50;
+  if(item.source==='ACTION'&&item.metricType==='MINUTES')return 45;
+  if(item.source==='ACTION'&&item.metricType==='QUESTIONS')return 55;
+  if(item.source==='ACTION')return 60;
+  return 70;
+}
+
+export function dailyPracticeQuestionTarget(input:{questionCapacity:number|null;accuracy:number|null}){
+  if(input.accuracy!=null&&input.accuracy<55)return 10;
+  if(input.questionCapacity!=null&&input.questionCapacity<30)return 10;
+  if(input.questionCapacity!=null&&input.questionCapacity<50)return 15;
+  return 20;
+}
+
+function routineDisplayTitle(title:string,value:number){
+  const text=normalizedPlanText(title);
+  if(/PARAGRAF/.test(text))return Math.round(value)+' paragraf';
+  if(/PROBLEM/.test(text))return Math.round(value)+' problem';
+  return title;
+}
+
 function normalizedReason(value:string|null|undefined):ErrorReasonKey|null{
   if(!value)return null;
   if(value in ERROR_REASON_LABELS)return value as ErrorReasonKey;
@@ -321,8 +357,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   const todayKey=trDateKey(now);
   const today=utcDateFromKey(todayKey);
   const tomorrow=addDays(today,1);
-  const sevenDaysAgo=new Date(now.getTime()-7*86400000);
-  const [capacity,mastery,student,actions,reviews,lastExam]=await Promise.all([
+  const [capacity,mastery,student,actions,reviews,incompleteTopics,lastExam]=await Promise.all([
     buildCapacityProfile(studentId,now),
     buildTopicMastery(studentId,now),
     db.student.findUnique({where:{id:studentId},select:{profile:true}}),
@@ -334,58 +369,46 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     db.reviewQueueItem.findMany({
       where:{studentId,status:{in:['DUE','PENDING']},dueAt:{lte:now}},
       include:{question:{select:{subject:true,topic:true,prompt:true}}},
-      orderBy:{dueAt:'asc'},take:12
+      orderBy:{dueAt:'asc'},take:20
+    }),
+    db.topicProgress.findMany({
+      where:{studentId,completed:false},
+      select:{id:true,examType:true,subject:true,topic:true,updatedAt:true},
+      orderBy:{updatedAt:'asc'},take:60
     }),
     db.examResult.findFirst({where:{studentId},orderBy:{createdAt:'desc'},select:{createdAt:true,examType:true}})
   ]);
 
   const masteryMap=new Map(mastery.map(x=>[x.subject+'|'+x.topic,x]));
   const items:any[]=[];
+  const actionTitleKeys=new Set<string>();
 
   for(const action of actions){
     const topic=action.topic||'Genel/Karma';
     const m=masteryMap.get((action.subject||action.title)+'|'+topic);
     const done=Boolean(action.submission||action.status==='COMPLETED');
-    items.push({
+    const titleKey=normalizedPlanText(action.title);
+    actionTitleKeys.add(titleKey);
+    const item={
       id:'action:'+action.id,
-      source:'ACTION',
+      source:'ACTION' as TodayPlanSource,
       actionId:action.id,
-      title:action.title,
+      title:routineDisplayTitle(action.title,action.targetValue),
       subject:action.subject,
       topic:action.topic,
       targetValue:action.targetValue,
       metricType:action.metricType,
       estimatedMinutes:estimatedTaskMinutes({metricType:action.metricType,targetValue:action.targetValue,subject:action.subject}),
       completed:done,
-      priority:done?0:(m?.status==='RISKY'?92:m?.status==='LEARNING'?86:78),
       why:done
         ?'Bugünkü görev tamamlandı.'
         :m?.status==='RISKY'
-          ?'Bu konu riskli durumda; son performans/tekrar sinyali yeniden çalışmayı gerektiriyor.'
+          ?'Son performans ve tekrar sinyalleri bu görevin bugün yapılmasını destekliyor.'
           :m?.status==='LEARNING'
-            ?'Konu hâlâ öğreniliyor; kısa ve odaklı uygulama bugün daha yüksek katkı sağlar.'
-            :'Bugünkü onaylı planınızda yer alan görev.'
-    });
-  }
-
-  for(const review of reviews){
-    const m=masteryMap.get(review.question.subject+'|'+(review.question.topic||'Genel/Karma'));
-    items.push({
-      id:'review:'+review.id,
-      source:'REVIEW',
-      reviewId:review.id,
-      title:'Tekrar · '+review.question.subject+(review.question.topic?' · '+review.question.topic:''),
-      subject:review.question.subject,
-      topic:review.question.topic,
-      targetValue:1,
-      metricType:'REVIEW',
-      estimatedMinutes:4,
-      completed:false,
-      priority:m?.status==='RISKY'?100:95,
-      why:m?.status==='RISKY'
-        ?'Tekrar süresi doldu ve konu hâkimiyeti risk sinyali veriyor.'
-        :'Aralıklı tekrar kuyruğunda bugün yapılması gereken kayıt.'
-    });
+            ?'Konu öğrenme aşamasında olduğu için bugün kısa ve odaklı uygulama gerekiyor.'
+            :'Bugün için atanmış görev.'
+    };
+    items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
 
   const profile=record(student?.profile);
@@ -393,65 +416,209 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   for(const raw of routines.slice(0,8)){
     const r=record(raw);
     const title=typeof r.title==='string'?r.title:typeof r.name==='string'?r.name:'Günlük rutin';
+    if(actionTitleKeys.has(normalizedPlanText(title)))continue;
     const value=numberValue(r.targetValue)??numberValue(r.count)??1;
     const metricType=typeof r.metricType==='string'?r.metricType:'COUNT';
-    items.push({
-      id:'routine:'+items.length,
-      source:'ROUTINE',
-      title,
+    const item={
+      id:'routine:'+normalizedPlanText(title).replace(/[^A-Z0-9ÇĞİÖŞÜ]+/g,'-')+':'+Math.round(value),
+      source:'ROUTINE' as TodayPlanSource,
+      title:routineDisplayTitle(title,value),
       subject:typeof r.subject==='string'?r.subject:null,
       topic:typeof r.topic==='string'?r.topic:null,
       targetValue:value,
       metricType,
       estimatedMinutes:estimatedTaskMinutes({metricType,targetValue:value,subject:typeof r.subject==='string'?r.subject:null}),
       completed:false,
-      priority:88,
-      why:'Kişisel profilinizde tanımlı günlük rutin.'
-    });
+      why:'Her gün sürdürülen temel çalışma rutini.'
+    };
+    items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
 
-  const sorted=items.sort((a,b)=>b.priority-a.priority||a.estimatedMinutes-b.estimatedMinutes);
-  let usedMinutes=sorted.filter(x=>x.completed).reduce((n,x)=>n+x.estimatedMinutes,0);
+  const maxReviews=capacity.suggestedDailyMinutes>=240?4:capacity.suggestedDailyMinutes>=150?3:2;
+  const reviewBatch=reviews.slice(0,maxReviews);
+  if(reviewBatch.length){
+    const item={
+      id:'review-batch:'+todayKey,
+      source:'REVIEW_BATCH' as TodayPlanSource,
+      reviewIds:reviewBatch.map(x=>x.id),
+      title:reviewBatch.length+' gecikmiş tekrar',
+      subject:null,
+      topic:null,
+      targetValue:reviewBatch.length,
+      metricType:'REVIEWS',
+      estimatedMinutes:reviewBatch.length*4,
+      completed:false,
+      why:'Aralıklı tekrar kuyruğunda süresi gelen kayıtlar tek çalışma bloğunda toplandı.'
+    };
+    items.push({...item,sequence:todayPlanSequenceRank(item)});
+  }
+
+  const weakest=mastery.find(x=>x.status==='RISKY'||x.status==='LEARNING')||mastery[0]||null;
+  const focusTopic=
+    (weakest?incompleteTopics.find(x=>x.subject===weakest.subject&&x.topic===weakest.topic):null)
+    ||(weakest?incompleteTopics.find(x=>x.subject===weakest.subject):null)
+    ||incompleteTopics[0]
+    ||(weakest?{id:'mastery-focus',examType:lastExam?.examType||'GENEL',subject:weakest.subject,topic:weakest.topic,updatedAt:now}:null);
+
+  if(focusTopic){
+    const alreadyHasTopicAction=items.some(x=>x.source==='ACTION'&&!x.completed&&x.subject===focusTopic.subject&&(x.topic||'Genel/Karma')===focusTopic.topic);
+    if(!alreadyHasTopicAction){
+      const item={
+        id:'topic:'+focusTopic.subject+'|'+focusTopic.topic,
+        source:'TOPIC' as TodayPlanSource,
+        title:focusTopic.subject+' · '+focusTopic.topic+' konu tamamlama',
+        subject:focusTopic.subject,
+        topic:focusTopic.topic,
+        targetValue:35,
+        metricType:'MINUTES',
+        estimatedMinutes:35,
+        completed:false,
+        why:'Tamamlanmamış konu ve geçmiş performans sinyalleri birlikte değerlendirildi.'
+      };
+      items.push({...item,sequence:todayPlanSequenceRank(item)});
+    }
+
+    const matchingMastery=masteryMap.get(focusTopic.subject+'|'+focusTopic.topic)||weakest;
+    const questionTarget=dailyPracticeQuestionTarget({
+      questionCapacity:capacity.questionCapacity,
+      accuracy:matchingMastery?.accuracy??null
+    });
+    const alreadyHasQuestionAction=items.some(x=>x.source==='ACTION'&&!x.completed&&x.metricType==='QUESTIONS'&&x.subject===focusTopic.subject&&(x.topic||'Genel/Karma')===focusTopic.topic);
+    if(!alreadyHasQuestionAction){
+      const item={
+        id:'practice:'+focusTopic.subject+'|'+focusTopic.topic,
+        source:'PRACTICE' as TodayPlanSource,
+        title:questionTarget+' soru · '+focusTopic.subject+(focusTopic.topic?' · '+focusTopic.topic:''),
+        subject:focusTopic.subject,
+        topic:focusTopic.topic,
+        targetValue:questionTarget,
+        metricType:'QUESTIONS',
+        estimatedMinutes:estimatedTaskMinutes({metricType:'QUESTIONS',targetValue:questionTarget,subject:focusTopic.subject}),
+        completed:false,
+        why:'Konu çalışmasının hemen ardından kısa ölçüm yaparak öğrenme durumunu yeniden görmek için.'
+      };
+      items.push({...item,sequence:todayPlanSequenceRank(item)});
+    }
+  }
+
+  const deduped=[...new Map(items.map(item=>[item.id,item])).values()];
+  const sorted=deduped.sort((a,b)=>a.sequence-b.sequence||a.estimatedMinutes-b.estimatedMinutes||a.title.localeCompare(b.title,'tr'));
   const budget=capacity.suggestedDailyMinutes;
+  let usedMinutes=0;
   const selected=sorted.map(item=>{
     if(item.completed)return {...item,inTodayPlan:true};
-    const fits=usedMinutes+item.estimatedMinutes<=budget||item.priority>=95;
+    const core=item.sequence<=30;
+    const fits=core||usedMinutes+item.estimatedMinutes<=budget;
     if(fits)usedMinutes+=item.estimatedMinutes;
     return {...item,inTodayPlan:fits};
   });
 
-  const weakest=mastery.find(x=>x.status==='RISKY'||x.status==='LEARNING');
-  if(weakest&&budget-usedMinutes>=5){
-    selected.push({
+  if(!selected.some(x=>x.inTodayPlan&&!x.completed)&&weakest){
+    const item={
       id:'micro:'+weakest.subject+'|'+weakest.topic,
-      source:'MICRO',
-      title:'5 dakikalık mikro tekrar · '+weakest.subject+' · '+weakest.topic,
-      subject:weakest.subject,topic:weakest.topic,targetValue:5,metricType:'MINUTES',
-      estimatedMinutes:5,completed:false,priority:60,inTodayPlan:true,
-      why:'Boş kapasite, en zayıf konuya kısa tekrar olarak ayrıldı.'
-    });
+      source:'MICRO' as TodayPlanSource,
+      title:'5 dk tekrar · '+weakest.subject+' · '+weakest.topic,
+      subject:weakest.subject,
+      topic:weakest.topic,
+      targetValue:5,
+      metricType:'MINUTES',
+      estimatedMinutes:5,
+      completed:false,
+      sequence:70,
+      inTodayPlan:true,
+      why:'Bugün için başka aktif görev bulunmadığı için kısa tekrar önerildi.'
+    };
+    selected.push(item);
     usedMinutes+=5;
   }
 
   const examGap=lastExam?Math.floor((now.getTime()-lastExam.createdAt.getTime())/86400000):null;
   const notifications:string[]=[];
-  if(reviews.length>=3)notifications.push('Bugün '+reviews.length+' tekrarınızın zamanı geldi.');
-  if(examGap==null)notifications.push('Henüz deneme kaydı yok; koçunuzla ilk deneme tarihini belirleyin.');
-  else if(examGap>=7)notifications.push('Deneme girişiniz '+examGap+' gündür güncellenmedi.');
-  if(capacity.lowCompletionDays.some(x=>x.day===weekdayKey(now)))notifications.push('Bugün geçmişte görev tamamlama oranınızın daha düşük olduğu günlerden biri; plan hacmi kapasiteye göre sınırlı tutuldu.');
+  if(reviews.length>reviewBatch.length)notifications.push((reviews.length-reviewBatch.length)+' tekrar bugünkü kapasiteyi aşmaması için sonraki plana bırakıldı.');
+  if(examGap==null)notifications.push('Henüz deneme kaydı yok.');
+  else if(examGap>=7)notifications.push('Deneme kaydı '+examGap+' gündür güncellenmedi.');
+  if(capacity.lowCompletionDays.some(x=>x.day===weekdayKey(now)))notifications.push('Bugünkü görev hacmi geçmiş tamamlama davranışına göre sınırlı tutuldu.');
 
   return {
+    engineVersion:'TODAY_PLAN_V2',
     generatedAt:now.toISOString(),
     date:todayKey,
-    coreLoop:'Ölç → Planla → Uygulat → Kaydet → Tekrar Ettir → Yeniden Ölç → Koça Aksiyon Öner',
     capacity,
-    plan:selected.filter(x=>x.inTodayPlan),
+    plan:selected.filter(x=>x.inTodayPlan).map((x,index)=>({...x,order:index+1})),
     deferred:selected.filter(x=>!x.inTodayPlan&&!x.completed),
     plannedMinutes:usedMinutes,
     masteryFocus:weakest||null,
     notifications,
-    explanation:'Sıralama; bugün atanmış görevler, tekrar zamanı, konu hâkimiyeti ve öğrencinin gözlenen günlük kapasitesini birlikte kullanır.'
+    explanation:'Günlük sıra; temel rutinler, vadesi gelen tekrarlar, tamamlanmamış konu, ardından performans ölçümü ve kalan görevler olacak şekilde kapasiteye göre oluşturulur.'
   };
+}
+
+const TODAY_PLAN_SNAPSHOT_KIND='TODAY_PLAN_V2';
+
+async function findTodayPlanSnapshot(studentId:string,dateKey:string){
+  const day=utcDateFromKey(dateKey);
+  const rows=await db.dailyLog.findMany({
+    where:{studentId,date:{gte:day,lt:addDays(day,1)}},
+    select:{id:true,payload:true,createdAt:true},
+    orderBy:{createdAt:'desc'}
+  });
+  return rows.find(row=>{
+    const payload=record(row.payload);
+    return payload.kind===TODAY_PLAN_SNAPSHOT_KIND&&payload.date===dateKey;
+  })||null;
+}
+
+export async function persistTodayPlanSnapshot(studentId:string,plan:Awaited<ReturnType<typeof buildTodayLearningPlan>>){
+  const date=utcDateFromKey(plan.date);
+  const existing=await findTodayPlanSnapshot(studentId,plan.date);
+  const payload={
+    kind:TODAY_PLAN_SNAPSHOT_KIND,
+    date:plan.date,
+    generatedAt:plan.generatedAt,
+    engineVersion:plan.engineVersion,
+    order:plan.plan.map(x=>x.id),
+    plan:plan.plan.map(x=>({
+      id:x.id,source:x.source,title:x.title,subject:x.subject,topic:x.topic,
+      targetValue:x.targetValue,metricType:x.metricType,estimatedMinutes:x.estimatedMinutes,order:x.order
+    }))
+  };
+  if(existing){
+    await db.dailyLog.update({where:{id:existing.id},data:{payload}});
+    return {id:existing.id,created:false};
+  }
+  const row=await db.dailyLog.create({data:{studentId,date,payload}});
+  return {id:row.id,created:true};
+}
+
+export async function getTodayLearningPlan(studentId:string,now=new Date()){
+  const current=await buildTodayLearningPlan(studentId,now);
+  const snapshot=await findTodayPlanSnapshot(studentId,current.date);
+  if(!snapshot){
+    await persistTodayPlanSnapshot(studentId,current);
+    return {...current,morningGeneratedAt:current.generatedAt,refreshedAt:current.generatedAt};
+  }
+
+  const payload=record(snapshot.payload);
+  const order=Array.isArray(payload.order)?payload.order.filter((x):x is string=>typeof x==='string'):[];
+  const position=new Map(order.map((id,index)=>[id,index]));
+  const plan=[...current.plan].sort((a,b)=>{
+    const pa=position.has(a.id)?position.get(a.id)!:Number.MAX_SAFE_INTEGER;
+    const pb=position.has(b.id)?position.get(b.id)!:Number.MAX_SAFE_INTEGER;
+    return pa-pb||a.order-b.order;
+  }).map((item,index)=>({...item,order:index+1}));
+
+  return {
+    ...current,
+    plan,
+    morningGeneratedAt:typeof payload.generatedAt==='string'?payload.generatedAt:current.generatedAt,
+    refreshedAt:now.toISOString()
+  };
+}
+
+export async function buildAndPersistTodayPlan(studentId:string,now=new Date()){
+  const plan=await buildTodayLearningPlan(studentId,now);
+  await persistTodayPlanSnapshot(studentId,plan);
+  return plan;
 }
 
 export function adaptiveReviewIntervalDays(input:{nextStep:number;correct:boolean;previousCorrect:boolean|null}){
