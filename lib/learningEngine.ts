@@ -540,7 +540,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   if(capacity.lowCompletionDays.some(x=>x.day===weekdayKey(now)))notifications.push('Bugünkü görev hacmi geçmiş tamamlama davranışına göre sınırlı tutuldu.');
 
   return {
-    engineVersion:'TODAY_PLAN_V2',
+    engineVersion:'TODAY_PLAN_V3',
     generatedAt:now.toISOString(),
     date:todayKey,
     capacity,
@@ -557,11 +557,32 @@ export type TodayPlanGenerationSource='MORNING_SCHEDULE'|'ON_DEMAND';
 
 type TodayLearningPlan=Awaited<ReturnType<typeof buildTodayLearningPlan>>;
 
+const TODAY_PLAN_SNAPSHOT_ACTION='STUDENT_TODAY_PLAN_SNAPSHOT';
+const TODAY_PLAN_SNAPSHOT_ENTITY='StudentDailyPlan';
+
+function todayPlanSnapshotEntityId(studentId:string,dateKey:string){
+  return studentId+':'+dateKey;
+}
+
 function asTodayLearningPlan(value:unknown):TodayLearningPlan|null{
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
   const plan=value as Record<string,unknown>;
   if(typeof plan.date!=='string'||!Array.isArray(plan.plan))return null;
   return value as TodayLearningPlan;
+}
+
+async function storedTodayLearningPlan(studentId:string,dateKey:string){
+  const row=await db.auditLog.findFirst({
+    where:{
+      action:TODAY_PLAN_SNAPSHOT_ACTION,
+      entityType:TODAY_PLAN_SNAPSHOT_ENTITY,
+      entityId:todayPlanSnapshotEntityId(studentId,dateKey)
+    },
+    orderBy:{createdAt:'desc'},
+    select:{metadata:true}
+  });
+  const meta=record(row?.metadata);
+  return asTodayLearningPlan(meta.plan);
 }
 
 async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningPlan){
@@ -628,45 +649,35 @@ export async function saveTodayLearningPlanSnapshot(
   generationSource:TodayPlanGenerationSource='ON_DEMAND'
 ){
   const plan=await buildTodayLearningPlan(studentId,now);
-  await db.dailyPlanSnapshot.upsert({
-    where:{studentId_dateKey:{studentId,dateKey:plan.date}},
-    create:{
-      studentId,
+  await db.auditLog.create({data:{
+    action:TODAY_PLAN_SNAPSHOT_ACTION,
+    entityType:TODAY_PLAN_SNAPSHOT_ENTITY,
+    entityId:todayPlanSnapshotEntityId(studentId,plan.date),
+    summary:'Öğrencinin günlük görev sırası oluşturuldu.',
+    metadata:{
       dateKey:plan.date,
       engineVersion:plan.engineVersion,
       generationSource,
-      payload:plan as any,
-      generatedAt:now
-    },
-    update:{
-      engineVersion:plan.engineVersion,
-      generationSource,
-      payload:plan as any,
-      generatedAt:now
+      plan:plan as any
     }
-  });
+  }});
   return plan;
 }
 
-export async function ensureTodayLearningPlan(studentId:string,now=new Date()){
+export async function ensureTodayLearningPlan(
+  studentId:string,
+  now=new Date(),
+  generationSource:TodayPlanGenerationSource='ON_DEMAND'
+){
   const dateKey=trDateKey(now);
-  const existing=await db.dailyPlanSnapshot.findUnique({
-    where:{studentId_dateKey:{studentId,dateKey}},
-    select:{payload:true}
-  });
-  const stored=asTodayLearningPlan(existing?.payload);
+  const stored=await storedTodayLearningPlan(studentId,dateKey);
   if(stored)return hydrateTodayPlanCompletion(studentId,stored);
-  const created=await saveTodayLearningPlanSnapshot(studentId,now,'ON_DEMAND');
+  const created=await saveTodayLearningPlanSnapshot(studentId,now,generationSource);
   return hydrateTodayPlanCompletion(studentId,created);
 }
 
 export async function readTodayLearningPlan(studentId:string,now=new Date()){
-  const dateKey=trDateKey(now);
-  const existing=await db.dailyPlanSnapshot.findUnique({
-    where:{studentId_dateKey:{studentId,dateKey}},
-    select:{payload:true}
-  });
-  const stored=asTodayLearningPlan(existing?.payload);
+  const stored=await storedTodayLearningPlan(studentId,trDateKey(now));
   return stored?hydrateTodayPlanCompletion(studentId,stored):null;
 }
 
@@ -681,7 +692,7 @@ export async function generateMorningTodayPlans(now=new Date()){
   for(let offset=0;offset<eligible.length;offset+=5){
     const chunk=eligible.slice(offset,offset+5);
     const results=await Promise.allSettled(
-      chunk.map(student=>saveTodayLearningPlanSnapshot(student.id,now,'MORNING_SCHEDULE'))
+      chunk.map(student=>ensureTodayLearningPlan(student.id,now,'MORNING_SCHEDULE'))
     );
     for(const result of results){
       if(result.status==='fulfilled')generated++;
@@ -694,7 +705,7 @@ export async function generateMorningTodayPlans(now=new Date()){
     generated,
     failed,
     skipped:students.length-eligible.length,
-    engineVersion:'TODAY_PLAN_V2'
+    engineVersion:'TODAY_PLAN_V3'
   };
 }
 
