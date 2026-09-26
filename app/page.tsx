@@ -1,5 +1,7 @@
 import { getKeksMonthlyProduct } from '@/lib/monthlyProduct';
 
+export const dynamic='force-dynamic';
+
 export default async function Home() {
   const product=await getKeksMonthlyProduct();
   return <main className="home">
