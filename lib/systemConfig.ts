@@ -11,8 +11,9 @@ export type ProductPricing={
   source:'DEFAULT'|'ADMIN';
 };
 
-type FeatureMode='ALL'|'OFF'|'PILOT';
-export type FeatureKey='SMART_COACH'|'ADAPTIVE_RECOMMENDATION'|'GAMIFICATION';
+export const FEATURE_KEYS=['SMART_COACH','ADAPTIVE_RECOMMENDATION','TODAY_PLAN','SMART_NOTIFICATIONS','GAMIFICATION'] as const;
+export type FeatureMode='ALL'|'OFF'|'PILOT';
+export type FeatureKey=typeof FEATURE_KEYS[number];
 export type FeatureFlagConfig={
   key:FeatureKey;
   label:string;
@@ -32,6 +33,16 @@ export const FEATURE_FLAG_DEFINITIONS:Record<FeatureKey,{label:string;descriptio
   ADAPTIVE_RECOMMENDATION:{
     label:'Adaptif Çalışma Önerisi',
     description:'Son performansa göre sıradaki çalışma adımını gerekçesiyle gösterir.',
+    defaultMode:'ALL'
+  },
+  TODAY_PLAN:{
+    label:'Bugünün Planı Motoru',
+    description:'Gerçek kapasite, tekrar kuyruğu ve performans verisinden günlük öncelik planı üretir.',
+    defaultMode:'ALL'
+  },
+  SMART_NOTIFICATIONS:{
+    label:'Akıllı Bildirimler',
+    description:'Yalnız eylem gerektiren tekrar, deneme, plan ve yarım görev sinyallerini gösterir.',
     defaultMode:'ALL'
   },
   GAMIFICATION:{
@@ -101,7 +112,7 @@ export async function getFeatureFlag(key:FeatureKey):Promise<FeatureFlagConfig>{
 }
 
 export async function listFeatureFlags(){
-  return Promise.all((Object.keys(FEATURE_FLAG_DEFINITIONS) as FeatureKey[]).map(getFeatureFlag));
+  return Promise.all(FEATURE_KEYS.map(getFeatureFlag));
 }
 
 export async function saveFeatureFlag(actorUserId:string,input:{key:FeatureKey;mode:FeatureMode;studentCodes?:string[]}){
@@ -125,17 +136,20 @@ export async function saveFeatureFlag(actorUserId:string,input:{key:FeatureKey;m
   };
 }
 
-export async function isFeatureEnabled(key:FeatureKey,studentCode?:string|null){
-  const flag=await getFeatureFlag(key);
+export function featureEnabledForStudent(flag:Pick<FeatureFlagConfig,'mode'|'studentCodes'>,studentCode?:string|null){
   if(flag.mode==='ALL')return true;
   if(flag.mode==='OFF')return false;
   return Boolean(studentCode&&flag.studentCodes.includes(studentCode));
+}
+
+export async function isFeatureEnabled(key:FeatureKey,studentCode?:string|null){
+  return featureEnabledForStudent(await getFeatureFlag(key),studentCode);
 }
 
 export async function getStudentFeatureSnapshot(studentCode:string){
   const flags=await listFeatureFlags();
   return Object.fromEntries(flags.map(flag=>[
     flag.key,
-    flag.mode==='ALL'||(flag.mode==='PILOT'&&flag.studentCodes.includes(studentCode))
+    featureEnabledForStudent(flag,studentCode)
   ])) as Record<FeatureKey,boolean>;
 }

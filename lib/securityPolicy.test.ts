@@ -165,7 +165,9 @@ describe('KEKS production safety policies',()=>{
       'app/api/student/coachbot/route.ts',
       'app/api/student/adaptive/route.ts',
       'app/api/student/smart-plan/route.ts',
-      'app/api/coach/students/[id]/smart-plan/route.ts'
+      'app/api/coach/students/[id]/smart-plan/route.ts',
+      'app/api/student/today/route.ts',
+      'app/api/student/notifications/route.ts'
     ];
     const missing=gated.filter(file=>!source(path.join(ROOT,file)).includes('isFeatureEnabled'));
     expect(missing,'Feature flags must be enforced by APIs, not only hidden in the UI.').toEqual([]);

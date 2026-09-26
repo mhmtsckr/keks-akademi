@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
-import { FEATURE_FLAG_DEFINITIONS,listFeatureFlags,saveFeatureFlag } from '@/lib/systemConfig';
+import { FEATURE_FLAG_DEFINITIONS,FEATURE_KEYS,listFeatureFlags,saveFeatureFlag } from '@/lib/systemConfig';
 
 const schema=z.object({
-  key:z.enum(['SMART_COACH','ADAPTIVE_RECOMMENDATION','GAMIFICATION']),
+  key:z.enum(FEATURE_KEYS),
   mode:z.enum(['ALL','OFF','PILOT']),
   studentCodes:z.array(z.string().trim().min(1).max(32)).max(250).default([])
 });

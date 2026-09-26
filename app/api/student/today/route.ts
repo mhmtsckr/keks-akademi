@@ -11,10 +11,12 @@ import {
   buildExamKnowledgeMap
 } from '@/lib/learningEngine';
 import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
+import { isFeatureEnabled } from '@/lib/systemConfig';
 
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('TODAY_PLAN',user.student.studentCode)))return NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403});
 
   const [today,mastery,subjects,goal,timeline,examReport,examMap]=await Promise.all([
     buildTodayLearningPlan(user.student.id),
