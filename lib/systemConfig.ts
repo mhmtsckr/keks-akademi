@@ -136,17 +136,20 @@ export async function saveFeatureFlag(actorUserId:string,input:{key:FeatureKey;m
   };
 }
 
-export async function isFeatureEnabled(key:FeatureKey,studentCode?:string|null){
-  const flag=await getFeatureFlag(key);
+export function featureEnabledForStudent(flag:Pick<FeatureFlagConfig,'mode'|'studentCodes'>,studentCode?:string|null){
   if(flag.mode==='ALL')return true;
   if(flag.mode==='OFF')return false;
   return Boolean(studentCode&&flag.studentCodes.includes(studentCode));
+}
+
+export async function isFeatureEnabled(key:FeatureKey,studentCode?:string|null){
+  return featureEnabledForStudent(await getFeatureFlag(key),studentCode);
 }
 
 export async function getStudentFeatureSnapshot(studentCode:string){
   const flags=await listFeatureFlags();
   return Object.fromEntries(flags.map(flag=>[
     flag.key,
-    flag.mode==='ALL'||(flag.mode==='PILOT'&&flag.studentCodes.includes(studentCode))
+    featureEnabledForStudent(flag,studentCode)
   ])) as Record<FeatureKey,boolean>;
 }
