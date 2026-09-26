@@ -176,7 +176,7 @@ export function AdminAssessmentWorkflow(){
         {report.developmentSummary?.immediateActions?.length>0&&<div className="notice"><strong>İlk 28 gün için gelişim öncelikleri</strong>{report.developmentSummary.immediateActions.map((x:string,i:number)=><div key={i}>{i+1}. {x}</div>)}</div>}
         {leading.length>0&&<div className="stack">{leading.map((x:any)=><div className="card" key={x.name} style={{padding:14}}>
           <strong>{x.name} · {Number(x.score).toFixed(2)}/5</strong>
-          {x.profile&&<><p><b>Motivasyon:</b> {x.profile.motivation}</p><p><b>Güçlü yönler:</b> {x.profile.strengths}</p><p><b>Gelişim riski:</b> {x.profile.risks}</p><p><b>Çalışma yaklaşımı:</b> {x.profile.plan}</p></>}
+          {x.profile&&<><p><b>Motivasyon:</b> {x.profile.motivation}</p><p><b>Güçlü yönler:</b> {x.profile.strengths}</p><p><b>Gelişim alanları:</b> {x.profile.risks}</p><p><b>Çalışma yaklaşımı:</b> {x.profile.plan}</p></>}
         </div>)}</div>}
         {quality.warnings?.length>0&&<div className="notice error"><strong>Yanıt kalitesi uyarısı</strong>{quality.warnings.map((x:string,i:number)=><div key={i}>{x}</div>)}</div>}
         {report.developmentFocus?.length>0&&<details><summary><strong>Gelişim odakları</strong></summary><div className="briefAgenda">{report.developmentFocus.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div></details>}

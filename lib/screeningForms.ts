@@ -4,7 +4,7 @@ import { PROFESSIONAL_BASELINE_FORMS } from '@/lib/professionalScreeningData';
 export type ScreeningQuestion={id:string;orderNo:number;dimension:string;tendencyKey?:string;habitKey?:string;prompt:string;reverse:boolean;kind:'TENDENCY'|'HABIT'};
 export type ScreeningForm={title:string;version:string;educationBand:EducationBand;questions:ScreeningQuestion[];disclaimer:string;instruction:string;scale:readonly string[]};
 
-export const SCREENING_DISCLAIMER='Bu uygulama öğrencinin çalışma, motivasyon ve öz-düzenleme eğilimlerini belirlemek amacıyla hazırlanmış bir tarama aracıdır. Psikolojik tanı koymaz ve kesin kişilik tipi belirlemez. Sonuçlar; öğrenci görüşmesi, gözlem ve akademik performans verileriyle birlikte değerlendirilmelidir.';
+export const SCREENING_DISCLAIMER='Bu uygulama öğrencinin çalışma, motivasyon ve öz-düzenleme eğilimlerini belirlemek amacıyla hazırlanmış bir tarama aracıdır; psikolojik tanı koymaz ve kesin kişilik tipi belirlemez. Sonuçlar; öğrenci görüşmesi, gözlem ve akademik performans verileriyle birlikte değerlendirilmelidir.';
 
 export const SCREENING_INSTRUCTION='Ders, ödev, arkadaşlık ve günlük sorumluluklarında son iki ayı düşün. Sana en çok uyan seçeneği işaretle. Doğru ya da yanlış cevap yoktur; seni en iyi anlatan seçeneği işaretle.';
 export const SCREENING_SCALE=['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'] as const;

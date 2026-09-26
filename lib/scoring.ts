@@ -1,4 +1,4 @@
-import { TENDENCY_DIMENSION_KEYS,TENDENCY_PROFILES } from '@/lib/screeningForms';
+import { SCREENING_DISCLAIMER,TENDENCY_DIMENSION_KEYS,TENDENCY_PROFILES } from '@/lib/screeningForms';
 
 export type Answer = { questionId: string; value: number };
 export type Question = {
@@ -109,7 +109,9 @@ export function buildReport(scores: Record<string, number>, questions:Question[]
 
   return {
     title: 'KEKS – Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması',
-    disclaimer: 'Bu uygulama psikolojik tanı koymaz ve kesin kişilik tipi belirlemez. Sonuçlar görüşme, gözlem ve akademik performans verileriyle birlikte değerlendirilmelidir.',
+    disclaimer: SCREENING_DISCLAIMER,
+    validationStatus:'EDUCATIONAL_SCREENING',
+    interpretationRule:'Sonuçlar tek başına tanı, kesin kişilik tipi, başarı/başarısızlık veya yüksek risk etiketi üretmez.',
     formSource:'KEKS Profesyonel Test Serisi · eğitim düzeyine özgü işaretlemeli başlangıç formu',
     scores,
     leadingDimensions,

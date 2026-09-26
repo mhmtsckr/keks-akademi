@@ -31,6 +31,7 @@ async function POST__handler(req:Request){
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
   await db.coachBotMessage.create({data:{studentId:student.id,role:'user',content:message}});
   let reply=fallbackReply(message,student);
+  const basis='Dayanak: son '+student.practiceLogs.length+' çalışma kaydı, '+student.coachingActions.length+' aktif koçluk aksiyonu ve '+student.plans.length+' aktif plan değerlendirildi.';
   let planPreview='';
   if(/(plan|program).*(revize|güncelle|yenile)|(?:revize|güncelle|yenile).*(plan|program)/i.test(message)){
     try{
@@ -42,7 +43,7 @@ async function POST__handler(req:Request){
   }
   if(process.env.OPENAI_API_KEY&&process.env.OPENAI_MODEL){
     try{
-      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:'Bearer '+process.env.OPENAI_API_KEY,'content-type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_MODEL,input:[{role:'system',content:'Sen KEKS Akademi öğrenci rehberisin. Tanı koyma. Öğrencinin rutin çalışma sorularına kısa, uygulanabilir yanıt ver; mevcut veriyi kullan; koç kararlarını değiştirme, yalnız öneri üret.'},{role:'user',content:JSON.stringify({message,student:{goal:student.goal,gradeLevel:student.gradeLevel,practiceLogs:student.practiceLogs,actions:student.coachingActions,plans:student.plans}})}]})});
+      const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:'Bearer '+process.env.OPENAI_API_KEY,'content-type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_MODEL,input:[{role:'system',content:'Sen KEKS Akademi öğrenci rehberisin. Tanı koyma. Öğrencinin rutin çalışma sorularına kısa, uygulanabilir yanıt ver; mevcut veriyi kullan; koç kararlarını değiştirme, yalnız öneri üret. Öneri verdiğinde hangi gözleme/veriye dayandığını kısa ve anlaşılır biçimde açıkla; açıklamasız karar verme.'},{role:'user',content:JSON.stringify({message,student:{goal:student.goal,gradeLevel:student.gradeLevel,practiceLogs:student.practiceLogs,actions:student.coachingActions,plans:student.plans}})}]})});
       if(r.ok){
         const j:any=await r.json();
         const ai=j.output_text||reply;
@@ -50,8 +51,9 @@ async function POST__handler(req:Request){
       }
     }catch{}
   }
+  if(!/Dayanak:/i.test(reply))reply=reply.trim()+'\n\n'+basis;
   await db.coachBotMessage.create({data:{studentId:student.id,role:'assistant',content:reply}});
-  return NextResponse.json({ok:true,reply});
+  return NextResponse.json({ok:true,reply,basis});
 }
 
 export const POST = withApiErrors(POST__handler);
