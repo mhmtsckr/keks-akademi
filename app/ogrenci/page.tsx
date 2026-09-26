@@ -108,13 +108,13 @@ export default async function StudentPage() {
     meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{adultExamGroup?'Sınav grubu: ':'Düzey: '}{studentGroupLabel}</span>}<span>{student.plans.length} aktif program</span></>}
     wide
   >
-    <section id="bugunun-plani" className="section section-anchor">
+    {featureFlags.TODAY_PLAN&&<section id="bugunun-plani" className="section section-anchor">
       <StudentTodayPlan/>
-    </section>
+    </section>}
 
-    <section id="akilli-bildirimler" className="section section-anchor">
+    {featureFlags.SMART_NOTIFICATIONS&&<section id="akilli-bildirimler" className="section section-anchor">
       <StudentSmartNotifications/>
-    </section>
+    </section>}
 
     <section id="genel-bakis" className="section section-anchor">
       <StudentCommandCenter/>
@@ -125,8 +125,8 @@ export default async function StudentPage() {
     <section className="section"><details className="card"><summary>Diğer bölümler ve ayrıntılı araçlar</summary>
       <PanelNavigator roleLabel="Öğrenci" groups={[
         {label:'BUGÜN & PLANLAMA',description:'Günün öncelikleri, görevleri ve kişisel program.',items:[
-          {href:'#bugunun-plani',title:'Bugünün Planı',description:'Gerçek kapasiteye göre sıralanmış günlük akış',badge:'ŞİMDİ'},
-          {href:'#akilli-bildirimler',title:'Akıllı Bildirimler',description:'Yalnız eylem gerektiren çalışma sinyalleri'},
+          ...(featureFlags.TODAY_PLAN?[{href:'#bugunun-plani',title:'Bugünün Planı',description:'Gerçek kapasiteye göre sıralanmış günlük akış',badge:'ŞİMDİ'}]:[]),
+          ...(featureFlags.SMART_NOTIFICATIONS?[{href:'#akilli-bildirimler',title:'Akıllı Bildirimler',description:'Yalnız eylem gerektiren çalışma sinyalleri'}]:[]),
           {href:'#genel-bakis',title:'Kontrol Merkezi',description:'Bugünkü durum ve hızlı aksiyonlar'},
           {href:'#gunluk-gorevler',title:'Günlük Görevler',description:'Koç görevleri ve günlük kayıt'},
           {href:'#programlar',title:'Kişisel Planlar',description:'Yıllık, aylık, haftalık ve günlük plan'}
