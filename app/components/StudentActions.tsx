@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { FormEvent,useEffect,useMemo,useState } from 'react';
+import { KEKS_MONTHLY_PRODUCT } from '@/lib/productCatalog';
 
 type Question={id:string;orderNo:number;prompt:string;kind:'TENDENCY'|'HABIT';dimension:string};
 type FormDataState={title:string;version:string;educationBand:string;disclaimer:string;instruction:string;scale:string[];questionCount:number;questions:Question[]};
@@ -106,7 +107,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
     return <div className="card keksProductCard">
       <div className="keksProductTop"><ProductBrand/><span className="pill">TEK KULLANIMLIK</span></div>
       <div className="moduleEyebrow">{copy.eyebrow}</div>
-      <h2>{product?.name||'KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu'}</h2>
+      <h2>{product?.name||KEKS_MONTHLY_PRODUCT.baseName}</h2>
       <div className="notice"><strong>{copy.title}</strong><div className="muted">{copy.text}</div></div>
       {state.coachAccessCode&&<div className="notice" style={{marginTop:12}}>
         <div className="moduleEyebrow">KOÇ ERİŞİM KODU</div>
@@ -166,7 +167,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
     <div className="keksProductVisual">
       <Image
         src="/images/keks-monthly-product.webp"
-        alt="KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu"
+        alt={KEKS_MONTHLY_PRODUCT.baseName}
         fill
         sizes="(max-width: 820px) 100vw, 1100px"
         priority
@@ -177,7 +178,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
     <div className="keksProductHero">
       <div>
         <div className="moduleEyebrow">KEKS AKADEMİ · {product?.monthName||'BU AY'}</div>
-        <h2>{product?.name||'KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu'}</h2>
+        <h2>{product?.name||KEKS_MONTHLY_PRODUCT.baseName}</h2>
         <p className="muted">İki aşamalı tek üründür: önce KEKS Eğilim Taraması, ardından eğitim düzeyinize uygun Ön Görüşme Test Formu açılır. Her kullanıcı bu aylık ürünü yalnızca bir kez tamamlayabilir.</p>
         <div className="keksProductSteps">
           <span><b>1</b> KEKS Eğilim Taraması</span>
