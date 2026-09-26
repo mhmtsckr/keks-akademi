@@ -1,7 +1,8 @@
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
+import { KEKS_MONTHLY_PRODUCT } from '@/lib/productCatalog';
 import { DEFAULT_PRODUCT_PRICING,getProductPricing,type ProductPricing } from '@/lib/systemConfig';
 
-export const KEKS_TEST_BASE_NAME='KEKS Eğilim Taraması ve Eğitim Düzeyine Göre Ön Görüşme Test Formu';
+export const KEKS_TEST_BASE_NAME=KEKS_MONTHLY_PRODUCT.baseName;
 export const KEKS_TEST_LIST_PRICE_KURUS=DEFAULT_PRODUCT_PRICING.listPriceKurus;
 export const KEKS_TEST_PRICE_KURUS=DEFAULT_PRODUCT_PRICING.priceKurus;
 
