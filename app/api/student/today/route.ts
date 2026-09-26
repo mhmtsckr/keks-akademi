@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { withApiErrors } from '@/lib/apiGuard';
-import { getTodayLearningPlan } from '@/lib/learningEngine';
+import { buildTodayLearningPlan } from '@/lib/learningEngine';
 import { isFeatureEnabled } from '@/lib/systemConfig';
 
 async function GET__handler(){
@@ -9,14 +9,13 @@ async function GET__handler(){
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   if(!(await isFeatureEnabled('TODAY_PLAN',user.student.studentCode)))return NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403});
 
-  const today=await getTodayLearningPlan(user.student.id);
+  const today=await buildTodayLearningPlan(user.student.id);
 
   return NextResponse.json({
     ok:true,
     today:{
       date:today.date,
-      morningGeneratedAt:today.morningGeneratedAt,
-      refreshedAt:today.refreshedAt,
+      generatedAt:today.generatedAt,
       plannedMinutes:today.plannedMinutes,
       plan:today.plan.map(item=>({
         id:item.id,
