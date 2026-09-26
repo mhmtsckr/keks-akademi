@@ -38,10 +38,13 @@ describe('Bugünün Planı motoru',()=>{
     expect(ui).toContain('Sırayla ilerle');
   });
 
-  it('student today API yalnız eyleme dönük günlük planı döndürür',()=>{
+  it('student today API yalnız eyleme dönük günlük planı döndürür ve GET mutasyon yapmaz',()=>{
     const route=read('app/api/student/today/route.ts');
-    expect(route).toContain('buildTodayLearningPlan');
+    expect(route).toContain('ensureTodayLearningPlan');
+    expect(route).toContain('readTodayLearningPlan');
     expect(route).toContain('plan:today.plan.map');
+    expect(route).toContain('GET is read-only');
+    expect(route).toContain('POST idempotently creates');
     expect(route).not.toContain('mastery,');
     expect(route).not.toContain('subjects,');
     expect(route).not.toContain('examReport,');
@@ -55,5 +58,35 @@ describe('Bugünün Planı motoru',()=>{
     expect(engine).toContain("source:'TOPIC'");
     expect(engine).toContain("source:'PRACTICE'");
     expect(engine).toContain('db.topicProgress.findMany');
+  });
+
+  it('günlük sıralamayı öğrenci başına bir snapshot olarak sabitler',()=>{
+    const schema=read('prisma/schema.prisma');
+    const engine=read('lib/learningEngine.ts');
+    expect(schema).toContain('model DailyPlanSnapshot');
+    expect(schema).toContain('@@unique([studentId, dateKey])');
+    expect(engine).toContain('db.dailyPlanSnapshot.upsert');
+    expect(engine).toContain('ensureTodayLearningPlan');
+    expect(engine).toContain('readTodayLearningPlan');
+  });
+
+  it('öğrenci paneli yeni gün planını arka planda POST ile otomatik hazırlar',()=>{
+    const ui=read('app/components/StudentTodayPlan.tsx');
+    expect(ui).toContain("fetch('/api/student/today',{method:'POST'");
+    expect(ui).not.toContain('why');
+    expect(ui).not.toContain('capacity');
+    expect(ui).not.toContain('masteryFocus');
+  });
+
+  it('sabah plan üretimini 05:30 Türkiye saatinde OIDC doğrulamalı POST ile çalıştırır',()=>{
+    const workflow=read('.github/workflows/today-plan-morning.yml');
+    const route=read('app/api/internal/today-plan/generate/route.ts');
+    expect(workflow).toContain("cron: '30 2 * * *'");
+    expect(workflow).toContain('--request POST');
+    expect(workflow).toContain('audience=keks-today-plan');
+    expect(route).toContain("payload.repository===EXPECTED_REPOSITORY");
+    expect(route).toContain("payload.event_name==='schedule'");
+    expect(route).toContain('generateMorningTodayPlans');
+    expect(route).not.toContain('export const GET');
   });
 });
