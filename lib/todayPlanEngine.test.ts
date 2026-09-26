@@ -35,7 +35,7 @@ describe('Bugünün Planı motoru',()=>{
     expect(ui).not.toContain('KEKS planı hangi veriye göre hazırladı?');
     expect(ui).not.toContain('GERÇEK KAPASİTE');
     expect(ui).not.toContain('Hedef mesafesi');
-    expect(ui).toContain('Sırayla ilerle');
+    expect(ui).toContain('Bugün yalnız bu sırayı takip et');
   });
 
   it('student today API yalnız eyleme dönük günlük planı döndürür ve GET mutasyon yapmaz',()=>{
