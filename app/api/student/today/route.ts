@@ -1,16 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { withApiErrors } from '@/lib/apiGuard';
-import {
-  buildCapacityProfile,
-  buildGoalDistance,
-  buildSubjectLearningModels,
-  buildTodayLearningPlan,
-  buildTopicMastery,
-  buildStudentTimeline,
-  buildExamKnowledgeMap
-} from '@/lib/learningEngine';
-import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
+import { buildTodayLearningPlan } from '@/lib/learningEngine';
 import { isFeatureEnabled } from '@/lib/systemConfig';
 
 async function GET__handler(){
@@ -18,26 +9,26 @@ async function GET__handler(){
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   if(!(await isFeatureEnabled('TODAY_PLAN',user.student.studentCode)))return NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403});
 
-  const [today,mastery,subjects,goal,timeline,examReport,examMap]=await Promise.all([
-    buildTodayLearningPlan(user.student.id),
-    buildTopicMastery(user.student.id),
-    buildSubjectLearningModels(user.student.id),
-    buildGoalDistance(user.student.id),
-    buildStudentTimeline(user.student.id),
-    buildLatestExamInterventionReport(user.student.id),
-    buildExamKnowledgeMap(user.student.id)
-  ]);
+  const today=await buildTodayLearningPlan(user.student.id);
 
   return NextResponse.json({
     ok:true,
-    today,
-    capacity:today.capacity,
-    mastery,
-    subjects,
-    goal,
-    timeline,
-    examReport,
-    examMap
+    today:{
+      date:today.date,
+      generatedAt:today.generatedAt,
+      plannedMinutes:today.plannedMinutes,
+      plan:today.plan.map(item=>({
+        id:item.id,
+        order:item.order,
+        source:item.source,
+        title:item.title,
+        targetValue:item.targetValue,
+        metricType:item.metricType,
+        estimatedMinutes:item.estimatedMinutes,
+        completed:item.completed
+      }))
+    }
   });
 }
+
 export const GET=withApiErrors(GET__handler);
