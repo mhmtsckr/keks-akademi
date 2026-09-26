@@ -14,7 +14,7 @@ export function StudentTodayPlan(){
   const [msg,setMsg]=useState('');
 
   async function load(){
-    const r=await fetch('/api/student/today',{cache:'no-store'});
+    const r=await fetch('/api/student/today',{method:'POST',cache:'no-store'});
     const j=await r.json();
     if(!r.ok){setMsg(j.error||'Bugünün planı hazırlanamadı.');return}
     setData(j.today||null);
@@ -33,7 +33,7 @@ export function StudentTodayPlan(){
       <div>
         <div className="moduleEyebrow">BUGÜNÜN PLANI</div>
         <h2>{plan.length?plan.length+' görev':'Bugünkü plan tamamlandı'}</h2>
-        <p className="muted">Sırayla ilerle. Önce ilk görevi tamamla, sonra bir sonrakine geç.</p>
+        <p className="muted">Bugün yalnız bu sırayı takip et. Önce ilk görevi tamamla, sonra bir sonrakine geç.</p>
       </div>
     </div>
 

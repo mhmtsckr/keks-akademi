@@ -35,13 +35,16 @@ describe('Bugünün Planı motoru',()=>{
     expect(ui).not.toContain('KEKS planı hangi veriye göre hazırladı?');
     expect(ui).not.toContain('GERÇEK KAPASİTE');
     expect(ui).not.toContain('Hedef mesafesi');
-    expect(ui).toContain('Sırayla ilerle');
+    expect(ui).toContain('Bugün yalnız bu sırayı takip et');
   });
 
-  it('student today API yalnız eyleme dönük günlük planı döndürür',()=>{
+  it('student today API yalnız eyleme dönük günlük planı döndürür ve GET mutasyon yapmaz',()=>{
     const route=read('app/api/student/today/route.ts');
-    expect(route).toContain('buildTodayLearningPlan');
+    expect(route).toContain('ensureTodayLearningPlan');
+    expect(route).toContain('readTodayLearningPlan');
     expect(route).toContain('plan:today.plan.map');
+    expect(route).toContain('GET is read-only');
+    expect(route).toContain('POST idempotently creates');
     expect(route).not.toContain('mastery,');
     expect(route).not.toContain('subjects,');
     expect(route).not.toContain('examReport,');
@@ -55,5 +58,35 @@ describe('Bugünün Planı motoru',()=>{
     expect(engine).toContain("source:'TOPIC'");
     expect(engine).toContain("source:'PRACTICE'");
     expect(engine).toContain('db.topicProgress.findMany');
+  });
+
+  it('günlük sıralamayı öğrenci ve tarih anahtarıyla audit snapshot olarak sabitler',()=>{
+    const engine=read('lib/learningEngine.ts');
+    expect(engine).toContain("TODAY_PLAN_SNAPSHOT_ACTION='STUDENT_TODAY_PLAN_SNAPSHOT'");
+    expect(engine).toContain("entityType:TODAY_PLAN_SNAPSHOT_ENTITY");
+    expect(engine).toContain('db.auditLog.findFirst');
+    expect(engine).toContain('db.auditLog.create');
+    expect(engine).toContain('ensureTodayLearningPlan');
+    expect(engine).toContain('readTodayLearningPlan');
+  });
+
+  it('öğrenci paneli yeni gün planını arka planda POST ile otomatik hazırlar',()=>{
+    const ui=read('app/components/StudentTodayPlan.tsx');
+    expect(ui).toContain("fetch('/api/student/today',{method:'POST'");
+    expect(ui).not.toContain('why');
+    expect(ui).not.toContain('capacity');
+    expect(ui).not.toContain('masteryFocus');
+  });
+
+  it('sabah plan üretimini 05:30 Türkiye saatinde OIDC doğrulamalı POST ile çalıştırır',()=>{
+    const workflow=read('.github/workflows/today-plan-morning.yml');
+    const route=read('app/api/internal/today-plan/generate/route.ts');
+    expect(workflow).toContain("cron: '30 2 * * *'");
+    expect(workflow).toContain('--request POST');
+    expect(workflow).toContain('audience=keks-today-plan');
+    expect(route).toContain("payload.repository===EXPECTED_REPOSITORY");
+    expect(route).toContain("payload.event_name==='schedule'");
+    expect(route).toContain('generateMorningTodayPlans');
+    expect(route).not.toContain('export const GET');
   });
 });
