@@ -1,4 +1,7 @@
-export default function Home() {
+import { getKeksMonthlyProduct } from '@/lib/monthlyProduct';
+
+export default async function Home() {
+  const product=await getKeksMonthlyProduct();
   return <main className="home">
     <section className="homeHero">
       <nav className="homeNav">
@@ -146,6 +149,18 @@ export default function Home() {
       <div className="homeFeature">
         <span className="homeFeatureIcon">◎</span>
         <div><small>GELİŞİM ANALİZİ</small><h3>Net Trendleri ve Koç Uyarıları</h3><p>Düşük performans, konu birikimi ve hedef açığı otomatik belirlenir; koç müdahale gerektiren noktaları tek panelde görür.</p></div>
+      </div>
+    </section>
+
+    <section className="homeFeatures" aria-label="KEKS aylık ürün kampanyası">
+      <div className="homeFeature homeFeatureLarge">
+        <span className="homeFeatureIcon">%</span>
+        <div>
+          <small>{product.monthName} AYI ÜRÜNÜ</small>
+          <h3>{product.name}</h3>
+          <p>Liste fiyatı <strong>{product.listPriceLabel}</strong>. Güncel satış fiyatı <strong>{product.priceLabel}</strong>{product.discountPercent>0?' · %'+product.discountPercent+' indirim':''}. Fiyat yönetici panelindeki tek merkezi kaynaktan gelir.</p>
+          <a className="homeBtn homeBtnGold" href="/ogrenci">Ürünü Gör ve Eriş</a>
+        </div>
       </div>
     </section>
 
