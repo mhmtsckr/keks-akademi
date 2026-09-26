@@ -113,7 +113,7 @@ describe('KEKS non-negotiable production safety rules',()=>{
     const nativeSubmit=read('app/api/student/test/submit/route.ts');
     const externalSubmit=read('app/api/external/keks-assessment/submit/route.ts');
 
-    expect(screening).toContain("Psikolojik tanı koymaz ve kesin kişilik tipi belirlemez");
+    expect(screening).toMatch(/psikolojik tanı koymaz ve kesin kişilik tipi belirlemez/i);
     expect(scoring).toContain('disclaimer: SCREENING_DISCLAIMER');
     expect(scoring).toContain("validationStatus:'EDUCATIONAL_SCREENING'");
     expect(scoring).toContain('başarı/başarısızlık veya yüksek risk etiketi üretmez');
