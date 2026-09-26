@@ -89,6 +89,7 @@ model Student {
 
   plans            StudyPlan[]
   dailyLogs        DailyLog[]
+  dailyPlanSnapshots DailyPlanSnapshot[]
   examResults      ExamResult[]
   assessments      Assessment[]
   testAccesses     TestAccess[]
@@ -169,6 +170,21 @@ model DailyLog {
   payload   Json
   legacyId  String?  @unique
   createdAt DateTime @default(now())
+}
+
+model DailyPlanSnapshot {
+  id               String   @id @default(cuid())
+  studentId        String
+  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  dateKey          String
+  engineVersion    String
+  generationSource String   @default("ON_DEMAND")
+  payload          Json
+  generatedAt      DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([studentId, dateKey])
+  @@index([dateKey, generatedAt])
 }
 
 model ExamResult {
