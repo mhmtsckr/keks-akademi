@@ -1,10 +1,8 @@
 import { db } from '@/lib/db';
+import { KEKS_MONTHLY_PRODUCT } from '@/lib/productCatalog';
 
-export const PRODUCT_CONFIG_KEY='KEKS_MONTHLY_TEST';
-export const DEFAULT_PRODUCT_PRICING=Object.freeze({
-  listPriceKurus:80000,
-  priceKurus:40000
-});
+export const PRODUCT_CONFIG_KEY=KEKS_MONTHLY_PRODUCT.key;
+export const DEFAULT_PRODUCT_PRICING=KEKS_MONTHLY_PRODUCT.defaultPricing;
 
 export type ProductPricing={
   listPriceKurus:number;

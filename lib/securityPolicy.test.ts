@@ -131,9 +131,9 @@ describe('KEKS production safety policies',()=>{
   });
 
   it('list and sale prices have one literal source of truth',()=>{
-    const allowed='lib/systemConfig.ts';
+    const allowed='lib/productCatalog.ts';
     const kuruşPattern=/(?:\b40000\b|\b80000\b)/i;
-    const tlLiteralPattern=/\b\d{2,6}(?:[.,]\d{1,2})?\s*TL\b/i;
+    const tlLiteralPattern=/\b\d{2,6}(?:[.,]\d{1,2})?\s*(?:TL|₺|lira)\b/i;
     const runtimeFiles=[...walk(path.join(ROOT,'app')),...walk(path.join(ROOT,'lib'))];
     const runtimeViolations=runtimeFiles
       .filter(file=>rel(file)!==allowed&&!rel(file).endsWith('.test.ts')&&(kuruşPattern.test(source(file))||tlLiteralPattern.test(source(file))))
@@ -156,7 +156,7 @@ describe('KEKS production safety policies',()=>{
 
     expect(
       [...runtimeViolations,...documentationViolations],
-      'Product prices must come from lib/systemConfig.ts; runtime copy and documentation must not hard-code TL amounts.'
+      'Product prices must come from lib/productCatalog.ts and runtime product configuration; runtime copy and documentation must not hard-code currency amounts.'
     ).toEqual([]);
   });
 
