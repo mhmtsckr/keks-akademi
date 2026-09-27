@@ -154,7 +154,13 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
             {s.misconceptionCandidates?.slice(0,2).map((x:any)=><small key={x.topic}>Kavram yanılgısı adayı: {x.topic} · %{x.accuracy}</small>)}
           </div>}
 
-          {s.errorReasons?.[0]&&<small>Baskın yanlış nedeni: {s.errorReasons[0].label} ({s.errorReasons[0].count})</small>}
+          {s.errorAnalytics?.totalWrong>0&&<div className="stack" style={{marginTop:8}}>
+            <div className="notice"><strong>Yanlış nedeni motoru:</strong> {s.wrongReasonSignal}</div>
+            {s.errorReasons?.slice(0,4).map((x:any)=><div className="row" key={x.key} style={{justifyContent:'space-between',gap:8}}>
+              <span>{x.label}</span><strong>%{x.percent} · {x.count} yanlış</strong>
+            </div>)}
+            <small className="muted">Sınıflandırma kapsamı: %{s.errorAnalytics.coveragePercent} · {s.errorAnalytics.classifiedWrong}/{s.errorAnalytics.totalWrong} yanlış sınıflandırıldı{s.errorAnalytics.unclassifiedWrong?' · '+s.errorAnalytics.unclassifiedWrong+' sınıflandırılmamış yanlış':''}.</small>
+          </div>}
           <div className="notice" style={{marginTop:10}}><strong>Önerilen koç aksiyonu:</strong> {s.recommendedAction}</div>
         </div>)}
       </div>
