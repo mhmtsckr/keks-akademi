@@ -688,15 +688,26 @@ export async function generateMorningTodayPlans(now=new Date()){
   const eligible=students.filter(x=>!x.user||x.user.status==='ACTIVE');
   let generated=0;
   let failed=0;
+  let rebalancedStudents=0;
+  let redistributedTasks=0;
+  let deferredTasks=0;
 
   for(let offset=0;offset<eligible.length;offset+=5){
     const chunk=eligible.slice(offset,offset+5);
     const results=await Promise.allSettled(
-      chunk.map(student=>ensureTodayLearningPlan(student.id,now,'MORNING_SCHEDULE'))
+      chunk.map(async student=>{
+        const rebalance=await rebalanceMissedTasksCapacityAware(student.id,now);
+        const today=await ensureTodayLearningPlan(student.id,now,'MORNING_SCHEDULE');
+        return {rebalance,today};
+      })
     );
     for(const result of results){
-      if(result.status==='fulfilled')generated++;
-      else failed++;
+      if(result.status==='fulfilled'){
+        generated++;
+        if(result.value.rebalance.created.length)rebalancedStudents++;
+        redistributedTasks+=result.value.rebalance.created.length;
+        deferredTasks+=result.value.rebalance.deferred.length;
+      }else failed++;
     }
   }
 
@@ -705,7 +716,10 @@ export async function generateMorningTodayPlans(now=new Date()){
     generated,
     failed,
     skipped:students.length-eligible.length,
-    engineVersion:'TODAY_PLAN_V3'
+    rebalancedStudents,
+    redistributedTasks,
+    deferredTasks,
+    engineVersion:'TODAY_PLAN_V4_DYNAMIC'
   };
 }
 
@@ -720,61 +734,110 @@ export function adaptiveReviewIntervalDays(input:{nextStep:number;correct:boolea
   return raw;
 }
 
+export type CarryoverDayCapacity={
+  date:Date;
+  dailyBudgetMinutes:number;
+  existingLoadMinutes:number;
+  completionRate:number|null;
+};
+
+export function allocateCarryoverCapacityAware(input:{
+  remaining:number;
+  unitMinutes:number;
+  days:CarryoverDayCapacity[];
+  maxCarryoverShare?:number;
+}){
+  const share=clamp(input.maxCarryoverShare??0.25,0.1,0.5);
+  let left=Math.max(0,input.remaining);
+  const allocations:{date:Date;value:number;minutes:number}[]=[];
+
+  for(const day of input.days){
+    if(left<=0)break;
+    const behaviorFactor=day.completionRate!=null&&day.completionRate<60?.7:1;
+    const effectiveBudget=Math.max(0,Math.round(day.dailyBudgetMinutes*behaviorFactor));
+    const freeMinutes=Math.max(0,effectiveBudget-day.existingLoadMinutes);
+    const carryoverMinutes=Math.min(
+      freeMinutes,
+      Math.max(input.unitMinutes,Math.floor(effectiveBudget*share))
+    );
+    const units=Math.floor(carryoverMinutes/input.unitMinutes);
+    if(units<=0)continue;
+    const value=Math.min(left,units);
+    const minutes=Math.ceil(value*input.unitMinutes);
+    allocations.push({date:day.date,value,minutes});
+    left-=value;
+    day.existingLoadMinutes+=minutes;
+  }
+
+  return {allocations,unallocated:left};
+}
+
 export async function rebalanceMissedTasksCapacityAware(studentId:string,now=new Date()){
   const today=utcDateFromKey(trDateKey(now));
   const capacity=await buildCapacityProfile(studentId,now);
-  const horizonStart=addDays(today,1);
-  const horizonEnd=addDays(today,8);
+  const horizonDays=14;
+  const horizonEnd=addDays(today,horizonDays);
   const [missed,scheduled]=await Promise.all([
     db.coachingAction.findMany({
       where:{studentId,status:'ACTIVE',taskDate:{not:null,lt:today},submission:null,rescheduleSource:null},
       orderBy:{taskDate:'asc'},take:20
     }),
     db.coachingAction.findMany({
-      where:{studentId,status:'ACTIVE',taskDate:{gte:horizonStart,lt:horizonEnd}},
+      where:{studentId,status:'ACTIVE',taskDate:{gte:today,lt:horizonEnd}},
       select:{taskDate:true,targetValue:true,metricType:true,subject:true}
     })
   ]);
 
   const loadByDay=new Map<string,number>();
-  for(const a of scheduled){
-    if(!a.taskDate)continue;
-    const key=trDateKey(a.taskDate);
-    loadByDay.set(key,(loadByDay.get(key)||0)+estimatedTaskMinutes(a));
+  for(const action of scheduled){
+    if(!action.taskDate)continue;
+    const key=trDateKey(action.taskDate);
+    loadByDay.set(key,(loadByDay.get(key)||0)+estimatedTaskMinutes(action));
   }
+
   const lowDays=new Map(capacity.lowCompletionDays.map(x=>[x.day,x.completionRate]));
   const created:any[]=[];
+  const deferred:any[]=[];
 
   for(const action of missed){
     const remaining=Math.max(0,Number(action.targetValue)-Number(action.currentValue));
     if(remaining<=0)continue;
     const unitMinutes=action.metricType==='MINUTES'?1:
       action.metricType==='QUESTIONS'?minutesPerQuestion(action.subject||''):5;
-    let left=remaining;
-    const allocations:{date:Date;value:number}[]=[];
 
-    for(let offset=1;offset<=7&&left>0;offset++){
+    const days:CarryoverDayCapacity[]=Array.from({length:horizonDays},(_,offset)=>{
       const date=addDays(today,offset);
       const key=trDateKey(date);
-      const dayFactor=(lowDays.get(weekdayKey(date))??100)<60?.7:1;
-      const dailyBudget=Math.round(capacity.suggestedDailyMinutes*dayFactor);
-      const used=loadByDay.get(key)||0;
-      const available=Math.max(0,dailyBudget-used);
-      if(available<Math.max(5,unitMinutes))continue;
-      const units=Math.max(1,Math.floor(available/unitMinutes));
-      const value=Math.min(left,units);
-      allocations.push({date,value});
-      left-=value;
-      loadByDay.set(key,used+Math.ceil(value*unitMinutes));
+      return {
+        date,
+        dailyBudgetMinutes:capacity.suggestedDailyMinutes,
+        existingLoadMinutes:loadByDay.get(key)||0,
+        completionRate:lowDays.get(weekdayKey(date))??null
+      };
+    });
+
+    const distribution=allocateCarryoverCapacityAware({
+      remaining,
+      unitMinutes,
+      days,
+      maxCarryoverShare:.25
+    });
+
+    if(distribution.unallocated>0){
+      deferred.push({
+        sourceActionId:action.id,
+        remaining,
+        unallocated:distribution.unallocated,
+        reason:'Önümüzdeki 14 günde öğrencinin güvenli günlük kapasitesi içinde yeterli alan bulunamadı; görev yığılmadan sonraki yeniden dengelemede tekrar değerlendirilecek.'
+      });
+      continue;
     }
 
-    if(left>0){
-      const fallback=addDays(today,7);
-      const last=allocations.find(x=>trDateKey(x.date)===trDateKey(fallback));
-      if(last)last.value+=left;else allocations.push({date:fallback,value:left});
-      left=0;
+    for(const day of days){
+      loadByDay.set(trDateKey(day.date),day.existingLoadMinutes);
     }
 
+    const allocations=distribution.allocations;
     const made=await db.$transaction(async tx=>{
       const ids:string[]=[];
       for(const allocation of allocations){
@@ -783,7 +846,7 @@ export async function rebalanceMissedTasksCapacityAware(studentId:string,now=new
           studentId,
           createdByUserId:action.createdByUserId,
           title:action.title+' · Telafi',
-          description:(action.description?action.description+' · ':'')+'Kaçırılan görev, öğrencinin gözlenen günlük kapasitesine göre yeniden dağıtıldı.',
+          description:(action.description?action.description+' · ':'')+'Kaçırılan görev, öğrencinin gözlenen günlük kapasitesine göre haftaya dengeli biçimde yeniden dağıtıldı.',
           metricType:action.metricType,
           targetValue:allocation.value,
           currentValue:0,
@@ -805,15 +868,31 @@ export async function rebalanceMissedTasksCapacityAware(studentId:string,now=new
         createdActionId:ids[0]||null,
         createdActionIds:ids as any,
         originalDate:action.taskDate||action.periodEnd,
-        newDate:allocations[0]?.date||horizonEnd,
+        newDate:allocations[0]?.date||today,
         movedTarget:remaining,
         reason:'CAPACITY_AWARE_MISSED'
       }});
       return ids;
     });
-    created.push({sourceActionId:action.id,createdActionIds:made,movedTarget:remaining,allocations});
+
+    created.push({
+      sourceActionId:action.id,
+      createdActionIds:made,
+      movedTarget:remaining,
+      allocations:allocations.map(x=>({date:x.date,value:x.value,minutes:x.minutes}))
+    });
   }
-  return {created,capacity};
+
+  return {
+    created,
+    deferred,
+    capacity,
+    policy:{
+      horizonDays,
+      maxCarryoverShare:.25,
+      rule:'Kaçırılan görev tek güne yığılmaz; her gün için gözlenen kapasitenin en fazla dörtte biri telafi yüküne ayrılır.'
+    }
+  };
 }
 
 export async function buildCoachMorningBrief(coachId:string,now=new Date()){
