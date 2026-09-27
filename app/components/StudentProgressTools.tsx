@@ -60,7 +60,9 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
     };
     const r=await fetch('/api/student/progress',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json(); if(!r.ok){setMsg('Hata: '+(j.error||'Kaydedilemedi.'));return}
-    setPractice(p=>[{...j.row,masteryScore:j.learning?.score??null,masteryState:j.learning?.state??null,metricPayload:j.learning??null},...p]); setMsg('Kayıt eklendi. Net: '+j.row.net+' · Bilgi hâkimiyeti: '+(j.learning?.score??'—')+' · '+(j.learning?.state==='DURABLE'?'Kalıcı':j.learning?.state==='RISKY'?'Riskli':j.learning?.state==='REINFORCING'?'Pekiştiriliyor':j.learning?.state==='LEARNING'?'Öğreniliyor':'Yeni')+(j.learning?.nextAction?' · Sonraki adım: '+j.learning.nextAction:'')); form.reset();
+    setPractice(p=>[{...j.row,errorReason:j.errorReason??j.row.errorReason,masteryScore:j.learning?.score??null,masteryState:j.learning?.state??null,metricPayload:j.learning??null},...p]);
+    const reasonLabel=String(j.errorReason||'').replaceAll('_',' ').toLocaleLowerCase('tr-TR');
+    setMsg('Kayıt eklendi. Net: '+j.row.net+' · Bilgi hâkimiyeti: '+(j.learning?.score??'—')+' · '+(j.learning?.state==='DURABLE'?'Kalıcı':j.learning?.state==='RISKY'?'Riskli':j.learning?.state==='REINFORCING'?'Pekiştiriliyor':j.learning?.state==='LEARNING'?'Öğreniliyor':'Yeni')+(j.errorReason?' · Yanlış nedeni: '+reasonLabel+' ('+(j.errorReasonSource==='SYSTEM'?'sistem':'öğrenci')+')':'')+(j.learning?.nextAction?' · Sonraki adım: '+j.learning.nextAction:'')); form.reset();
   }
 
   const completedCount=useMemo(()=>progress.filter(x=>x.examType===exam&&x.completed).length,[progress,exam]);
@@ -119,7 +121,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
             <div className="field"><label>Yanlış</label><input name="wrong" type="number" min="0" required/></div>
             <div className="field"><label>Boş</label><input name="blank" type="number" min="0" required/></div>
           </div>
-          <div className="field"><label>Baskın hata nedeni</label><select name="errorReason"><option value="">Seçiniz</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="DIKKAT">Dikkat</option><option value="SORU_KOKU">Soru kökünü yanlış okuma</option><option value="SURE">Süre problemi</option><option value="YONTEM_BILMEME">Yöntem bilmeme</option><option value="UNUTMA">Unutma</option><option value="SORUYU_ANLAMA">Soruyu anlama</option><option value="STRATEJI">Yanlış strateji</option><option value="DIGER">Diğer</option></select></div>
+          <div className="field"><label>Yanlış nedeni</label><select name="errorReason"><option value="">Sistem belirlesin</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="DIKKAT">Dikkat</option><option value="SORU_KOKU">Soru kökünü yanlış okuma</option><option value="SURE">Süre</option><option value="YONTEM_BILMEME">Yöntem bilmeme</option><option value="UNUTMA">Unutma</option></select><small className="muted">Yanlış varsa nedeni seçebilirsin. Boş bırakırsan KEKS yalnız yeterli performans kanıtı olduğunda otomatik sınıflandırır.</small></div>
           {(isMath||isTurkish||isLanguage)&&<div className="field"><label>Toplam süre (saniye)</label><input name="durationSeconds" type="number" min="0" max="7200" placeholder="Örn. 900"/></div>}
           {(isTurkish||isLanguage)&&<div className="field"><label>Soru türü</label><input name="questionType" placeholder={isLanguage?'Örn. paragraf / çeviri / cloze':'Örn. ana düşünce / çıkarım / dil bilgisi'}/></div>}
           {isMath&&<div className="field"><label>Problem / soru tipi</label><input name="problemType" placeholder="Örn. yüzde problemi / fonksiyon / sayısal mantık"/></div>}
