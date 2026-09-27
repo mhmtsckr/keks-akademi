@@ -366,9 +366,114 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
   };
 }
 
+export type KnowledgeMasteryInput={
+  totalQuestions:number;
+  attempts:number;
+  aggregateAccuracy:number|null;
+  latestTestAccuracy:number|null;
+  reviewTotal:number;
+  reviewCorrect:number;
+  overdueReviews:number;
+  daysSinceLastEvidence:number;
+};
+
+function masteryRecencyScore(days:number){
+  if(days<=3)return 100;
+  if(days<=7)return 90;
+  if(days<=14)return 75;
+  if(days<=21)return 60;
+  if(days<=35)return 40;
+  return 20;
+}
+
+export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
+  const aggregateAccuracy=input.aggregateAccuracy==null?null:clamp(input.aggregateAccuracy,0,100);
+  const latestTestAccuracy=input.latestTestAccuracy==null?null:clamp(input.latestTestAccuracy,0,100);
+  const testScore=latestTestAccuracy??aggregateAccuracy??0;
+  const reviewSuccess=input.reviewTotal
+    ?clamp(input.reviewCorrect/input.reviewTotal*100,0,100)
+    :null;
+  const reviewScore=reviewSuccess??50;
+  const recencyScore=masteryRecencyScore(input.daysSinceLastEvidence);
+  const evidenceScore=Math.round(clamp(
+    Math.min(70,input.totalQuestions/30*70)+Math.min(30,input.attempts/3*30),
+    0,
+    100
+  ));
+  const overduePenalty=Math.min(25,input.overdueReviews*8);
+  const score=Math.round(clamp(
+    testScore*.45+
+    reviewScore*.30+
+    recencyScore*.15+
+    evidenceScore*.10-
+    overduePenalty,
+    0,
+    100
+  ));
+
+  let status:MasteryStatus='NEW';
+  let reason='Konu için henüz yeterli test ve tekrar kanıtı oluşmadı.';
+
+  if(input.totalQuestions<5&&input.reviewTotal===0){
+    status='NEW';
+  }else if(
+    input.overdueReviews>=2||
+    input.daysSinceLastEvidence>28||
+    (latestTestAccuracy!=null&&latestTestAccuracy<55)||
+    (reviewSuccess!=null&&input.reviewTotal>=2&&reviewSuccess<55)
+  ){
+    status='RISKY';
+    if(input.overdueReviews>=2)reason=input.overdueReviews+' gecikmiş tekrar bulunduğu için konu yeniden ele alınmalı.';
+    else if(input.daysSinceLastEvidence>28)reason='Son güvenilir kanıtın üzerinden '+input.daysSinceLastEvidence+' gün geçtiği için unutma riski yükseldi.';
+    else if(latestTestAccuracy!=null&&latestTestAccuracy<55)reason='Son test doğruluğu %'+Math.round(latestTestAccuracy)+' olduğu için konu riskli durumda.';
+    else reason='Tekrar başarısı düşük olduğu için konu riskli durumda.';
+  }else if(
+    input.totalQuestions<12||
+    input.attempts<2||
+    (latestTestAccuracy!=null&&latestTestAccuracy<65)
+  ){
+    status='LEARNING';
+    reason='Konu için temel öğrenme kanıtı var ancak test miktarı veya son test başarısı henüz yeterli değil.';
+  }else if(
+    latestTestAccuracy==null||
+    latestTestAccuracy<85||
+    input.reviewTotal<2||
+    reviewSuccess==null||
+    reviewSuccess<80||
+    input.daysSinceLastEvidence>14
+  ){
+    status='REINFORCING';
+    reason='Temel öğrenme oluşmuş; kalıcılık için son test, tekrar başarısı ve güncellik sinyallerinin birlikte güçlenmesi gerekiyor.';
+  }else{
+    status='DURABLE';
+    reason='Son test, tekrar başarısı ve güncellik sinyalleri birlikte güçlü olduğu için bilgi kalıcı kabul ediliyor.';
+  }
+
+  const confidence=input.totalQuestions>=30&&input.attempts>=3&&input.reviewTotal>=2
+    ?'HIGH'
+    :input.totalQuestions>=12&&input.attempts>=2
+      ?'MEDIUM'
+      :'LOW';
+
+  return {
+    score,
+    status,
+    reason,
+    confidence,
+    components:{
+      latestTestScore:latestTestAccuracy==null?null:Math.round(latestTestAccuracy),
+      aggregateAccuracy:aggregateAccuracy==null?null:Math.round(aggregateAccuracy),
+      reviewSuccess:reviewSuccess==null?null:Math.round(reviewSuccess),
+      recencyScore,
+      evidenceScore,
+      overduePenalty
+    }
+  };
+}
+
 export async function buildTopicMastery(studentId:string,now=new Date()){
-  const since=new Date(now.getTime()-90*86400000);
-  const [practice,reviews]=await Promise.all([
+  const since=new Date(now.getTime()-120*86400000);
+  const [practice,reviews,topics]=await Promise.all([
     db.practiceLog.findMany({
       where:{studentId,date:{gte:since}},
       select:{subject:true,topic:true,total:true,correct:true,wrong:true,blank:true,errorReason:true,date:true},
@@ -378,12 +483,17 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
       where:{studentId,updatedAt:{gte:since}},
       include:{question:{select:{subject:true,topic:true}}},
       orderBy:{updatedAt:'asc'}
+    }),
+    db.topicProgress.findMany({
+      where:{studentId},
+      select:{subject:true,topic:true,completed:true,completedAt:true,updatedAt:true}
     })
   ]);
 
   type Bucket={
     subject:string;topic:string;total:number;correct:number;wrong:number;blank:number;
-    attempts:number;lastAt:Date|null;reviewTotal:number;reviewCorrect:number;overdueReviews:number;
+    attempts:number;lastAt:Date|null;lastTestAt:Date|null;latestTestAccuracy:number|null;
+    reviewTotal:number;reviewCorrect:number;overdueReviews:number;
     reasons:Record<string,number>;
   };
   const map=new Map<string,Bucket>();
@@ -391,16 +501,30 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
     const key=subject+'|'+topic;
     let x=map.get(key);
     if(!x){
-      x={subject,topic,total:0,correct:0,wrong:0,blank:0,attempts:0,lastAt:null,reviewTotal:0,reviewCorrect:0,overdueReviews:0,reasons:{}};
+      x={
+        subject,topic,total:0,correct:0,wrong:0,blank:0,attempts:0,
+        lastAt:null,lastTestAt:null,latestTestAccuracy:null,
+        reviewTotal:0,reviewCorrect:0,overdueReviews:0,reasons:{}
+      };
       map.set(key,x);
     }
     return x;
   };
 
+  for(const row of topics){
+    const x=ensure(row.subject,row.topic);
+    const touchedAt=row.completedAt||row.updatedAt;
+    if(!x.lastAt||touchedAt>x.lastAt)x.lastAt=touchedAt;
+  }
+
   for(const row of practice){
     const x=ensure(row.subject,row.topic||'Genel/Karma');
     x.total+=row.total;x.correct+=row.correct;x.wrong+=row.wrong;x.blank+=row.blank;x.attempts++;
     x.lastAt=row.date;
+    if(!x.lastTestAt||row.date>=x.lastTestAt){
+      x.lastTestAt=row.date;
+      x.latestTestAccuracy=row.total?row.correct/row.total*100:null;
+    }
     const reason=normalizedReason(row.errorReason);
     if(reason)x.reasons[reason]=(x.reasons[reason]||0)+1;
   }
@@ -414,31 +538,39 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
   }
 
   return [...map.values()].map(x=>{
-    const accuracy=x.total?x.correct/x.total:0;
-    const reviewAccuracy=x.reviewTotal?x.reviewCorrect/x.reviewTotal:0;
-    const daysSince=x.lastAt?Math.floor((now.getTime()-x.lastAt.getTime())/86400000):999;
-    const recency=Math.max(0,1-daysSince/45);
-    const evidence=Math.min(1,x.total/40);
-    const score=Math.round(clamp((accuracy*.55+reviewAccuracy*.25+recency*.2)*100*evidence,0,100));
-    let status:MasteryStatus='NEW';
-    if(x.overdueReviews>0&&(daysSince>=7||accuracy<.7))status='RISKY';
-    else if(x.total<8&&x.reviewTotal===0)status='NEW';
-    else if(accuracy<.65||x.attempts<2)status='LEARNING';
-    else if(accuracy<.82||reviewAccuracy<.75)status='REINFORCING';
-    else if(daysSince>21)status='RISKY';
-    else status='DURABLE';
+    const aggregateAccuracy=x.total?x.correct/x.total*100:null;
+    const daysSince=x.lastAt?Math.max(0,Math.floor((now.getTime()-x.lastAt.getTime())/86400000)):999;
+    const mastery=calculateKnowledgeMastery({
+      totalQuestions:x.total,
+      attempts:x.attempts,
+      aggregateAccuracy,
+      latestTestAccuracy:x.latestTestAccuracy,
+      reviewTotal:x.reviewTotal,
+      reviewCorrect:x.reviewCorrect,
+      overdueReviews:x.overdueReviews,
+      daysSinceLastEvidence:daysSince
+    });
     const primaryReason=Object.entries(x.reasons).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
     return {
-      subject:x.subject,topic:x.topic,status,score,
-      accuracy:Math.round(accuracy*100),
-      reviewAccuracy:x.reviewTotal?Math.round(reviewAccuracy*100):null,
-      totalQuestions:x.total,attempts:x.attempts,daysSinceLastEvidence:daysSince,
+      subject:x.subject,
+      topic:x.topic,
+      status:mastery.status,
+      score:mastery.score,
+      statusReason:mastery.reason,
+      confidence:mastery.confidence,
+      scoreBreakdown:mastery.components,
+      latestTestAccuracy:x.latestTestAccuracy==null?null:Math.round(x.latestTestAccuracy),
+      accuracy:aggregateAccuracy==null?null:Math.round(aggregateAccuracy),
+      reviewAccuracy:mastery.components.reviewSuccess,
+      totalQuestions:x.total,
+      attempts:x.attempts,
+      daysSinceLastEvidence:daysSince,
       overdueReviews:x.overdueReviews,
       primaryErrorReason:primaryReason,
       primaryErrorReasonLabel:primaryReason?ERROR_REASON_LABELS[primaryReason as ErrorReasonKey]||primaryReason:null
     };
   }).sort((a,b)=>{
-    const order:Record<MasteryStatus,number>={RISKY:0,LEARNING:1,NEW:2,REINFORCING:3,DURABLE:4};
+    const order:Record<MasteryStatus,number>={RISKY:0,LEARNING:1,REINFORCING:2,NEW:3,DURABLE:4};
     return order[a.status]-order[b.status]||a.score-b.score;
   });
 }
@@ -760,7 +892,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
 
-  const weakest=mastery.find(x=>x.status==='RISKY'||x.status==='LEARNING')||mastery[0]||null;
+  const weakest=mastery.find(x=>x.status==='RISKY'||x.status==='LEARNING'||x.status==='REINFORCING')||mastery[0]||null;
   const focusTopic=
     (weakest?incompleteTopics.find(x=>x.subject===weakest.subject&&x.topic===weakest.topic):null)
     ||(weakest?incompleteTopics.find(x=>x.subject===weakest.subject):null)
@@ -788,7 +920,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     const matchingMastery=masteryMap.get(focusTopic.subject+'|'+focusTopic.topic)||weakest;
     const questionTarget=dailyPracticeQuestionTarget({
       questionCapacity:capacity.questionCapacity,
-      accuracy:matchingMastery?.accuracy??null
+      accuracy:matchingMastery?.latestTestAccuracy??matchingMastery?.accuracy??null
     });
     const alreadyHasQuestionAction=items.some(x=>x.source==='ACTION'&&!x.completed&&x.metricType==='QUESTIONS'&&x.subject===focusTopic.subject&&(x.topic||'Genel/Karma')===focusTopic.topic);
     if(!alreadyHasQuestionAction){
@@ -1322,7 +1454,7 @@ export async function buildGoalDistance(studentId:string,now=new Date()){
   const targetValue=target.score??target.officialMinScore??target.officialEligibilityScore??null;
   const gap=current!=null&&targetValue!=null?Number((targetValue-current).toFixed(2)):null;
   const contribution=mastery
-    .filter(x=>x.status==='RISKY'||x.status==='LEARNING')
+    .filter(x=>x.status==='RISKY'||x.status==='LEARNING'||x.status==='REINFORCING')
     .slice(0,3)
     .map(x=>({subject:x.subject,topic:x.topic,masteryStatus:x.status,accuracy:x.accuracy}));
   return {
