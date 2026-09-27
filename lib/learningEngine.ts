@@ -443,12 +443,80 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
   });
 }
 
+export type SubjectLearningFamily='MATHEMATICS'|'TURKISH'|'HISTORY'|'LITERATURE'|'SCIENCE'|'GENERAL';
+
+function normalizedSubjectText(value:string|null|undefined){
+  return (value||'').toLocaleUpperCase('tr-TR').replace(/\s+/g,' ').trim();
+}
+
+function questionTypeStats(rows:{questionType:string;correct:number;wrong:number;blank:number;avgSeconds:number|null}[]){
+  const map=new Map<string,{correct:number;wrong:number;blank:number;seconds:number[]}>();
+  for(const row of rows){
+    const key=row.questionType||'GENEL';
+    const x=map.get(key)||{correct:0,wrong:0,blank:0,seconds:[]};
+    x.correct+=row.correct;x.wrong+=row.wrong;x.blank+=row.blank;
+    if(row.avgSeconds&&row.avgSeconds>0)x.seconds.push(row.avgSeconds);
+    map.set(key,x);
+  }
+  return [...map.entries()].map(([questionType,x])=>{
+    const total=x.correct+x.wrong+x.blank;
+    return {
+      questionType,
+      total,
+      accuracy:total?Math.round(x.correct/total*100):null,
+      avgSeconds:x.seconds.length?Number(average(x.seconds).toFixed(1)):null
+    };
+  }).sort((a,b)=>(a.accuracy??101)-(b.accuracy??101)||b.total-a.total);
+}
+
+function topicStats(rows:{
+  topic:string|null;correct:number;wrong:number;blank:number;avgSeconds?:number|null;
+}[]){
+  const map=new Map<string,{correct:number;wrong:number;blank:number;seconds:number[]}>();
+  for(const row of rows){
+    const key=row.topic||'Genel/Karma';
+    const x=map.get(key)||{correct:0,wrong:0,blank:0,seconds:[]};
+    x.correct+=row.correct;x.wrong+=row.wrong;x.blank+=row.blank;
+    if(row.avgSeconds&&row.avgSeconds>0)x.seconds.push(row.avgSeconds);
+    map.set(key,x);
+  }
+  return [...map.entries()].map(([topic,x])=>{
+    const total=x.correct+x.wrong+x.blank;
+    return {
+      topic,total,
+      accuracy:total?Math.round(x.correct/total*100):null,
+      avgSeconds:x.seconds.length?Number(average(x.seconds).toFixed(1)):null
+    };
+  }).sort((a,b)=>(a.accuracy??101)-(b.accuracy??101)||b.total-a.total);
+}
+
+function literatureConnectionDimension(questionType:string,topic:string|null){
+  const text=normalizedSubjectText(questionType+' '+(topic||''));
+  if(/DÖNEM|DONEM|DEVİR|DEVIR|YÜZYIL|YUZYIL/.test(text))return 'DÖNEM';
+  if(/YAZAR|ŞAİR|SAIR|SANATÇI|SANATCI/.test(text))return 'YAZAR';
+  if(/ESER|ROMAN|ŞİİR|SIIR|HİKÂYE|HIKAYE|TİYATRO|TIYATRO/.test(text))return 'ESER';
+  return null;
+}
+
 export async function buildSubjectLearningModels(studentId:string,now=new Date()){
   const since=new Date(now.getTime()-60*86400000);
-  const [practice,analytics,reviews]=await Promise.all([
-    db.practiceLog.findMany({where:{studentId,date:{gte:since}},select:{subject:true,topic:true,total:true,correct:true,wrong:true,blank:true,errorReason:true}}),
-    db.examAnalyticsRecord.findMany({where:{studentId,examDate:{gte:since}},select:{subject:true,topic:true,questionType:true,correct:true,wrong:true,blank:true,avgSeconds:true}}),
-    db.reviewQueueItem.findMany({where:{studentId,updatedAt:{gte:since}},include:{question:{select:{subject:true,topic:true}}}})
+  const [practice,analytics,reviews,techniqueSessions]=await Promise.all([
+    db.practiceLog.findMany({
+      where:{studentId,date:{gte:since}},
+      select:{subject:true,topic:true,total:true,correct:true,wrong:true,blank:true,errorReason:true,date:true}
+    }),
+    db.examAnalyticsRecord.findMany({
+      where:{studentId,examDate:{gte:since}},
+      select:{subject:true,topic:true,questionType:true,correct:true,wrong:true,blank:true,avgSeconds:true,examDate:true}
+    }),
+    db.reviewQueueItem.findMany({
+      where:{studentId,updatedAt:{gte:since}},
+      include:{question:{select:{subject:true,topic:true}}}
+    }),
+    db.techniquePracticeSession.findMany({
+      where:{studentId,createdAt:{gte:since},techniqueKey:'ACTIVE_RECALL'},
+      select:{title:true,result:true,activeSeconds:true,completed:true,startedAt:true}
+    })
   ]);
 
   const subjects=new Set<string>([
@@ -456,21 +524,38 @@ export async function buildSubjectLearningModels(studentId:string,now=new Date()
     ...analytics.map(x=>x.subject),
     ...reviews.map(x=>x.question.subject)
   ]);
+
   return [...subjects].map(subject=>{
-    const family=subjectFamily(subject);
+    const family=subjectFamily(subject) as SubjectLearningFamily;
     const p=practice.filter(x=>x.subject===subject);
     const a=analytics.filter(x=>x.subject===subject);
     const r=reviews.filter(x=>x.question.subject===subject);
     const total=p.reduce((n,x)=>n+x.total,0)+a.reduce((n,x)=>n+x.correct+x.wrong+x.blank,0);
     const correct=p.reduce((n,x)=>n+x.correct,0)+a.reduce((n,x)=>n+x.correct,0);
     const avgSeconds=average(a.map(x=>x.avgSeconds||0).filter(x=>x>0));
-    const questionTypes=[...new Set(a.map(x=>x.questionType).filter(Boolean))];
+    const qTypes=questionTypeStats(a);
+    const topics=topicStats([
+      ...p.map(x=>({topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,avgSeconds:null})),
+      ...a.map(x=>({topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,avgSeconds:x.avgSeconds}))
+    ]);
+
     const errorReasons:Record<string,number>={};
     for(const row of p){
       const reason=normalizedReason(row.errorReason);
       if(reason)errorReasons[reason]=(errorReasons[reason]||0)+1;
     }
+    const errorList=Object.entries(errorReasons).sort((x,y)=>y[1]-x[1]).map(([key,count])=>({
+      key,count,label:ERROR_REASON_LABELS[key as ErrorReasonKey]||key
+    }));
+
     const reviewSuccess=r.length?Math.round(r.filter(x=>x.lastCorrect).length/r.length*100):null;
+    const subjectNeedle=normalizedSubjectText(subject);
+    const activeRecallSessions=techniqueSessions.filter(x=>{
+      const evidence=normalizedSubjectText(x.title+' '+JSON.stringify(x.result));
+      return evidence.includes(subjectNeedle);
+    });
+    const activeRecallMinutes=Math.round(activeRecallSessions.reduce((n,x)=>n+Math.max(0,x.activeSeconds||0)/60,0));
+
     const metrics=
       family==='MATHEMATICS'?['hız','doğruluk','problem tipi']:
       family==='TURKISH'?['soru türü','süre','doğruluk']:
@@ -478,15 +563,97 @@ export async function buildSubjectLearningModels(studentId:string,now=new Date()
       family==='LITERATURE'?['dönem','yazar/eser bağlantısı','tekrar başarısı']:
       family==='SCIENCE'?['konu','kavram yanılgısı','doğruluk']:
       ['doğruluk','konu','tekrar'];
+
+    const weakestQuestionType=qTypes.find(x=>x.total>=3)||qTypes[0]||null;
+    const slowestQuestionType=[...qTypes].filter(x=>x.avgSeconds!=null).sort((x,y)=>(y.avgSeconds||0)-(x.avgSeconds||0))[0]||null;
+    const weakestTopic=topics.find(x=>x.total>=3)||topics[0]||null;
+
+    const misconceptionCandidates=family==='SCIENCE'
+      ?topics.filter(x=>x.total>=5&&(x.accuracy??100)<65).slice(0,3).map(x=>({
+        topic:x.topic,
+        accuracy:x.accuracy,
+        evidence:'Düşük doğruluk; kavram yanılgısı olasılığı koç tarafından soru çözümüyle doğrulanmalıdır.'
+      }))
+      :[];
+
+    const literatureDimensions=family==='LITERATURE'
+      ?(['DÖNEM','YAZAR','ESER'] as const).map(dimension=>{
+        const rows=a.filter(x=>literatureConnectionDimension(x.questionType,x.topic)===dimension);
+        const dimensionTotal=rows.reduce((n,x)=>n+x.correct+x.wrong+x.blank,0);
+        const dimensionCorrect=rows.reduce((n,x)=>n+x.correct,0);
+        return {
+          dimension,
+          evidence:dimensionTotal,
+          accuracy:dimensionTotal?Math.round(dimensionCorrect/dimensionTotal*100):null
+        };
+      })
+      :[];
+
+    let primarySignal='Genel performans verisi izleniyor.';
+    let recommendedAction='Kısa konu tekrarı ve ölçümlü soru seti uygula.';
+
+    if(family==='MATHEMATICS'){
+      primarySignal=weakestQuestionType
+        ?weakestQuestionType.questionType+' türünde doğruluk '+(weakestQuestionType.accuracy==null?'ölçülemedi':'%'+weakestQuestionType.accuracy)
+          +(slowestQuestionType?.avgSeconds?'; en yavaş tür '+slowestQuestionType.questionType+' ('+slowestQuestionType.avgSeconds+' sn/soru)':'')+'.'
+        :'Problem tipi ve süre verisi birikiyor.';
+      recommendedAction=weakestQuestionType
+        ?weakestQuestionType.questionType+' için kısa, süreli ve yanlış-analizli problem seti uygula.'
+        :'Soru türü etiketli matematik seti uygula; hız ve doğruluğu birlikte ölç.';
+    }else if(family==='TURKISH'){
+      primarySignal=weakestQuestionType
+        ?weakestQuestionType.questionType+' soru türü öncelikli izleme alanı'
+          +(weakestQuestionType.avgSeconds?'; ortalama '+weakestQuestionType.avgSeconds+' sn/soru':'')+'.'
+        :'Türkçe soru türü/süre verisi birikiyor.';
+      recommendedAction=weakestQuestionType
+        ?weakestQuestionType.questionType+' odaklı süreli mini set uygula; tür bazında süreyi yeniden ölç.'
+        :'Paragraf/dil bilgisi gibi soru türlerini ayrı etiketleyerek süreli mini set uygula.';
+    }else if(family==='HISTORY'){
+      primarySignal='Aktif hatırlama: '+activeRecallSessions.length+' oturum / '+activeRecallMinutes+' dk; tekrar başarısı '
+        +(reviewSuccess==null?'ölçülmedi':'%'+reviewSuccess)+'.';
+      recommendedAction=reviewSuccess!=null&&reviewSuccess<75
+        ?'Kaynağı kapatıp aktif hatırlama yap; ardından 0–1–3–7–14–28 tekrar kuyruğuyla kronoloji/kavram kontrolü uygula.'
+        :'Aktif hatırlama + kronoloji/kavram bağlantısı + aralıklı tekrar döngüsünü sürdür.';
+    }else if(family==='LITERATURE'){
+      const weakConnection=literatureDimensions.filter(x=>x.evidence>0).sort((x,y)=>(x.accuracy??101)-(y.accuracy??101))[0];
+      primarySignal=weakConnection
+        ?weakConnection.dimension+' bağlantısında doğruluk %'+weakConnection.accuracy+' ('+weakConnection.evidence+' soru kanıtı).'
+        :'Dönem–yazar–eser bağlantısı için etiketli soru verisi birikiyor.';
+      recommendedAction=weakConnection
+        ?weakConnection.dimension+' merkezli dönem–yazar–eser eşleştirme ve aktif hatırlama çalışması uygula.'
+        :'Dönem, yazar ve eser sorularını ayrı etiketleyip bağlantı haritası + aktif hatırlama uygula.';
+    }else if(family==='SCIENCE'){
+      primarySignal=misconceptionCandidates[0]
+        ?misconceptionCandidates[0].topic+' konusunda doğruluk %'+misconceptionCandidates[0].accuracy+'; kavramsal hata adayı olarak incelenmeli.'
+        :weakestTopic
+          ?weakestTopic.topic+' konu doğruluğu '+(weakestTopic.accuracy==null?'ölçülemedi':'%'+weakestTopic.accuracy)+'.'
+          :'Fen konu verisi birikiyor.';
+      recommendedAction=misconceptionCandidates[0]
+        ?misconceptionCandidates[0].topic+' için kavram kontrol soruları → yanlış gerekçesi → düzeltici örnek → yeniden test akışı uygula.'
+        :'Konu bazlı kavram kontrolü ve yanlış gerekçesi kaydı uygula.';
+    }
+
     return {
       subject,family,metrics,
       accuracy:total?Math.round(correct/total*100):null,
       avgSeconds:avgSeconds?Number(avgSeconds.toFixed(1)):null,
       reviewSuccess,
-      questionTypes,
-      errorReasons:Object.entries(errorReasons).sort((a,b)=>b[1]-a[1]).map(([key,count])=>({
-        key,count,label:ERROR_REASON_LABELS[key as ErrorReasonKey]||key
-      }))
+      questionTypes:qTypes.map(x=>x.questionType),
+      questionTypeBreakdown:qTypes,
+      topicBreakdown:topics.slice(0,8),
+      weakestQuestionType,
+      slowestQuestionType,
+      weakestTopic,
+      activeRecall:{
+        sessions:activeRecallSessions.length,
+        minutes:activeRecallMinutes,
+        evidenceNote:'Yalnız oturum kaydında ders adı açıkça eşleşen Aktif Hatırlama oturumları sayılır.'
+      },
+      literatureConnections:literatureDimensions,
+      misconceptionCandidates,
+      errorReasons:errorList,
+      primarySignal,
+      recommendedAction
     };
   });
 }
