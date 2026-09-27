@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { buildExamNetChange,previousSessionDecisions,summarizeSessionActions,summarizeSessionReviews } from '@/lib/coachSessionPrep';
+import { classifyCoachDecision } from '@/lib/coachInterventionImpact';
 
 const postSchema=z.discriminatedUnion('action',[
   z.object({action:z.literal('prepare'),sessionId:z.string()}),
@@ -173,14 +174,36 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
 
   const followUpAt=input.followUpAt?new Date(input.followUpAt):null;
   const derivedNextStep=input.nextStep||input.decisions[0]||null;
-  const updated=await db.coachingSession.update({where:{id:session.id},data:{
-    status:'COMPLETED',
-    completedAt:new Date(),
-    outcome:input.outcome,
-    decisions:input.decisions,
-    nextStep:derivedNextStep,
-    followUpAt
-  }});
+  const completedAt=new Date();
+  const updated=await db.$transaction(async tx=>{
+    const saved=await tx.coachingSession.update({where:{id:session.id},data:{
+      status:'COMPLETED',
+      completedAt,
+      outcome:input.outcome,
+      decisions:input.decisions,
+      nextStep:derivedNextStep,
+      followUpAt
+    }});
+    for(let index=0;index<input.decisions.length;index++){
+      const decision=input.decisions[index];
+      const classified=classifyCoachDecision(decision);
+      await tx.dailyLog.create({data:{
+        studentId:id,
+        date:completedAt,
+        payload:{
+          type:'COACH_INTERVENTION',
+          sessionId:session.id,
+          decisionIndex:index,
+          decision,
+          kind:classified.kind,
+          subject:classified.subject,
+          outcome:input.outcome,
+          at:completedAt.toISOString()
+        }
+      }});
+    }
+    return saved;
+  });
   if(followUpAt&&input.createFollowUpTask){
     await db.coachTask.create({data:{
       coachId:user.coachProfile.id,
@@ -193,7 +216,7 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
       sourceId:session.id
     }});
   }
-  return NextResponse.json({ok:true,session:updated});
+  return NextResponse.json({ok:true,session:updated,interventionsRecorded:input.decisions.length});
 }
 
 export const GET = withApiErrors(GET__handler);
