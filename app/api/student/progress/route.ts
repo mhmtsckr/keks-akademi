@@ -6,6 +6,7 @@ import { requireRole } from '@/lib/auth';
 import { calcNet } from '@/lib/performance';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
 import { calculateLearningSnapshot } from '@/lib/learningModel';
+import { inferPracticeErrorReason } from '@/lib/learningEngine';
 
 const TOPIC_REVIEW_SOURCE='TOPIC_REVIEW_01371428';
 
@@ -18,7 +19,7 @@ function turkeyDayStart(offsetDays=0){
 
 const schema=z.discriminatedUnion('action',[
  z.object({action:z.literal('topic'),examType:z.string().min(2),subject:z.string().min(2),topic:z.string().min(2),completed:z.boolean()}),
- z.object({action:z.literal('practice'),examType:z.string().min(2),subject:z.string().min(2),topic:z.string().optional(),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),errorReason:z.enum(['BILGI_EKSIKLIGI','ISLEM_HATASI','DIKKAT','SORU_KOKU','SURE','YONTEM_BILMEME','UNUTMA','SORUYU_ANLAMA','STRATEJI','DIGER']).optional(),durationSeconds:z.number().int().min(0).max(7200).optional(),questionType:z.string().max(120).optional(),problemType:z.string().max(120).optional(),activeRecallScore:z.number().min(0).max(100).optional(),reviewSuccessScore:z.number().min(0).max(100).optional(),connectionScore:z.number().min(0).max(100).optional(),conceptScore:z.number().min(0).max(100).optional(),misconception:z.string().max(300).optional(),difficulty:z.number().int().min(1).max(5).optional()}),
+ z.object({action:z.literal('practice'),examType:z.string().min(2),subject:z.string().min(2),topic:z.string().optional(),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),errorReason:z.enum(['BILGI_EKSIKLIGI','ISLEM_HATASI','DIKKAT','SORU_KOKU','SURE','YONTEM_BILMEME','UNUTMA']).optional(),durationSeconds:z.number().int().min(0).max(7200).optional(),questionType:z.string().max(120).optional(),problemType:z.string().max(120).optional(),activeRecallScore:z.number().min(0).max(100).optional(),reviewSuccessScore:z.number().min(0).max(100).optional(),connectionScore:z.number().min(0).max(100).optional(),conceptScore:z.number().min(0).max(100).optional(),misconception:z.string().max(300).optional(),difficulty:z.number().int().min(1).max(5).optional()}),
 ]);
 
 async function POST__handler(req:Request){
@@ -80,6 +81,13 @@ async function POST__handler(req:Request){
  }
  const total=input.correct+input.wrong+input.blank;
  const net=calcNet(input.correct,input.wrong);
+ const inferredReason=input.errorReason||inferPracticeErrorReason(input);
+ if(input.wrong>0&&!inferredReason){
+   return NextResponse.json({
+     error:'Yanlış sorular için neden seçin veya sistemin çıkarım yapabilmesi için süre/kavram/tekrar verisi girin.'
+   },{status:400});
+ }
+ const errorReasonSource=input.errorReason?'STUDENT':'SYSTEM';
  const since=new Date(Date.now()-28*86400000);
  const learningLogs=await db.dailyLog.findMany({
    where:{studentId,date:{gte:since}},orderBy:{date:'desc'},take:120,select:{date:true,payload:true}
@@ -109,19 +117,21 @@ async function POST__handler(req:Request){
    masteryState:snapshot.state,
    diagnostics:snapshot.diagnostics,
    nextAction:snapshot.nextAction,
-   priority:snapshot.priority
+   priority:snapshot.priority,
+   errorReason:inferredReason,
+   errorReasonSource
  };
  const result=await db.$transaction(async tx=>{
    const row=await tx.practiceLog.create({data:{
      studentId,examType:input.examType,subject:input.subject,topic:input.topic||null,
-     correct:input.correct,wrong:input.wrong,blank:input.blank,total,net,errorReason:input.errorReason||null
+     correct:input.correct,wrong:input.wrong,blank:input.blank,total,net,errorReason:inferredReason
    }});
    await tx.dailyLog.create({data:{
      studentId,date:new Date(),payload:{...metricPayload,practiceLogId:row.id}
    }});
    return row;
  });
- return NextResponse.json({ok:true,row:result,learning:snapshot});
+ return NextResponse.json({ok:true,row:result,learning:snapshot,errorReason:inferredReason,errorReasonSource});
 }
 
 export const POST = withApiErrors(POST__handler);
