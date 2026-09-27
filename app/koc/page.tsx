@@ -10,6 +10,7 @@ import { isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { AccountSecurity } from '@/app/components/AccountSecurity';
 import { CoachMorningBrief } from '@/app/components/CoachMorningBrief';
+import { CoachInterventionLearning } from '@/app/components/CoachInterventionLearning';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -126,10 +127,15 @@ export default async function CoachPage() {
       <CoachMorningBrief/>
     </section>
 
+    <section id="intervention-learning" className="section section-anchor">
+      <CoachInterventionLearning/>
+    </section>
+
     <section className="section">
       <PanelNavigator roleLabel="Koç" groups={[
         {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[
           {href:'#morning-brief',title:'Morning Brief',description:'Bugün müdahale gerektiren öğrenciler',badge:'BUGÜN'},
+          {href:'#intervention-learning',title:'Müdahale Etkisi',description:'Koçluk kararlarının performans değişimleriyle ilişkisi'},
           {href:'#koc-komuta',title:'Koç Komuta Merkezi',description:'Takip sinyalleri, seanslar ve geciken aksiyonlar'}
         ]},
         {label:'ÖĞRENCİ ERİŞİMİ',description:'Yeni öğrenciyi güvenli biçimde koç hesabına bağla.',items:[
