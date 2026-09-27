@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
-import { adaptiveReviewIntervalDays } from '@/lib/learningEngine';
+import { adaptiveReviewIntervalDays,reviewIntervalReason } from '@/lib/learningEngine';
 
 const schema=z.object({id:z.string(),answer:z.string().min(1)});
 
@@ -67,21 +67,72 @@ async function POST__handler(req:Request){
     ? normalizeAnswer(input.answer)===normalizeAnswer(item.question.correctAnswer)
     : input.answer===item.question.correctAnswer;
   const previousCorrect=item.lastCorrect;
+  const recentLogs=await db.dailyLog.findMany({
+    where:{studentId:user.student.id,date:{gte:new Date(Date.now()-120*86400000)}},
+    orderBy:{date:'desc'},take:250,select:{date:true,payload:true}
+  });
+  const reviewHistory=recentLogs.flatMap(log=>{
+    const p=(log.payload&&typeof log.payload==='object'&&!Array.isArray(log.payload)?log.payload:{}) as Record<string,any>;
+    if(p.type!=='REVIEW_RESULT'||p.questionId!==item.questionId)return [];
+    return [{correct:Boolean(p.correct),at:log.date}];
+  });
+  let correctStreak=correct?1:0;
+  let incorrectStreak=correct?0:1;
+  for(const h of reviewHistory){
+    if(correct&&h.correct)correctStreak++;
+    else if(!correct&&!h.correct)incorrectStreak++;
+    else break;
+  }
+  const recentWindow=reviewHistory.slice(0,5);
+  const recentAccuracy=recentWindow.length
+    ?Math.round(recentWindow.filter(x=>x.correct).length/recentWindow.length*100)
+    :null;
+
   let step=item.stepIndex;
   if(correct) step=Math.min(step+1,REVIEW_DAYS.length);
   else step=Math.max(0,step-1);
   const completed=correct && step>=REVIEW_DAYS.length;
   const due=new Date();
-  const nextIntervalDays=completed?null:adaptiveReviewIntervalDays({
+  const adaptiveInput={
     nextStep:step,
     correct,
-    previousCorrect
-  });
+    previousCorrect,
+    correctStreak,
+    incorrectStreak,
+    recentAccuracy
+  };
+  const nextIntervalDays=completed?null:adaptiveReviewIntervalDays(adaptiveInput);
+  const intervalReason=completed
+    ?'Aktif tekrar döngüsü başarıyla tamamlandı.'
+    :reviewIntervalReason(adaptiveInput,Number(nextIntervalDays||0));
   if(!completed) due.setDate(due.getDate()+Number(nextIntervalDays||0));
-  const row=await db.reviewQueueItem.update({where:{id:item.id},data:{
-    stepIndex:step,lastCorrect:correct,status:completed?'COMPLETED':(Number(nextIntervalDays||0)===0?'DUE':'PENDING'),
-    completedAt:completed?new Date():null,dueAt:due
-  }});
+  const row=await db.$transaction(async tx=>{
+    const updated=await tx.reviewQueueItem.update({where:{id:item.id},data:{
+      stepIndex:step,lastCorrect:correct,status:completed?'COMPLETED':(Number(nextIntervalDays||0)===0?'DUE':'PENDING'),
+      completedAt:completed?new Date():null,dueAt:due
+    }});
+    await tx.dailyLog.create({data:{
+      studentId:user.student!.id,
+      date:new Date(),
+      payload:{
+        type:'REVIEW_RESULT',
+        reviewQueueItemId:item.id,
+        questionId:item.questionId,
+        subject:item.question.subject,
+        topic:item.question.topic,
+        correct,
+        correctStreak,
+        incorrectStreak,
+        recentAccuracy,
+        previousStep:item.stepIndex,
+        nextStep:step,
+        nextIntervalDays,
+        intervalReason,
+        nextDueAt:completed?null:due.toISOString()
+      }
+    }});
+    return updated;
+  });
   return NextResponse.json({
     ok:true,
     row,
@@ -91,6 +142,10 @@ async function POST__handler(req:Request){
     completed,
     currentStage:correct?Math.min(step,REVIEW_DAYS.length-1):0,
     nextIntervalDays,
+    intervalReason,
+    correctStreak,
+    incorrectStreak,
+    recentAccuracy,
     nextDueAt:completed?null:due
   });
 }
