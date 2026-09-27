@@ -85,7 +85,7 @@ export async function buildWeeklyPlan(studentId:string){
       tasks.push(task);used+=task.duration;return true;
     };
     const due=reviews.filter(r=>new Date(r.dueAt).toDateString()===date.toDateString());
-    if(due.length)add({type:'REVIEW',title:`${Math.min(due.length,4)} yanlış soru tekrarı`,duration:Math.min(20,Math.max(8,due.length*4)),reason:'Bu soruların tekrar tarihi bugün olduğu için kapasite bütçesi içinde önceliklendirildi.'});
+    if(due.length)add({type:'REVIEW',title:`${Math.min(due.length,4)} yanlış soru tekrarı`,duration:Math.min(20,Math.max(8,due.length*4)),reason:'Bu soruların tekrar tarihi bugün olduğu için plana alındı.'});
     const weakSub=weak[i%Math.max(weak.length,1)];
     const topic=incomplete.find(t=>!weakSub||t.subject===weakSub.subject)||incomplete[i%Math.max(incomplete.length,1)];
     const focusDuration=Math.min(capacity.recommendedFocusBlockMinutes||35,dayBudget);
