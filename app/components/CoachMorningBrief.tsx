@@ -20,13 +20,13 @@ export function CoachMorningBrief(){
 
   return <div className="card" style={{marginBottom:16}}>
     <div className="moduleHeaderRow">
-      <div><div className="moduleEyebrow">MORNING BRIEF · AÇIKLANABİLİR SİNYALLER</div><h2>{brief.summary}</h2><p className="muted">Puan veya kişilik etiketi yerine öğrencinin somut davranışı gösterilir.</p></div>
+      <div><div className="moduleEyebrow">GÜNLÜK MORNING BRIEF · AÇIKLANABİLİR SİNYALLER</div><h2>{brief.summary}</h2>{brief.headline&&<p><strong>{brief.headline}</strong></p>}<p className="muted">Görev, ders performansı, tekrar ve deneme sinyalleri tek ekranda önceliklendirilir. Puan veya kişilik etiketi kullanılmaz.</p></div>
       <button className="btn" onClick={load}>Yenile</button>
     </div>
     {brief.students?.length
       ?<div className="stack">{brief.students.map((s:any)=><div className="card" key={s.studentId} style={{margin:0}}>
         <div className="moduleHeaderRow">
-          <div><strong>{s.studentName}</strong><div className="muted">Kod: {s.studentCode}</div></div>
+          <div><strong>{s.studentName}</strong><div className="muted">Kod: {s.studentCode}</div></div><span className="pill">{s.priority==='HIGH'?'YÜKSEK ÖNCELİK':s.priority==='MEDIUM'?'TAKİP':'RUTİN'}</span>
           <a className="btn" href={'/koc/ogrenci/'+s.studentId}>Öğrenciyi Aç</a>
         </div>
         <div className="stack" style={{gap:6}}>
@@ -50,7 +50,8 @@ export function CoachMorningBrief(){
       <summary><strong>KOHORT / GRUP GÖRÜNÜMÜ</strong></summary>
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',marginTop:10}}>
         <div className="card"><strong>En fazla tekrar/görev geciktirenler</strong><p className="muted">{brief.cohortGroups.mostOverdue?.length?brief.cohortGroups.mostOverdue.map((x:any)=>x.studentName).join(' · '):'Yok'}</p></div>
-        <div className="card"><strong>Doğruluğu düşenler</strong><p className="muted">{brief.cohortGroups.accuracyDecline?.length?brief.cohortGroups.accuracyDecline.map((x:any)=>x.studentName).join(' · '):'Yok'}</p></div>
+        <div className="card"><strong>Doğruluğu düşenler</strong><p className="muted">{brief.cohortGroups.accuracyDecline?.length?brief.cohortGroups.accuracyDecline.map((x:any)=>x.studentName+(x.strongestDecline?' · '+x.strongestDecline.examType+' '+x.strongestDecline.subject+' '+x.strongestDecline.delta+' puan':'')).join(' | '):'Yok'}</p></div>
+        <div className="card"><strong>Bugün son günündeki tekrarlar</strong><p className="muted">{brief.cohortGroups.reviewsDueToday?.length?brief.cohortGroups.reviewsDueToday.map((x:any)=>x.studentName+' · '+x.dueToday).join(' | '):'Yok'}</p></div>
         <div className="card"><strong>Deneme takibi gerekenler</strong><p className="muted">{brief.cohortGroups.examFollowUp?.length?brief.cohortGroups.examFollowUp.map((x:any)=>x.studentName).join(' · '):'Yok'}</p></div>
         <div className="card"><strong>Görüşme önerilenler</strong><p className="muted">{brief.cohortGroups.needsMeeting?.length?brief.cohortGroups.needsMeeting.map((x:any)=>x.studentName).join(' · '):'Yok'}</p></div>
       </div>
