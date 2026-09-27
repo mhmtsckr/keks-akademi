@@ -186,7 +186,8 @@ export function inferEfficientStudyWindow(
     const accuracy=weightedAccuracy(rows);
     const activeMinutes=(hourMinutes.get(h)||0)+(hourMinutes.get((h+1)%24)||0);
     if(questions<10&&activeMinutes<20)continue;
-    const score=(accuracy??0)+(Math.min(questions,60)/12)+(Math.min(activeMinutes,120)/24);
+    const startHourMinutes=hourMinutes.get(h)||0;
+    const score=(accuracy??0)+(Math.min(questions,60)/12)+(Math.min(activeMinutes,120)/24)+(Math.min(startHourMinutes,60)/12);
     if(!best||score>best.score)best={startHour:h,score,accuracy,questions,activeMinutes};
   }
 
