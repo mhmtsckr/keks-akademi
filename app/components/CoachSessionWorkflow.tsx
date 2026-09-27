@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent,useEffect,useState } from 'react';
+import { FormEvent,ReactNode,useEffect,useState } from 'react';
 
 export function CoachSessionWorkflow({studentId}:{studentId:string}){
   const [sessions,setSessions]=useState<any[]>([]);
@@ -138,6 +138,6 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
   </div>;
 }
 
-function BriefBlock({title,children}:{title:string;children:React.ReactNode}){
+function BriefBlock({title,children}:{title:string;children:ReactNode}){
   return <div className="card" style={{margin:0}}><div className="moduleEyebrow">{title}</div>{children}</div>;
 }
