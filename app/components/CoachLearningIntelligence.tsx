@@ -63,9 +63,18 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
         <div className="card"><small className="muted">Planlanan süre</small><div className="kpi">{c.plannedMinutes??'—'}</div><span>dk/gün</span></div>
         <div className="card"><small className="muted">Gerçek ortalama</small><div className="kpi">{c.actualAverageMinutes??'—'}</div><span>dk/gün</span></div>
         <div className="card"><small className="muted">Önerilen kapasite</small><div className="kpi">{c.suggestedDailyMinutes??'—'}</div><span>dk/gün</span></div>
-        <div className="card"><small className="muted">En verimli zaman</small><strong>{c.bestWindow||'Veri birikiyor'}</strong><p className="muted">{c.evidenceDays||0} kanıt günü</p></div>
+        <div className="card"><small className="muted">En verimli zaman</small><strong>{c.bestWindow||'Veri birikiyor'}</strong><p className="muted">{c.bestWindowAccuracy==null?'Performans verisi birikiyor':'Doğruluk %'+c.bestWindowAccuracy+' · '+c.bestWindowQuestions+' soru'}</p></div>
+        <div className="card"><small className="muted">Önerilen odak bloğu</small><div className="kpi">{c.recommendedFocusBlockMinutes??'—'}</div><span>dk</span></div>
       </div>
+      {c.actualVsPlannedDeltaMinutes!=null&&<div className="notice" style={{marginTop:10}}>
+        <strong>Plan–gerçek farkı:</strong> {c.actualVsPlannedDeltaMinutes===0?'Planlanan süre ile gözlenen ortalama eşit.':Math.abs(c.actualVsPlannedDeltaMinutes)+' dk '+(c.actualVsPlannedDeltaMinutes<0?'planın altında':'planın üzerinde')}.
+      </div>}
+      {c.focusDropAfterMinutes&&<div className="notice" style={{marginTop:10}}>
+        <strong>Odak sinyali:</strong> {c.focusDropAfterMinutes} dakikayı aşan eşleşmiş oturumlarda doğruluk yaklaşık {c.focusDropPoints} puan düşüyor
+        {c.focusDropBeforeAccuracy!=null&&c.focusDropAfterAccuracy!=null?' (%'+c.focusDropBeforeAccuracy+' → %'+c.focusDropAfterAccuracy+')':''}. Bu gözlemsel bir ilişkidir; nedensellik iddiası değildir.
+      </div>}
       {c.lowCompletionDays?.length>0&&<div className="notice" style={{marginTop:10}}><strong>Düşük tamamlama günleri:</strong> {c.lowCompletionDays.map((x:any)=>x.day+' %'+x.completionRate).join(' · ')}</div>}
+      <p className="muted" style={{marginTop:10}}>Veri kaynağı: {c.measurementSource==='ACTIVE_TIMER'?'gerçek aktif çalışma zamanlayıcısı + görev sonuçları':'görev/soru kayıtları'} · {c.evidenceDays||0} kanıt günü. Sistem veri yetersizse kesin odak veya saat sonucu üretmez.</p>
     </div>
 
     {goal&&<div className="card">
