@@ -28,6 +28,36 @@ export const EXAM_CATALOG = {
     'Türk Dili ve Edebiyatı': ['Güzel Sanatlar ve Edebiyat','Şiir Bilgisi','Edebî Sanatlar','İslamiyet Öncesi Türk Edebiyatı','Halk Edebiyatı','Divan Edebiyatı','Tanzimat','Servetifünun','Fecriati','Millî Edebiyat','Cumhuriyet Dönemi','Dünya Edebiyatı'],
     'Tarih-1': ['Tarih ve Zaman','İlk ve Orta Çağlarda Türk Dünyası','İslam Medeniyetinin Doğuşu','Türklerin İslamiyeti Kabulü','Beylikten Devlete Osmanlı','Dünya Gücü Osmanlı','Değişen Dünya Dengeleri','Millî Mücadele'],
     'Coğrafya-1': ['Ekosistem','Nüfus Politikaları','Şehirler ve Kırsal Yerleşmeler','Ekonomik Faaliyetler','Türkiye Ekonomisi','Küresel Ortam']
+  },
+  AGS: {
+    'Sözel Yetenek': ['Sözcük-Cümle Anlamı','Paragraf','Sözel Mantık'],
+    'Sayısal Yetenek': ['Temel Matematik','Problemler','Sayısal Mantık'],
+    'Tarih': ['Osmanlı Öncesi Türk Tarihi','Osmanlı Tarihi','Millî Mücadele','Atatürk İlke ve İnkılapları','Çağdaş Türk ve Dünya Tarihi'],
+    'Türkiye Coğrafyası': ['Fiziki Coğrafya','Beşerî Coğrafya','Ekonomik Coğrafya','Bölgeler'],
+    'Eğitim Bilimleri': ['Öğrenme Psikolojisi','Gelişim Psikolojisi','Öğretim İlke ve Yöntemleri','Program Geliştirme','Ölçme ve Değerlendirme','Rehberlik'],
+    'Türk Millî Eğitim Sistemi': ['Temel Kavramlar','MEB Teşkilatı','Eğitim Sistemi','Mevzuat Temelleri']
+  },
+  OABT: {
+    'Alan Bilgisi': ['Alan Temelleri','Alan Kavramları','Alan Kuramları','Alan Uygulamaları','Alan Eğitimi','Öğretim Programı']
+  },
+  YDS: {
+    'Yabancı Dil': ['Kelime Bilgisi','Dil Bilgisi','Cloze Test','Cümle Tamamlama','Çeviri','Paragraf','Anlam Bütünlüğü','Diyalog','Yakın Anlam']
+  },
+  KPSS: {
+    'Türkçe': ['Sözcükte Anlam','Cümlede Anlam','Paragraf','Dil Bilgisi','Sözel Mantık'],
+    'Matematik': ['Temel Kavramlar','Sayılar','Problemler','Geometri','Sayısal Mantık'],
+    'Tarih': ['İslamiyet Öncesi Türk Tarihi','Türk-İslam Tarihi','Osmanlı Tarihi','Millî Mücadele','Atatürk İlke ve İnkılapları','Çağdaş Türk ve Dünya Tarihi'],
+    'Coğrafya': ['Türkiye Fiziki Coğrafyası','Nüfus ve Yerleşme','Ekonomik Coğrafya','Bölgeler'],
+    'Vatandaşlık': ['Hukukun Temel Kavramları','Anayasa','Yasama','Yürütme','Yargı','İdare Hukuku'],
+    'Güncel Bilgiler': ['Türkiye','Dünya','Kültür-Sanat','Bilim-Teknoloji']
+  },
+  ALES: {
+    'Sayısal': ['Temel Matematik','Problemler','Sayısal Mantık','Geometri','Grafik-Tablo Yorumlama'],
+    'Sözel': ['Sözcük-Cümle Anlamı','Paragraf','Sözel Mantık','Anlam Bütünlüğü']
+  },
+  DGS: {
+    'Matematik': ['Temel Kavramlar','Sayılar','Denklemler','Oran-Orantı','Problemler','Kümeler','Olasılık','Geometri','Sayısal Mantık'],
+    'Türkçe': ['Sözcükte Anlam','Cümlede Anlam','Paragraf','Sözel Mantık','Anlatım']
   }
 } as const;
 

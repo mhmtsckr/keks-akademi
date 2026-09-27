@@ -4,9 +4,9 @@ import { FormEvent, useMemo, useState } from 'react';
 import { EXAM_CATALOG, ExamType } from '@/lib/examCatalog';
 
 type Progress = {examType:string;subject:string;topic:string;completed:boolean};
-type Practice = {id:string;examType:string;subject:string;topic:string|null;correct:number;wrong:number;blank:number;net:number;date:string;errorReason?:string|null};
+type Practice = {id:string;examType:string;subject:string;topic:string|null;correct:number;wrong:number;blank:number;net:number;date:string;errorReason?:string|null;durationSeconds?:number|null;questionType?:string|null;problemType?:string|null;masteryScore?:number|null;masteryState?:string|null;metricPayload?:unknown};
 
-export function StudentProgressTools({allowedExams,initialProgress,initialPractice}:{allowedExams:ExamType[];initialProgress:Progress[];initialPractice:Practice[]}) {
+export function StudentProgressTools({allowedExams,initialProgress,initialPractice,oabtField}:{allowedExams:ExamType[];initialProgress:Progress[];initialPractice:Practice[];oabtField?:string|null}) {
   const [exam,setExam]=useState<ExamType>(allowedExams[0]||'TYT');
   const [subject,setSubject]=useState<string>(Object.keys(EXAM_CATALOG[allowedExams[0]||'TYT'])[0]||'');
   const [progress,setProgress]=useState(initialProgress);
@@ -15,6 +15,13 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
   const [lastSchedule,setLastSchedule]=useState<{subject:string;topic:string;items:{day:number;label:string;date:string}[]} | null>(null);
   const subjects=Object.keys(EXAM_CATALOG[exam]||{});
   const topics=(EXAM_CATALOG[exam] as any)?.[subject]||[];
+  const subjectKey=subject.toLocaleUpperCase('tr-TR');
+  const isMath=/MATEMATİK|GEOMETRİ|SAYISAL/.test(subjectKey);
+  const isTurkish=/TÜRKÇE|SÖZEL/.test(subjectKey);
+  const isHistory=/TARİH|İNKILAP/.test(subjectKey);
+  const isLiterature=/EDEBİYAT/.test(subjectKey)||(exam==='OABT'&&/EDEBİYAT/.test((oabtField||'').toLocaleUpperCase('tr-TR')));
+  const isScience=/FİZİK|KİMYA|BİYOLOJİ|FEN/.test(subjectKey);
+  const isLanguage=exam==='YDS'||/İNGİLİZCE|YABANCI DİL/.test(subjectKey);
 
   function changeExam(v:ExamType){setExam(v);setSubject(Object.keys(EXAM_CATALOG[v])[0]||'');}
 
@@ -35,10 +42,25 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
     e.preventDefault();setMsg('');
     const form=e.currentTarget;
     const fd=new FormData(form);
-    const body={action:'practice',examType:exam,subject,topic:String(fd.get('topic')||''),correct:Number(fd.get('correct')||0),wrong:Number(fd.get('wrong')||0),blank:Number(fd.get('blank')||0),errorReason:String(fd.get('errorReason')||'')||undefined};
+    const optionalNumber=(name:string)=>{const raw=String(fd.get(name)||'').trim();return raw===''?undefined:Number(raw)};
+    const optionalText=(name:string)=>String(fd.get(name)||'').trim()||undefined;
+    const body={
+      action:'practice',examType:exam,subject,topic:String(fd.get('topic')||''),
+      correct:Number(fd.get('correct')||0),wrong:Number(fd.get('wrong')||0),blank:Number(fd.get('blank')||0),
+      errorReason:optionalText('errorReason'),
+      durationSeconds:optionalNumber('durationSeconds'),
+      questionType:optionalText('questionType'),
+      problemType:optionalText('problemType'),
+      activeRecallScore:optionalNumber('activeRecallScore'),
+      reviewSuccessScore:optionalNumber('reviewSuccessScore'),
+      connectionScore:optionalNumber('connectionScore'),
+      conceptScore:optionalNumber('conceptScore'),
+      misconception:optionalText('misconception'),
+      difficulty:optionalNumber('difficulty')
+    };
     const r=await fetch('/api/student/progress',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json(); if(!r.ok){setMsg('Hata: '+(j.error||'Kaydedilemedi.'));return}
-    setPractice(p=>[j.row,...p]); setMsg('Soru çözüm kaydı eklendi. Net: '+j.row.net); form.reset();
+    setPractice(p=>[{...j.row,masteryScore:j.learning?.score??null,masteryState:j.learning?.state??null,metricPayload:j.learning??null},...p]); setMsg('Kayıt eklendi. Net: '+j.row.net+' · Bilgi hâkimiyeti: '+(j.learning?.score??'—')+' · '+(j.learning?.state==='DURABLE'?'Kalıcı':j.learning?.state==='RISKY'?'Riskli':j.learning?.state==='REINFORCING'?'Pekiştiriliyor':j.learning?.state==='LEARNING'?'Öğreniliyor':'Yeni')+(j.learning?.nextAction?' · Sonraki adım: '+j.learning.nextAction:'')); form.reset();
   }
 
   const completedCount=useMemo(()=>progress.filter(x=>x.examType===exam&&x.completed).length,[progress,exam]);
@@ -98,6 +120,23 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
             <div className="field"><label>Boş</label><input name="blank" type="number" min="0" required/></div>
           </div>
           <div className="field"><label>Baskın hata nedeni</label><select name="errorReason"><option value="">Seçiniz</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="DIKKAT">Dikkat</option><option value="SORU_KOKU">Soru kökünü yanlış okuma</option><option value="SURE">Süre problemi</option><option value="YONTEM_BILMEME">Yöntem bilmeme</option><option value="UNUTMA">Unutma</option><option value="SORUYU_ANLAMA">Soruyu anlama</option><option value="STRATEJI">Yanlış strateji</option><option value="DIGER">Diğer</option></select></div>
+          {(isMath||isTurkish||isLanguage)&&<div className="field"><label>Toplam süre (saniye)</label><input name="durationSeconds" type="number" min="0" max="7200" placeholder="Örn. 900"/></div>}
+          {(isTurkish||isLanguage)&&<div className="field"><label>Soru türü</label><input name="questionType" placeholder={isLanguage?'Örn. paragraf / çeviri / cloze':'Örn. ana düşünce / çıkarım / dil bilgisi'}/></div>}
+          {isMath&&<div className="field"><label>Problem / soru tipi</label><input name="problemType" placeholder="Örn. yüzde problemi / fonksiyon / sayısal mantık"/></div>}
+          {(isHistory||exam==='AGS'||exam==='KPSS')&&<div className="scoreInputs">
+            <div className="field"><label>Aktif hatırlama %</label><input name="activeRecallScore" type="number" min="0" max="100"/></div>
+            <div className="field"><label>Tekrar başarısı %</label><input name="reviewSuccessScore" type="number" min="0" max="100"/></div>
+          </div>}
+          {isLiterature&&<div className="scoreInputs">
+            <div className="field"><label>Dönem–yazar–eser bağlantısı %</label><input name="connectionScore" type="number" min="0" max="100"/></div>
+            <div className="field"><label>Aktif hatırlama %</label><input name="activeRecallScore" type="number" min="0" max="100"/></div>
+          </div>}
+          {exam==='OABT'&&!isLiterature&&<div className="scoreInputs">
+            <div className="field"><label>Alan kavram hâkimiyeti %</label><input name="conceptScore" type="number" min="0" max="100"/></div>
+            <div className="field"><label>Aktif hatırlama %</label><input name="activeRecallScore" type="number" min="0" max="100"/></div>
+          </div>}
+          {isScience&&<><div className="field"><label>Kavram hâkimiyeti %</label><input name="conceptScore" type="number" min="0" max="100"/></div><div className="field"><label>Kavram yanılgısı</label><input name="misconception" placeholder="Varsa öğrencinin yanlış kavramsal modelini yaz"/></div></>}
+          {(exam==='AYT'||exam==='OABT')&&<div className="field"><label>Soru zorluk düzeyi</label><select name="difficulty"><option value="">Seçiniz</option><option value="1">1 · Temel</option><option value="2">2 · Kolay-Orta</option><option value="3">3 · Orta</option><option value="4">4 · Zor</option><option value="5">5 · Çok zor</option></select></div>}
           <button className="btn primary">Kaydet ve Neti Hesapla</button>
         </form>
       </div>
@@ -108,7 +147,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
         {practice.length===0?<p className="muted">Henüz kayıt yok.</p>:practice.slice(0,8).map(p=><div key={p.id} className="practiceRow">
           <div><strong>{p.subject}</strong><span>{p.topic||'Karma'}</span></div>
           <div className="practiceScore"><b>{p.net}</b><span>net</span></div>
-          <div className="practiceMeta">D {p.correct} · Y {p.wrong} · B {p.blank}{p.errorReason?' · '+p.errorReason.replaceAll('_',' '):''}</div>
+          <div className="practiceMeta">D {p.correct} · Y {p.wrong} · B {p.blank}{p.errorReason?' · '+p.errorReason.replaceAll('_',' '):''}{typeof p.masteryScore==='number'?' · Hâkimiyet '+Math.round(p.masteryScore)+'%':''}{p.masteryState?' · '+(p.masteryState==='DURABLE'?'Kalıcı':p.masteryState==='RISKY'?'Riskli':p.masteryState==='REINFORCING'?'Pekiştiriliyor':p.masteryState==='LEARNING'?'Öğreniliyor':'Yeni'):''}</div>
         </div>)}
       </div>
     </div>
