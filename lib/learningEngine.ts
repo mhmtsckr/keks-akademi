@@ -1451,66 +1451,158 @@ export async function rebalanceMissedTasksCapacityAware(studentId:string,now=new
   };
 }
 
+export function subjectAccuracyTrend(rows:{
+  date:Date;total:number;correct:number;subject:string;examType:string;
+}[],now=new Date()){
+  const sevenDaysAgo=new Date(now.getTime()-7*86400000);
+  const fourteenDaysAgo=new Date(now.getTime()-14*86400000);
+  const byKey=new Map<string,{examType:string;subject:string;currentTotal:number;currentCorrect:number;previousTotal:number;previousCorrect:number}>();
+  for(const row of rows){
+    if(row.date<fourteenDaysAgo)continue;
+    const key=row.examType+'|'+row.subject;
+    const x=byKey.get(key)||{examType:row.examType,subject:row.subject,currentTotal:0,currentCorrect:0,previousTotal:0,previousCorrect:0};
+    if(row.date>=sevenDaysAgo){
+      x.currentTotal+=row.total;x.currentCorrect+=row.correct;
+    }else{
+      x.previousTotal+=row.total;x.previousCorrect+=row.correct;
+    }
+    byKey.set(key,x);
+  }
+  return [...byKey.values()].flatMap(x=>{
+    if(x.currentTotal<5||x.previousTotal<5)return [];
+    const currentAccuracy=Math.round(x.currentCorrect/x.currentTotal*100);
+    const previousAccuracy=Math.round(x.previousCorrect/x.previousTotal*100);
+    return [{
+      examType:x.examType,
+      subject:x.subject,
+      currentAccuracy,
+      previousAccuracy,
+      delta:currentAccuracy-previousAccuracy,
+      currentQuestions:x.currentTotal,
+      previousQuestions:x.previousTotal
+    }];
+  }).sort((a,b)=>a.delta-b.delta);
+}
+
 export async function buildCoachMorningBrief(coachId:string,now=new Date()){
   const sevenDaysAgo=new Date(now.getTime()-7*86400000);
   const fourteenDaysAgo=new Date(now.getTime()-14*86400000);
+  const todayKey=trDateKey(now);
+  const todayStart=new Date(todayKey+'T00:00:00+03:00');
+  const tomorrowStart=new Date(todayStart.getTime()+86400000);
+
   const students=await db.student.findMany({
     where:{coachId},
     select:{
       id:true,fullName:true,studentCode:true,
-      coachingActions:{where:{status:'ACTIVE'},select:{periodEnd:true,taskDate:true,submission:{select:{id:true}}}},
-      reviewQueue:{where:{status:{in:['DUE','PENDING']},dueAt:{lte:now}},select:{id:true}},
-      practiceLogs:{where:{date:{gte:fourteenDaysAgo}},select:{date:true,total:true,correct:true,subject:true}},
+      coachingActions:{
+        where:{status:'ACTIVE'},
+        select:{id:true,title:true,periodEnd:true,taskDate:true,submission:{select:{id:true}}}
+      },
+      reviewQueue:{
+        where:{status:{in:['DUE','PENDING']},dueAt:{lt:tomorrowStart}},
+        select:{id:true,dueAt:true,question:{select:{subject:true,topic:true}}}
+      },
+      practiceLogs:{
+        where:{date:{gte:fourteenDaysAgo}},
+        select:{date:true,total:true,correct:true,subject:true,examType:true}
+      },
       examResults:{orderBy:{createdAt:'desc'},take:1,select:{createdAt:true,examType:true}}
     }
   });
 
   const items=students.map(student=>{
-    const current=student.practiceLogs.filter(x=>x.date>=sevenDaysAgo);
-    const previous=student.practiceLogs.filter(x=>x.date<sevenDaysAgo);
-    const acc=(rows:typeof current)=>{
-      const total=rows.reduce((n,x)=>n+x.total,0);
-      return total?Math.round(rows.reduce((n,x)=>n+x.correct,0)/total*100):null;
-    };
-    const currentAccuracy=acc(current),previousAccuracy=acc(previous);
-    const accuracyDelta=currentAccuracy!=null&&previousAccuracy!=null?currentAccuracy-previousAccuracy:null;
-    const overdue=student.coachingActions.filter(x=>x.periodEnd<now&&!x.submission).length;
-    const dueReviews=student.reviewQueue.length;
+    const overdueTasks=student.coachingActions.filter(x=>x.periodEnd<now&&!x.submission).length;
+    const dueToday=student.reviewQueue.filter(x=>x.dueAt>=todayStart&&x.dueAt<tomorrowStart).length;
+    const overdueReviews=student.reviewQueue.filter(x=>x.dueAt<todayStart).length;
+    const trends=subjectAccuracyTrend(student.practiceLogs,now);
+    const strongestDecline=trends.find(x=>x.delta<=-8)||null;
     const examGap=student.examResults[0]?Math.floor((now.getTime()-student.examResults[0].createdAt.getTime())/86400000):null;
+
     const signals:string[]=[];
-    if(overdue)signals.push(overdue+' görev gecikti');
-    if(dueReviews)signals.push(dueReviews+' tekrar bugün/gecikmiş durumda');
-    if(accuracyDelta!=null&&accuracyDelta<=-10)signals.push('Son 7 gün doğruluğu önceki haftaya göre '+Math.abs(accuracyDelta)+' puan düştü');
+    if(overdueTasks)signals.push(overdueTasks+' görev gecikti');
+    if(strongestDecline)signals.push(strongestDecline.examType+' '+strongestDecline.subject+' doğruluğu son iki haftada '+Math.abs(strongestDecline.delta)+' puan düştü (%'+strongestDecline.previousAccuracy+' → %'+strongestDecline.currentAccuracy+')');
+    if(dueToday)signals.push(dueToday+' tekrar bugün son gününde');
+    if(overdueReviews)signals.push(overdueReviews+' tekrar gecikmiş durumda');
     if(examGap==null)signals.push('Henüz deneme kaydı yok');
     else if(examGap>=7)signals.push(examGap+' gündür deneme girilmedi');
-    const needsAction=overdue>=2||dueReviews>=3||(accuracyDelta!=null&&accuracyDelta<=-10)||examGap==null||(examGap!=null&&examGap>=7);
-    const suggestedAction=overdue>=2
-      ?'Görev hacmini ve kapasite profilini gözden geçir; 15 dakikalık takip görüşmesi planla.'
-      :dueReviews>=3
-        ?'Bugünkü tekrarları önceliklendir ve yanlış nedenini kontrol et.'
-        :accuracyDelta!=null&&accuracyDelta<=-10
-          ?'Gerileyen ders/konu için son iki haftanın yanlış nedenlerini incele.'
-          :'Deneme tarihi ve bir sonraki ölçüm noktasını belirle.';
+
+    const needsAction=
+      overdueTasks>=1||
+      dueToday>=3||
+      overdueReviews>=1||
+      Boolean(strongestDecline)||
+      examGap==null||
+      (examGap!=null&&examGap>=7);
+
+    let suggestedAction='Haftalık ilerlemeyi gözden geçir.';
+    let priority='NORMAL';
+    if(strongestDecline&&strongestDecline.delta<=-12){
+      suggestedAction=strongestDecline.examType+' '+strongestDecline.subject+' için son iki haftanın yanlış nedenlerini aç; kısa tanılayıcı set planla.';
+      priority='HIGH';
+    }else if(overdueTasks>=3){
+      suggestedAction='Geciken görev yükünü öğrencinin gerçek kapasitesine göre yeniden dağıt; 15 dakikalık takip görüşmesi planla.';
+      priority='HIGH';
+    }else if(overdueReviews>=3||dueToday>=5){
+      suggestedAction='Tekrar kuyruğunu bugünün planında öne al; yanlış/unutma nedenlerini kontrol et.';
+      priority='HIGH';
+    }else if(overdueTasks){
+      suggestedAction='Geciken görevlerin nedenini kontrol et ve gerekiyorsa kapasiteye göre yeniden planla.';
+      priority='MEDIUM';
+    }else if(strongestDecline){
+      suggestedAction=strongestDecline.examType+' '+strongestDecline.subject+' için yanlış nedeni dağılımını incele ve 10–15 soruluk kontrol seti ata.';
+      priority='MEDIUM';
+    }else if(dueToday||overdueReviews){
+      suggestedAction='Bugünkü/gecikmiş tekrarları önceliklendir ve tekrar sonucunu takip et.';
+      priority='MEDIUM';
+    }else if(examGap==null||examGap>=7){
+      suggestedAction='Yeni deneme tarihi belirle ve ölçüm verisini güncelle.';
+      priority='NORMAL';
+    }
+
     return {
-      studentId:student.id,studentName:student.fullName,studentCode:student.studentCode,
-      needsAction,signals,suggestedAction,currentAccuracy,accuracyDelta,overdue,dueReviews,examGap
+      studentId:student.id,
+      studentName:student.fullName,
+      studentCode:student.studentCode,
+      needsAction,
+      priority,
+      signals,
+      suggestedAction,
+      overdueTasks,
+      dueToday,
+      overdueReviews,
+      strongestDecline,
+      examGap
     };
   }).filter(x=>x.needsAction);
 
+  const priorityRank=(v:string)=>v==='HIGH'?0:v==='MEDIUM'?1:2;
+  items.sort((a,b)=>
+    priorityRank(a.priority)-priorityRank(b.priority)||
+    (b.overdueTasks+b.dueToday+b.overdueReviews)-(a.overdueTasks+a.dueToday+a.overdueReviews)||
+    ((a.strongestDecline?.delta??0)-(b.strongestDecline?.delta??0))
+  );
+
   const cohortGroups={
-    mostOverdue:[...items].filter(x=>x.overdue>0||x.dueReviews>0).sort((a,b)=>(b.overdue+b.dueReviews)-(a.overdue+a.dueReviews)).slice(0,5),
-    accuracyDecline:[...items].filter(x=>x.accuracyDelta!=null&&x.accuracyDelta<0).sort((a,b)=>(a.accuracyDelta||0)-(b.accuracyDelta||0)).slice(0,5),
+    mostOverdue:[...items].filter(x=>x.overdueTasks>0||x.overdueReviews>0).sort((a,b)=>(b.overdueTasks+b.overdueReviews)-(a.overdueTasks+a.overdueReviews)).slice(0,5),
+    accuracyDecline:[...items].filter(x=>x.strongestDecline).sort((a,b)=>(a.strongestDecline?.delta??0)-(b.strongestDecline?.delta??0)).slice(0,5),
+    reviewsDueToday:[...items].filter(x=>x.dueToday>0).sort((a,b)=>b.dueToday-a.dueToday).slice(0,5),
     examFollowUp:[...items].filter(x=>x.examGap==null||(x.examGap!=null&&x.examGap>=7)).slice(0,5),
-    needsMeeting:[...items].filter(x=>x.overdue>=2||x.dueReviews>=3).slice(0,5)
+    needsMeeting:[...items].filter(x=>x.priority==='HIGH'||x.overdueTasks>=2).slice(0,5)
   };
+
+  const headlineSignals=items.slice(0,4).map(x=>x.studentName+' — '+(x.signals[0]||x.suggestedAction));
   return {
     generatedAt:now.toISOString(),
+    generatedDate:todayKey,
     interventionCount:items.length,
+    highPriorityCount:items.filter(x=>x.priority==='HIGH').length,
     cohortGroups,
     summary:items.length
-      ?'Bugün '+items.length+' öğrenci somut takip sinyali nedeniyle müdahale gerektiriyor.'
+      ?'Bugün '+items.length+' öğrenci müdahale gerektiriyor.'
       :'Bugün acil müdahale gerektiren öğrenci sinyali oluşmadı.',
-    students:items.sort((a,b)=>(b.overdue+b.dueReviews)-(a.overdue+a.dueReviews)),
+    headline:headlineSignals.length?headlineSignals.join(' · '):null,
+    students:items,
     coachQuality:await buildCoachOperationalQuality(coachId,now)
   };
 }
