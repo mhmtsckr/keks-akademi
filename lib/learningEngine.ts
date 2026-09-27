@@ -10,13 +10,10 @@ export const ERROR_REASON_LABELS={
   SORU_KOKU:'Soru kökünü yanlış okuma',
   SURE:'Süre',
   YONTEM_BILMEME:'Yöntem bilmeme',
-  UNUTMA:'Unutma',
-  SORUYU_ANLAMA:'Soruyu anlama',
-  STRATEJI:'Strateji',
-  DIGER:'Diğer'
+  UNUTMA:'Unutma'
 } as const;
 
-type ErrorReasonKey=keyof typeof ERROR_REASON_LABELS;
+export type ErrorReasonKey=keyof typeof ERROR_REASON_LABELS;
 
 function record(value:unknown):Record<string,unknown>{
   return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
@@ -133,12 +130,76 @@ function routineDisplayTitle(title:string,value:number){
   return title;
 }
 
-function normalizedReason(value:string|null|undefined):ErrorReasonKey|null{
+export function normalizedReason(value:string|null|undefined):ErrorReasonKey|null{
   if(!value)return null;
   if(value in ERROR_REASON_LABELS)return value as ErrorReasonKey;
-  if(value==='SORUYU_ANLAMA')return 'SORUYU_ANLAMA';
-  if(value==='STRATEJI')return 'STRATEJI';
-  return 'DIGER';
+  // Eski kayıtları yeni yedi sınıflı veri sözlüğüne geriye uyumlu eşle.
+  if(value==='SORUYU_ANLAMA')return 'SORU_KOKU';
+  if(value==='STRATEJI')return 'YONTEM_BILMEME';
+  return null;
+}
+
+export function inferPracticeErrorReason(input:{
+  subject:string;
+  correct:number;
+  wrong:number;
+  blank:number;
+  durationSeconds?:number|null;
+  problemType?:string|null;
+  questionType?:string|null;
+  activeRecallScore?:number|null;
+  reviewSuccessScore?:number|null;
+  conceptScore?:number|null;
+  misconception?:string|null;
+}):ErrorReasonKey|null{
+  if(input.wrong<=0)return null;
+  const total=Math.max(1,input.correct+input.wrong+input.blank);
+  const accuracy=input.correct/total*100;
+  const family=subjectFamily(input.subject);
+  if(input.reviewSuccessScore!=null&&input.reviewSuccessScore<55)return 'UNUTMA';
+  if((family==='HISTORY'||family==='LITERATURE')&&input.activeRecallScore!=null&&input.activeRecallScore<55)return 'UNUTMA';
+  if(input.conceptScore!=null&&input.conceptScore<55)return 'BILGI_EKSIKLIGI';
+  if(input.misconception?.trim())return 'BILGI_EKSIKLIGI';
+  if(input.durationSeconds&&total>0){
+    const secondsPerQuestion=input.durationSeconds/total;
+    const limit=family==='MATHEMATICS'?150:family==='TURKISH'?105:120;
+    if(secondsPerQuestion>limit)return 'SURE';
+  }
+  if(family==='MATHEMATICS'&&input.problemType&&accuracy<55)return 'YONTEM_BILMEME';
+  return null;
+}
+
+export function buildErrorReasonBreakdown(rows:{wrong:number;errorReason:string|null}[]){
+  const counts:Record<ErrorReasonKey,number>={
+    BILGI_EKSIKLIGI:0,ISLEM_HATASI:0,DIKKAT:0,SORU_KOKU:0,SURE:0,YONTEM_BILMEME:0,UNUTMA:0
+  };
+  let totalWrong=0;
+  let classifiedWrong=0;
+  for(const row of rows){
+    const wrong=Math.max(0,row.wrong||0);
+    totalWrong+=wrong;
+    const reason=normalizedReason(row.errorReason);
+    if(reason&&wrong>0){
+      counts[reason]+=wrong;
+      classifiedWrong+=wrong;
+    }
+  }
+  const items=(Object.keys(counts) as ErrorReasonKey[])
+    .map(key=>({
+      key,
+      label:ERROR_REASON_LABELS[key],
+      count:counts[key],
+      percent:classifiedWrong?Math.round(counts[key]/classifiedWrong*100):0
+    }))
+    .filter(x=>x.count>0)
+    .sort((a,b)=>b.count-a.count);
+  return {
+    totalWrong,
+    classifiedWrong,
+    unclassifiedWrong:Math.max(0,totalWrong-classifiedWrong),
+    coveragePercent:totalWrong?Math.round(classifiedWrong/totalWrong*100):100,
+    items
+  };
 }
 
 export type CapacitySessionEvidence={
@@ -671,14 +732,8 @@ export async function buildSubjectLearningModels(studentId:string,now=new Date()
       ...a.map(x=>({topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,avgSeconds:x.avgSeconds}))
     ]);
 
-    const errorReasons:Record<string,number>={};
-    for(const row of p){
-      const reason=normalizedReason(row.errorReason);
-      if(reason)errorReasons[reason]=(errorReasons[reason]||0)+1;
-    }
-    const errorList=Object.entries(errorReasons).sort((x,y)=>y[1]-x[1]).map(([key,count])=>({
-      key,count,label:ERROR_REASON_LABELS[key as ErrorReasonKey]||key
-    }));
+    const errorAnalytics=buildErrorReasonBreakdown(p.map(row=>({wrong:row.wrong,errorReason:row.errorReason})));
+    const errorList=errorAnalytics.items;
 
     const reviewSuccess=r.length?Math.round(r.filter(x=>x.lastCorrect).length/r.length*100):null;
     const subjectNeedle=normalizedSubjectText(subject);
@@ -784,6 +839,12 @@ export async function buildSubjectLearningModels(studentId:string,now=new Date()
       literatureConnections:literatureDimensions,
       misconceptionCandidates,
       errorReasons:errorList,
+      errorAnalytics,
+      wrongReasonSignal:errorList[0]
+        ?subject+' yanlışlarının %'+errorList[0].percent+'’i '+errorList[0].label.toLocaleLowerCase('tr-TR')+'.'
+        :errorAnalytics.totalWrong
+          ?subject+' yanlışlarının neden sınıflandırması henüz tamamlanmadı.'
+          :'Bu ders için yanlış nedeni verisi henüz yok.',
       primarySignal,
       recommendedAction
     };
