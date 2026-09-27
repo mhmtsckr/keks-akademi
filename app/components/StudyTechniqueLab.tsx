@@ -338,11 +338,11 @@ export function StudyTechniqueLab({initialPreferences=[]}:{initialPreferences?:a
     </div>}
 
     {key==='ACTIVE_RECALL'&&<TechniqueForm title="Aktif Hatırlama Uygulaması" fields={[
-      ['topic','Çalıştığın konu'],['questions','Kendine sorduğun sorular'],['recall','Kaynağa bakmadan hatırladıkların'],['gaps','Eksik kalan noktalar']
+      ['subject','Ders'],['topic','Çalıştığın konu'],['questions','Kendine sorduğun sorular'],['recall','Kaynağa bakmadan hatırladıkların'],['gaps','Eksik kalan noktalar']
     ]} form={form} setForm={updateForm} onSave={()=>saveCompletedSession(key,'Aktif Hatırlama',form)}/>}
 
     {key==='FEYNMAN'&&<TechniqueForm title="Feynman Uygulaması" fields={[
-      ['topic','Kavram / konu'],['simple','Bir öğrenciye anlatır gibi sade anlatımın'],['gaps','Anlatırken takıldığın noktalar'],['final','Düzeltilmiş ve sadeleştirilmiş son anlatım']
+      ['subject','Ders'],['topic','Kavram / konu'],['simple','Bir öğrenciye anlatır gibi sade anlatımın'],['gaps','Anlatırken takıldığın noktalar'],['final','Düzeltilmiş ve sadeleştirilmiş son anlatım']
     ]} form={form} setForm={updateForm} onSave={()=>saveCompletedSession(key,'Feynman Tekniği',form)}/>}
 
     {key==='CORNELL'&&<TechniqueForm title="Cornell Not Uygulaması" fields={[

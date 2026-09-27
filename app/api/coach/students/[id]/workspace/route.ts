@@ -10,6 +10,17 @@ const actionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('log'), date: z.string(), payload: z.any() }),
   z.object({ action: z.literal('technique'), title: z.string().min(2).max(160), description: z.string().max(4000).optional() }),
   z.object({ action: z.literal('exam'), examType: z.string().min(2).max(120), payload: z.any() }),
+  z.object({
+    action:z.literal('subjectEvidence'),
+    examType:z.string().min(1).max(120).default('DERS_KANITI'),
+    subject:z.string().min(2).max(120),
+    topic:z.string().min(1).max(160),
+    questionType:z.string().min(1).max(120).default('GENEL'),
+    correct:z.number().int().min(0).max(500),
+    wrong:z.number().int().min(0).max(500),
+    blank:z.number().int().min(0).max(500),
+    avgSeconds:z.number().min(1).max(3600).nullable().optional()
+  }),
   z.object({ action: z.literal('profile'), goal: z.string().max(2000).optional(), profile: z.any().optional() }),
   z.object({ action: z.literal('report'), title: z.string().min(2).max(160), summary: z.string().max(2000).optional(), content: z.string().min(2).max(20000), visibleToStudent: z.boolean().default(true), visibleToParent: z.boolean().default(true) }),
   z.object({ action: z.literal('parentCode'), parentName: z.string().min(2).max(120).optional(), guardianConsentConfirmed:z.literal(true), allowReports:z.boolean().default(false) }),
@@ -49,6 +60,22 @@ async function POST__handler(req: Request, context: { params: Promise<{ id: stri
   if (input.action === 'exam') {
     const row = await db.examResult.create({ data: { studentId: student.id, examType: input.examType, payload: input.payload } });
     return NextResponse.json({ ok: true, row });
+  }
+  if(input.action==='subjectEvidence'){
+    const total=input.correct+input.wrong+input.blank;
+    if(total<=0)return NextResponse.json({error:'Ders öğrenme kanıtı için en az 1 soru gerekli.'},{status:400});
+    const row=await db.examAnalyticsRecord.create({data:{
+      studentId:student.id,
+      examType:input.examType,
+      subject:input.subject,
+      topic:input.topic,
+      questionType:input.questionType,
+      correct:input.correct,
+      wrong:input.wrong,
+      blank:input.blank,
+      avgSeconds:input.avgSeconds??null
+    }});
+    return NextResponse.json({ok:true,row});
   }
   if (input.action === 'profile') {
     const row = await db.student.update({ where: { id: student.id }, data: { goal: input.goal || null, profile: input.profile ?? undefined } });

@@ -10,6 +10,35 @@ function masteryLabel(v:string){
     :v==='RISKY'?'Riskli':'—';
 }
 
+
+function SubjectModelDetails({s}:{s:any}){
+  const q=(x:any)=>x?x.questionType+' · '+(x.accuracy==null?'—':'%'+x.accuracy)+(x.avgSeconds==null?'':' · '+x.avgSeconds+' sn/soru'):'Veri birikiyor';
+  if(s.family==='MATHEMATICS')return <>
+    <p><strong>Genel doğruluk:</strong> {s.accuracy==null?'—':'%'+s.accuracy} · <strong>Hız:</strong> {s.speedSecondsPerQuestion==null?'—':s.speedSecondsPerQuestion+' sn/soru'}</p>
+    <p><strong>En çok zorlayan problem tipi:</strong> {q(s.weakestProblemType)}</p>
+    <p><strong>En yavaş problem tipi:</strong> {q(s.slowestProblemType)}</p>
+  </>;
+  if(s.family==='TURKISH')return <>
+    <p><strong>Ortalama süre:</strong> {s.avgSeconds==null?'—':s.avgSeconds+' sn/soru'}</p>
+    <p><strong>Zorlanan soru türü:</strong> {q(s.weakestQuestionType)}</p>
+    <p><strong>En yavaş soru türü:</strong> {q(s.slowestQuestionType)}</p>
+  </>;
+  if(s.family==='HISTORY')return <>
+    <p><strong>Aktif hatırlama:</strong> {s.activeRecallSessions||0} oturum · {s.activeRecallMinutes||0} dk</p>
+    <p><strong>Tekrar başarısı:</strong> {s.reviewSuccess==null?'—':'%'+s.reviewSuccess}</p>
+    <p><strong>Kronoloji kanıtı:</strong> {s.chronologyPerformance?.length||0} tür · <strong>Kavram kanıtı:</strong> {s.conceptPerformance?.length||0} tür</p>
+  </>;
+  if(s.family==='LITERATURE')return <>
+    <p><strong>Tekrar başarısı:</strong> {s.reviewSuccess==null?'—':'%'+s.reviewSuccess}</p>
+    {(s.connections||[]).map((x:any)=><p key={x.key}><strong>{x.label}:</strong> {x.questions} soru · {x.accuracy==null?'—':'%'+x.accuracy}</p>)}
+  </>;
+  if(s.family==='SCIENCE')return <>
+    <p><strong>Konu doğruluğu:</strong> {s.weakestTopics?.[0]?s.weakestTopics[0].topic+' · %'+s.weakestTopics[0].accuracy:'Veri birikiyor'}</p>
+    <p><strong>Kavram yanılgısı sinyali:</strong> {s.misconceptions?.[0]?s.misconceptions[0].topic+' · '+s.misconceptions[0].label+' ('+s.misconceptions[0].count+')':'Belirgin sinyal yok / veri yetersiz'}</p>
+  </>;
+  return <p>Doğruluk: {s.accuracy==null?'—':'%'+s.accuracy}{s.reviewSuccess==null?'':' · tekrar %'+s.reviewSuccess}</p>;
+}
+
 export function CoachLearningIntelligence({studentId}:{studentId:string}){
   const [data,setData]=useState<any>(null);
   const [simulation,setSimulation]=useState<any>(null);
@@ -103,13 +132,14 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
 
     <div className="card">
       <div className="moduleEyebrow">DERS BAZLI ÖĞRENME MODELİ</div>
-      <h2>Her ders farklı metrikle izlenir</h2>
-      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))'}}>
+      <h2>Her ders kendi öğrenme sinyaliyle izlenir</h2>
+      <p className="muted">Aynı yüzde bütün derslere uygulanmaz. Her kart, o ders için anlamlı kanıtı öne çıkarır ve koça açıklanabilir bir sonraki adım verir.</p>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))'}}>
         {subjects.map((s:any)=><div className="card" key={s.subject}>
-          <strong>{s.subject}</strong>
-          <p className="muted">{(s.metrics||[]).join(' · ')}</p>
-          <p>Doğruluk: {s.accuracy==null?'—':'%'+s.accuracy}{s.avgSeconds?' · '+s.avgSeconds+' sn/soru':''}{s.reviewSuccess==null?'':' · tekrar %'+s.reviewSuccess}</p>
-          {s.errorReasons?.[0]&&<small>Baskın yanlış nedeni: {s.errorReasons[0].label} ({s.errorReasons[0].count})</small>}
+          <div className="moduleHeaderRow"><div><strong>{s.subject}</strong><p className="muted">{(s.metrics||[]).join(' · ')}</p></div><span className="pill">{s.evidence?.totalQuestions||0} soru</span></div>
+          <SubjectModelDetails s={s}/>
+          {s.errorReasons?.[0]&&<p className="muted">Baskın yanlış nedeni: {s.errorReasons[0].label} ({s.errorReasons[0].count})</p>}
+          <div className="notice"><strong>Önerilen sonraki adım</strong><div className="muted">{s.nextAction}</div></div>
         </div>)}
       </div>
     </div>

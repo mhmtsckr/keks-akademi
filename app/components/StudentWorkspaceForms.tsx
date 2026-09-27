@@ -20,6 +20,17 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
       if(action==='plan') body={action,title:fd.get('title'),payload:{details:fd.get('details')}};
       if(action==='log') body={action,date:fd.get('date'),payload:{duration:fd.get('duration'),details:fd.get('details')}};
       if(action==='technique') body={action,title:fd.get('title'),description:fd.get('description')};
+      if(action==='subjectEvidence') body={
+        action,
+        examType:String(fd.get('examType')||'DERS_KANITI'),
+        subject:String(fd.get('subject')||''),
+        topic:String(fd.get('topic')||''),
+        questionType:String(fd.get('questionType')||'GENEL'),
+        correct:Number(fd.get('correct')||0),
+        wrong:Number(fd.get('wrong')||0),
+        blank:Number(fd.get('blank')||0),
+        avgSeconds:fd.get('avgSeconds')?Number(fd.get('avgSeconds')):null
+      };
       if(action==='exam') {
         let subjectNets:any={};
         const raw=String(fd.get('subjectNets')||'').trim();
@@ -65,6 +76,26 @@ export function StudentWorkspaceForms({studentId}:{studentId:string}) {
     <details className="card"><summary><strong>Çalışma Kaydı</strong></summary><form className="form" onSubmit={e=>handle(e,'log')} style={{marginTop:12}}><div className="field"><label>Tarih</label><input name="date" type="date" required/></div><div className="field"><label>Süre (dakika)</label><input name="duration" type="number" min="0"/></div><div className="field"><label>Yapılan çalışma</label><textarea name="details" rows={4} required/></div><button className="btn primary">Çalışmayı Kaydet</button></form></details>
 
     <details className="card"><summary><strong>Ders Çalışma Tekniği</strong></summary><form className="form" onSubmit={e=>handle(e,'technique')} style={{marginTop:12}}><div className="field"><label>Teknik</label><input name="title" required placeholder="Aktif Hatırlama, Pomodoro, Cornell..."/></div><div className="field"><label>Nasıl uygulanacak?</label><textarea name="description" rows={4}/></div><button className="btn primary">Tekniği Ata</button></form></details>
+
+    <details className="card"><summary><strong>Ders Bazlı Öğrenme Kanıtı</strong></summary><form className="form" onSubmit={e=>handle(e,'subjectEvidence')} style={{marginTop:12}}>
+      <p className="muted">Her ders aynı metrikle değerlendirilmez. Soru türü ve süre bilgisi özellikle Matematik/Türkçe; tekrar ve aktif hatırlama Tarih/Edebiyat; konu ve kavram yanılgısı Fen modeli için kullanılır.</p>
+      <div className="row">
+        <div className="field" style={{flex:1}}><label>Ders</label><input name="subject" list="subject-options" required placeholder="Matematik, Türkçe, Tarih, Edebiyat, Fizik..."/></div>
+        <div className="field" style={{flex:1}}><label>Konu</label><input name="topic" required placeholder="Örn. Problemler / Paragraf / Tanzimat"/></div>
+      </div>
+      <datalist id="subject-options"><option value="Matematik"/><option value="Türkçe"/><option value="Tarih"/><option value="Edebiyat"/><option value="Fizik"/><option value="Kimya"/><option value="Biyoloji"/><option value="Fen Bilimleri"/></datalist>
+      <div className="row">
+        <div className="field" style={{flex:1}}><label>Soru / kanıt türü</label><input name="questionType" required placeholder="Problem, Paragraf, Kronoloji, Yazar-Eser, Kavram..."/></div>
+        <div className="field" style={{flex:1}}><label>Ortalama süre (sn/soru)</label><input name="avgSeconds" type="number" min="1" max="3600" step="0.1" placeholder="Örn. 72"/></div>
+      </div>
+      <div className="row">
+        <div className="field" style={{flex:1}}><label>Doğru</label><input name="correct" type="number" min="0" required/></div>
+        <div className="field" style={{flex:1}}><label>Yanlış</label><input name="wrong" type="number" min="0" required/></div>
+        <div className="field" style={{flex:1}}><label>Boş</label><input name="blank" type="number" min="0" required/></div>
+      </div>
+      <input name="examType" type="hidden" value="DERS_KANITI"/>
+      <button className="btn primary">Ders Kanıtını Kaydet</button>
+    </form></details>
 
     <details className="card"><summary><strong>Deneme Sonucu</strong></summary><form className="form" onSubmit={e=>handle(e,'exam')} style={{marginTop:12}}><div className="field"><label>Deneme türü</label><input name="examType" required placeholder="TYT Genel Deneme"/></div><div className="row"><div className="field" style={{flex:1}}><label>Net</label><input name="net"/></div><div className="field" style={{flex:1}}><label>Puan</label><input name="score"/></div></div><div className="row"><div className="field" style={{flex:1}}><label>Başarı sırası (YKS)</label><input name="ranking" type="number"/></div><div className="field" style={{flex:1}}><label>Yüzdelik dilim (LGS)</label><input name="percentile" type="number" step="0.01"/></div></div><div className="field"><label>Ders bazlı netler (JSON)</label><textarea name="subjectNets" rows={3} placeholder='{"Matematik":25.5,"Türkçe":31.25}'/></div><div className="field"><label>Koç notu</label><textarea name="note"/></div><button className="btn primary">Denemeyi Kaydet</button></form></details>
 
