@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { isFeatureEnabled } from '@/lib/systemConfig';
 import { aggregateInterventionPatterns,buildImpactHeadline,classifyCoachDecision,interventionKindLabel,summarizeImpactWindow,type InterventionKind } from '@/lib/coachInterventionImpact';
+import { rankGoalContributionAreas,targetNetFromBenchmarks } from '@/lib/goalDistance';
 
 export type MasteryStatus='NEW'|'LEARNING'|'REINFORCING'|'DURABLE'|'RISKY';
 
@@ -1749,29 +1750,59 @@ export async function buildCoachInterventionPatterns(coachId:string,now=new Date
 }
 
 export async function buildGoalDistance(studentId:string,now=new Date()){
-  const [target,latestExam,mastery]=await Promise.all([
+  const [target,latestExam,mastery,student]=await Promise.all([
     db.studentTarget.findFirst({where:{studentId,active:true},orderBy:{createdAt:'desc'}}),
     db.examResult.findFirst({where:{studentId},orderBy:{createdAt:'desc'}}),
-    buildTopicMastery(studentId,now)
+    buildTopicMastery(studentId,now),
+    db.student.findUnique({where:{id:studentId},select:{goal:true}})
   ]);
-  if(!target)return null;
+  if(!target){
+    return {
+      hasTarget:false,
+      target:student?.goal||null,
+      note:'Hedef tanımlandığında KEKS mevcut performans ile hedef arasındaki operasyonel farkı gösterecek.'
+    };
+  }
+
   const payload=record(latestExam?.payload);
-  const current=numberValue(payload.net)??numberValue(payload.score);
-  const targetValue=target.score??target.officialMinScore??target.officialEligibilityScore??null;
-  const gap=current!=null&&targetValue!=null?Number((targetValue-current).toFixed(2)):null;
-  const contribution=mastery
-    .filter(x=>x.status==='RISKY'||x.status==='LEARNING'||x.status==='REINFORCING')
-    .slice(0,3)
-    .map(x=>({subject:x.subject,topic:x.topic,masteryStatus:x.status,accuracy:x.accuracy}));
+  const currentNet=numberValue(payload.net)??numberValue(payload.totalNet)??null;
+  const currentScore=numberValue(payload.score);
+  const targetNetInfo=targetNetFromBenchmarks(target.benchmarkNets,target.officialNets);
+  const targetNet=targetNetInfo.total;
+  const targetScore=target.score??target.officialMinScore??target.officialEligibilityScore??null;
+  const netGap=currentNet!=null&&targetNet!=null?Number((targetNet-currentNet).toFixed(2)):null;
+  const scoreGap=currentScore!=null&&targetScore!=null?Number((targetScore-currentScore).toFixed(2)):null;
+  const openTopics=mastery.filter(x=>x.status!=='DURABLE');
+  const riskyTopics=openTopics.filter(x=>x.status==='RISKY');
+  const contribution=rankGoalContributionAreas(mastery.map(x=>({
+    subject:x.subject,
+    status:x.status,
+    score:x.score,
+    accuracy:x.accuracy
+  })));
+
   return {
-    target:target.departmentName?target.institutionName+' · '+target.departmentName:target.institutionName,
+    hasTarget:true,
+    target:target.departmentName||target.institutionName,
+    targetInstitution:target.institutionName,
+    targetDepartment:target.departmentName,
     examLevel:target.examLevel,
-    currentPerformance:current,
-    targetValue,
-    gap,
-    estimatedOpenTopics:mastery.filter(x=>x.status!=='DURABLE').length,
+    latestExamType:latestExam?.examType||null,
+    latestExamAt:latestExam?.createdAt||null,
+    currentPerformance:{
+      net:currentNet,
+      score:currentScore
+    },
+    targetPerformance:{
+      net:targetNet,
+      score:targetScore
+    },
+    netGap,
+    scoreGap,
+    estimatedOpenTopics:openTopics.length,
+    riskyTopicCount:riskyTopics.length,
     highestContributionAreas:contribution,
-    note:'Bu ekran kazanma/kazanamama tahmini üretmez; yalnız mevcut veri ile hedef arasındaki operasyonel farkı gösterir.'
+    note:'Bu ekran hedefe kalan operasyonel mesafeyi gösterir; kazanma/kazanamama veya yerleşme olasılığı tahmini üretmez.'
   };
 }
 
