@@ -91,14 +91,32 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
     </div>}
 
     <div className="card">
-      <div className="moduleEyebrow">BİLGİ HÂKİMİYETİ</div>
-      <h2>Konu durumu</h2>
-      {mastery.length===0?<p className="muted">Hâkimiyet durumu için yeterli soru/tekrar kaydı yok.</p>:<div className="stack">
-        {mastery.map((x:any)=><div className="row" key={x.subject+'|'+x.topic} style={{justifyContent:'space-between',alignItems:'center'}}>
-          <div><strong>{x.subject} · {x.topic}</strong><div className="muted">{x.totalQuestions} soru · doğruluk %{x.accuracy}{x.primaryErrorReasonLabel?' · '+x.primaryErrorReasonLabel:''}</div></div>
-          <span className="pill">{masteryLabel(x.status)} · {x.score}/100</span>
+      <div className="moduleEyebrow">BİLGİ HÂKİMİYETİ · NETTEN BAĞIMSIZ</div>
+      <h2>Konu bazlı kalıcılık durumu</h2>
+      <p className="muted">Durum; yalnız çözülen soru sayısına göre değil, son test, tekrar başarısı, geçen süre ve kanıt miktarı birlikte değerlendirilerek oluşturulur.</p>
+      {mastery.length===0?<p className="muted">Henüz tanımlı konu veya yeterli öğrenme kanıtı yok.</p>:<div className="stack">
+        {mastery.map((x:any)=><div className="card" key={x.subject+'|'+x.topic} style={{margin:0}}>
+          <div className="moduleHeaderRow">
+            <div>
+              <strong>{x.subject} · {x.topic}</strong>
+              <p className="muted" style={{marginBottom:0}}>
+                Son test: {x.latestTestAccuracy==null?'veri yok':'%'+x.latestTestAccuracy}
+                {' · '}Tekrar: {x.reviewAccuracy==null?'veri yok':'%'+x.reviewAccuracy}
+                {' · '}Son kanıt: {x.daysSinceLastEvidence>=999?'yok':x.daysSinceLastEvidence+' gün önce'}
+                {' · '}{x.totalQuestions} soru / {x.attempts} oturum
+              </p>
+            </div>
+            <span className="pill">{masteryLabel(x.status)} · {x.score}/100</span>
+          </div>
+          <div className="row" style={{flexWrap:'wrap',gap:8}}>
+            <small className="muted">Veri güveni: {x.confidence}</small>
+            {x.scoreBreakdown&&<small className="muted">Güncellik {x.scoreBreakdown.recencyScore}/100 · Kanıt {x.scoreBreakdown.evidenceScore}/100{x.scoreBreakdown.overduePenalty?' · Gecikme cezası -'+x.scoreBreakdown.overduePenalty:''}</small>}
+          </div>
+          <p style={{marginTop:8,marginBottom:0}}><strong>Durum gerekçesi:</strong> {x.statusReason}</p>
+          {x.primaryErrorReasonLabel&&<small className="muted">Baskın yanlış nedeni: {x.primaryErrorReasonLabel}</small>}
         </div>)}
       </div>}
+      <div className="notice" style={{marginTop:10}}>Yeni → Öğreniliyor → Pekiştiriliyor → Kalıcı. Son test, tekrar veya zaman sinyali zayıflarsa konu Riskli durumuna dönebilir.</div>
     </div>
 
     <div className="card">
