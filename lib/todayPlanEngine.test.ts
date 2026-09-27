@@ -84,6 +84,9 @@ describe('Bugünün Planı motoru',()=>{
     expect(workflow).toContain("cron: '30 2 * * *'");
     expect(workflow).toContain('--request POST');
     expect(workflow).toContain('audience=keks-today-plan');
+    expect(workflow).toContain("--write-out '%{url_effective}'");
+    expect(workflow).toContain("jq -e '.ok == true and ((.failed // 0) == 0)'");
+    expect(workflow).toContain("HTTP_CODE");
     expect(route).toContain("payload.repository===EXPECTED_REPOSITORY");
     expect(route).toContain("payload.event_name==='schedule'");
     expect(route).toContain('generateMorningTodayPlans');

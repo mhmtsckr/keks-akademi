@@ -21,20 +21,70 @@ jobs:
           set -euo pipefail
           RESPONSE="$(curl --fail-with-body --silent --show-error \
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=keks-today-plan")"
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=keks-today-plan")"
           TOKEN="$(printf '%s' "$RESPONSE" | jq -r '.value')"
           test -n "$TOKEN"
           echo "::add-mask::$TOKEN"
           printf 'token=%s\n' "$TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Generate KEKS morning plans
-        env:
-          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+      - name: Resolve production scheduler endpoint
+        id: endpoint
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail-with-body --silent --show-error \
+          START_URL="https://keks-akademi.vercel.app/api/internal/today-plan/generate"
+
+          # Resolve any production-domain redirect without sending credentials.
+          EFFECTIVE_URL="$(curl --silent --show-error \
+            --location \
+            --request POST \
+            --output /dev/null \
+            --write-out '%{url_effective}' \
+            "$START_URL")"
+
+          python3 - "$EFFECTIVE_URL" <<'PY'
+          import sys
+          from urllib.parse import urlparse
+
+          url=sys.argv[1]
+          parsed=urlparse(url)
+          normalized_path=parsed.path.rstrip('/')
+
+          if parsed.scheme!='https':
+              raise SystemExit('Scheduler endpoint must use HTTPS.')
+          if not parsed.hostname:
+              raise SystemExit('Scheduler endpoint has no host.')
+          if normalized_path!='/api/internal/today-plan/generate':
+              raise SystemExit('Scheduler redirect changed the expected API path.')
+          if parsed.hostname=='vercel.com' or parsed.hostname.endswith('.vercel.com'):
+              raise SystemExit('Scheduler resolved to a Vercel dashboard/login host instead of the app.')
+          PY
+
+          printf 'url=%s\n' "$EFFECTIVE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Generate KEKS morning plans
+        env:
+          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+          ENDPOINT_URL: ${{ steps.endpoint.outputs.url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESPONSE_FILE="$(mktemp)"
+          trap 'rm -f "$RESPONSE_FILE"' EXIT
+
+          HTTP_CODE="$(curl --silent --show-error \
             --request POST \
             --header "Authorization: Bearer $OIDC_TOKEN" \
             --header "Content-Type: application/json" \
-            https://keks-akademi.vercel.app/api/internal/today-plan/generate
+            --output "$RESPONSE_FILE" \
+            --write-out '%{http_code}' \
+            "$ENDPOINT_URL")"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Morning plan generation failed with HTTP $HTTP_CODE."
+            cat "$RESPONSE_FILE"
+            exit 1
+          fi
+
+          jq -e '.ok == true and ((.failed // 0) == 0)' "$RESPONSE_FILE" >/dev/null
+          jq -c '{ok,date,generated,failed,skipped,engineVersion}' "$RESPONSE_FILE"
