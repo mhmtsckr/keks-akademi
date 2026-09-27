@@ -6,7 +6,7 @@ import { EXAM_CATALOG, ExamType } from '@/lib/examCatalog';
 type Progress = {examType:string;subject:string;topic:string;completed:boolean};
 type Practice = {id:string;examType:string;subject:string;topic:string|null;correct:number;wrong:number;blank:number;net:number;date:string;errorReason?:string|null;durationSeconds?:number|null;questionType?:string|null;problemType?:string|null;masteryScore?:number|null;masteryState?:string|null;metricPayload?:unknown};
 
-export function StudentProgressTools({allowedExams,initialProgress,initialPractice}:{allowedExams:ExamType[];initialProgress:Progress[];initialPractice:Practice[]}) {
+export function StudentProgressTools({allowedExams,initialProgress,initialPractice,oabtField}:{allowedExams:ExamType[];initialProgress:Progress[];initialPractice:Practice[];oabtField?:string|null}) {
   const [exam,setExam]=useState<ExamType>(allowedExams[0]||'TYT');
   const [subject,setSubject]=useState<string>(Object.keys(EXAM_CATALOG[allowedExams[0]||'TYT'])[0]||'');
   const [progress,setProgress]=useState(initialProgress);
@@ -19,7 +19,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
   const isMath=/MATEMATİK|GEOMETRİ|SAYISAL/.test(subjectKey);
   const isTurkish=/TÜRKÇE|SÖZEL/.test(subjectKey);
   const isHistory=/TARİH|İNKILAP/.test(subjectKey);
-  const isLiterature=/EDEBİYAT|ALAN BİLGİSİ/.test(subjectKey)&&exam==='OABT';
+  const isLiterature=/EDEBİYAT/.test(subjectKey)||(exam==='OABT'&&/EDEBİYAT/.test((oabtField||'').toLocaleUpperCase('tr-TR')));
   const isScience=/FİZİK|KİMYA|BİYOLOJİ|FEN/.test(subjectKey);
   const isLanguage=exam==='YDS'||/İNGİLİZCE|YABANCI DİL/.test(subjectKey);
 
@@ -129,6 +129,10 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
           </div>}
           {isLiterature&&<div className="scoreInputs">
             <div className="field"><label>Dönem–yazar–eser bağlantısı %</label><input name="connectionScore" type="number" min="0" max="100"/></div>
+            <div className="field"><label>Aktif hatırlama %</label><input name="activeRecallScore" type="number" min="0" max="100"/></div>
+          </div>}
+          {exam==='OABT'&&!isLiterature&&<div className="scoreInputs">
+            <div className="field"><label>Alan kavram hâkimiyeti %</label><input name="conceptScore" type="number" min="0" max="100"/></div>
             <div className="field"><label>Aktif hatırlama %</label><input name="activeRecallScore" type="number" min="0" max="100"/></div>
           </div>}
           {isScience&&<><div className="field"><label>Kavram hâkimiyeti %</label><input name="conceptScore" type="number" min="0" max="100"/></div><div className="field"><label>Kavram yanılgısı</label><input name="misconception" placeholder="Varsa öğrencinin yanlış kavramsal modelini yaz"/></div></>}
