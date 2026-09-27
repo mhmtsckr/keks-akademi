@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { isFeatureEnabled } from '@/lib/systemConfig';
 
 export type MasteryStatus='NEW'|'LEARNING'|'REINFORCING'|'DURABLE'|'RISKY';
 
@@ -683,9 +684,14 @@ export async function readTodayLearningPlan(studentId:string,now=new Date()){
 
 export async function generateMorningTodayPlans(now=new Date()){
   const students=await db.student.findMany({
-    select:{id:true,user:{select:{status:true}}}
+    select:{id:true,studentCode:true,user:{select:{status:true}}}
   });
-  const eligible=students.filter(x=>!x.user||x.user.status==='ACTIVE');
+  const active=students.filter(x=>!x.user||x.user.status==='ACTIVE');
+  const rollout=await Promise.all(active.map(async student=>({
+    student,
+    enabled:await isFeatureEnabled('TODAY_PLAN',student.studentCode)
+  })));
+  const eligible=rollout.filter(x=>x.enabled).map(x=>x.student);
   let generated=0;
   let failed=0;
   let rebalancedStudents=0;
@@ -716,6 +722,7 @@ export async function generateMorningTodayPlans(now=new Date()){
     generated,
     failed,
     skipped:students.length-eligible.length,
+    featureDisabled:active.length-eligible.length,
     rebalancedStudents,
     redistributedTasks,
     deferredTasks,
