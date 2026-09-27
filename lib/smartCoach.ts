@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { buildCapacityProfile,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
+import { buildCapacityProfile,buildSubjectLearningModels,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
 
 export const REVIEW_DAYS=[0,1,3,7,14,28];
 
@@ -56,13 +56,14 @@ export async function computeGoalProgress(studentId:string){
 }
 
 export async function buildWeeklyPlan(studentId:string){
-  const [student,practice,topics,reviews,goal,capacity]=await Promise.all([
+  const [student,practice,topics,reviews,goal,capacity,subjectModels]=await Promise.all([
     db.student.findUnique({where:{id:studentId}}),
     db.practiceLog.findMany({where:{studentId},orderBy:{date:'desc'},take:100}),
     db.topicProgress.findMany({where:{studentId}}),
     db.reviewQueueItem.findMany({where:{studentId,status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'},take:30}),
     computeGoalProgress(studentId),
-    buildCapacityProfile(studentId)
+    buildCapacityProfile(studentId),
+    buildSubjectLearningModels(studentId)
   ]);
   if(!student) throw new Error('Öğrenci bulunamadı');
   const bySubject=new Map<string,{q:number;c:number;w:number;n:number}>();
@@ -93,12 +94,29 @@ export async function buildWeeklyPlan(studentId:string){
       ?`Uzun oturumlarda doğruluk düşüşü görüldüğü için konu bloğu ${focusDuration} dk ile sınırlandı.`
       :'Konu ilerleme kaydında henüz tamamlanmadığı için gözlenen odak kapasitesine göre plana alındı.'});
     if(weakSub){
+      const model:any=subjectModels.find((x:any)=>x.subject===weakSub.subject);
       const questions=dailyPracticeQuestionTarget({
         questionCapacity:capacity.questionCapacity,
         accuracy:Math.round(weakSub.accuracy*100)
       });
       const duration=Math.max(15,Math.min(30,Math.round(questions*1.5)));
-      add({type:'PRACTICE',title:`${weakSub.subject} kısa test`,duration,questions,reason:`Son kayıtlarındaki ${weakSub.questions} soruda doğruluk %${Math.round(weakSub.accuracy*100)}; soru hacmi gerçek günlük kapasiteye göre ayarlandı.`});
+      const reason=(model?.nextAction||`Son kayıtlarındaki ${weakSub.questions} soruda doğruluk %${Math.round(weakSub.accuracy*100)}.`)+' Soru hacmi gerçek günlük kapasiteye göre ayarlandı.';
+      if(model?.family==='MATHEMATICS'){
+        const label=model.weakestProblemType?.questionType||'karma';
+        add({type:'MATH_SPEED_ACCURACY',title:`${weakSub.subject} · ${label} hız + doğruluk seti`,duration,questions,reason});
+      }else if(model?.family==='TURKISH'){
+        const label=model.slowestQuestionType?.questionType||model.weakestQuestionType?.questionType||'karma';
+        add({type:'TURKISH_TIMED_SET',title:`${weakSub.subject} · ${label} süreli set`,duration,questions,reason});
+      }else if(model?.family==='HISTORY'){
+        add({type:'HISTORY_ACTIVE_RECALL',title:`${weakSub.subject} · aktif hatırlama + tekrar`,duration:Math.min(duration,25),reason});
+      }else if(model?.family==='LITERATURE'){
+        add({type:'LITERATURE_CONNECTION',title:`${weakSub.subject} · dönem–yazar–eser bağlantısı`,duration:Math.min(duration,25),reason});
+      }else if(model?.family==='SCIENCE'){
+        const label=model.misconceptions?.[0]?.topic||model.weakestTopics?.[0]?.topic||'kavram kontrolü';
+        add({type:'SCIENCE_CONCEPT_CHECK',title:`${weakSub.subject} · ${label} kavram kontrolü`,duration,questions:Math.min(questions,15),reason});
+      }else{
+        add({type:'PRACTICE',title:`${weakSub.subject} kısa test`,duration,questions,reason});
+      }
     }
     if(i===6)add({type:'REVIEW_WEEK',title:'Haftalık değerlendirme ve yeni hedef kontrolü',duration:20,reason:'Haftanın sonunda uygulanan plan ile gerçekleşen performansı karşılaştırmak için.'});
     days.push({
@@ -123,7 +141,7 @@ export async function buildWeeklyPlan(studentId:string){
       confidence:capacity.confidence
     },
     explanation:'Bu plan; vadesi gelen tekrarlar ve akademik performansın yanında öğrencinin ölçülen gerçek çalışma süresi, verimli saat aralığı, odak bloğu ve haftanın düşük tamamlama günleri kullanılarak oluşturulur. Beyan edilen süre tek başına plan kapasitesi değildir.',
-    inputs:{practiceRecords:practice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length,capacityEvidenceDays:capacity.evidenceDays},
+    inputs:{practiceRecords:practice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length,capacityEvidenceDays:capacity.evidenceDays,subjectModels:subjectModels.length},
     days
   };
 }
