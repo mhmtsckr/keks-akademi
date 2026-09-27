@@ -80,29 +80,48 @@ async function POST__handler(req:Request){
  }
  const total=input.correct+input.wrong+input.blank;
  const net=calcNet(input.correct,input.wrong);
- const history=await db.practiceLog.findMany({
-   where:{studentId,examType:input.examType,subject:input.subject,...(input.topic?{topic:input.topic}:{})},
-   orderBy:{date:'desc'},take:12,select:{date:true,masteryScore:true,metricPayload:true}
+ const since=new Date(Date.now()-28*86400000);
+ const learningLogs=await db.dailyLog.findMany({
+   where:{studentId,date:{gte:since}},orderBy:{date:'desc'},take:120,select:{date:true,payload:true}
+ });
+ const history=learningLogs.flatMap(log=>{
+   const p=(log.payload&&typeof log.payload==='object'&&!Array.isArray(log.payload)?log.payload:{}) as Record<string,any>;
+   if(p.type!=='LEARNING_METRIC'||p.examType!==input.examType||p.subject!==input.subject)return [];
+   if((input.topic||'')!==String(p.topic||''))return [];
+   return [{date:log.date,masteryScore:typeof p.masteryScore==='number'?p.masteryScore:null,metricPayload:p}];
  });
  const snapshot=calculateLearningSnapshot(input,history);
  const metricPayload={
+   type:'LEARNING_METRIC',
+   examType:input.examType,
+   subject:input.subject,
+   topic:input.topic||null,
+   durationSeconds:input.durationSeconds??null,
+   questionType:input.questionType||null,
+   problemType:input.problemType||null,
    activeRecallScore:input.activeRecallScore??null,
    reviewSuccessScore:input.reviewSuccessScore??null,
    connectionScore:input.connectionScore??null,
    conceptScore:input.conceptScore??null,
    misconception:input.misconception||null,
    difficulty:input.difficulty??null,
+   masteryScore:snapshot.score,
+   masteryState:snapshot.state,
    diagnostics:snapshot.diagnostics,
    nextAction:snapshot.nextAction,
    priority:snapshot.priority
  };
- const row=await db.practiceLog.create({data:{
-   studentId,examType:input.examType,subject:input.subject,topic:input.topic||null,
-   correct:input.correct,wrong:input.wrong,blank:input.blank,total,net,errorReason:input.errorReason||null,
-   durationSeconds:input.durationSeconds??null,questionType:input.questionType||null,problemType:input.problemType||null,
-   metricPayload,masteryScore:snapshot.score,masteryState:snapshot.state
- }});
- return NextResponse.json({ok:true,row,learning:snapshot});
+ const result=await db.$transaction(async tx=>{
+   const row=await tx.practiceLog.create({data:{
+     studentId,examType:input.examType,subject:input.subject,topic:input.topic||null,
+     correct:input.correct,wrong:input.wrong,blank:input.blank,total,net,errorReason:input.errorReason||null
+   }});
+   await tx.dailyLog.create({data:{
+     studentId,date:new Date(),payload:{...metricPayload,practiceLogId:row.id}
+   }});
+   return row;
+ });
+ return NextResponse.json({ok:true,row:result,learning:snapshot});
 }
 
 export const POST = withApiErrors(POST__handler);
