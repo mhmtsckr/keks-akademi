@@ -106,10 +106,38 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       <h2>Her ders farklı metrikle izlenir</h2>
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))'}}>
         {subjects.map((s:any)=><div className="card" key={s.subject}>
-          <strong>{s.subject}</strong>
-          <p className="muted">{(s.metrics||[]).join(' · ')}</p>
+          <div className="moduleHeaderRow">
+            <div><strong>{s.subject}</strong><p className="muted">{(s.metrics||[]).join(' · ')}</p></div>
+            <span className="pill">{s.family==='MATHEMATICS'?'Matematik':s.family==='TURKISH'?'Türkçe':s.family==='HISTORY'?'Tarih':s.family==='LITERATURE'?'Edebiyat':s.family==='SCIENCE'?'Fen':'Genel'}</span>
+          </div>
+          <p><strong>Temel sinyal:</strong> {s.primarySignal}</p>
           <p>Doğruluk: {s.accuracy==null?'—':'%'+s.accuracy}{s.avgSeconds?' · '+s.avgSeconds+' sn/soru':''}{s.reviewSuccess==null?'':' · tekrar %'+s.reviewSuccess}</p>
+
+          {s.family==='MATHEMATICS'&&<div className="stack">
+            {s.weakestQuestionType&&<small>Zayıf problem tipi: {s.weakestQuestionType.questionType} · doğruluk {s.weakestQuestionType.accuracy==null?'—':'%'+s.weakestQuestionType.accuracy}</small>}
+            {s.slowestQuestionType&&<small>En yavaş soru tipi: {s.slowestQuestionType.questionType} · {s.slowestQuestionType.avgSeconds} sn/soru</small>}
+          </div>}
+
+          {s.family==='TURKISH'&&s.questionTypeBreakdown?.length>0&&<div className="stack">
+            {s.questionTypeBreakdown.slice(0,3).map((x:any)=><small key={x.questionType}>{x.questionType}: {x.accuracy==null?'—':'%'+x.accuracy}{x.avgSeconds?' · '+x.avgSeconds+' sn/soru':''}</small>)}
+          </div>}
+
+          {s.family==='HISTORY'&&<div className="stack">
+            <small>Aktif hatırlama: {s.activeRecall?.sessions||0} oturum · {s.activeRecall?.minutes||0} dk</small>
+            <small>Tekrar başarısı: {s.reviewSuccess==null?'Veri yok':'%'+s.reviewSuccess}</small>
+          </div>}
+
+          {s.family==='LITERATURE'&&s.literatureConnections?.length>0&&<div className="stack">
+            {s.literatureConnections.map((x:any)=><small key={x.dimension}>{x.dimension}: {x.evidence} soru · {x.accuracy==null?'veri yetersiz':'%'+x.accuracy}</small>)}
+          </div>}
+
+          {s.family==='SCIENCE'&&<div className="stack">
+            {s.weakestTopic&&<small>Zayıf konu: {s.weakestTopic.topic} · doğruluk {s.weakestTopic.accuracy==null?'—':'%'+s.weakestTopic.accuracy}</small>}
+            {s.misconceptionCandidates?.slice(0,2).map((x:any)=><small key={x.topic}>Kavram yanılgısı adayı: {x.topic} · %{x.accuracy}</small>)}
+          </div>}
+
           {s.errorReasons?.[0]&&<small>Baskın yanlış nedeni: {s.errorReasons[0].label} ({s.errorReasons[0].count})</small>}
+          <div className="notice" style={{marginTop:10}}><strong>Önerilen koç aksiyonu:</strong> {s.recommendedAction}</div>
         </div>)}
       </div>
     </div>

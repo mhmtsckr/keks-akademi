@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { buildCapacityProfile,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
+import { buildCapacityProfile,buildSubjectLearningModels,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
 
 export const REVIEW_DAYS=[0,1,3,7,14,28];
 
@@ -56,19 +56,21 @@ export async function computeGoalProgress(studentId:string){
 }
 
 export async function buildWeeklyPlan(studentId:string){
-  const [student,practice,topics,reviews,goal,capacity]=await Promise.all([
+  const [student,practice,topics,reviews,goal,capacity,subjectModels]=await Promise.all([
     db.student.findUnique({where:{id:studentId}}),
     db.practiceLog.findMany({where:{studentId},orderBy:{date:'desc'},take:100}),
     db.topicProgress.findMany({where:{studentId}}),
     db.reviewQueueItem.findMany({where:{studentId,status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'},take:30}),
     computeGoalProgress(studentId),
-    buildCapacityProfile(studentId)
+    buildCapacityProfile(studentId),
+    buildSubjectLearningModels(studentId)
   ]);
   if(!student) throw new Error('Öğrenci bulunamadı');
   const bySubject=new Map<string,{q:number;c:number;w:number;n:number}>();
   for(const p of practice){const x=bySubject.get(p.subject)||{q:0,c:0,w:0,n:0};x.q+=p.total;x.c+=p.correct;x.w+=p.wrong;x.n+=p.net;bySubject.set(p.subject,x);}
   const weak=[...bySubject.entries()].map(([subject,x])=>({subject,accuracy:x.q?x.c/x.q:1,net:x.n,questions:x.q})).sort((a,b)=>a.accuracy-b.accuracy);
   const incomplete=topics.filter(x=>!x.completed);
+  const subjectModelMap=new Map(subjectModels.map(x=>[x.subject,x]));
   const today=new Date();today.setHours(0,0,0,0);
   const lowCompletion=new Map((capacity.lowCompletionDays||[]).map(x=>[x.day,x.completionRate]));
   const weekday=(date:Date)=>new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Istanbul',weekday:'short'}).format(date);
@@ -93,12 +95,62 @@ export async function buildWeeklyPlan(studentId:string){
       ?`Uzun oturumlarda doğruluk düşüşü görüldüğü için konu bloğu ${focusDuration} dk ile sınırlandı.`
       :'Konu ilerleme kaydında henüz tamamlanmadığı için gözlenen odak kapasitesine göre plana alındı.'});
     if(weakSub){
+      const model=subjectModelMap.get(weakSub.subject);
       const questions=dailyPracticeQuestionTarget({
         questionCapacity:capacity.questionCapacity,
         accuracy:Math.round(weakSub.accuracy*100)
       });
       const duration=Math.max(15,Math.min(30,Math.round(questions*1.5)));
-      add({type:'PRACTICE',title:`${weakSub.subject} kısa test`,duration,questions,reason:`Son kayıtlarındaki ${weakSub.questions} soruda doğruluk %${Math.round(weakSub.accuracy*100)}; soru hacmi gerçek günlük kapasiteye göre ayarlandı.`});
+      const family=model?.family||'GENERAL';
+      const weakestType=model?.weakestQuestionType?.questionType;
+      const weakestTopic=model?.weakestTopic?.topic;
+      const literatureWeak=(model?.literatureConnections||[]).filter((x:any)=>x.evidence>0).sort((x:any,y:any)=>(x.accuracy??101)-(y.accuracy??101))[0];
+
+      if(family==='MATHEMATICS'){
+        add({
+          type:'MATH_SPEED_ACCURACY',
+          title:weakestType?weakSub.subject+' · '+weakestType+' süreli problem seti':weakSub.subject+' · süreli problem seti',
+          duration,questions,
+          reason:model?.recommendedAction||'Matematikte hız, doğruluk ve problem tipi birlikte ölçülür.'
+        });
+      }else if(family==='TURKISH'){
+        add({
+          type:'TURKISH_TIMED_TYPE',
+          title:weakestType?weakSub.subject+' · '+weakestType+' süreli mini set':weakSub.subject+' · soru türü bazlı süreli set',
+          duration,questions,
+          reason:model?.recommendedAction||'Türkçede soru türü ve çözüm süresi ayrı izlenir.'
+        });
+      }else if(family==='HISTORY'){
+        add({
+          type:'HISTORY_ACTIVE_RECALL',
+          title:weakestTopic?weakSub.subject+' · '+weakestTopic+' aktif hatırlama':weakSub.subject+' · aktif hatırlama + tekrar',
+          duration:Math.min(duration,25),
+          questions:Math.min(questions,10),
+          reason:model?.recommendedAction||'Tarihte aktif hatırlama ve tekrar başarısı birlikte izlenir.'
+        });
+      }else if(family==='LITERATURE'){
+        add({
+          type:'LITERATURE_CONNECTIONS',
+          title:literatureWeak?weakSub.subject+' · '+literatureWeak.dimension+' bağlantı çalışması':weakSub.subject+' · dönem–yazar–eser bağlantı çalışması',
+          duration:Math.min(duration,25),
+          questions:Math.min(questions,12),
+          reason:model?.recommendedAction||'Edebiyatta dönem, yazar ve eser bağlantıları ayrı izlenir.'
+        });
+      }else if(family==='SCIENCE'){
+        add({
+          type:'SCIENCE_CONCEPT_CHECK',
+          title:weakestTopic?weakSub.subject+' · '+weakestTopic+' kavram kontrolü':weakSub.subject+' · kavram kontrolü',
+          duration,questions:Math.min(questions,15),
+          reason:model?.recommendedAction||'Fen derslerinde konu ve olası kavram yanılgıları ayrı izlenir.'
+        });
+      }else{
+        add({
+          type:'PRACTICE',
+          title:weakSub.subject+' kısa test',
+          duration,questions,
+          reason:'Son kayıtlarındaki '+weakSub.questions+' soruda doğruluk %'+Math.round(weakSub.accuracy*100)+'; soru hacmi gerçek günlük kapasiteye göre ayarlandı.'
+        });
+      }
     }
     if(i===6)add({type:'REVIEW_WEEK',title:'Haftalık değerlendirme ve yeni hedef kontrolü',duration:20,reason:'Haftanın sonunda uygulanan plan ile gerçekleşen performansı karşılaştırmak için.'});
     days.push({
@@ -123,7 +175,7 @@ export async function buildWeeklyPlan(studentId:string){
       confidence:capacity.confidence
     },
     explanation:'Bu plan; vadesi gelen tekrarlar ve akademik performansın yanında öğrencinin ölçülen gerçek çalışma süresi, verimli saat aralığı, odak bloğu ve haftanın düşük tamamlama günleri kullanılarak oluşturulur. Beyan edilen süre tek başına plan kapasitesi değildir.',
-    inputs:{practiceRecords:practice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length,capacityEvidenceDays:capacity.evidenceDays},
+    inputs:{practiceRecords:practice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length,capacityEvidenceDays:capacity.evidenceDays,subjectModels:subjectModels.length},
     days
   };
 }
