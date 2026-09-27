@@ -184,10 +184,12 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       <h2>Müdahale sonrası gözlemsel değişim</h2>
       <p className="muted">Bu bölüm nedensellik iddiası kurmaz; müdahale öncesi ve sonrası veriyi karşılaştırarak koça karar desteği verir.</p>
       {impact.length===0?<p className="muted">Karşılaştırma için müdahale öncesi/sonrası yeterli soru verisi yok.</p>:<div className="stack">
-        {impact.map((x:any)=><div className="card" key={x.actionId} style={{margin:0}}>
-          <strong>{x.title}</strong><div className="muted">{x.subject}{x.topic?' · '+x.topic:''}</div>
+        {impact.map((x:any)=><div className="card" key={x.interventionId||x.actionId} style={{margin:0}}>
+          <div className="moduleHeaderRow"><strong>{x.headline||x.title}</strong><span className="pill">{x.evidenceLevel==='YETERLİ'?'Yeterli kanıt':'Sınırlı kanıt'}</span></div>
+          <div className="muted">{x.kindLabel||'Koçluk müdahalesi'}{x.subject?' · '+x.subject:''}{x.topic?' · '+x.topic:''}</div>
           <p>Doğruluk: {x.before.accuracy==null?'—':'%'+x.before.accuracy} → {x.after.accuracy==null?'—':'%'+x.after.accuracy} {x.accuracyDelta==null?'':'('+((x.accuracyDelta>=0?'+':'')+x.accuracyDelta)+' puan)'}</p>
-          <small className="muted">{x.interpretation}</small>
+          <p>Boş: {x.before.blank} → {x.after.blank} ({x.blankDelta>0?'+':''}{x.blankDelta})</p>
+          <small className="muted">{x.before.questions} önce / {x.after.questions} sonra soru kanıtı · {x.interpretation}</small>
         </div>)}
       </div>}
     </div>

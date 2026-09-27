@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { isFeatureEnabled } from '@/lib/systemConfig';
+import { aggregateInterventionPatterns,buildImpactHeadline,classifyCoachDecision,interventionKindLabel,summarizeImpactWindow,type InterventionKind } from '@/lib/coachInterventionImpact';
 
 export type MasteryStatus='NEW'|'LEARNING'|'REINFORCING'|'DURABLE'|'RISKY';
 
@@ -1608,40 +1609,143 @@ export async function buildCoachMorningBrief(coachId:string,now=new Date()){
 }
 
 export async function buildInterventionImpact(studentId:string,now=new Date()){
-  const since=new Date(now.getTime()-180*86400000);
-  const actions=await db.coachingAction.findMany({
-    where:{studentId,status:{in:['COMPLETED','RESCHEDULED']},updatedAt:{gte:since},subject:{not:null}},
-    select:{id:true,title:true,subject:true,topic:true,updatedAt:true,planSource:true},
-    orderBy:{updatedAt:'desc'},take:20
-  });
+  const since=new Date(now.getTime()-210*86400000);
+  const [logs,sessions,legacyActions]=await Promise.all([
+    db.dailyLog.findMany({where:{studentId,date:{gte:since}},orderBy:{date:'desc'},take:600,select:{id:true,date:true,payload:true}}),
+    db.coachingSession.findMany({
+      where:{studentId,status:'COMPLETED',completedAt:{gte:since}},
+      orderBy:{completedAt:'desc'},take:40,
+      select:{id:true,completedAt:true,decisions:true}
+    }),
+    db.coachingAction.findMany({
+      where:{studentId,status:{in:['COMPLETED','RESCHEDULED']},updatedAt:{gte:since},subject:{not:null}},
+      select:{id:true,title:true,subject:true,topic:true,updatedAt:true,planSource:true},
+      orderBy:{updatedAt:'desc'},take:30
+    })
+  ]);
+
+  type Intervention={
+    id:string;decision:string;kind:InterventionKind;subject:string|null;topic:string|null;at:Date;sourceType:string;
+  };
+  const interventions:Intervention[]=[];
+  const seen=new Set<string>();
+
+  for(const log of logs){
+    const p=record(log.payload);
+    if(p.type!=='COACH_INTERVENTION')continue;
+    const decision=typeof p.decision==='string'?p.decision:'';
+    if(!decision)continue;
+    const classified=classifyCoachDecision(decision);
+    const kind=(typeof p.kind==='string'?p.kind:classified.kind) as InterventionKind;
+    const subject=typeof p.subject==='string'?p.subject:classified.subject;
+    const key=(typeof p.sessionId==='string'?p.sessionId:log.id)+'|'+decision;
+    seen.add(key);
+    interventions.push({id:log.id,decision,kind,subject,topic:null,at:log.date,sourceType:'SESSION_DECISION'});
+  }
+
+  // Geçmiş seansları da yeni motorun öğrenme havuzuna geriye uyumlu olarak dahil et.
+  for(const session of sessions){
+    const decisions=Array.isArray(session.decisions)?session.decisions.filter((x):x is string=>typeof x==='string'&&x.trim().length>0):[];
+    for(const decision of decisions){
+      const key=session.id+'|'+decision;
+      if(seen.has(key))continue;
+      const classified=classifyCoachDecision(decision);
+      interventions.push({
+        id:session.id+'|'+decision,
+        decision,
+        kind:classified.kind,
+        subject:classified.subject,
+        topic:null,
+        at:session.completedAt||now,
+        sourceType:'SESSION_DECISION_LEGACY'
+      });
+    }
+  }
+
+  for(const action of legacyActions){
+    const classified=classifyCoachDecision(action.title);
+    interventions.push({
+      id:action.id,
+      decision:action.title,
+      kind:classified.kind,
+      subject:action.subject||classified.subject,
+      topic:action.topic,
+      at:action.updatedAt,
+      sourceType:'COACHING_ACTION'
+    });
+  }
+
   const results:any[]=[];
-  for(const action of actions){
-    const beforeStart=new Date(action.updatedAt.getTime()-21*86400000);
-    const afterEnd=new Date(action.updatedAt.getTime()+21*86400000);
+  for(const intervention of interventions.slice(0,80)){
+    const beforeStart=new Date(intervention.at.getTime()-21*86400000);
+    const afterEnd=new Date(intervention.at.getTime()+21*86400000);
+    if(afterEnd>now)afterEnd.setTime(now.getTime());
+
     const rows=await db.practiceLog.findMany({
-      where:{studentId,subject:action.subject||undefined,date:{gte:beforeStart,lte:afterEnd}},
+      where:{
+        studentId,
+        ...(intervention.subject?{subject:intervention.subject}:{}),
+        ...(intervention.topic?{topic:intervention.topic}:{}),
+        date:{gte:beforeStart,lte:afterEnd}
+      },
       select:{date:true,total:true,correct:true,blank:true}
     });
-    const summarize=(part:typeof rows)=>{
-      const total=part.reduce((n,x)=>n+x.total,0);
-      return {
-        questions:total,
-        accuracy:total?Math.round(part.reduce((n,x)=>n+x.correct,0)/total*100):null,
-        blank:part.reduce((n,x)=>n+x.blank,0)
-      };
-    };
-    const before=summarize(rows.filter(x=>x.date<action.updatedAt));
-    const after=summarize(rows.filter(x=>x.date>=action.updatedAt));
+    const before=summarizeImpactWindow(rows.filter(x=>x.date<intervention.at));
+    const after=summarizeImpactWindow(rows.filter(x=>x.date>=intervention.at));
     if(before.questions<10||after.questions<10)continue;
+    const accuracyDelta=before.accuracy!=null&&after.accuracy!=null?after.accuracy-before.accuracy:null;
+    const blankDelta=after.blank-before.blank;
+    const daysAfter=Math.max(1,Math.round((afterEnd.getTime()-intervention.at.getTime())/86400000));
+    const weeksAfter=Math.max(1,Math.round(daysAfter/7));
     results.push({
-      actionId:action.id,title:action.title,subject:action.subject,topic:action.topic,at:action.updatedAt,
+      interventionId:intervention.id,
+      actionId:intervention.id,
+      decision:intervention.decision,
+      title:intervention.decision,
+      kind:intervention.kind,
+      kindLabel:interventionKindLabel(intervention.kind),
+      subject:intervention.subject,
+      topic:intervention.topic,
+      at:intervention.at,
+      sourceType:intervention.sourceType,
       before,after,
-      accuracyDelta:before.accuracy!=null&&after.accuracy!=null?after.accuracy-before.accuracy:null,
-      blankDelta:after.blank-before.blank,
+      accuracyDelta,
+      blankDelta,
+      weeksAfter,
+      headline:buildImpactHeadline({
+        decision:intervention.decision,
+        kind:intervention.kind,
+        subject:intervention.subject,
+        before,
+        after,
+        weeksAfter
+      }),
+      evidenceLevel:before.questions>=30&&after.questions>=30?'YETERLİ':'SINIRLI',
       interpretation:'Gözlemsel ilişki; nedensellik kanıtı değildir.'
     });
   }
-  return results;
+  return results.sort((a,b)=>new Date(b.at).getTime()-new Date(a.at).getTime());
+}
+
+export async function buildCoachInterventionPatterns(coachId:string,now=new Date()){
+  const students=await db.student.findMany({where:{coachId},select:{id:true},orderBy:{createdAt:'desc'},take:50});
+  const all:any[]=[];
+  for(const student of students){
+    const impacts=await buildInterventionImpact(student.id,now);
+    for(const impact of impacts)all.push(impact);
+  }
+  const patterns=aggregateInterventionPatterns(all.map(x=>({
+    kind:x.kind,
+    accuracyDelta:x.accuracyDelta,
+    blankDelta:x.blankDelta,
+    beforeQuestions:x.before.questions,
+    afterQuestions:x.after.questions
+  })));
+  return {
+    totalMeasuredInterventions:all.length,
+    patterns,
+    note:'KEKS müdahale örüntülerini gözlemsel olarak öğrenir; bu sonuçlar tek başına nedensel etki kanıtı değildir.'
+  };
 }
 
 export async function buildGoalDistance(studentId:string,now=new Date()){
