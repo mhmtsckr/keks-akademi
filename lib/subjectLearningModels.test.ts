@@ -60,7 +60,8 @@ describe('subject-specific learning models',()=>{
     expect(ui).toContain("s.family==='MATHEMATICS'");
     expect(ui).toContain("s.family==='HISTORY'");
     expect(ui).toContain('Kavram yanılgısı sinyali');
-    expect(ui).toContain('Dönem / akım');
+    expect(ui).toContain('s.connections||[]');
+    expect(read('lib/learningEngine.ts')).toContain("label:key==='PERIOD'?'Dönem / akım'");
     expect(ui).toContain('Önerilen sonraki adım');
   });
 
