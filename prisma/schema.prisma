@@ -394,6 +394,7 @@ model PracticeLog {
   createdAt DateTime @default(now())
 
   @@index([studentId, date])
+  @@index([studentId, examType, subject, topic, date])
 }
 
 model QuestionBankItem {
