@@ -570,7 +570,7 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
       primaryErrorReasonLabel:primaryReason?ERROR_REASON_LABELS[primaryReason as ErrorReasonKey]||primaryReason:null
     };
   }).sort((a,b)=>{
-    const order:Record<MasteryStatus,number>={RISKY:0,LEARNING:1,NEW:2,REINFORCING:3,DURABLE:4};
+    const order:Record<MasteryStatus,number>={RISKY:0,LEARNING:1,REINFORCING:2,NEW:3,DURABLE:4};
     return order[a.status]-order[b.status]||a.score-b.score;
   });
 }
@@ -892,7 +892,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
 
-  const weakest=mastery.find(x=>x.status==='RISKY'||x.status==='LEARNING')||mastery[0]||null;
+  const weakest=mastery.find(x=>x.status==='RISKY'||x.status==='LEARNING'||x.status==='REINFORCING')||mastery[0]||null;
   const focusTopic=
     (weakest?incompleteTopics.find(x=>x.subject===weakest.subject&&x.topic===weakest.topic):null)
     ||(weakest?incompleteTopics.find(x=>x.subject===weakest.subject):null)
@@ -920,7 +920,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     const matchingMastery=masteryMap.get(focusTopic.subject+'|'+focusTopic.topic)||weakest;
     const questionTarget=dailyPracticeQuestionTarget({
       questionCapacity:capacity.questionCapacity,
-      accuracy:matchingMastery?.accuracy??null
+      accuracy:matchingMastery?.latestTestAccuracy??matchingMastery?.accuracy??null
     });
     const alreadyHasQuestionAction=items.some(x=>x.source==='ACTION'&&!x.completed&&x.metricType==='QUESTIONS'&&x.subject===focusTopic.subject&&(x.topic||'Genel/Karma')===focusTopic.topic);
     if(!alreadyHasQuestionAction){
@@ -1454,7 +1454,7 @@ export async function buildGoalDistance(studentId:string,now=new Date()){
   const targetValue=target.score??target.officialMinScore??target.officialEligibilityScore??null;
   const gap=current!=null&&targetValue!=null?Number((targetValue-current).toFixed(2)):null;
   const contribution=mastery
-    .filter(x=>x.status==='RISKY'||x.status==='LEARNING')
+    .filter(x=>x.status==='RISKY'||x.status==='LEARNING'||x.status==='REINFORCING')
     .slice(0,3)
     .map(x=>({subject:x.subject,topic:x.topic,masteryStatus:x.status,accuracy:x.accuracy}));
   return {
