@@ -24,6 +24,8 @@ import { StudentResourceTracker } from '@/app/components/StudentResourceTracker'
 import { StudentSmartNotifications } from '@/app/components/StudentSmartNotifications';
 import { StudentGoalDistance } from '@/app/components/StudentGoalDistance';
 import { buildGoalDistance } from '@/lib/learningEngine';
+import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
+import { StudentExamInterventionReport } from '@/app/components/StudentExamInterventionReport';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -79,9 +81,10 @@ export default async function StudentPage() {
   });
   if (!student) return null;
 
-  const [featureFlags,goalDistance]=await Promise.all([
+  const [featureFlags,goalDistance,examInterventionReport]=await Promise.all([
     getStudentFeatureSnapshot(student.studentCode),
-    buildGoalDistance(student.id)
+    buildGoalDistance(student.id),
+    buildLatestExamInterventionReport(student.id)
   ]);
   const access = student.testAccesses[0];
   const latestAssessment=student.assessments[0];
@@ -153,6 +156,7 @@ export default async function StudentPage() {
         ]},
         {label:'AKADEMİK PERFORMANS',description:'Net, konu, doğruluk, kaynak ve hedef gelişimini izle.',items:[
           {href:'#hedef-mesafe',title:'Hedefe Kalan Mesafe',description:'Hedef net farkı, konu açığı ve en yüksek katkı sağlayacak dersler',badge:'YENİ'},
+          {href:'#deneme-raporu',title:'Otomatik Deneme Raporu',description:'Değişim, net katkısı/kaybı, süre ve 7 günlük müdahale planı',badge:'OTOMATİK'},
           ...(featureFlags.SMART_COACH?[{href:'#akilli-koc',title:'Akıllı Koç',description:'Hedefe yaklaşma, trend ve haftalık öneriler'}]:[]),
           {href:'#akademik-performans',title:'Konu & Soru Analizi',description:'Doğru, yanlış, boş, net ve hata nedenleri'},
           {href:'#kaynak-takibi',title:'Kaynak Takibi',description:'Kitap, konu, sayfa, soru ve doğruluk takibi',badge:'YENİ'}
@@ -183,6 +187,10 @@ export default async function StudentPage() {
 
     <section id="hedef-mesafe" className="section section-anchor">
       <StudentGoalDistance data={goalDistance}/>
+    </section>
+
+    <section id="deneme-raporu" className="section section-anchor">
+      <StudentExamInterventionReport report={examInterventionReport}/>
     </section>
 
     <section className="section">
