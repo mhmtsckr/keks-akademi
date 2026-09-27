@@ -27,7 +27,8 @@ export type SessionReviewEvidence={
 
 export function summarizeSessionReviews(rows:SessionReviewEvidence[],now=new Date()){
   const since=new Date(now.getTime()-7*86400000);
-  const dayStart=new Date(now);dayStart.setHours(0,0,0,0);
+  const dayKey=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+  const dayStart=new Date(dayKey+'T00:00:00+03:00');
   const nextDay=new Date(dayStart.getTime()+86400000);
   const completed=rows.filter(x=>x.status==='COMPLETED'&&x.completedAt&&x.completedAt>=since);
   const dueToday=rows.filter(x=>['DUE','PENDING'].includes(x.status)&&x.dueAt>=dayStart&&x.dueAt<nextDay);
