@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { withApiErrors } from '@/lib/apiGuard';
-import { ensureTodayLearningPlan,readTodayLearningPlan } from '@/lib/learningEngine';
+import { ensureTodayLearningPlan,readTodayLearningPlan,rebalanceMissedTasksCapacityAware } from '@/lib/learningEngine';
 import { isFeatureEnabled } from '@/lib/systemConfig';
 
 function publicTodayPlan(today:any){
@@ -44,6 +44,7 @@ async function GET__handler(){
 async function POST__handler(){
   const context=await studentContext();
   if(context instanceof Response)return context;
+  await rebalanceMissedTasksCapacityAware(context.studentId);
   const today=await ensureTodayLearningPlan(context.studentId);
   return NextResponse.json({ok:true,today:publicTodayPlan(today)});
 }
