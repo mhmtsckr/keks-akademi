@@ -1728,7 +1728,7 @@ export async function buildInterventionImpact(studentId:string,now=new Date()){
 }
 
 export async function buildCoachInterventionPatterns(coachId:string,now=new Date()){
-  const students=await db.student.findMany({where:{coachId},select:{id:true},take:200});
+  const students=await db.student.findMany({where:{coachId},select:{id:true},orderBy:{createdAt:'desc'},take:50});
   const all:any[]=[];
   for(const student of students){
     const impacts=await buildInterventionImpact(student.id,now);
