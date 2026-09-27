@@ -384,17 +384,10 @@ model PracticeLog {
   total     Int
   net       Float
   errorReason String?
-  durationSeconds Int?
-  questionType String?
-  problemType String?
-  metricPayload Json @default("{}")
-  masteryScore Float?
-  masteryState String @default("NEW")
   date      DateTime @default(now())
   createdAt DateTime @default(now())
 
   @@index([studentId, date])
-  @@index([studentId, examType, subject, topic, date])
 }
 
 model QuestionBankItem {
