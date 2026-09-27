@@ -51,9 +51,11 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Tekrar görevi kaydedilemedi.'));
     setReviewAnswers(x=>({...x,[id]:''}));
+    const intervalText=j.completed?'':(' · Sonraki tekrar: '+j.nextIntervalDays+' gün sonra.');
+    const streakText=j.correctStreak>=2?(' · Ardışık doğru: '+j.correctStreak):j.incorrectStreak>=2?(' · Ardışık yanlış: '+j.incorrectStreak):'';
     setMsg(j.correct
-      ? (j.completed?'Doğru. Bu soru için aktif tekrar döngüsü tamamlandı.':'Doğru. Bir sonraki tekrar aralığı performansına göre otomatik planlandı.')
-      : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+' · Bir sonraki tekrar daha yakın tarihe çekildi.');
+      ? (j.completed?'Doğru. Bu soru için aktif tekrar döngüsü tamamlandı.':'Doğru.'+intervalText+streakText+' · '+(j.intervalReason||'Kişisel unutma eğrisi güncellendi.'))
+      : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
     await load();
   }
 
@@ -78,7 +80,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
     <div className="card wrongQuestionDueCard">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. Doğru cevap tekrar aralığını açabilir; tekrar yanlışsa sistem bir sonraki tekrarı daha yakın tarihe çeker.</p></div>
+        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. KEKS her soru için senin doğru/yanlış serini ve yakın dönem tekrar başarını öğrenir; güçlü hatırlamada aralığı uzatır, unutma sinyalinde tekrar tarihini öne çeker.</p></div>
         <span className="pill">{dueReviews.length} görev</span>
       </div>
       {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış soru yok.</strong><div className="muted">Yeni yanlış yüklediğinde 0. gün görevi hemen burada görünür.</div></div>:<div className="wrongReviewTaskList">

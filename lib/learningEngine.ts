@@ -1169,15 +1169,64 @@ export async function generateMorningTodayPlans(now=new Date()){
   };
 }
 
-export function adaptiveReviewIntervalDays(input:{nextStep:number;correct:boolean;previousCorrect:boolean|null}){
+export type AdaptiveReviewInput={
+  nextStep:number;
+  correct:boolean;
+  previousCorrect:boolean|null;
+  correctStreak?:number;
+  incorrectStreak?:number;
+  recentAccuracy?:number|null;
+  masteryScore?:number|null;
+};
+
+export function adaptiveReviewIntervalDays(input:AdaptiveReviewInput){
   const base=[0,1,3,7,14,28];
-  if(!input.correct){
-    return input.previousCorrect===false?1:0;
-  }
   const step=clamp(input.nextStep,0,base.length-1);
-  const raw=base[step];
-  if(step>=3)return Math.min(45,raw*2);
-  return raw;
+  const baseline=base[step];
+  const correctStreak=Math.max(0,input.correctStreak||0);
+  const incorrectStreak=Math.max(0,input.incorrectStreak||0);
+  const recentAccuracy=input.recentAccuracy==null?null:clamp(input.recentAccuracy,0,100);
+  const mastery=input.masteryScore==null?null:clamp(input.masteryScore,0,100);
+
+  if(!input.correct){
+    if(incorrectStreak>=2)return 1;
+    if(baseline>=7)return 3;
+    if(baseline>=3)return 1;
+    return 0;
+  }
+
+  let interval=baseline;
+
+  // Öğrenci aynı bilgiye art arda doğru erişebiliyorsa unutma eğrisini genişlet.
+  if(correctStreak>=3){
+    if(baseline===7)interval=14;
+    else if(baseline===14)interval=28;
+    else if(baseline>=28)interval=45;
+    else interval=Math.max(interval,base[Math.min(step+1,base.length-1)]);
+  }else if(correctStreak>=2&&baseline>=7){
+    interval=Math.round(baseline*1.5);
+  }
+
+  // Son performans yüksekse aralığı kontrollü biçimde biraz daha aç.
+  if(recentAccuracy!=null&&recentAccuracy>=90&&correctStreak>=2)interval=Math.round(interval*1.2);
+  if(mastery!=null&&mastery>=85&&correctStreak>=2)interval=Math.round(interval*1.15);
+
+  // Doğru yanıt gelse bile genel tekrar başarısı zayıfsa aşırı açılmayı engelle.
+  if(recentAccuracy!=null&&recentAccuracy<65)interval=Math.min(interval,Math.max(1,baseline));
+  if(input.previousCorrect===false&&correctStreak<=1)interval=Math.min(interval,Math.max(1,baseline));
+
+  return Math.round(clamp(interval,0,60));
+}
+
+export function reviewIntervalReason(input:AdaptiveReviewInput,intervalDays:number){
+  if(!input.correct){
+    if((input.incorrectStreak||0)>=2)return 'Aynı bilgi tekrar yanlışlandığı için aralık 1 güne çekildi.';
+    if(intervalDays<=3)return 'Yanlış cevap unutma riskini yükselttiği için tekrar daha yakın tarihe çekildi.';
+    return 'Yanlış cevap nedeniyle tekrar aralığı kısaltıldı.';
+  }
+  if((input.correctStreak||0)>=3)return 'Üç veya daha fazla ardışık doğru nedeniyle tekrar aralığı kişiye özel olarak uzatıldı.';
+  if((input.correctStreak||0)>=2)return 'Ardışık doğru performansı nedeniyle tekrar aralığı kontrollü biçimde uzatıldı.';
+  return 'Başlangıç tekrar eğrisi korunarak bir sonraki tekrar planlandı.';
 }
 
 export type CarryoverDayCapacity={
