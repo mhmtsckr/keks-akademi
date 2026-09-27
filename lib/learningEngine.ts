@@ -141,13 +141,141 @@ function normalizedReason(value:string|null|undefined):ErrorReasonKey|null{
   return 'DIGER';
 }
 
+export type CapacitySessionEvidence={
+  startedAt:Date;
+  completedAt?:Date|null;
+  activeSeconds:number|null;
+  durationMinutes:number;
+};
+
+export type CapacitySubmissionEvidence={
+  submittedAt:Date;
+  totalQuestions:number;
+  accuracy:number;
+};
+
+function weightedAccuracy(rows:CapacitySubmissionEvidence[]){
+  const total=rows.reduce((n,x)=>n+Math.max(0,x.totalQuestions),0);
+  if(!total)return null;
+  return rows.reduce((n,x)=>n+(Math.max(0,x.totalQuestions)*x.accuracy),0)/total;
+}
+
+export function inferEfficientStudyWindow(
+  sessions:CapacitySessionEvidence[],
+  submissions:CapacitySubmissionEvidence[]
+){
+  const hourMinutes=new Map<number,number>();
+  for(const session of sessions){
+    const h=localHour(session.startedAt);
+    const minutes=Math.max(0,(session.activeSeconds||0)/60);
+    hourMinutes.set(h,(hourMinutes.get(h)||0)+minutes);
+  }
+
+  const hourSubmissions=new Map<number,CapacitySubmissionEvidence[]>();
+  for(const row of submissions){
+    const h=localHour(row.submittedAt);
+    const list=hourSubmissions.get(h)||[];
+    list.push(row);
+    hourSubmissions.set(h,list);
+  }
+
+  let best:{startHour:number;score:number;accuracy:number|null;questions:number;activeMinutes:number}|null=null;
+  for(let h=0;h<24;h++){
+    const rows=[...(hourSubmissions.get(h)||[]),...(hourSubmissions.get((h+1)%24)||[])];
+    const questions=rows.reduce((n,x)=>n+x.totalQuestions,0);
+    const accuracy=weightedAccuracy(rows);
+    const activeMinutes=(hourMinutes.get(h)||0)+(hourMinutes.get((h+1)%24)||0);
+    if(questions<10&&activeMinutes<20)continue;
+    const score=(accuracy??0)+(Math.min(questions,60)/12)+(Math.min(activeMinutes,120)/24);
+    if(!best||score>best.score)best={startHour:h,score,accuracy,questions,activeMinutes};
+  }
+
+  if(!best)return {bestWindow:null,bestWindowAccuracy:null,bestWindowQuestions:0,bestWindowActiveMinutes:0};
+  const end=(best.startHour+2)%24;
+  return {
+    bestWindow:String(best.startHour).padStart(2,'0')+'.00–'+String(end).padStart(2,'0')+'.00',
+    bestWindowAccuracy:best.accuracy==null?null:Math.round(best.accuracy),
+    bestWindowQuestions:best.questions,
+    bestWindowActiveMinutes:Math.round(best.activeMinutes)
+  };
+}
+
+export function inferFocusDrop(
+  sessions:CapacitySessionEvidence[],
+  submissions:CapacitySubmissionEvidence[]
+){
+  const paired:{minutes:number;submission:CapacitySubmissionEvidence}[]=[];
+
+  for(const submission of submissions){
+    let match:CapacitySessionEvidence|null=null;
+    let matchEnd=-Infinity;
+    for(const session of sessions){
+      const start=session.startedAt.getTime();
+      const active=Math.max(0,session.activeSeconds||session.durationMinutes*60);
+      const end=(session.completedAt?.getTime()??(start+active*1000))+45*60000;
+      const submitted=submission.submittedAt.getTime();
+      if(submitted>=start&&submitted<=end&&end>matchEnd){
+        match=session;
+        matchEnd=end;
+      }
+    }
+    if(match){
+      const minutes=Math.max(1,Math.round((match.activeSeconds||match.durationMinutes*60)/60));
+      paired.push({minutes,submission});
+    }
+  }
+
+  for(const threshold of [30,45,60]){
+    const short=paired.filter(x=>x.minutes<=threshold).map(x=>x.submission);
+    const long=paired.filter(x=>x.minutes>threshold).map(x=>x.submission);
+    const shortQuestions=short.reduce((n,x)=>n+x.totalQuestions,0);
+    const longQuestions=long.reduce((n,x)=>n+x.totalQuestions,0);
+    if(short.length<2||long.length<2||shortQuestions<20||longQuestions<20)continue;
+    const shortAccuracy=weightedAccuracy(short);
+    const longAccuracy=weightedAccuracy(long);
+    if(shortAccuracy==null||longAccuracy==null)continue;
+    const drop=shortAccuracy-longAccuracy;
+    if(drop>=8){
+      return {
+        afterMinutes:threshold,
+        beforeAccuracy:Math.round(shortAccuracy),
+        afterAccuracy:Math.round(longAccuracy),
+        dropPoints:Math.round(drop),
+        matchedSubmissions:paired.length
+      };
+    }
+  }
+  return {
+    afterMinutes:null,
+    beforeAccuracy:null,
+    afterAccuracy:null,
+    dropPoints:null,
+    matchedSubmissions:paired.length
+  };
+}
+
+export function recommendedFocusBlockMinutes(focusDropAfterMinutes:number|null,sessionMinutes:number[]){
+  if(focusDropAfterMinutes!=null)return Math.round(clamp(focusDropAfterMinutes-5,20,50));
+  const usable=sessionMinutes.filter(x=>x>=10&&x<=120);
+  if(!usable.length)return 35;
+  return Math.round(clamp(average(usable),25,50));
+}
+
+export function capacityDayFactor(lowCompletionDays:{day:string;completionRate:number}[],date:Date){
+  const row=lowCompletionDays.find(x=>x.day===weekdayKey(date));
+  if(!row)return 1;
+  if(row.completionRate<60)return .75;
+  if(row.completionRate<75)return .9;
+  return 1;
+}
+
 export async function buildCapacityProfile(studentId:string,now=new Date()){
   const since=new Date(now.getTime()-35*86400000);
   const [student,sessions,submissions,actions]=await Promise.all([
     db.student.findUnique({where:{id:studentId},select:{profile:true}}),
     db.techniquePracticeSession.findMany({
       where:{studentId,createdAt:{gte:since}},
-      select:{startedAt:true,activeSeconds:true,durationMinutes:true,completed:true},
+      select:{startedAt:true,completedAt:true,activeSeconds:true,durationMinutes:true,completed:true},
       orderBy:{startedAt:'asc'}
     }),
     db.taskSubmission.findMany({
@@ -162,13 +290,10 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
 
   const plannedMinutes=readPlannedMinutes(student?.profile);
   const minutesByDay=new Map<string,number>();
-  const hourMinutes=new Map<number,number>();
   for(const session of sessions){
     const key=trDateKey(session.startedAt);
     const minutes=Math.max(0,(session.activeSeconds||0)/60);
     minutesByDay.set(key,(minutesByDay.get(key)||0)+minutes);
-    const h=localHour(session.startedAt);
-    hourMinutes.set(h,(hourMinutes.get(h)||0)+minutes);
   }
 
   const questionsByDay=new Map<string,number>();
@@ -181,15 +306,12 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
   const actualAverageMinutes=observedMinutes.length?Math.round(average(observedMinutes)):0;
   const questionDays=[...questionsByDay.values()].filter(x=>x>0);
   const questionCapacity=questionDays.length?Math.round(average(questionDays)):0;
-
-  let bestStartHour:number|null=null;
-  let bestWindowMinutes=0;
-  for(let h=0;h<24;h++){
-    const total=(hourMinutes.get(h)||0)+(hourMinutes.get((h+1)%24)||0);
-    if(total>bestWindowMinutes){bestWindowMinutes=total;bestStartHour=h}
-  }
-  const bestWindow=bestStartHour==null?null:
-    String(bestStartHour).padStart(2,'0')+'.00–'+String((bestStartHour+2)%24).padStart(2,'0')+'.00';
+  const efficientWindow=inferEfficientStudyWindow(sessions,submissions);
+  const focusDrop=inferFocusDrop(sessions,submissions);
+  const focusBlockMinutes=recommendedFocusBlockMinutes(
+    focusDrop.afterMinutes,
+    sessions.map(x=>Math.max(0,(x.activeSeconds||0)/60))
+  );
 
   const weekdayStats=new Map<string,{total:number;completed:number}>();
   for(const action of actions){
@@ -213,16 +335,30 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
     45,
     plannedMinutes?Math.max(60,plannedMinutes):240
   ));
+  const actualVsPlannedDeltaMinutes=plannedMinutes!=null&&actualAverageMinutes>0
+    ?actualAverageMinutes-plannedMinutes
+    :null;
 
   return {
     plannedMinutes,
     actualAverageMinutes:actualAverageMinutes||null,
+    actualVsPlannedDeltaMinutes,
     suggestedDailyMinutes,
     questionCapacity:questionCapacity||null,
-    bestWindow,
+    bestWindow:efficientWindow.bestWindow,
+    bestWindowAccuracy:efficientWindow.bestWindowAccuracy,
+    bestWindowQuestions:efficientWindow.bestWindowQuestions,
+    bestWindowActiveMinutes:efficientWindow.bestWindowActiveMinutes,
+    focusDropAfterMinutes:focusDrop.afterMinutes,
+    focusDropPoints:focusDrop.dropPoints,
+    focusDropBeforeAccuracy:focusDrop.beforeAccuracy,
+    focusDropAfterAccuracy:focusDrop.afterAccuracy,
+    focusDropEvidence:focusDrop.matchedSubmissions,
+    recommendedFocusBlockMinutes:focusBlockMinutes,
     lowCompletionDays,
     evidenceDays,
     confidence:evidenceDays>=14?'HIGH':evidenceDays>=7?'MEDIUM':'LOW',
+    measurementSource:observedMinutes.length?'ACTIVE_TIMER':'TASK_EVIDENCE_ONLY',
     note:evidenceDays<7
       ?'Kapasite profili henüz düşük veriyle oluşturuluyor; yeni kayıtlarla otomatik güncellenir.'
       :'Program önerisi beyan edilen süreden çok gözlenen davranışa dayanır.'
@@ -435,7 +571,9 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
 
-  const maxReviews=capacity.suggestedDailyMinutes>=240?4:capacity.suggestedDailyMinutes>=150?3:2;
+  const dayFactor=capacityDayFactor(capacity.lowCompletionDays,now);
+  const effectiveDailyBudget=Math.max(30,Math.round(capacity.suggestedDailyMinutes*dayFactor));
+  const maxReviews=effectiveDailyBudget>=240?4:effectiveDailyBudget>=150?3:2;
   const reviewBatch=reviews.slice(0,maxReviews);
   if(reviewBatch.length){
     const item={
@@ -470,9 +608,9 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
         title:focusTopic.subject+' · '+focusTopic.topic+' konu tamamlama',
         subject:focusTopic.subject,
         topic:focusTopic.topic,
-        targetValue:35,
+        targetValue:Math.min(35,capacity.recommendedFocusBlockMinutes||35),
         metricType:'MINUTES',
-        estimatedMinutes:35,
+        estimatedMinutes:Math.min(35,capacity.recommendedFocusBlockMinutes||35),
         completed:false,
         why:'Tamamlanmamış konu ve geçmiş performans sinyalleri birlikte değerlendirildi.'
       };
@@ -504,7 +642,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
 
   const deduped=[...new Map(items.map(item=>[item.id,item])).values()];
   const sorted=deduped.sort((a,b)=>a.sequence-b.sequence||a.estimatedMinutes-b.estimatedMinutes||a.title.localeCompare(b.title,'tr'));
-  const budget=capacity.suggestedDailyMinutes;
+  const budget=effectiveDailyBudget;
   let usedMinutes=0;
   const selected=sorted.map(item=>{
     if(item.completed)return {...item,inTodayPlan:true};
@@ -539,6 +677,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   if(examGap==null)notifications.push('Henüz deneme kaydı yok.');
   else if(examGap>=7)notifications.push('Deneme kaydı '+examGap+' gündür güncellenmedi.');
   if(capacity.lowCompletionDays.some(x=>x.day===weekdayKey(now)))notifications.push('Bugünkü görev hacmi geçmiş tamamlama davranışına göre sınırlı tutuldu.');
+  if(capacity.focusDropAfterMinutes)notifications.push(capacity.focusDropAfterMinutes+' dakikayı aşan gözlemlenmiş oturumlarda doğruluk düşüşü görüldüğü için odak blokları '+capacity.recommendedFocusBlockMinutes+' dk ile sınırlandı.');
 
   return {
     engineVersion:'TODAY_PLAN_V4_DYNAMIC',
