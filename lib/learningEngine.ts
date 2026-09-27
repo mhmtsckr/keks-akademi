@@ -540,7 +540,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   if(capacity.lowCompletionDays.some(x=>x.day===weekdayKey(now)))notifications.push('Bugünkü görev hacmi geçmiş tamamlama davranışına göre sınırlı tutuldu.');
 
   return {
-    engineVersion:'TODAY_PLAN_V3',
+    engineVersion:'TODAY_PLAN_V4_DYNAMIC',
     generatedAt:now.toISOString(),
     date:todayKey,
     capacity,
