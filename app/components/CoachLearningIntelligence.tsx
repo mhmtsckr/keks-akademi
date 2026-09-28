@@ -90,6 +90,50 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       <p className="muted">{goal.note}</p>
     </div>}
 
+    {data.resourceTracking&&<div className="card">
+      <div className="moduleHeaderRow">
+        <div>
+          <div className="moduleEyebrow">KAYNAK TAKİP & VERİMLİLİK</div>
+          <h2>Kaynak → konu → sayfa → soru → doğruluk</h2>
+          <p className="muted">Koç, öğrencinin bir kaynağı ilerleme üretmeden gereksiz uzatıp uzatmadığını açıklanabilir sinyallerle görür.</p>
+        </div>
+        <span className="pill">{data.resourceTracking.total||0} kaynak</span>
+      </div>
+
+      {(data.resourceTracking.review?.length||0)>0&&<div className="notice error">
+        <strong>{data.resourceTracking.review.length} kaynak gözden geçirilmeli.</strong> Aynı konuda uzun süre kalma, düşük doğruluk veya sayfa ilerlemesine rağmen performans artmaması sinyalleri var.
+      </div>}
+      {(data.resourceTracking.watch?.length||0)>0&&<div className="notice">
+        <strong>{data.resourceTracking.watch.length} kaynak izlenmeli.</strong> Bir sonraki kayıtlarla trend doğrulanmalı.
+      </div>}
+
+      <div className="stack" style={{marginTop:12}}>
+        {(data.resourceTracking.resources||[]).map((x:any)=><div className="card" key={x.id} style={{margin:0}}>
+          <div className="moduleHeaderRow">
+            <div>
+              <strong>{x.title}</strong>
+              <p className="muted" style={{marginBottom:0}}>{x.examType} · {x.subject}{x.publisher?' · '+x.publisher:''}</p>
+            </div>
+            <span className="pill">{x.efficiency?.label||'Yeni'}</span>
+          </div>
+          <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))'}}>
+            <div><small className="muted">Çözülen sayfa</small><p><strong>{x.efficiency?.pagesStudied??0}</strong></p></div>
+            <div><small className="muted">Soru</small><p><strong>{x.questions}</strong></p></div>
+            <div><small className="muted">Doğruluk</small><p><strong>{x.accuracy==null?'—':'%'+x.accuracy}</strong></p></div>
+            <div><small className="muted">Son blok doğruluğu</small><p><strong>{x.efficiency?.recentAccuracy==null?'—':'%'+x.efficiency.recentAccuracy}</strong></p></div>
+            <div><small className="muted">Doğruluk değişimi</small><p><strong>{x.efficiency?.accuracyDelta==null?'—':(x.efficiency.accuracyDelta>0?'+':'')+x.efficiency.accuracyDelta+' puan'}</strong></p></div>
+            <div><small className="muted">Aynı konu payı</small><p><strong>{x.efficiency?.repeatedTopicShare==null?'—':'%'+x.efficiency.repeatedTopicShare}</strong></p></div>
+          </div>
+          {x.efficiency?.reasons?.length>0&&<div className="stack" style={{marginTop:8}}>
+            {x.efficiency.reasons.map((reason:string,i:number)=><small key={i}>• {reason}</small>)}
+          </div>}
+          {x.efficiency?.suggestedCoachAction&&<div className="notice" style={{marginTop:10}}>
+            <strong>Önerilen koç aksiyonu:</strong> {x.efficiency.suggestedCoachAction}
+          </div>}
+        </div>)}
+      </div>
+    </div>}
+
     <div className="card">
       <div className="moduleEyebrow">BİLGİ HÂKİMİYETİ · NETTEN BAĞIMSIZ</div>
       <h2>Konu bazlı kalıcılık durumu</h2>
