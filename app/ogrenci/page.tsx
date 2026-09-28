@@ -1,3 +1,4 @@
+import { StudentMicroLearning } from '@/app/components/StudentMicroLearning';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForms';
@@ -134,6 +135,8 @@ export default async function StudentPage() {
     {featureFlags.TODAY_PLAN&&<section id="bugunun-plani" className="section section-anchor">
       <StudentTodayPlan/>
     </section>}
+
+    {featureFlags.MICRO_LEARNING&&<section id="mikro-ogrenme" className="section section-anchor"><StudentMicroLearning/></section>}
 
     {featureFlags.SMART_NOTIFICATIONS&&<section id="akilli-bildirimler" className="section section-anchor">
       <StudentSmartNotifications/>

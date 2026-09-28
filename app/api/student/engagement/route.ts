@@ -7,7 +7,6 @@ import { awardXp } from '@/lib/gamification';
 import { chooseWeakTopic,generateMicroGame } from '@/lib/microGameGenerator';
 import { gameAudiencesForGradeLevel } from '@/lib/mebCoreQuestionBank';
 import { isFeatureEnabled } from '@/lib/systemConfig';
-import { buildMicroLearningTasks } from '@/lib/personalLearning';
 
 const actionSchema=z.object({action:z.literal('progress'),id:z.string(),currentValue:z.number().min(0)});
 const analyticSchema=z.object({action:z.literal('analytics'),examType:z.string(),subject:z.string(),topic:z.string(),questionType:z.string().default('GENEL'),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),avgSeconds:z.number().min(0).optional(),examDate:z.string().optional()});
@@ -25,7 +24,7 @@ async function GET__handler(){
   const gameAudiences=gameAudiencesForGradeLevel(studentRow?.gradeLevel);
   const weekStart=new Date(Date.now()-7*24*60*60*1000);
   const monthStart=new Date(Date.now()-30*24*60*60*1000);
-  const [actions,gamification,badges,games,sessions,weeklyLedger,monthlyLedger,cohorts,dueWrongReviews,recentPractice]=await Promise.all([
+  const [actions,gamification,badges,games,sessions,weeklyLedger,monthlyLedger,cohorts]=await Promise.all([
     db.coachingAction.findMany({where:{studentId:id,status:'ACTIVE'},orderBy:{periodEnd:'asc'}}),
     db.studentGamification.findUnique({where:{studentId:id}}),
     db.badgeAward.findMany({where:{studentId:id},orderBy:{awardedAt:'desc'}}),
@@ -44,33 +43,19 @@ async function GET__handler(){
     db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:weekStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20}),
     db.xpLedger.groupBy({by:['studentId'],where:{createdAt:{gte:monthStart}},_sum:{xp:true},orderBy:{_sum:{xp:'desc'}},take:20}),
     db.cohortMember.findMany({where:{studentId:id},include:{cohort:{include:{posts:{orderBy:{createdAt:'desc'},take:30,include:{student:{select:{fullName:true}}}}}}}}),
-    db.reviewQueueItem.count({where:{studentId:id,status:{in:['DUE','PENDING']},dueAt:{lte:new Date()},question:{sourceKind:{startsWith:'STUDENT_WRONG:'}}}}),
-    db.practiceLog.findMany({where:{studentId:id},orderBy:{date:'desc'},take:120})
+
   ]);
   const wordGames=games.filter(x=>x.gameType==='WORD');
   const nonWordGames=games.filter(x=>x.gameType!=='WORD').slice(0,24);
   const twoDayIndex=Math.floor(Date.now()/(2*24*60*60*1000));
   const dailyWord=wordGames.length?[wordGames[twoDayIndex%wordGames.length]]:[];
   const visibleGames=[...dailyWord,...nonWordGames];
-  const practiceSubjects=[...new Set(recentPractice.map(x=>x.subject))];
-  const weak=await chooseWeakTopic(id);
-  const examGroup=recentPractice[0]?.examType||null;
-  const microTasks=buildMicroLearningTasks({
-    examGroup,
-    weakSubject:weak?.subject||null,
-    weakTopic:weak?.topic||null,
-    dueWrongCount:dueWrongReviews,
-    hasLiterature:practiceSubjects.some(x=>/Edebiyat/i.test(x)),
-    hasHistory:practiceSubjects.some(x=>/Tarih|İnkılap/i.test(x)),
-    hasLanguage:practiceSubjects.some(x=>/İngilizce|Yabancı Dil/i.test(x))||examGroup==='YDS',
-    hasMath:practiceSubjects.some(x=>/Matematik|Sayısal|Geometri/i.test(x))
-  });
   const ids=[...new Set([...weeklyLedger.map(x=>x.studentId),...monthlyLedger.map(x=>x.studentId)])];
   const students=ids.length?await db.student.findMany({where:{id:{in:ids}},select:{id:true,fullName:true,studentCode:true}}):[];
   const map=new Map(students.map(x=>[x.id,x]));
   const weeklyLeaderboard=weeklyLedger.map(x=>({studentId:x.studentId,xp:x._sum.xp||0,student:map.get(x.studentId)}));
   const monthlyLeaderboard=monthlyLedger.map(x=>({studentId:x.studentId,xp:x._sum.xp||0,student:map.get(x.studentId)}));
-  return NextResponse.json({ok:true,actions,gamification,badges,games:visibleGames,microTasks,weeklyLeaderboard,monthlyLeaderboard,sessions,cohorts});
+  return NextResponse.json({ok:true,actions,gamification,badges,games:visibleGames,weeklyLeaderboard,monthlyLeaderboard,sessions,cohorts});
 }
 
 async function POST__handler(req:Request){

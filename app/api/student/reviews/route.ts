@@ -1,4 +1,4 @@
-import { readJson, withApiErrors } from '@/lib/apiGuard';
+import { HttpError, readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
 import { adaptiveReviewIntervalDays,reviewIntervalReason } from '@/lib/learningEngine';
 
-const schema=z.object({id:z.string(),answer:z.string().min(1)});
+const schema=z.object({id:z.string(),answer:z.string().min(1).max(2000),microSessionId:z.string().optional()});
 
 function normalizeAnswer(v:string){
   return v.toLocaleLowerCase('tr-TR')
@@ -59,6 +59,11 @@ async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const input=await readJson(req, schema);
+  const microSession=input.microSessionId?await db.dailyLog.findFirst({where:{id:input.microSessionId,studentId:user.student.id}}):null;
+  const microMeta=(microSession?.payload||{}) as Record<string,any>;
+  if(input.microSessionId&&(!microSession||microMeta.kind!=='WRONG_1'||microMeta.reviewId!==input.id))throw new HttpError(404,'Mikro tekrar oturumu bulunamadı.');
+  if(input.microSessionId&&microMeta.type==='MICRO_RESULT')return NextResponse.json({ok:true,...microMeta.reviewResult});
+  if(input.microSessionId&&(microMeta.type!=='MICRO_STARTED'||Date.now()-microSession!.createdAt.getTime()>86400000))throw new HttpError(409,'Tekrar oturumunun süresi doldu.');
   const item=await db.reviewQueueItem.findFirst({where:{id:input.id,studentId:user.student.id},include:{question:true}});
   if(!item) return NextResponse.json({error:'Tekrar kaydı bulunamadı.'},{status:404});
   if(item.status==='COMPLETED')return NextResponse.json({error:'Bu tekrar döngüsü zaten tamamlandı.'},{status:409});
@@ -107,6 +112,14 @@ async function POST__handler(req:Request){
     :reviewIntervalReason(adaptiveInput,Number(nextIntervalDays||0));
   if(!completed) due.setDate(due.getDate()+Number(nextIntervalDays||0));
   const row=await db.$transaction(async tx=>{
+    if(microSession){
+      const result={correct,correctAnswer:item.question.correctAnswer,explanation:item.question.explanation,completed,nextIntervalDays,intervalReason,nextDueAt:completed?null:due.toISOString()};
+      const claimed=await tx.dailyLog.updateMany({where:{id:microSession.id,studentId:user.student!.id,payload:{path:['type'],equals:'MICRO_STARTED'}},data:{date:new Date(),payload:{...microMeta,type:'MICRO_RESULT',durationSeconds:Math.min(300,Math.max(1,Math.round((Date.now()-microSession.createdAt.getTime())/1000))),correct:correct?1:0,wrong:correct?0:1,blank:0,total:1,reviewResult:result}}});
+      if(!claimed.count)throw new HttpError(409,'Bu tekrar zaten kaydedildi.');
+    }
+    // Guard against a simultaneous submission through another session or the review page.
+    const locked=await tx.reviewQueueItem.updateMany({where:{id:item.id,studentId:user.student!.id,dueAt:item.dueAt,stepIndex:item.stepIndex,status:item.status},data:{dueAt:due,stepIndex:step,status:completed?'COMPLETED':(Number(nextIntervalDays||0)===0?'DUE':'PENDING')}});
+    if(!locked.count)throw new HttpError(409,'Bu soru başka bir oturumda güncellendi.');
     const updated=await tx.reviewQueueItem.update({where:{id:item.id},data:{
       stepIndex:step,lastCorrect:correct,status:completed?'COMPLETED':(Number(nextIntervalDays||0)===0?'DUE':'PENDING'),
       completedAt:completed?new Date():null,dueAt:due

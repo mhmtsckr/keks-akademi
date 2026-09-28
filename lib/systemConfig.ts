@@ -11,7 +11,7 @@ export type ProductPricing={
   source:'DEFAULT'|'ADMIN';
 };
 
-export const FEATURE_KEYS=['SMART_COACH','ADAPTIVE_RECOMMENDATION','TODAY_PLAN','SMART_NOTIFICATIONS','GAMIFICATION'] as const;
+export const FEATURE_KEYS=['SMART_COACH','ADAPTIVE_RECOMMENDATION','TODAY_PLAN','SMART_NOTIFICATIONS','MICRO_LEARNING','GAMIFICATION'] as const;
 export type FeatureMode='ALL'|'OFF'|'PILOT';
 export type FeatureKey=typeof FEATURE_KEYS[number];
 export type FeatureFlagConfig={
@@ -43,6 +43,11 @@ export const FEATURE_FLAG_DEFINITIONS:Record<FeatureKey,{label:string;descriptio
   SMART_NOTIFICATIONS:{
     label:'Akıllı Bildirimler',
     description:'Yalnız eylem gerektiren tekrar, deneme, plan ve yarım görev sinyallerini gösterir.',
+    defaultMode:'ALL'
+  },
+  MICRO_LEARNING:{
+    label:'Günlük Mikro Öğrenme',
+    description:'3–5 dakikalık alıştırmalar, kişisel yanlış tekrarı ve haftalık sonuç takibi.',
     defaultMode:'ALL'
   },
   GAMIFICATION:{
