@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { isFeatureEnabled } from '@/lib/systemConfig';
 import { aggregateInterventionPatterns,buildImpactHeadline,classifyCoachDecision,interventionKindLabel,summarizeImpactWindow,type InterventionKind } from '@/lib/coachInterventionImpact';
 import { rankGoalContributionAreas,targetNetFromBenchmarks } from '@/lib/goalDistance';
+import { buildActionWhy,buildPracticeWhy,buildReviewWhy } from '@/lib/planExplanation';
 
 export type MasteryStatus='NEW'|'LEARNING'|'REINFORCING'|'DURABLE'|'RISKY';
 
@@ -857,7 +858,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   const todayKey=trDateKey(now);
   const today=utcDateFromKey(todayKey);
   const tomorrow=addDays(today,1);
-  const [capacity,mastery,student,actions,reviews,incompleteTopics,lastExam]=await Promise.all([
+  const [capacity,mastery,student,actions,reviews,incompleteTopics,lastExam,recentPractice]=await Promise.all([
     buildCapacityProfile(studentId,now),
     buildTopicMastery(studentId,now),
     db.student.findUnique({where:{id:studentId},select:{profile:true}}),
@@ -876,7 +877,13 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
       select:{id:true,examType:true,subject:true,topic:true,updatedAt:true},
       orderBy:{updatedAt:'asc'},take:60
     }),
-    db.examResult.findFirst({where:{studentId},orderBy:{createdAt:'desc'},select:{createdAt:true,examType:true}})
+    db.examResult.findFirst({where:{studentId},orderBy:{createdAt:'desc'},select:{createdAt:true,examType:true}}),
+    db.practiceLog.findMany({
+      where:{studentId,date:{gte:new Date(now.getTime()-90*86400000)}},
+      select:{subject:true,topic:true,total:true,correct:true,date:true},
+      orderBy:{date:'desc'},
+      take:160
+    })
   ]);
 
   const masteryMap=new Map(mastery.map(x=>[x.subject+'|'+x.topic,x]));
@@ -902,11 +909,11 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
       completed:done,
       why:done
         ?'Bugünkü görev tamamlandı.'
-        :m?.status==='RISKY'
-          ?'Son performans ve tekrar sinyalleri bu görevin bugün yapılmasını destekliyor.'
-          :m?.status==='LEARNING'
-            ?'Konu öğrenme aşamasında olduğu için bugün kısa ve odaklı uygulama gerekiyor.'
-            :'Bugün için atanmış görev.'
+        :buildActionWhy({
+            title:action.title,
+            latestAccuracy:m?.latestTestAccuracy??m?.accuracy??null,
+            masteryStatus:m?.status??null
+          })
     };
     items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
@@ -950,7 +957,11 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
       metricType:'REVIEWS',
       estimatedMinutes:reviewBatch.length*4,
       completed:false,
-      why:'Aralıklı tekrar kuyruğunda süresi gelen kayıtlar tek çalışma bloğunda toplandı.'
+      why:buildReviewWhy({
+        count:reviewBatch.length,
+        sevenDayCount:reviewBatch.filter(x=>x.stepIndex===3).length,
+        subjects:[...new Set(reviewBatch.map(x=>x.question.subject).filter(Boolean))]
+      })
     };
     items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
@@ -987,6 +998,14 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     });
     const alreadyHasQuestionAction=items.some(x=>x.source==='ACTION'&&!x.completed&&x.metricType==='QUESTIONS'&&x.subject===focusTopic.subject&&(x.topic||'Genel/Karma')===focusTopic.topic);
     if(!alreadyHasQuestionAction){
+      const topicPractice=recentPractice
+        .filter(x=>x.subject===focusTopic.subject&&(x.topic||'Genel/Karma')===focusTopic.topic&&x.total>0)
+        .slice(0,2);
+      const recentAccuracies=topicPractice.map(x=>Math.round(x.correct/x.total*100));
+      const matchingDueReviews=reviews.filter(x=>
+        x.question.subject===focusTopic.subject&&
+        (x.question.topic||'Genel/Karma')===focusTopic.topic
+      );
       const item={
         id:'practice:'+focusTopic.subject+'|'+focusTopic.topic,
         source:'PRACTICE' as TodayPlanSource,
@@ -997,7 +1016,15 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
         metricType:'QUESTIONS',
         estimatedMinutes:estimatedTaskMinutes({metricType:'QUESTIONS',targetValue:questionTarget,subject:focusTopic.subject}),
         completed:false,
-        why:'Konu çalışmasının hemen ardından kısa ölçüm yaparak öğrenme durumunu yeniden görmek için.'
+        why:buildPracticeWhy({
+          subject:focusTopic.subject,
+          topic:focusTopic.topic,
+          questionTarget,
+          recentAccuracies,
+          dueReviewCount:matchingDueReviews.length,
+          dueReviewSteps:matchingDueReviews.map(x=>[0,1,3,7,14,28][x.stepIndex]??0),
+          masteryStatus:matchingMastery?.status??null
+        })
       };
       items.push({...item,sequence:todayPlanSequenceRank(item)});
     }
