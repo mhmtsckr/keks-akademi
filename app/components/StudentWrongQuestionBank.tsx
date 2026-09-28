@@ -16,6 +16,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
   const [editing,setEditing]=useState<Record<string,string>>({});
+  const [sets,setSets]=useState<any>(null);
+  const [openSet,setOpenSet]=useState<'weekly'|'monthly'|null>(null);
 
   async function load(){
     const [wr,rr]=await Promise.all([
@@ -23,7 +25,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       fetch('/api/student/reviews',{cache:'no-store'})
     ]);
     const [wj,rj]=await Promise.all([wr.json(),rr.json()]);
-    if(wr.ok)setItems(wj.items||[]);
+    if(wr.ok){setItems(wj.items||[]);setSets(wj.sets||null);}
     if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
   }
   useEffect(()=>{load()},[]);
@@ -99,6 +101,33 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       </div>}
     </div>
 
+    <div className="card">
+      <div className="moduleHeaderRow">
+        <div><div className="moduleEyebrow">KİŞİSEL SORU BANKASI</div><h2>Otomatik tekrar testleri</h2><p className="muted">Yanlış ve işaretlediğin sorular tek havuzda tutulur. KEKS son 7 gün ve son 30 gün için dengeli tekrar setleri hazırlar.</p></div>
+        <span className="pill">{items.length} soru</span>
+      </div>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))'}}>
+        <div className="card" style={{margin:0}}>
+          <strong>Haftalık Yanlışlar Testi</strong>
+          <div className="kpi">{sets?.weekly?.count||0}</div>
+          <p className="muted">Son 7 gündeki yanlışlardan en fazla 10 soru.</p>
+          <button className="btn primary" type="button" disabled={!sets?.weekly?.count} onClick={()=>setOpenSet(openSet==='weekly'?null:'weekly')}>{openSet==='weekly'?'Kapat':'Testi Aç'}</button>
+        </div>
+        <div className="card" style={{margin:0}}>
+          <strong>Aylık Karma Tekrar</strong>
+          <div className="kpi">{sets?.monthly?.count||0}</div>
+          <p className="muted">Son 30 gündeki yanlış + işaretli sorulardan ders dengeli karma set.</p>
+          <button className="btn primary" type="button" disabled={!sets?.monthly?.count} onClick={()=>setOpenSet(openSet==='monthly'?null:'monthly')}>{openSet==='monthly'?'Kapat':'Tekrarı Aç'}</button>
+        </div>
+      </div>
+      {openSet&&<div className="stack" style={{marginTop:16}}>
+        {(sets?.[openSet]?.items||[]).map((q:any,i:number)=><div className="card" key={q.id} style={{margin:0}}>
+          <div className="moduleHeaderRow"><strong>{i+1}. {q.subject} · {q.topic}</strong>{q.reason&&<span className="pill">{q.reason==='MARKED'?'İşaretli':'Yanlış'}</span>}</div>
+          <p>{q.prompt}</p>
+        </div>)}
+      </div>}
+    </div>
+
     <div className="card wrongQuestionUploadCard">
       <div className="moduleHeaderRow">
         <div>
@@ -113,6 +142,10 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         <div className="field">
           <label>Sınav / grup</label>
           <input name="examType" defaultValue={defaultExam} required/>
+        </div>
+        <div className="field">
+          <label>Kayıt nedeni</label>
+          <select name="bankReason"><option value="WRONG">Yanlış yaptım</option><option value="MARKED">Sonra tekrar etmek için işaretledim</option></select>
         </div>
         <div className="field">
           <label>Ders</label>
@@ -155,7 +188,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <div className="wrongQuestionRowBody">
             <div className="wrongQuestionRowHead">
               <div><strong>{q.subject}</strong><span>{q.examType} · {new Date(q.createdAt).toLocaleDateString('tr-TR')}</span></div>
-              <span className="pill">{Math.round((q.classificationConfidence||0)*100)}% konu eşleşmesi</span>
+              <div className="row"><span className="pill">{q.bankReason==='MARKED'?'İşaretli':'Yanlış'}</span><span className="pill">{Math.round((q.classificationConfidence||0)*100)}% konu eşleşmesi</span></div>
             </div>
             <p>{q.prompt}</p>
             <div className="wrongQuestionTopicEdit">
