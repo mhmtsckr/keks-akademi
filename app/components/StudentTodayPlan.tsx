@@ -33,7 +33,7 @@ export function StudentTodayPlan(){
       <div>
         <div className="moduleEyebrow">BUGÜNÜN PLANI</div>
         <h2>{plan.length?plan.length+' görev':'Bugünkü plan tamamlandı'}</h2>
-        <p className="muted">Bugün yalnız bu sırayı takip et. Önce ilk görevi tamamla, sonra bir sonrakine geç.</p>
+        <p className="muted">Bugün yalnız bu sırayı takip et. Her görevin altında “Program neden böyle?” açıklamasından önerinin hangi veriye dayandığını görebilirsin.</p>
       </div>
     </div>
 
@@ -46,6 +46,10 @@ export function StudentTodayPlan(){
               <div className="moduleEyebrow">{index===0?'ŞİMDİ':'SONRA'}</div>
               <strong>{item.title}</strong>
               {taskMeta(item)&&<div className="muted">{taskMeta(item)}</div>}
+              {item.why&&<details style={{marginTop:8}}>
+                <summary><strong>Program neden böyle?</strong></summary>
+                <p className="muted" style={{marginTop:8}}>{item.why}</p>
+              </details>}
             </div>
             <span className="pill">{index+1}</span>
           </div>
