@@ -59,24 +59,27 @@ export async function buildPersonalQuestionBank(studentId:string){
     });
   }
 
-  const inactiveBookmarks=new Set<string>();
+  const latestBookmark=new Map<string,{active:boolean;date:Date}>();
   for(const log of logs){
     const p=record(log.payload);
     if(p.type!=='QUESTION_BOOKMARK'||typeof p.questionId!=='string')continue;
-    if(p.active===false){inactiveBookmarks.add(p.questionId);continue}
-    if(map.has(p.questionId))continue;
-    const q=await db.questionBankItem.findUnique({where:{id:p.questionId}});
-    if(!q)continue;
+    if(latestBookmark.has(p.questionId))continue;
+    latestBookmark.set(p.questionId,{active:p.active!==false,date:log.date});
+  }
+  const activeBookmarkIds=[...latestBookmark.entries()].filter(([,v])=>v.active).map(([id])=>id);
+  const bookmarkedQuestions=activeBookmarkIds.length
+    ?await db.questionBankItem.findMany({where:{id:{in:activeBookmarkIds}}})
+    :[];
+  for(const q of bookmarkedQuestions){
+    if(map.has(q.id))continue;
+    const state=latestBookmark.get(q.id);
+    if(!state?.active)continue;
     const meta=record(q.options);
     map.set(q.id,{
       questionId:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,sourceKind:q.sourceKind,
-      addedAt:log.date,reason:'MARKED',
+      addedAt:state.date,reason:'MARKED',
       imageUrl:typeof meta.imageUrl==='string'?meta.imageUrl:null
     });
-  }
-  for(const id of inactiveBookmarks){
-    const item=map.get(id);
-    if(item?.reason==='MARKED')map.delete(id);
   }
 
   return [...map.values()].sort((a,b)=>b.addedAt.getTime()-a.addedAt.getTime());
