@@ -174,7 +174,8 @@ describe('resourceTracking persistence',()=>{
       pageProgress:14
     });
     expect(result[0].topics).toEqual(['Problemler']);
-    expect(result[0].paceSignal).toContain('sayfa ilerlemesi sınırlı');
+    expect(result[0].paceSignal).toContain('Kaynak kullanımı izlenmeli');
+    expect(result[0].paceSignal).toContain('sayfa ilerlemesi');
     expect(result[0].recentEntries).toHaveLength(4);
   });
 });
