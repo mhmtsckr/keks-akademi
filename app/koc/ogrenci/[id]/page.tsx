@@ -194,12 +194,29 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     <section id="aylik-gelisim" className="section section-anchor">
       <div className="card">
         <div className="moduleHeaderRow"><div><div className="moduleEyebrow">AYLIK GELİŞİM VE DEĞERLENDİRME</div><h2>Davranışsal gelişim ve öğrenci öz değerlendirmesi</h2><p className="muted">Başlangıç eğilim profilinden ayrı olarak süreklilik, odak, görev, tekrar ve öğrenci öz değerlendirmesindeki değişimi takip edin.</p></div><span className="pill">{student.weeklyReflections.length} yakın dönem kayıt</span></div>
-        {student.weeklyReflections.length===0?<p className="muted">Öğrenci henüz haftalık öz değerlendirme göndermedi. Aylık değerlendirme için yeterli veri birikince burada görünür.</p>:<div className="stack">{student.weeklyReflections.map((x:any)=><div className="monthlyCoachReflection" key={x.id}>
-          <div><strong>{new Date(x.weekStart).toLocaleDateString('tr-TR')} haftası</strong><span>Öz puan: {x.selfRating}/5</span></div>
-          <p>{x.bestThing?'Gelişen: '+x.bestThing:'Gelişen alan belirtilmedi.'}</p>
-          <p>{x.biggestChallenge?'Zorlanma: '+x.biggestChallenge:'Zorlanma alanı belirtilmedi.'}</p>
-          {x.nextWeekChange&&<p><strong>Sonraki değişim hedefi:</strong> {x.nextWeekChange}</p>}
-        </div>)}</div>}
+        {student.weeklyReflections.length===0?<p className="muted">Öğrenci henüz haftalık öz değerlendirme göndermedi. Aylık değerlendirme için yeterli veri birikince burada görünür.</p>:<div className="stack">{student.weeklyReflections.map((x:any)=>{
+          const snapshot=(x.systemSnapshot&&typeof x.systemSnapshot==='object'&&!Array.isArray(x.systemSnapshot)?x.systemSnapshot:{}) as any;
+          const comparison=(x.comparison&&typeof x.comparison==='object'&&!Array.isArray(x.comparison)?x.comparison:{}) as any;
+          const alignmentLabel=comparison.alignment==='UYUMLU'?'Öz algı ile davranış verisi uyumlu':comparison.alignment==='KENDINI_YUKSEK_DEGERLENDIRIYOR'?'Öz değerlendirme davranış verisinin üzerinde':comparison.alignment==='KENDINI_DUSUK_DEGERLENDIRIYOR'?'Öz değerlendirme davranış verisinin altında':'Karşılaştırma verisi hazırlanıyor';
+          return <div className="monthlyCoachReflection" key={x.id}>
+            <div className="moduleHeaderRow">
+              <div><strong>{new Date(x.weekStart).toLocaleDateString('tr-TR')} haftası</strong><p className="muted">Öğrencinin öz algısı ile aynı haftanın kayıtlı performansı birlikte gösterilir.</p></div>
+              <span className="pill">{alignmentLabel}</span>
+            </div>
+            <div className="interviewScoreGrid">
+              <div className="briefMetric"><b>{x.selfRating}/5</b><span>Kendine verdiği puan</span></div>
+              <div className="briefMetric"><b>{x.planRealistic??'—'}/5</b><span>Plan gerçekçiliği</span></div>
+              <div className="briefMetric"><b>{snapshot.activeDays??'—'}/7</b><span>Gerçek aktif gün</span></div>
+              <div className="briefMetric"><b>%{snapshot.taskCompletionRate??'—'}</b><span>Gerçek görev tamamlama</span></div>
+              <div className="briefMetric"><b>{snapshot.focusMinutes??'—'} dk</b><span>Kayıtlı odak süresi</span></div>
+            </div>
+            <p><strong>Bu hafta ne iyi gitti?</strong> {x.bestThing||'Belirtilmedi.'}</p>
+            <p><strong>En çok ne zorladı?</strong> {x.biggestChallenge||'Belirtilmedi.'}</p>
+            <p><strong>Plan gerçekçi miydi?</strong> {x.planRealistic?x.planRealistic+'/5':'Belirtilmedi.'}</p>
+            <p><strong>Kendine kaç puan verdi?</strong> {x.selfRating}/5</p>
+            <p><strong>Gelecek hafta neyi değiştirmek istiyor?</strong> {x.nextWeekChange||'Belirtilmedi.'}</p>
+          </div>
+        })}</div>}
       </div>
     </section>
 

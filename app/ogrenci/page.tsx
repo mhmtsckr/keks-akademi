@@ -1,4 +1,5 @@
 import { StudentMicroLearning } from '@/app/components/StudentMicroLearning';
+import { StudentWeeklyReflection } from '@/app/components/StudentWeeklyReflection';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForms';
@@ -138,6 +139,10 @@ export default async function StudentPage() {
 
     {featureFlags.MICRO_LEARNING&&<section id="mikro-ogrenme" className="section section-anchor"><StudentMicroLearning/></section>}
 
+    <section id="haftalik-oz-degerlendirme" className="section section-anchor">
+      <StudentWeeklyReflection/>
+    </section>
+
     {featureFlags.SMART_NOTIFICATIONS&&<section id="akilli-bildirimler" className="section section-anchor">
       <StudentSmartNotifications/>
     </section>}
@@ -155,6 +160,7 @@ export default async function StudentPage() {
           ...(featureFlags.SMART_NOTIFICATIONS?[{href:'#akilli-bildirimler',title:'Akıllı Bildirimler',description:'Yalnız eylem gerektiren çalışma sinyalleri'}]:[]),
           {href:'#genel-bakis',title:'Kontrol Merkezi',description:'Bugünkü durum ve hızlı aksiyonlar'},
           {href:'#gunluk-gorevler',title:'Günlük Görevler',description:'Koç görevleri ve günlük kayıt'},
+          {href:'#haftalik-oz-degerlendirme',title:'Haftalık Öz Değerlendirme',description:'Her pazar 5 kısa soruyla haftanı değerlendir',badge:'PAZAR'},
           {href:'#programlar',title:'Kişisel Planlar',description:'Yıllık, aylık, haftalık ve günlük plan'}
         ]},
         {label:'ÖĞRENME & TEKRAR',description:'Yanlışları kapat, bilgiyi kalıcı hâle getir.',items:[
