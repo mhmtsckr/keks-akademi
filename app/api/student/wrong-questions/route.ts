@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
 import { classifyWrongQuestion } from '@/lib/wrongQuestionClassifier';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
+import { buildPersonalQuestionSets } from '@/lib/personalLearning';
 
 const PRIVATE_PREFIX='STUDENT_WRONG:';
 const patchSchema=z.object({questionId:z.string().min(1),topic:z.string().min(2).max(120)});
@@ -25,7 +26,10 @@ async function GET__handler(){
     orderBy:{createdAt:'desc'},
     take:50
   });
-  return NextResponse.json({ok:true,items:rows.map(q=>{
+  const sets=buildPersonalQuestionSets(rows.map(q=>({
+    id:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,createdAt:q.createdAt,options:q.options
+  })));
+  return NextResponse.json({ok:true,sets,items:rows.map(q=>{
     const m=meta(q.options);
     return {
       id:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,
@@ -34,6 +38,7 @@ async function GET__handler(){
       originalStudentAnswer:typeof m.originalStudentAnswer==='string'?m.originalStudentAnswer:null,
       classificationConfidence:Number(m.classificationConfidence||0),
       classificationMethod:String(m.classificationMethod||''),
+      bankReason:String(m.bankReason||'WRONG'),
       review:q.reviewQueue[0]||null
     };
   })});
@@ -50,6 +55,7 @@ async function POST__handler(req:Request){
   const correctAnswer=String(fd.get('correctAnswer')||'').trim().slice(0,1000);
   const originalStudentAnswer=String(fd.get('originalStudentAnswer')||'').trim().slice(0,1000);
   const explanation=String(fd.get('explanation')||'').trim().slice(0,3000);
+  const bankReason=String(fd.get('bankReason')||'WRONG').toUpperCase()==='MARKED'?'MARKED':'WRONG';
   if(subject.length<2)return NextResponse.json({error:'Ders seçiniz.'},{status:400});
   if(correctAnswer.length<1)return NextResponse.json({error:'Doğru cevabı yazınız.'},{status:400});
 
@@ -89,7 +95,8 @@ async function POST__handler(req:Request){
         uploadId,
         originalStudentAnswer:originalStudentAnswer||null,
         classificationConfidence:classified.confidence,
-        classificationMethod:classified.method
+        classificationMethod:classified.method,
+        bankReason
       },
       correctAnswer,
       explanation:explanation||null,
@@ -109,9 +116,9 @@ async function POST__handler(req:Request){
     item:{
       id:result.q.id,examType,subject,topic:result.q.topic,prompt:result.q.prompt,
       imageUrl:result.imageUrl,classificationConfidence:classified.confidence,
-      classificationMethod:classified.method,dueAt:result.review.dueAt,stepIndex:0
+      classificationMethod:classified.method,bankReason,dueAt:result.review.dueAt,stepIndex:0
     },
-    message:subject+' · '+result.q.topic+' olarak sınıflandırıldı ve 0. gün tekrar görevine eklendi.',
+    message:(bankReason==='MARKED'?'İşaretlenen':'Yanlış')+' soru '+subject+' · '+result.q.topic+' olarak kişisel soru bankasına eklendi ve 0. gün tekrar görevine bağlandı.',
     scheduleDays:REVIEW_DAYS
   });
 }
