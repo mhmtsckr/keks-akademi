@@ -49,6 +49,8 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
       correct:Number(fd.get('correct')||0),wrong:Number(fd.get('wrong')||0),blank:Number(fd.get('blank')||0),
       errorReason:optionalText('errorReason'),
       durationSeconds:optionalNumber('durationSeconds'),
+      subTopic:optionalText('subTopic'),
+      acquisition:optionalText('acquisition'),
       questionType:optionalText('questionType'),
       problemType:optionalText('problemType'),
       activeRecallScore:optionalNumber('activeRecallScore'),
@@ -122,6 +124,8 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
             <div className="field"><label>Boş</label><input name="blank" type="number" min="0" required/></div>
           </div>
           <div className="field"><label>Yanlış nedeni</label><select name="errorReason"><option value="">Sistem belirlesin</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="DIKKAT">Dikkat</option><option value="SORU_KOKU">Soru kökünü yanlış okuma</option><option value="SURE">Süre</option><option value="YONTEM_BILMEME">Yöntem bilmeme</option><option value="UNUTMA">Unutma</option></select><small className="muted">Yanlış varsa nedeni seçebilirsin. Boş bırakırsan KEKS yalnız yeterli performans kanıtı olduğunda otomatik sınıflandırır.</small></div>
+          <div className="field"><label>Alt konu</label><input name="subTopic" placeholder="Örn. Yüzde-Kâr-Zarar"/></div>
+          <div className="field"><label>Kazanım / beceri</label><input name="acquisition" placeholder="Örn. Yüzde artış-azalış ilişkisini problem durumlarında uygular."/></div>
           {(isMath||isTurkish||isLanguage)&&<div className="field"><label>Toplam süre (saniye)</label><input name="durationSeconds" type="number" min="0" max="7200" placeholder="Örn. 900"/></div>}
           {(isTurkish||isLanguage)&&<div className="field"><label>Soru türü</label><input name="questionType" placeholder={isLanguage?'Örn. paragraf / çeviri / cloze':'Örn. ana düşünce / çıkarım / dil bilgisi'}/></div>}
           {isMath&&<div className="field"><label>Problem / soru tipi</label><input name="problemType" placeholder="Örn. yüzde problemi / fonksiyon / sayısal mantık"/></div>}
