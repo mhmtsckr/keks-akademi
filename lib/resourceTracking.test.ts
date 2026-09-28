@@ -24,6 +24,7 @@ vi.mock('@/lib/db',()=>({
 
 import {
   addResourceProgress,
+  assessResourceEfficiency,
   createStudyResource,
   encodeResourceMeta,
   listResourceTracking,
@@ -173,7 +174,59 @@ describe('resourceTracking persistence',()=>{
       pageProgress:14
     });
     expect(result[0].topics).toEqual(['Problemler']);
-    expect(result[0].paceSignal).toContain('sayfa ilerlemesi sınırlı');
+    expect(result[0].paceSignal).toContain('Kaynak kullanımı izlenmeli');
+    expect(result[0].paceSignal).toContain('sayfa ilerlemesi');
     expect(result[0].recentEntries).toHaveLength(4);
+  });
+});
+
+
+describe('resource efficiency assessment',()=>{
+  it('aynı konu çevresinde çok kayıt ve düşük/yerinde sayan doğruluk varsa gözden geçir sinyali üretir',()=>{
+    const entries=[
+      ['2026-09-01',10,12,20,12],
+      ['2026-09-02',12,14,20,12],
+      ['2026-09-03',14,16,20,12],
+      ['2026-09-04',16,18,20,12],
+      ['2026-09-05',18,19,20,12],
+      ['2026-09-06',19,20,20,12],
+      ['2026-09-07',20,21,20,12],
+      ['2026-09-08',21,22,20,12]
+    ].map(([date,pageStart,pageEnd,questions,correct])=>({
+      date:new Date(String(date)+'T10:00:00Z'),
+      topic:'Problemler',
+      pageStart:Number(pageStart),
+      pageEnd:Number(pageEnd),
+      questions:Number(questions),
+      correct:Number(correct),
+      wrong:Number(questions)-Number(correct),
+      blank:0
+    }));
+    const result=assessResourceEfficiency(entries,300);
+    expect(result.status).toBe('REVIEW');
+    expect(result.repeatedTopicShare).toBe(100);
+    expect(result.reasons.some(x=>x.includes('aynı konu'))).toBe(true);
+    expect(result.suggestedCoachAction).toContain('bağımsız kontrol seti');
+  });
+
+  it('yüksek doğruluk ve düzenli ilerlemede gereksiz uzatma sinyali üretmez',()=>{
+    const entries=[
+      ['2026-09-01',1,10,30,25],
+      ['2026-09-03',11,20,30,26],
+      ['2026-09-05',21,30,30,27],
+      ['2026-09-07',31,40,30,27]
+    ].map(([date,pageStart,pageEnd,questions,correct],i)=>({
+      date:new Date(String(date)+'T10:00:00Z'),
+      topic:i<2?'Temel Kavramlar':'Problemler',
+      pageStart:Number(pageStart),
+      pageEnd:Number(pageEnd),
+      questions:Number(questions),
+      correct:Number(correct),
+      wrong:Number(questions)-Number(correct),
+      blank:0
+    }));
+    const result=assessResourceEfficiency(entries,300);
+    expect(result.status).toBe('NORMAL');
+    expect(result.pagesStudied).toBe(40);
   });
 });
