@@ -26,6 +26,8 @@ import { StudentGoalDistance } from '@/app/components/StudentGoalDistance';
 import { buildGoalDistance } from '@/lib/learningEngine';
 import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 import { StudentExamInterventionReport } from '@/app/components/StudentExamInterventionReport';
+import { StudentExamMap } from '@/app/components/StudentExamMap';
+import { buildStudentExamMap } from '@/lib/examMap';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -81,10 +83,11 @@ export default async function StudentPage() {
   });
   if (!student) return null;
 
-  const [featureFlags,goalDistance,examInterventionReport]=await Promise.all([
+  const [featureFlags,goalDistance,examInterventionReport,examMap]=await Promise.all([
     getStudentFeatureSnapshot(student.studentCode),
     buildGoalDistance(student.id),
-    buildLatestExamInterventionReport(student.id)
+    buildLatestExamInterventionReport(student.id),
+    buildStudentExamMap(student.id)
   ]);
   const access = student.testAccesses[0];
   const latestAssessment=student.assessments[0];
@@ -155,6 +158,7 @@ export default async function StudentPage() {
           {href:'#ogrenme-tekrar',title:'Çalışma Teknikleri',description:'Pomodoro, aktif hatırlama, Feynman ve diğer teknikler'}
         ]},
         {label:'AKADEMİK PERFORMANS',description:'Net, konu, doğruluk, kaynak ve hedef gelişimini izle.',items:[
+          {href:'#sinav-haritasi',title:'ÖSYM/MEB Sınav Haritası',description:'Ders → konu → alt konu → kazanım → soru tipi',badge:'YENİ'},
           {href:'#hedef-mesafe',title:'Hedefe Kalan Mesafe',description:'Hedef net farkı, konu açığı ve en yüksek katkı sağlayacak dersler',badge:'YENİ'},
           {href:'#deneme-raporu',title:'Otomatik Deneme Raporu',description:'Değişim, net katkısı/kaybı, süre ve 7 günlük müdahale planı',badge:'OTOMATİK'},
           ...(featureFlags.SMART_COACH?[{href:'#akilli-koc',title:'Akıllı Koç',description:'Hedefe yaklaşma, trend ve haftalık öneriler'}]:[]),
@@ -184,6 +188,10 @@ export default async function StudentPage() {
       />
       <StudentOabtFieldApproval/>
     </section>}
+
+    <section id="sinav-haritasi" className="section section-anchor">
+      <StudentExamMap data={examMap}/>
+    </section>
 
     <section id="hedef-mesafe" className="section section-anchor">
       <StudentGoalDistance data={goalDistance}/>
