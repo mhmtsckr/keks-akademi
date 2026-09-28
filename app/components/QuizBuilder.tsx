@@ -40,6 +40,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
   const [reviews,setReviews]=useState<ReviewItem[]>([]);
   const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [reviewBusy,setReviewBusy]=useState('');
+  const [bookmarked,setBookmarked]=useState<Record<string,boolean>>({});
   const subjects=Object.keys(EXAM_CATALOG[exam]||{});
   const topics=useMemo(()=>((EXAM_CATALOG[exam] as any)?.[subject]||[]) as string[],[exam,subject]);
 
@@ -58,6 +59,18 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Test oluşturulamadı.'));return}
     setQuiz(j.quiz);setQuestions(j.questions);setAnswers({});setMsg('');
+  }
+
+  async function toggleBookmark(questionId:string){
+    const active=!bookmarked[questionId];
+    const r=await fetch('/api/student/personal-question-bank',{
+      method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({action:'bookmark',questionId,active})
+    });
+    const j=await r.json();
+    if(!r.ok)return setMsg('Hata: '+(j.error||'Soru bankası güncellenemedi.'));
+    setBookmarked(x=>({...x,[questionId]:active}));
+    setMsg(active?'Soru kişisel soru bankana eklendi.':'Soru kişisel soru bankasından kaldırıldı.');
   }
 
   async function finish(){
@@ -111,7 +124,13 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
       <button className="btn primary" onClick={build}>Testi Oluştur</button>
     </div>
 
-    {quiz&&<div className="card"><h2>{quiz.title}</h2>{questions.map((q,i)=><article key={q.id} style={{padding:'18px 0',borderBottom:'1px solid var(--line)'}}><strong>{i+1}. {q.prompt}</strong><div className="stack" style={{marginTop:12}}>{Object.entries(q.options).map(([key,val])=><label key={key} style={{display:'flex',gap:10,alignItems:'flex-start'}}><input type="radio" name={q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(a=>({...a,[q.id]:key}))}/><span><strong>{key}</strong>) {val}</span></label>)}</div>{q.officialSourceUrl&&<p><a href={q.officialSourceUrl} target="_blank" rel="noreferrer">Resmî kaynak</a></p>}</article>)}<button className="btn primary" onClick={finish} style={{marginTop:16}}>Testi Bitir ve Sonucu Kaydet</button></div>}
+    {quiz&&<div className="card"><h2>{quiz.title}</h2>{questions.map((q,i)=><article key={q.id} style={{padding:'18px 0',borderBottom:'1px solid var(--line)'}}>
+      <div className="moduleHeaderRow">
+        <strong>{i+1}. {q.prompt}</strong>
+        <button className="btn" type="button" onClick={()=>toggleBookmark(q.id)}>{bookmarked[q.id]?'★ Bankamda':'☆ Soru Bankama Ekle'}</button>
+      </div>
+      <div className="stack" style={{marginTop:12}}>{Object.entries(q.options).map(([key,val])=><label key={key} style={{display:'flex',gap:10,alignItems:'flex-start'}}><input type="radio" name={q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(a=>({...a,[q.id]:key}))}/><span><strong>{key}</strong>) {val}</span></label>)}</div>{q.officialSourceUrl&&<p><a href={q.officialSourceUrl} target="_blank" rel="noreferrer">Resmî kaynak</a></p>}
+    </article>)}<button className="btn primary" onClick={finish} style={{marginTop:16}}>Testi Bitir ve Sonucu Kaydet</button></div>}
 
     <div className="card">
       <div className="moduleHeaderRow">

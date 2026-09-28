@@ -14,6 +14,7 @@ import { StudentDailyTasks } from '@/app/components/StudentDailyTasks';
 import { StudentPreInterview } from '@/app/components/StudentPreInterview';
 import { StudentCommandCenter } from '@/app/components/StudentCommandCenter';
 import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionBank';
+import { StudentPersonalQuestionBank } from '@/app/components/StudentPersonalQuestionBank';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
@@ -207,6 +208,11 @@ export default async function StudentPage() {
         <div className="card"><div className="kpi">{student.studyTechniques.length}</div><div className="muted">Atanmış teknik</div></div>
         <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme kaydı</div></div>
       </div>
+    </section>
+
+    <section id="kisisel-soru-bankasi" className="section section-anchor">
+      <PortalSectionTitle eyebrow="KİŞİSEL ÖĞRENME HAVUZU" title="Kişisel Soru Bankam" description="Yanlış yaptığın ve işaretlediğin sorular tek yerde; haftalık yanlışlar testi ve aylık karma tekrar bu havuzdan oluşturulur."/>
+      <StudentPersonalQuestionBank/>
     </section>
 
     <section id="yanlis-soru-bankasi" className="section section-anchor"><PortalSectionTitle eyebrow="0–1–3–7–14–28 TEKRAR MOTORU" title="Günlük Yanlış Soru Bankam" description="Her derste yanlış yaptığın soruyu yükle. KEKS konuyu otomatik sınıflandırır ve tekrar gününde soruyu yeniden görev olarak önüne getirir."/><StudentWrongQuestionBank defaultExam={defaultWrongExam}/></section>
