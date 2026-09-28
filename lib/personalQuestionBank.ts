@@ -44,7 +44,7 @@ export async function buildPersonalQuestionBank(studentId:string){
     const meta=record(q.options);
     map.set(q.id,{
       questionId:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,sourceKind:q.sourceKind,
-      addedAt:row.updatedAt,reason:String(q.sourceKind).startsWith('STUDENT_WRONG:')?'UPLOADED_WRONG':'WRONG',
+      addedAt:row.createdAt,reason:String(q.sourceKind).startsWith('STUDENT_WRONG:')?'UPLOADED_WRONG':'WRONG',
       imageUrl:typeof meta.imageUrl==='string'?meta.imageUrl:null
     });
   }
