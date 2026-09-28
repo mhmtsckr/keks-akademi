@@ -8,6 +8,10 @@ import { REVIEW_DAYS } from '@/lib/smartCoach';
 
 const schema=z.object({answers:z.record(z.string(),z.string().nullable())});
 
+function normalizeAnswer(v:string){
+ return v.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+}
+
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
  const user=await requireRole(['STUDENT']);
  if(!user.student) return NextResponse.json({error:'Öğrenci profili bulunamadı.'},{status:400});
@@ -21,7 +25,12 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
  const wrongIds:string[]=[];
  for(const q of qs){
    const ans=input.answers[q.id];
-   if(!ans) blank++; else if(ans===q.correctAnswer) correct++; else { wrong++; wrongIds.push(q.id); }
+   if(!ans) blank++;
+   else {
+     const isPrivate=String(q.sourceKind).startsWith('STUDENT_WRONG:');
+     const isCorrect=isPrivate?normalizeAnswer(ans)===normalizeAnswer(q.correctAnswer):ans===q.correctAnswer;
+     if(isCorrect)correct++; else { wrong++; wrongIds.push(q.id); }
+   }
  }
  const net=calcNet(correct,wrong);
  const attempt=await db.practiceQuizAttempt.create({data:{quizId:quiz.id,studentId:user.student.id,answers:input.answers,correct,wrong,blank,net}});
