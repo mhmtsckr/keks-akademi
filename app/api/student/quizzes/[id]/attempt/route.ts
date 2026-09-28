@@ -42,7 +42,9 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
      update:{sourceAttemptId:attempt.id,stepIndex:0,dueAt,status:'DUE',lastCorrect:false,completedAt:null}
    });
  }
- await db.practiceLog.create({data:{studentId:user.student.id,examType:quiz.examType,subject:quiz.subject,topic:quiz.topic,correct,wrong,blank,total:correct+wrong+blank,net}});
+ if(quiz.examType!=='KISISEL'){
+   await db.practiceLog.create({data:{studentId:user.student.id,examType:quiz.examType,subject:quiz.subject,topic:quiz.topic,correct,wrong,blank,total:correct+wrong+blank,net}});
+ }
  const report=await db.studentReport.create({data:{
    studentId:user.student.id,
    title:'Otomatik Test Performans Raporu · '+quiz.title,
