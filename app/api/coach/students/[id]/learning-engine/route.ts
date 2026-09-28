@@ -15,6 +15,7 @@ import {
   buildCoachStudentAlignmentSignals
 } from '@/lib/learningEngine';
 import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
+import { listResourceTracking } from '@/lib/resourceTracking';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -33,7 +34,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   const student=await ownedStudent(id,user.coachProfile.id);
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
 
-  const [capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment]=await Promise.all([
+  const [capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,resources]=await Promise.all([
     buildCapacityProfile(id),
     buildTopicMastery(id),
     buildSubjectLearningModels(id),
@@ -42,10 +43,19 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     buildStudentTimeline(id),
     buildLatestExamInterventionReport(id),
     buildExamKnowledgeMap(id),
-    buildCoachStudentAlignmentSignals(id)
+    buildCoachStudentAlignmentSignals(id),
+    listResourceTracking(id)
   ]);
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment});
+  const resourceSummary={
+    total:resources.length,
+    review:resources.filter((x:any)=>x.efficiency?.status==='REVIEW'),
+    watch:resources.filter((x:any)=>x.efficiency?.status==='WATCH'),
+    normal:resources.filter((x:any)=>x.efficiency?.status==='NORMAL'),
+    resources
+  };
+
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,resourceTracking:resourceSummary});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
