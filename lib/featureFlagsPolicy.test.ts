@@ -21,6 +21,7 @@ describe('feature flag rollout controls',()=>{
       'ADAPTIVE_RECOMMENDATION',
       'TODAY_PLAN',
       'SMART_NOTIFICATIONS',
+      'MICRO_LEARNING',
       'GAMIFICATION'
     ]);
     expect(read('app/api/admin/feature-flags/route.ts')).toContain('z.enum(FEATURE_KEYS)');

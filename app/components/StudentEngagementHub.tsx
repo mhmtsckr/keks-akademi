@@ -53,20 +53,6 @@ export function StudentEngagementHub(){
       <div className="card leaderboardCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">LİDERLİK TABLOSU</div><h2>XP Sıralaması</h2></div><div className="row"><button className={'btn '+(leaderMode==='weekly'?'primary':'')} onClick={()=>setLeaderMode('weekly')}>Haftalık</button><button className={'btn '+(leaderMode==='monthly'?'primary':'')} onClick={()=>setLeaderMode('monthly')}>Aylık</button></div></div>{leaderboard.slice(0,10).map((x:any,i:number)=><div className="leaderRow" key={x.studentId}><b>{i+1}</b><span>{x.student?.fullName||'Öğrenci'}</span><strong>{x.xp} XP</strong></div>)}</div>
     </div>
 
-    <div className="card">
-      <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">3–5 DAKİKALIK MİKRO ÖĞRENME</div><h2>Boş vaktin varsa şimdi bir mini görev seç</h2><p className="muted">KEKS sınav grubuna, zayıf konuya ve bekleyen yanlış tekrarlarına göre kısa görevler önerir.</p></div>
-        <span className="pill">{data.microTasks?.length||0} görev</span>
-      </div>
-      {!data.microTasks?.length?<p className="muted">Mikro görev üretmek için biraz daha çalışma verisi gerekli.</p>:<div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))'}}>
-        {data.microTasks.map((x:any)=><div className="card" key={x.key} style={{margin:0}}>
-          <div className="moduleHeaderRow"><strong>{x.title}</strong><span className="pill">{x.durationMinutes} dk</span></div>
-          <p>{x.description}</p>
-          {(x.subject||x.topic)&&<small className="muted">{x.subject||''}{x.topic?' · '+x.topic:''}</small>}
-        </div>)}
-      </div>}
-    </div>
-
     <div className="card"><div className="moduleEyebrow">TEST / DENEME ANALİTİĞİ</div><h2>Eksik haritasına veri ekle</h2><form className="analyticsEntryForm" onSubmit={analytics}><input name="examType" placeholder="TYT / AYT / LGS" required/><input name="subject" placeholder="Ders" required/><input name="topic" placeholder="Konu" required/><input name="questionType" placeholder="Soru tipi"/><input name="correct" type="number" min="0" placeholder="Doğru" required/><input name="wrong" type="number" min="0" placeholder="Yanlış" required/><input name="blank" type="number" min="0" placeholder="Boş" required/><input name="avgSeconds" type="number" min="0" placeholder="Ort. sn"/><input name="examDate" type="date"/><button className="btn primary">Kaydet</button></form></div>
 
     <div className="card">

@@ -1,3 +1,4 @@
+import { microSummary, microDayStart } from '@/lib/microLearning';
 import { notFound } from 'next/navigation';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -44,6 +45,8 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     }
   });
   if(!student) return notFound();
+  const microLogs=await db.dailyLog.findMany({where:{studentId:student.id,date:{gte:new Date(microDayStart().getTime()-6*86400000)},payload:{path:['type'],equals:'MICRO_RESULT'}},orderBy:{date:'desc'}});
+  const micro=microSummary(microLogs);
   const goalProgress=await computeGoalProgress(student.id);
   const coachAssessments=student.assessments.filter(a=>['PLAN_ADMIN_APPROVED','COMPLETED'].includes(String(((a.report||{}) as any).workflowStatus||'')));
   const gradeLabel=(student.gradeLevel||'').toLocaleUpperCase('tr-TR');
@@ -85,6 +88,11 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
       {showAgsStudyArithmetic&&<a href="#ags-calisma-aritmetigi">AGS / ÖABT</a>}
     </nav>
 
+    <section id="mikro-ogrenme" className="section card">
+      <div className="moduleEyebrow">SON 7 GÜN · MİKRO ÖĞRENME</div><h2>Kısa çalışmaların sonuçları</h2>
+      <p>{micro.sessions} tamamlanan oturum · {micro.minutes} dakika · {micro.correct} doğru / {micro.wrong} yanlış / {micro.blank} boş</p>
+      {!micro.sessions?<p className="muted">Henüz tamamlanan mini çalışma yok.</p>:<><p className="muted">{micro.wrong+micro.blank>micro.correct?'Görüşmede yanlış ve boş kalan mini alıştırmaların çözümünü birlikte kontrol edin.':'Kısa çalışmaları ana program ve gecikmiş tekrarlarla birlikte değerlendirin.'}</p>{micro.recent.map((x,i)=><p key={i}>{new Date(x.date).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'})} · {x.title} · {x.correct}/{x.total} doğru</p>)}</>}
+    </section>
     <section className="section">
       <PanelNavigator roleLabel={'Koç · '+student.fullName} groups={[
         {label:'PROFİL & DEĞERLENDİRME',description:'Öğrenciyi tanı, yönetici onaylı verileri birlikte yorumla.',items:[
