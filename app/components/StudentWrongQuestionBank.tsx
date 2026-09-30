@@ -128,7 +128,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       </div>}
     </div>
 
-    <div className="card wrongQuestionUploadCard">
+    <div id="yanlis-ekle" className="card wrongQuestionUploadCard section-anchor">
       <div className="moduleHeaderRow">
         <div>
           <div className="moduleEyebrow">GÜNLÜK YANLIŞ SORU BANKASI</div>
