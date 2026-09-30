@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { ParentLoginForm } from '@/app/components/AuthForms';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
+import { StudentDevelopmentTimeline } from '@/app/components/StudentDevelopmentTimeline';
 
 function trDay(v: Date) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -172,6 +173,12 @@ export default async function ParentPage() {
           description: 'Destek verin; baskı ve mikro-yönetim üretmeyin.',
           items: [
             {
+              href: '#gelisim-zaman-cizelgesi',
+              title: '1 Yıllık Gelişim Zaman Çizelgesi',
+              description: 'Değerlendirme, plan, deneme gelişimi, hedef ve koç görüşmeleri',
+              badge: 'YENİ'
+            },
+            {
               href: '#veli-rehberligi',
               title: 'Bu Hafta Ne Yapmalı?',
               description: 'Yapılacaklar, kaçınılacaklar ve koç notu'
@@ -215,6 +222,8 @@ export default async function ParentPage() {
         <p>Bu ekranda yanlış soru listesi, ham test cevapları, ayrıntılı deneme dökümü veya ders bazlı hata takibi gösterilmez. Bu veriler öğrenci ve koçun çalışma alanında kalır.</p>
       </div>
     </section>
+
+    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="PARENT" compact/></section>
 
     <section id="veli-rehberligi" className="section section-anchor">
       <PortalSectionTitle
