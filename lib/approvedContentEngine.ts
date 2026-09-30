@@ -93,7 +93,9 @@ export function generateApprovedLearningContent(type:LearningContentType,text:st
   const payload=builders[type](safe,level);
   const raw=JSON.stringify(payload);
   const unique=new Set(raw.toLocaleLowerCase('tr-TR').match(/[a-zçğıöşü]{5,}/gi)||[]).size;
-  const qualityScore=Math.round(Math.min(100,35+Math.min(30,raw.length/180)+Math.min(25,unique/2)+Math.min(10,(payload.items?.length||0))));
+  const itemCount=payload.items?.length||0;
+  const structureBonus=itemCount>=4?8:0;
+  const qualityScore=Math.round(Math.min(100,35+Math.min(30,raw.length/180)+Math.min(25,unique/2)+Math.min(10,itemCount)+structureBonus));
   const quality=evaluateLearningContent(type,payload,qualityScore);
   return {title:'KEKS · '+type+' · '+level,payload,qualityScore,quality};
 }
