@@ -892,3 +892,42 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .timelineSummaryGrid{grid-template-columns:repeat(2,1fr)}
   .developmentTimelineTop{flex-direction:column}
 }
+
+
+/* Live monthly KEKS development report */
+.monthlyDevelopmentReport{display:grid;gap:16px}
+.monthlyReportHero{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.monthlyReportHero>div,.monthlyReportMetrics>.card{display:grid;gap:4px}
+.monthlyReportHero>div{padding:12px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.03)}
+.monthlyReportHero span,.monthlyReportMetrics span{font-size:12px;color:#91a5ba}
+.monthlyReportHero strong{font-size:15px;color:#f3f7fb}
+.monthlyReportSection{display:grid;gap:10px}
+.monthlyReportMetrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.monthlyReportMetrics>.card{padding:14px}
+.monthlyReportMetrics b{font-size:24px;color:#efc96d}
+.monthlyReportMetrics small{font-size:11px;color:#91a5ba}
+.monthlyReportWarning{border-color:rgba(240,124,108,.35)!important;background:rgba(240,124,108,.06)!important}
+.monthlyReportWarning b{color:#f39a8e!important}
+.monthlyReportTwoColumn{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.monthlyReportList{display:grid;gap:10px;margin-top:12px}
+.monthlyReportList>div{padding:12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}
+.monthlyReportList p{margin:4px 0 0;color:#9fb0c2}
+.monthlyNextGoals ol{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:10px}
+.monthlyNextGoals li{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:10px;padding:12px;border-radius:12px;background:rgba(230,189,92,.06);border:1px solid rgba(230,189,92,.14)}
+.monthlyNextGoals li span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e6bd5c;color:#071a30;font-weight:900}
+.monthlyReportPrintShell .monthlyDevelopmentReport{margin-top:16px}
+@media(max-width:900px){
+  .monthlyReportMetrics{grid-template-columns:repeat(2,1fr)}
+  .monthlyReportTwoColumn{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .monthlyReportHero{grid-template-columns:1fr}
+  .monthlyReportMetrics{grid-template-columns:1fr 1fr}
+}
+@media print{
+  .monthlyDevelopmentReport{gap:10px}
+  .monthlyDevelopmentReport .card{break-inside:avoid;box-shadow:none}
+  .monthlyReportMetrics{grid-template-columns:repeat(3,1fr)}
+  .monthlyReportTwoColumn{grid-template-columns:1fr 1fr}
+  .monthlyReportPrintShell{max-width:none!important}
+}
