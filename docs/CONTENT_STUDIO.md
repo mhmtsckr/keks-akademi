@@ -167,3 +167,19 @@ Sadece visibleToParent=true içerikleri görür.
 8. İçerik kullanım analitiği: açılma, tamamlama, test sonucu, kart tekrar sayısı.
 9. GeneratedContent → PracticeQuiz aktarımı.
 10. Ses/video için öğrenci ilerleme kaydı.
+
+
+## 11. KEKS İçerik Motoru V2 — Onay ve kalite hattı
+Yeni akış:
+1. Kaynak yüklenir ve metin çıkarılır.
+2. Kaynak `PENDING_APPROVAL` durumunda bekler.
+3. Koç veya yönetici kaynağı onaylar; yalnız `APPROVED` kaynak üretime girebilir.
+4. Sistem öğrencinin eğitim düzeyini dikkate alarak içerik üretir.
+5. Desteklenen yeni formatlar: `MINI_TEST`, `MATCHING`, `FILL_BLANK`, `ACTIVE_RECALL`, `MICRO_GAME`.
+6. OPENAI_API_KEY + OPENAI_MODEL varsa onaylı kaynaktan AI taslağı üretilir; yoksa deterministik güvenli üretici kullanılır.
+7. Çıktı kaynak uyumu, yapı bütünlüğü, tamamlık ve düzey uygunluğu üzerinden kalite filtresinden geçer.
+8. Kalite puanı 75 altındaysa içerik `QUALITY_FAILED` olur ve yayınlanamaz.
+9. Kaliteyi geçen içerik `QUALITY_REVIEW` durumunda kalır; öğrenciye otomatik açılmaz.
+10. Koç/yönetici önizleme yaptıktan sonra insan onayıyla `PUBLISHED` durumuna geçirir.
+
+Temel güvenlik ilkesi: **AI üretimi doğrudan öğrenciye gitmez.**

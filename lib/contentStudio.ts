@@ -49,7 +49,7 @@ export async function extractDocumentText(bytes:Uint8Array,mimeType:string,fileN
 }
 
 export function sha256(bytes:Uint8Array){return crypto.createHash('sha256').update(bytes).digest('hex');}
-export function contentFingerprint(uploadHash:string,type:string,studentId:string|null){return crypto.createHash('sha256').update([uploadHash,type,studentId||'none'].join('|')).digest('hex');}
+export function contentFingerprint(uploadHash:string,type:string,studentId:string|null,variant='v1'){return crypto.createHash('sha256').update([uploadHash,type,studentId||'none',variant].join('|')).digest('hex');}
 
 function sentences(text:string){
   return cleanText(text).split(/(?<=[.!?])\s+|\n+/).map(x=>x.trim()).filter(x=>x.length>=18);
