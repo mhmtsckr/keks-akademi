@@ -15,6 +15,7 @@ import { CoachSessionWorkflow } from '@/app/components/CoachSessionWorkflow';
 import { CoachPreInterviewSummary } from '@/app/components/CoachPreInterviewSummary';
 import { AgsStudyArithmetic } from '@/app/components/AgsStudyArithmetic';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
+import { StudentDevelopmentTimeline } from '@/app/components/StudentDevelopmentTimeline';
 import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { CoachLearningIntelligence } from '@/app/components/CoachLearningIntelligence';
@@ -119,6 +120,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
           {href:'#teknikler',title:'Teknik Kullanımı',description:student.techniqueSessions.length+' yakın dönem teknik oturumu'}
         ]},
         {label:'RAPORLAMA & PAYLAŞIM',description:'Aylık gelişimi, raporları ve veli erişimini yönet.',items:[
+          {href:'#gelisim-zaman-cizelgesi',title:'1 Yıllık Gelişim Zaman Çizelgesi',description:'Kayıttan hedef ve koç görüşmelerine kadar kronolojik yolculuk',badge:'YENİ'},
           {href:'#aylik-gelisim',title:'Aylık Gelişim',description:student.weeklyReflections[0]?'Öz değerlendirme verisi hazır':'Veri birikimi bekleniyor'},
           {href:'#raporlar',title:'Raporlar & Kütüphane',description:student.reports.length+' rapor · '+ordinaryLibraryItems.length+' kütüphane kaydı'},
           {href:'#veli',title:'Veli Erişimi',description:student.parentProfiles.length+' aktif veli erişimi'}
@@ -128,6 +130,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
         ]}]:[])
       ]}/>
     </section>
+    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="COACH"/></section>
     <section id="learning-engine" className="section section-anchor"><CoachLearningIntelligence studentId={student.id}/></section>
     <section id="ogrenci-koc-uyumu" className="section section-anchor"><CoachStudentAlignmentSignals studentId={student.id}/></section>
     <section id="plan-simulatoru" className="section section-anchor"><CoachPlanSimulator studentId={student.id}/></section>
