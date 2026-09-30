@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { ParentLoginForm } from '@/app/components/AuthForms';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
+import { MonthlyDevelopmentReport } from '@/app/components/MonthlyDevelopmentReport';
 import { StudentDevelopmentTimeline } from '@/app/components/StudentDevelopmentTimeline';
 
 function trDay(v: Date) {
@@ -173,6 +174,12 @@ export default async function ParentPage() {
           description: 'Destek verin; baskı ve mikro-yönetim üretmeyin.',
           items: [
             {
+              href: '#aylik-keks-gelisim-raporu',
+              title: 'Aylık KEKS Gelişim Raporu',
+              description: 'Akademik gelişim, süreklilik, tekrar ve gelecek ay hedefleri',
+              badge: 'CANLI'
+            },
+            {
               href: '#gelisim-zaman-cizelgesi',
               title: '1 Yıllık Gelişim Zaman Çizelgesi',
               description: 'Değerlendirme, plan, deneme gelişimi, hedef ve koç görüşmeleri',
@@ -223,7 +230,7 @@ export default async function ParentPage() {
       </div>
     </section>
 
-    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="PARENT" compact/></section>
+    <section id="aylik-keks-gelisim-raporu" className="section section-anchor"><MonthlyDevelopmentReport studentId={student.id} audience="PARENT"/></section>\n\n    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="PARENT" compact/></section>
 
     <section id="veli-rehberligi" className="section section-anchor">
       <PortalSectionTitle
