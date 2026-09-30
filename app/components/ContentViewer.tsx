@@ -26,12 +26,28 @@ export function ContentViewer({type,payload,contentId,canTrack=false}:{type:stri
     const u=new SpeechSynthesisUtterance(text);u.lang='tr-TR';u.rate=0.95;window.speechSynthesis.speak(u);
   }
 
-  if(type==='FLASHCARDS') return <div className="stack"><div className="grid">{items.map((x:any,i:number)=><div key={i} className="card" style={{minHeight:170}}><button onClick={()=>setFlipped(f=>({...f,[i]:!f[i]}))} style={{all:'unset',cursor:'pointer',display:'block',width:'100%'}}><span className="pill">Kart {i+1}</span><h3>{flipped[i]?'Cevap':'Soru'}</h3><p>{flipped[i]?x.back:x.front}</p></button>{flipped[i]&&<div className="row"><button className="btn" onClick={()=>{const next={...cardRatings,[i]:'EASY'};setCardRatings(next);saveProgress({cardRatings:next,seen:Object.keys(flipped).length})}}>Kolaydı</button><button className="btn" onClick={()=>{const next={...cardRatings,[i]:'HARD'};setCardRatings(next);saveProgress({cardRatings:next,seen:Object.keys(flipped).length})}}>Tekrar Et</button></div>}</div>)}</div>{progressMsg&&<div className="notice">{progressMsg}</div>}</div>;
+  if(type==='FLASHCARDS'||type==='ACTIVE_RECALL') return <div className="stack"><div className="grid">{items.map((x:any,i:number)=><div key={i} className="card" style={{minHeight:170}}><button onClick={()=>setFlipped(f=>({...f,[i]:!f[i]}))} style={{all:'unset',cursor:'pointer',display:'block',width:'100%'}}><span className="pill">Kart {i+1}</span><h3>{flipped[i]?'Cevap':'Soru'}</h3><p>{flipped[i]?x.back:x.front}</p></button>{flipped[i]&&<div className="row"><button className="btn" onClick={()=>{const next={...cardRatings,[i]:'EASY'};setCardRatings(next);saveProgress({cardRatings:next,seen:Object.keys(flipped).length})}}>Kolaydı</button><button className="btn" onClick={()=>{const next={...cardRatings,[i]:'HARD'};setCardRatings(next);saveProgress({cardRatings:next,seen:Object.keys(flipped).length})}}>Tekrar Et</button></div>}</div>)}</div>{progressMsg&&<div className="notice">{progressMsg}</div>}</div>;
 
-  if(type==='QUIZ') {
+  if(type==='QUIZ'||type==='MINI_TEST') {
     const correctCount=items.reduce((n:number,q:any,i:number)=>n+(answers[i]===q.correctAnswer?1:0),0);
     const score=items.length?Math.round((correctCount/items.length)*100):0;
     return <div className="stack">{items.map((q:any,i:number)=><div className="card" key={i}><strong>{i+1}. {q.prompt}</strong><div className="stack" style={{marginTop:10}}>{Object.entries(q.options||{}).map(([k,v]:any)=><label key={k} className="row"><input type="radio" name={'q'+i} checked={answers[i]===k} onChange={()=>setAnswers(a=>({...a,[i]:k}))}/><span><strong>{k})</strong> {v}</span></label>)}</div>{result&&<p className={answers[i]===q.correctAnswer?'notice':'notice error'}>{answers[i]===q.correctAnswer?'Doğru':'Doğru cevap: '+q.correctAnswer} · {q.explanation}</p>}</div>)}<button className="btn primary" onClick={()=>{setResult('done');saveProgress({answers,correct:correctCount,total:items.length},score,true)}}>Testi Bitir ve Kaydet</button>{result&&<div className="notice"><strong>Puan: %{score}</strong><p>{correctCount}/{items.length} doğru</p></div>}{progressMsg&&<div className="notice">{progressMsg}</div>}</div>;
+  }
+
+
+  if(type==='MATCHING') {
+    const pairs=payload?.pairs||[];
+    return <div className="stack"><div className="grid">{pairs.map((x:any,i:number)=><div className="card" key={i}><span className="pill">Eşleştirme {i+1}</span><h3>{x.left}</h3><p>{x.right}</p></div>)}</div></div>;
+  }
+
+  if(type==='FILL_BLANK') {
+    const fillItems=payload?.items||[];
+    return <div className="stack">{fillItems.map((x:any,i:number)=><div className="card" key={i}><span className="pill">Boşluk {i+1}</span><p><strong>{x.prompt}</strong></p><details><summary>Cevabı göster</summary><p>{x.answer}</p>{x.hint&&<p className="muted">{x.hint}</p>}</details></div>)}</div>;
+  }
+
+  if(type==='MICRO_GAME') {
+    const rounds=payload?.rounds||[];
+    return <div className="stack">{rounds.map((x:any,i:number)=><div className="card" key={i}><span className="pill">{x.points||10} puan</span><h3>Tur {i+1}</h3><p>{x.challenge}</p><details><summary>Cevabı göster</summary><p>{x.answer}</p></details></div>)}</div>;
   }
 
   if(type==='SLIDES') return <div className="stack"><div className="card" style={{minHeight:320}}><span className="pill">{index+1} / {slides.length}</span><h1>{slides[index]?.title}</h1><ul>{(slides[index]?.bullets||[]).map((b:string,i:number)=><li key={i} style={{margin:'10px 0'}}>{b}</li>)}</ul><p className="muted">{slides[index]?.notes}</p></div><div className="row"><button className="btn" onClick={()=>{const n=Math.max(0,index-1);setIndex(n);saveProgress({index:n})}}>Önceki</button><button className="btn primary" onClick={()=>{const n=Math.min(slides.length-1,index+1);setIndex(n);saveProgress({index:n},undefined,n===slides.length-1)}}>Sonraki</button></div></div>;
