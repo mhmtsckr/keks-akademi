@@ -1,4 +1,6 @@
 import { getKeksMonthlyProduct } from '@/lib/monthlyProduct';
+import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
+import { KEKS_CORE_SENTENCE } from '@/lib/keksCore';
 
 export const dynamic='force-dynamic';
 
@@ -85,7 +87,7 @@ export default async function Home() {
             </svg>
           </div>
           <div className="homeAcademy">AKADEMİ</div>
-          <p className="homeTagline">Eğitsel eğilim, çalışma davranışı ve akademik performans verileriyle kişiye özel planlama ve sürekli koçluk takibi.</p>
+          <p className="homeTagline">{KEKS_CORE_SENTENCE}</p>
           <div className="homeActions">
             <a className="homeBtn homeBtnGold" href="/ogrenci">Öğrenci Girişi</a>
             <a className="homeBtn homeBtnGhost" href="/koc">Koç Paneli</a>
@@ -138,6 +140,8 @@ export default async function Home() {
         <div><strong>3 Panel</strong><span>öğrenci · koç · veli</span></div>
       </div>
     </section>
+
+    <section className="homeCoreSection"><KeksCoreLoop/></section>
 
     <section id="ozellikler" className="homeFeatures">
       <div className="homeFeature homeFeatureLarge">
