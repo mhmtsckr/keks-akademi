@@ -4,7 +4,7 @@ export type MonthlyReportAudience='STUDENT'|'COACH'|'PARENT';
 
 type Period={start:Date;end:Date;label:string;key:string};
 
-function monthPeriod(base:Date,offset=0):Period{
+export function monthPeriod(base:Date,offset=0):Period{
   // Türkiye sabit UTC+3 kullanır. Ay sınırlarını İstanbul yerel saatine göre UTC'ye çeviriyoruz.
   const shifted=new Date(base.getTime()+3*3600000);
   const y=shifted.getUTCFullYear();
@@ -26,7 +26,7 @@ function round(v:number,d=1){
   const p=10**d;
   return Math.round(v*p)/p;
 }
-function examNet(payload:unknown){
+export function monthlyExamNet(payload:unknown){
   const p=obj(payload);
   return n(p.net)??n(p.totalNet)??n(p.score);
 }
@@ -113,7 +113,7 @@ export async function buildMonthlyDevelopmentReport(
 
   const currentExams=inPeriod(student.examResults,current,'createdAt');
   const previousExams=inPeriod(student.examResults,previous,'createdAt');
-  const examValues=(rows:typeof currentExams)=>rows.map(x=>examNet(x.payload)).filter((x):x is number=>x!=null);
+  const examValues=(rows:typeof currentExams)=>rows.map(x=>monthlyExamNet(x.payload)).filter((x):x is number=>x!=null);
   const currentExamAvg=avg(examValues(currentExams));
   const previousExamAvg=avg(examValues(previousExams));
 
