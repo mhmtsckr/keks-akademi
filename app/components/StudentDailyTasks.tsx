@@ -57,7 +57,7 @@ export function StudentDailyTasks(){
           <div><div className="moduleEyebrow">{isToday?'BUGÜNÜN GÖREVLERİ':'GÖREV GÜNÜ'}</div><h2>{new Date(key+'T12:00:00+03:00').toLocaleDateString('tr-TR',{weekday:'long',day:'2-digit',month:'long'})}</h2></div>
           {isToday&&<span className="pill">Son kayıt 23.00</span>}
         </div>
-        <div className="dailyTaskGrid">{list.map((a:any)=><div className={'dailyTaskCard '+(a.submission?.late?'late':'')} key={a.id}>
+        <div className="dailyTaskGrid">{list.map((a:any,index:number)=><div id={isToday&&index===list.findIndex((x:any)=>!x.submission)?'ilk-bekleyen-gorev':undefined} className={'dailyTaskCard '+(a.submission?.late?'late':'')} key={a.id}>
           <div className="dailyTaskTitle">
             <div><strong>{a.title}</strong><span>{a.subject||'Ders'}{a.topic?' · '+a.topic:''}</span></div>
             {a.submission?.late?<span className="lateAlarm">KIRMIZI ALARM</span>:a.submission?<span className="doneBadge">KAYDEDİLDİ</span>:a.planSource==='TOPIC_REVIEW_01371428'?<span className="doneBadge">KONU TEKRARI</span>:null}
