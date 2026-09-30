@@ -48,7 +48,7 @@ export async function buildWeeklyPerformanceSnapshot(studentId: string, now = ne
         submission: { select: { submittedAt: true } }
       }
     }),
-    db.techniqueSession.findMany({
+    db.techniquePracticeSession.findMany({
       where: {
         studentId,
         createdAt: { gte: weekStart, lt: weekEndExclusive }
