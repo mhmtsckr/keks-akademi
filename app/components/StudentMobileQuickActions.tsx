@@ -30,8 +30,9 @@ export function StudentMobileQuickActions({examTypes}:{examTypes:string[]}){
     };
   },[]);
 
-  function go(id:string){
-    document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+  function go(id:string,fallback?:string){
+    const target=document.getElementById(id)|| (fallback?document.getElementById(fallback):null);
+    target?.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
   async function install(){
@@ -62,7 +63,7 @@ export function StudentMobileQuickActions({examTypes}:{examTypes:string[]}){
     </div>}
 
     <nav className="studentMobileDock" aria-label="Mobil hızlı işlemler">
-      <button type="button" onClick={()=>go('gunluk-gorevler')}><b>✓</b><span>Görev</span></button>
+      <button type="button" onClick={()=>go('ilk-bekleyen-gorev','gunluk-gorevler')}><b>✓</b><span>Görev</span></button>
       <button type="button" onClick={()=>go('yanlis-ekle')}><b>↺</b><span>Yanlış</span></button>
       <button type="button" onClick={()=>setShowExam(true)}><b>＋</b><span>Deneme</span></button>
     </nav>
