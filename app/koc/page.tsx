@@ -13,6 +13,7 @@ import { CoachMorningBrief } from '@/app/components/CoachMorningBrief';
 import { CoachInterventionLearning } from '@/app/components/CoachInterventionLearning';
 import { CoachCohortAnalytics } from '@/app/components/CoachCohortAnalytics';
 import { CoachQualityOperations } from '@/app/components/CoachQualityOperations';
+import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -125,6 +126,8 @@ export default async function CoachPage() {
     meta={<><span>{students.length} öğrenci</span><span>Kişisel takip</span><span>Akıllı uyarılar</span></>}
     wide
   >
+    <section className="section"><KeksCoreLoop compact/></section>
+
     <section id="morning-brief" className="section section-anchor">
       <CoachMorningBrief/>
     </section>
