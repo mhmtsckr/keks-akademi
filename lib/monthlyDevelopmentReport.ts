@@ -134,15 +134,17 @@ export async function buildMonthlyDevelopmentReport(
   const currentFocus=focus(currentTechnique);
   const previousFocus=focus(previousTechnique);
 
-  const activeDays=(period:Period,practice:typeof currentPractice,actions:typeof currentActions,technique:typeof currentTechnique)=>{
+  const activeDays=(practice:typeof currentPractice,actions:typeof currentActions,technique:typeof currentTechnique)=>{
     const set=new Set<string>();
     practice.forEach(x=>set.add(dayKey(x.date)));
     actions.forEach(x=>x.submission&&set.add(dayKey(x.submission.submittedAt)));
     technique.forEach(x=>x.activeSeconds>0&&set.add(dayKey(x.createdAt)));
     return set.size;
   };
-  const currentActiveDays=activeDays(current,currentPractice,currentActions,currentTechnique);
-  const previousActiveDays=activeDays(previous,previousPractice,previousActions,previousTechnique);
+  const currentActiveDays=activeDays(currentPractice,currentActions,currentTechnique);
+  const previousActiveDays=activeDays(previousPractice,previousActions,previousTechnique);
+  const elapsedDays=Math.max(1,Math.ceil((Math.min(baseDate.getTime(),current.end.getTime())-current.start.getTime())/86400000));
+  const continuityFloor=Math.max(4,Math.floor(elapsedDays*0.4));
 
   const currentReviews=student.reviewQueue.filter(x=>x.completedAt&&x.completedAt>=current.start&&x.completedAt<current.end);
   const previousReviews=student.reviewQueue.filter(x=>x.completedAt&&x.completedAt>=previous.start&&x.completedAt<previous.end);
@@ -178,7 +180,7 @@ export async function buildMonthlyDevelopmentReport(
   if(currentExamAvg!=null&&previousExamAvg!=null&&currentExamAvg-previousExamAvg>=3){
     strongAreas.unshift({title:'Deneme performansı',detail:`Aylık ortalama ${previousExamAvg} → ${currentExamAvg} · +${round(currentExamAvg-previousExamAvg,1)} net`});
   }
-  if(currentTaskCompletion>=75&&currentTaskCompletion-previousTaskCompletion>=10){
+  if(currentActions.length>=3&&previousActions.length>=3&&currentTaskCompletion>=75&&currentTaskCompletion-previousTaskCompletion>=10){
     strongAreas.push({title:'Çalışma davranışı',detail:`Görev tamamlama %${previousTaskCompletion} → %${currentTaskCompletion}`});
   }
 
@@ -187,7 +189,7 @@ export async function buildMonthlyDevelopmentReport(
     .forEach(x=>interventionAreas.push({title:x.subject,detail:`Bu ay doğruluk %${x.currentAcc} · ${x.currentQuestions} soru`,priority:100-(x.currentAcc||0)}));
   if(overdueReviews>=3)interventionAreas.push({title:'Tekrar disiplini',detail:`${overdueReviews} gecikmiş tekrar bulunuyor.`,priority:95});
   if(currentActions.length>=3&&currentTaskCompletion<60)interventionAreas.push({title:'Görev sürekliliği',detail:`Bu ay görev tamamlama %${currentTaskCompletion}.`,priority:90});
-  if(currentActiveDays<8)interventionAreas.push({title:'Çalışma sürekliliği',detail:`Bu ay ${currentActiveDays} farklı günde kayıtlı çalışma var.`,priority:85});
+  if(elapsedDays>=10&&currentActiveDays<continuityFloor)interventionAreas.push({title:'Çalışma sürekliliği',detail:`Bu ay ${currentActiveDays} farklı günde kayıtlı çalışma var.`,priority:85});
   if(currentFocus>0&&previousFocus>0&&currentFocus<previousFocus*0.7)interventionAreas.push({title:'Odak süresi',detail:`Kayıtlı odak süresi ${previousFocus} dk → ${currentFocus} dk.`,priority:80});
 
   interventionAreas.sort((a,b)=>b.priority-a.priority);
