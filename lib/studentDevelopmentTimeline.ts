@@ -158,11 +158,11 @@ export async function buildStudentDevelopmentTimeline(
     to:now,
     events:visible,
     summary:{
-      assessmentCount:student.assessments.length,
-      planCount:student.plans.length,
-      examCount:student.examResults.length,
-      sessionCount:student.coachingSessions.length,
-      targetCount:student.targets.length,
+      assessmentCount:visible.filter(x=>x.kind==='ASSESSMENT').length,
+      planCount:visible.filter(x=>x.kind==='PLAN').length,
+      examCount:visible.filter(x=>x.kind==='EXAM').length,
+      sessionCount:visible.filter(x=>x.kind==='SESSION').length,
+      targetCount:visible.filter(x=>x.kind==='TARGET').length,
       netChange
     }
   };
