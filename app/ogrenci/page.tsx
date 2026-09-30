@@ -18,6 +18,7 @@ import { StudentCommandCenter } from '@/app/components/StudentCommandCenter';
 import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionBank';
 import { StudentPersonalQuestionBank } from '@/app/components/StudentPersonalQuestionBank';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
+import { StudentDevelopmentTimeline } from '@/app/components/StudentDevelopmentTimeline';
 import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { StudentOabtFieldApproval } from '@/app/components/StudentOabtFieldApproval';
@@ -182,6 +183,7 @@ export default async function StudentPage() {
           {href:'#kocluk-oyunlastirma',title:'Koçluk & Oyunlaştırma',description:'Aksiyon, seans, XP, rozet ve mikro tekrar'}
         ]}]:[]),
         {label:'RAPORLAR & KAYITLAR',description:'Geçmiş çalışmalar, denemeler ve koç raporları.',items:[
+          {href:'#gelisim-zaman-cizelgesi',title:'Gelişim Zaman Çizelgem',description:'Son bir yıllık KEKS yolculuğunu kronolojik gör',badge:'YENİ'},
           {href:'#kayitlar-raporlar',title:'Kayıtlar & Raporlar',description:'Çalışma geçmişi, denemeler, raporlar ve kütüphane'}
         ]},
         {label:'TEST & DEĞERLENDİRME',description:'KEKS aylık değerlendirme ürünleri.',items:[
@@ -221,6 +223,8 @@ export default async function StudentPage() {
         <div className="card"><div className="kpi">{student.examResults.length}</div><div className="muted">Deneme kaydı</div></div>
       </div>
     </section>
+
+    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="STUDENT"/></section>
 
     <section id="kisisel-soru-bankasi" className="section section-anchor">
       <PortalSectionTitle eyebrow="KİŞİSEL ÖĞRENME HAVUZU" title="Kişisel Soru Bankam" description="Yanlış yaptığın ve işaretlediğin sorular tek yerde; haftalık yanlışlar testi ve aylık karma tekrar bu havuzdan oluşturulur."/>
