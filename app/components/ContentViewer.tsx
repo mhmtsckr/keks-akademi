@@ -26,7 +26,12 @@ export function ContentViewer({type,payload,contentId,canTrack=false}:{type:stri
     const u=new SpeechSynthesisUtterance(text);u.lang='tr-TR';u.rate=0.95;window.speechSynthesis.speak(u);
   }
 
-  if(type==='FLASHCARDS'||type==='ACTIVE_RECALL') return <div className="stack"><div className="grid">{items.map((x:any,i:number)=><div key={i} className="card" style={{minHeight:170}}><button onClick={()=>setFlipped(f=>({...f,[i]:!f[i]}))} style={{all:'unset',cursor:'pointer',display:'block',width:'100%'}}><span className="pill">Kart {i+1}</span><h3>{flipped[i]?'Cevap':'Soru'}</h3><p>{flipped[i]?x.back:x.front}</p></button>{flipped[i]&&<div className="row"><button className="btn" onClick={()=>{const next={...cardRatings,[i]:'EASY'};setCardRatings(next);saveProgress({cardRatings:next,seen:Object.keys(flipped).length})}}>Kolaydı</button><button className="btn" onClick={()=>{const next={...cardRatings,[i]:'HARD'};setCardRatings(next);saveProgress({cardRatings:next,seen:Object.keys(flipped).length})}}>Tekrar Et</button></div>}</div>)}</div>{progressMsg&&<div className="notice">{progressMsg}</div>}</div>;
+  if(type==='FLASHCARDS') return <div className="stack"><div className="grid">{items.map((x:any,i:number)=><div key={i} className="card" style={{minHeight:170}}><button onClick={()=>setFlipped(f=>({...f,[i]:!f[i]}))} style={{all:'unset',cursor:'pointer',display:'block',width:'100%'}}><span className="pill">Kart {i+1}</span><h3>{flipped[i]?'Cevap':'Soru'}</h3><p>{flipped[i]?x.back:x.front}</p></button>{flipped[i]&&<div className="row"><button className="btn" onClick={()=>{const next={...cardRatings,[i]:'EASY'};setCardRatings(next);saveProgress({cardRatings:next,seen:Object.keys(flipped).length})}}>Kolaydı</button><button className="btn" onClick={()=>{const next={...cardRatings,[i]:'HARD'};setCardRatings(next);saveProgress({cardRatings:next,seen:Object.keys(flipped).length})}}>Tekrar Et</button></div>}</div>)}</div>{progressMsg&&<div className="notice">{progressMsg}</div>}</div>;
+
+  if(type==='ACTIVE_RECALL') {
+    const recallItems=payload?.items||[];
+    return <div className="stack"><div className="grid">{recallItems.map((x:any,i:number)=><div key={i} className="card"><span className="pill">Aktif Hatırlama {i+1}</span><h3>{x.prompt}</h3><details><summary>Kaynak cevabı göster</summary><p>{x.answer}</p>{x.selfCheck&&<p className="muted">{x.selfCheck}</p>}</details></div>)}</div></div>;
+  }
 
   if(type==='QUIZ'||type==='MINI_TEST') {
     const correctCount=items.reduce((n:number,q:any,i:number)=>n+(answers[i]===q.correctAnswer?1:0),0);
