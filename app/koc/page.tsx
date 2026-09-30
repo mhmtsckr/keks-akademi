@@ -12,6 +12,7 @@ import { AccountSecurity } from '@/app/components/AccountSecurity';
 import { CoachMorningBrief } from '@/app/components/CoachMorningBrief';
 import { CoachInterventionLearning } from '@/app/components/CoachInterventionLearning';
 import { CoachCohortAnalytics } from '@/app/components/CoachCohortAnalytics';
+import { CoachQualityOperations } from '@/app/components/CoachQualityOperations';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -137,6 +138,7 @@ export default async function CoachPage() {
         {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[
           {href:'#morning-brief',title:'Morning Brief',description:'Bugün müdahale gerektiren öğrenciler',badge:'BUGÜN'},
           {href:'#intervention-learning',title:'Müdahale Etkisi',description:'Koçluk kararlarının performans değişimleriyle ilişkisi'},
+          {href:'#koc-kalite',title:'Koç Kalite Sistemi',description:'Geri dönüş, müdahale, tekrar takibi ve rapor operasyonları',badge:'YENİ'},
           {href:'#kohort-analitigi',title:'Kohort & Grup Analitiği',description:'Tekrar, gelişim, aktivite ve görüşme kümeleri',badge:'YENİ'},
           {href:'#koc-komuta',title:'Koç Komuta Merkezi',description:'Takip sinyalleri, seanslar ve geciken aksiyonlar'}
         ]},
@@ -150,6 +152,10 @@ export default async function CoachPage() {
           {href:'#ogrencilerim',title:'Öğrencilerim',description:'Öncelik, tekrar, plan ve aktivite durumunu birlikte gör'}
         ]}
       ]}/>
+    </section>
+
+    <section id="koc-kalite" className="section section-anchor">
+      <CoachQualityOperations coachId={user.coachProfile.id}/>
     </section>
 
     <section id="kohort-analitigi" className="section section-anchor">
