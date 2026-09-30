@@ -865,3 +865,30 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .dailyTaskCard{scroll-margin-top:16px}
   #yanlis-ekle{scroll-margin-top:16px}
 }
+
+
+/* Student annual development timeline */
+.studentDevelopmentTimeline{overflow:hidden}
+.timelineSummaryGrid{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin:18px 0}
+.timelineSummaryGrid>div{padding:14px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);display:grid;gap:3px}
+.timelineSummaryGrid b{font-size:22px;color:#f1cd72}
+.timelineSummaryGrid span{font-size:12px;color:#91a5ba}
+.timelineSummaryGrid .positive b{color:#85d9b5}
+.developmentTimelineList{list-style:none;margin:8px 0 0;padding:0}
+.developmentTimelineItem{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;position:relative}
+.developmentTimelineRail{position:relative;display:flex;justify-content:center}
+.developmentTimelineRail:after{content:"";position:absolute;top:30px;bottom:-8px;width:1px;background:rgba(255,255,255,.12)}
+.developmentTimelineItem:last-child .developmentTimelineRail:after{display:none}
+.developmentTimelineRail span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#0d2a49;border:1px solid rgba(232,188,88,.35);color:#efc96d;font-size:12px;z-index:1}
+.developmentTimelineItem.positive .developmentTimelineRail span{border-color:rgba(94,211,160,.45);color:#8be0bd}
+.developmentTimelineBody{padding:0 0 18px}
+.developmentTimelineTop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.developmentTimelineTop>div{display:grid;gap:3px}
+.developmentTimelineTop small{color:#6f8399;font-size:11px}
+.developmentTimelineTop strong{color:#f6f8fb;font-size:16px}
+.developmentTimelineBody p{margin:6px 0 0;color:#a4b4c5;line-height:1.55}
+.studentDevelopmentTimeline.compact .developmentTimelineBody p{font-size:13px}
+@media(max-width:760px){
+  .timelineSummaryGrid{grid-template-columns:repeat(2,1fr)}
+  .developmentTimelineTop{flex-direction:column}
+}
