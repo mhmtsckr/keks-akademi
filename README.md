@@ -58,3 +58,6 @@ Production yayını yalnız TypeScript, birim/kapsam, PostgreSQL entegrasyon tes
 ## Raporlama
 
 KEKS raporu “Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması” olarak sunulur. Psikolojik tanı veya kesin kişilik tipi iddiasında bulunmaz.
+
+
+<!-- CI retrigger marker: 2026-09-30 -->

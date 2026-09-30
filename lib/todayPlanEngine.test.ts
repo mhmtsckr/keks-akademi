@@ -29,9 +29,10 @@ describe('Bugünün Planı motoru',()=>{
     expect(dailyPracticeQuestionTarget({questionCapacity:80,accuracy:45})).toBe(10);
   });
 
-  it('öğrenci ekranında algoritmik ayrıntıları göstermez',()=>{
+  it('öğrenci ekranında açıklanabilir plan gerekçesini gösterir ama ham algoritmik ayrıntıları göstermez',()=>{
     const ui=read('app/components/StudentTodayPlan.tsx');
-    expect(ui).not.toContain('Program neden böyle?');
+    expect(ui).toContain('Program neden böyle?');
+    expect(ui).toContain('item.why');
     expect(ui).not.toContain('KEKS planı hangi veriye göre hazırladı?');
     expect(ui).not.toContain('GERÇEK KAPASİTE');
     expect(ui).not.toContain('Hedef mesafesi');
@@ -70,10 +71,10 @@ describe('Bugünün Planı motoru',()=>{
     expect(engine).toContain('readTodayLearningPlan');
   });
 
-  it('öğrenci paneli yeni gün planını arka planda POST ile otomatik hazırlar',()=>{
+  it('öğrenci paneli yeni gün planını arka planda POST ile hazırlar ve gerekçeyi görünür kılar',()=>{
     const ui=read('app/components/StudentTodayPlan.tsx');
     expect(ui).toContain("fetch('/api/student/today',{method:'POST'");
-    expect(ui).not.toContain('why');
+    expect(ui).toContain('item.why');
     expect(ui).not.toContain('capacity');
     expect(ui).not.toContain('masteryFocus');
   });
