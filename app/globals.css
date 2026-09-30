@@ -931,3 +931,22 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .monthlyReportTwoColumn{grid-template-columns:1fr 1fr}
   .monthlyReportPrintShell{max-width:none!important}
 }
+
+
+/* Coach operational quality */
+.coachQualityPanel{overflow:hidden}
+.coachQualityGrid{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:12px;margin:18px 0}
+.coachQualityMetric{padding:16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.coachQualityMetric.good{border-color:rgba(94,211,160,.28)}
+.coachQualityMetric.watch{border-color:rgba(239,201,109,.3)}
+.coachQualityMetric.action{border-color:rgba(255,120,120,.32)}
+.coachQualityMetric.no_data{opacity:.75}
+.coachQualityMetricTop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.coachQualityMetricTop small{color:#8297ab}
+.coachQualityValue{display:block;font-size:28px;margin:14px 0 5px;color:#f2cd73}
+.coachQualityMetric h3{margin:0 0 8px}
+.coachQualityMetric p{margin:0 0 10px;color:#a4b4c5;line-height:1.5;font-size:13px}
+.coachQualityMetric details{margin-top:8px}
+.coachQualityMetric details summary{cursor:pointer;font-size:12px;font-weight:800}
+@media(max-width:1200px){.coachQualityGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.coachQualityGrid{grid-template-columns:1fr}}
