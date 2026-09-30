@@ -40,7 +40,7 @@ async function POST__handler(req:Request){
   let extractionError='';
   try{extractedText=await extractDocumentText(bytes,file.type||'application/octet-stream',file.name)}catch(e:any){extractionError=e?.message||'Metin çıkarma başarısız.'}
   const analysis=analyzeSource(extractedText,file.name);
-  const status=extractedText?'READY':(file.type.startsWith('image/')?'NEEDS_VISION':'NEEDS_REVIEW');
+  const status=extractedText?'PENDING_APPROVAL':(file.type.startsWith('image/')?'NEEDS_VISION':'NEEDS_REVIEW');
   const row=await db.contentUpload.create({data:{
     studentId,ownerUserId:user.id,fileName:file.name,mimeType:file.type||'application/octet-stream',fileSize:file.size,
     fileData:bytes,sha256:hash,extractedText:extractedText||null,category:'AUTO',isQuestionSource:analysis.isQuestionSource,status
