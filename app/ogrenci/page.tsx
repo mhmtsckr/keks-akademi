@@ -30,6 +30,7 @@ import { buildGoalDistance } from '@/lib/learningEngine';
 import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 import { StudentExamInterventionReport } from '@/app/components/StudentExamInterventionReport';
 import { StudentExamMap } from '@/app/components/StudentExamMap';
+import { StudentMobileQuickActions } from '@/app/components/StudentMobileQuickActions';
 import { buildStudentExamMap } from '@/lib/examMap';
 
 function pretty(v: unknown) {
@@ -133,6 +134,8 @@ export default async function StudentPage() {
     meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel&&<span>{adultExamGroup?'Sınav grubu: ':'Düzey: '}{studentGroupLabel}</span>}<span>{student.plans.length} aktif program</span></>}
     wide
   >
+    <StudentMobileQuickActions examTypes={[...allowedExams]}/>
+
     {featureFlags.TODAY_PLAN&&<section id="bugunun-plani" className="section section-anchor">
       <StudentTodayPlan/>
     </section>}

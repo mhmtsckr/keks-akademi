@@ -823,3 +823,45 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 
 
 @media(max-width:840px){.oabtApprovalForm{grid-template-columns:1fr}}
+
+
+/* Mobile-first student PWA experience */
+.studentMobileDock{display:none}
+.mobileInstallBanner{display:none}
+.mobileQuickSheet{display:none}
+@media(max-width:720px){
+  .portalContent{padding-bottom:110px}
+  .studentMobileDock{
+    position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);
+    width:min(calc(100% - 24px),460px);z-index:60;display:grid;grid-template-columns:repeat(3,1fr);
+    gap:6px;padding:7px;border:1px solid rgba(255,255,255,.12);border-radius:18px;
+    background:rgba(6,23,42,.96);box-shadow:0 16px 42px rgba(0,0,0,.34);backdrop-filter:blur(16px)
+  }
+  .studentMobileDock button{
+    min-height:58px;border:0;border-radius:13px;background:transparent;color:#e7eef5;
+    display:grid;place-items:center;align-content:center;gap:2px;font:inherit;font-size:12px;font-weight:800
+  }
+  .studentMobileDock button:active{background:rgba(230,181,69,.12)}
+  .studentMobileDock b{font-size:22px;line-height:1;color:#efc96d}
+  .mobileInstallBanner{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    margin:0 0 10px;padding:12px 14px;border:1px solid rgba(230,181,69,.24);
+    background:rgba(230,181,69,.08);border-radius:15px
+  }
+  .mobileInstallBanner>div{display:grid;gap:2px;min-width:0}
+  .mobileInstallBanner span{font-size:12px;color:#98aabd}
+  .mobileQuickSheet{
+    position:fixed;inset:0;z-index:80;display:flex;align-items:flex-end;
+    padding:14px;background:rgba(3,12,23,.62)
+  }
+  .mobileQuickSheetCard{
+    width:100%;max-width:520px;margin:0 auto;padding:18px;border-radius:22px 22px 16px 16px;
+    background:#0a213b;border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 60px rgba(0,0,0,.42)
+  }
+  .mobileQuickSheetCard .field{margin-top:10px}
+  .mobileQuickSheetCard .btn.primary{width:100%;min-height:50px;margin-top:12px}
+  .mobileTodayPriority .card{margin-bottom:0}
+  .dailyTaskGrid{grid-template-columns:1fr!important}
+  .dailyTaskCard{scroll-margin-top:16px}
+  #yanlis-ekle{scroll-margin-top:16px}
+}
