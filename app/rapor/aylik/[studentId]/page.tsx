@@ -28,9 +28,10 @@ export default async function MonthlyReportExportPage({params}:{params:Promise<{
 
   if(!allowed)return notFound();
 
+  const backHref=audience==='STUDENT'?'/ogrenci':audience==='PARENT'?'/veli':('/koc/ogrenci/'+studentId);
   return <main className="shell monthlyReportPrintShell" style={{maxWidth:980}}>
     <div className="row no-print" style={{justifyContent:'space-between',marginBottom:16}}>
-      <button className="btn" type="button" onClick={undefined as never}> </button>
+      <a className="btn" href={backHref}>← Canlı rapora dön</a>
       <PrintButton/>
     </div>
     <article>
