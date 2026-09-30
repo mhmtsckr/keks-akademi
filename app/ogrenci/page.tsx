@@ -19,6 +19,7 @@ import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionB
 import { StudentPersonalQuestionBank } from '@/app/components/StudentPersonalQuestionBank';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { StudentDevelopmentTimeline } from '@/app/components/StudentDevelopmentTimeline';
+import { MonthlyDevelopmentReport } from '@/app/components/MonthlyDevelopmentReport';
 import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { StudentOabtFieldApproval } from '@/app/components/StudentOabtFieldApproval';
@@ -183,6 +184,7 @@ export default async function StudentPage() {
           {href:'#kocluk-oyunlastirma',title:'Koçluk & Oyunlaştırma',description:'Aksiyon, seans, XP, rozet ve mikro tekrar'}
         ]}]:[]),
         {label:'RAPORLAR & KAYITLAR',description:'Geçmiş çalışmalar, denemeler ve koç raporları.',items:[
+          {href:'#aylik-keks-gelisim-raporu',title:'Aylık KEKS Gelişim Raporu',description:'Akademik, davranış, tekrar ve gelecek ay hedefleri',badge:'CANLI'},
           {href:'#gelisim-zaman-cizelgesi',title:'Gelişim Zaman Çizelgem',description:'Son bir yıllık KEKS yolculuğunu kronolojik gör',badge:'YENİ'},
           {href:'#kayitlar-raporlar',title:'Kayıtlar & Raporlar',description:'Çalışma geçmişi, denemeler, raporlar ve kütüphane'}
         ]},
@@ -224,7 +226,7 @@ export default async function StudentPage() {
       </div>
     </section>
 
-    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="STUDENT"/></section>
+    <section id="aylik-keks-gelisim-raporu" className="section section-anchor"><MonthlyDevelopmentReport studentId={student.id} audience="STUDENT"/></section>\n\n    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="STUDENT"/></section>
 
     <section id="kisisel-soru-bankasi" className="section section-anchor">
       <PortalSectionTitle eyebrow="KİŞİSEL ÖĞRENME HAVUZU" title="Kişisel Soru Bankam" description="Yanlış yaptığın ve işaretlediğin sorular tek yerde; haftalık yanlışlar testi ve aylık karma tekrar bu havuzdan oluşturulur."/>
