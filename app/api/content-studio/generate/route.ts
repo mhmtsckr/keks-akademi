@@ -3,10 +3,14 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
-import { contentFingerprint, generateStudioContent, StudioType } from '@/lib/contentStudio';
+import { contentFingerprint } from '@/lib/contentStudio';
+import { generateLearningContent, LearningContentType } from '@/lib/contentEngine';
 
-const TYPES=['FLASHCARDS','QUIZ','SLIDES','INFOGRAPHIC','AUDIO_SCRIPT','VIDEO_LESSON','SIMILAR_QUESTIONS'] as const;
-const schema=z.object({uploadId:z.string(),types:z.array(z.enum(TYPES)).min(1).max(7)});
+const TYPES=[
+  'FLASHCARDS','QUIZ','SLIDES','INFOGRAPHIC','AUDIO_SCRIPT','VIDEO_LESSON','SIMILAR_QUESTIONS',
+  'MINI_TEST','MATCHING','FILL_BLANK','ACTIVE_RECALL','MICRO_GAME'
+] as const;
+const schema=z.object({uploadId:z.string(),types:z.array(z.enum(TYPES)).min(1).max(12)});
 
 async function authorizedUpload(user:any,id:string){
   const row=await db.contentUpload.findUnique({where:{id},include:{student:true}});
@@ -22,22 +26,40 @@ async function POST__handler(req:Request){
   const input=await readJson(req, schema);
   const upload=await authorizedUpload(user,input.uploadId);
   if(!upload) return NextResponse.json({error:'Kaynak bulunamadı veya erişim yok.'},{status:404});
+  if(upload.status!=='APPROVED') return NextResponse.json({error:'Bu kaynak henüz koç/yönetici tarafından onaylanmadı. İçerik üretimi yalnız onaylı kaynaktan yapılır.'},{status:409});
   if(!upload.extractedText) return NextResponse.json({error:'Bu dosyadan henüz metin çıkarılamadı. Görsel içerik için vision bağlantısı gerekir.'},{status:422});
 
+  const gradeLevel=upload.student?.gradeLevel||null;
   const outputs=[] as any[];
-  for(const type of input.types as StudioType[]){
-    const fp=contentFingerprint(upload.sha256,type,upload.studentId);
+  for(const type of input.types as LearningContentType[]){
+    const fp=contentFingerprint(upload.sha256,type,upload.studentId,'KEKS_CONTENT_ENGINE_V2|'+(gradeLevel||'GENERAL'));
     const old=await db.generatedContent.findUnique({where:{fingerprint:fp}});
     if(old){outputs.push({...old,reused:true});continue}
-    const result=generateStudioContent(type,upload.extractedText);
-    const visible=user.role==='STUDENT';
+
+    const result=await generateLearningContent(type,upload.extractedText,gradeLevel);
     const row=await db.generatedContent.create({data:{
-      uploadId:upload.id,studentId:upload.studentId,createdByUserId:user.id,type,title:result.title,payload:result.payload,
-      fingerprint:fp,status:visible?'PUBLISHED':'DRAFT',qualityScore:result.qualityScore,visibleToStudent:visible,visibleToParent:false
+      uploadId:upload.id,
+      studentId:upload.studentId,
+      createdByUserId:user.id,
+      type,
+      title:result.title,
+      payload:result.payload,
+      fingerprint:fp,
+      status:result.qualityPassed?'QUALITY_REVIEW':'QUALITY_FAILED',
+      qualityScore:result.qualityScore,
+      visibleToStudent:false,
+      visibleToParent:false
     }});
-    outputs.push({...row,reused:false});
+    outputs.push({...row,reused:false,qualityPassed:result.qualityPassed,qualityIssues:result.qualityIssues,generationSource:result.generationSource});
   }
-  return NextResponse.json({ok:true,outputs:outputs.map(x=>({id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,reused:x.reused}))});
+
+  return NextResponse.json({
+    ok:true,
+    outputs:outputs.map(x=>({
+      id:x.id,type:x.type,title:x.title,status:x.status,qualityScore:x.qualityScore,reused:x.reused,
+      qualityPassed:x.status==='QUALITY_REVIEW',qualityIssues:x.qualityIssues||[],generationSource:x.generationSource||null
+    }))
+  });
 }
 
 export const POST = withApiErrors(POST__handler);
