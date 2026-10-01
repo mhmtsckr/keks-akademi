@@ -21,7 +21,7 @@ const ROLE_COPY:Record<string,{left:string[];right:string[]}> = {
 
 export function KeksBrand({compact=false}:{compact?:boolean}){
   return <a href="/" className={compact?'portalBrand portalBrandCompact':'portalBrand'} aria-label="KEKS Akademi ana sayfa">
-    <span className="portalBrandMark"><span className="portalBrandOrbit"/><span className="portalBrandCore">K</span></span>
+    <img className="portalBrandLogo" src="/keks-logo.svg" alt="" />
     <span className="portalBrandText"><strong>KEKS</strong><small>AKADEMİ</small></span>
   </a>;
 }
@@ -85,7 +85,7 @@ export function PortalShell({
             <i/>
           </aside>
 
-          <div className="portalRobot"><RobotMark/></div>
+          <div className="portalRobot"><img className="portalHeroOfficialLogo" src="/keks-logo.svg" alt="KEKS Akademi" /></div>
 
           <div className="portalBannerCenter">
             <span className="portalEyebrow">{eyebrow}</span>
