@@ -1,5 +1,5 @@
 const CACHE='keks-static-v2';
-const STATIC_PATHS=['/icon.svg','/offline.html'];
+const STATIC_PATHS=['/keks-logo.webp','/offline.html'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(STATIC_PATHS)).then(()=>self.skipWaiting()));
