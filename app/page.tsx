@@ -10,7 +10,7 @@ export default async function Home() {
     <section className="homeHero">
       <nav className="homeNav">
         <a href="/" className="homeBrand" aria-label="KEKS Akademi ana sayfa">
-          <img className="homeBrandLogo" src="/icon.svg" alt="" />
+          <img className="homeBrandLogo" src="/keks-logo.webp" alt="" />
           <span><strong>KEKS</strong><small>AKADEMİ</small></span>
         </a>
         <div className="homeNavLinks">
