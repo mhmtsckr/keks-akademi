@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" role="img" aria-labelledby="title desc">
+  <title id="title">MİZA yapay zekâ asistanı logosu</title>
+  <desc id="desc">Lacivert, altın ve gümüş tonlarında teknoloji asistanı amblemi.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1">
+      <stop offset="0" stop-color="#9e6616"/>
+      <stop offset=".45" stop-color="#f4d57c"/>
+      <stop offset="1" stop-color="#b97719"/>
+    </linearGradient>
+    <radialGradient id="face" cx=".4" cy=".3" r=".85">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".58" stop-color="#dbe5ee"/>
+      <stop offset="1" stop-color="#8291a2"/>
+    </radialGradient>
+  </defs>
+  <circle cx="150" cy="150" r="124" fill="#071d36" fill-opacity=".10" stroke="url(#gold)" stroke-width="5"/>
+  <ellipse cx="150" cy="150" rx="124" ry="69" fill="none" stroke="url(#gold)" stroke-width="3" transform="rotate(28 150 150)"/>
+  <ellipse cx="150" cy="150" rx="124" ry="69" fill="none" stroke="url(#gold)" stroke-width="3" transform="rotate(-28 150 150)"/>
+  <circle cx="150" cy="150" r="72" fill="#071d36" stroke="url(#gold)" stroke-width="4"/>
+  <path d="M102 143c7-42 29-65 63-65 44 0 69 31 66 77-3 43-35 69-77 69-39 0-60-27-52-81Z" fill="url(#face)"/>
+  <path d="M108 140c13-32 33-48 60-48 32 0 52 18 59 48-13-10-30-16-51-16-29 0-51 6-68 16Z" fill="#0a2342"/>
+  <circle cx="139" cy="148" r="8" fill="#08213d"/>
+  <circle cx="197" cy="148" r="8" fill="#08213d"/>
+  <path d="M139 174c13 10 25 14 38 14 16 0 29-6 40-18" fill="none" stroke="#08213d" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="79" cy="66" r="9" fill="#efc767"/>
+  <circle cx="233" cy="60" r="9" fill="#efc767"/>
+  <circle cx="276" cy="148" r="8" fill="#efc767"/>
+  <circle cx="70" cy="218" r="8" fill="#efc767"/>
+  <circle cx="226" cy="258" r="8" fill="#efc767"/>
+  <path d="M92 250c41 30 99 36 153 3" fill="none" stroke="url(#gold)" stroke-width="12" stroke-linecap="round"/>
+</svg>
