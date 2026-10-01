@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect,useMemo,useState } from 'react';
+import { MizaLogo } from './MizaLogo';
 
 function pctWidth(v:number|null){return Math.max(0,Math.min(100,v??0))+'%';}
 
@@ -72,8 +73,10 @@ export function SmartCoachDashboard(){
       </div>
 
       <div className="card planActionCard">
-        <div className="moduleEyebrow">HAFTALIK PLAN</div>
-        <h2>Akıllı programı güncelle</h2>
+        <div className="moduleHeaderRow">
+          <div><div className="moduleEyebrow">MİZA · YAPAY ZEKÂ ASİSTANI</div><h2>Akıllı programı güncelle</h2></div>
+          <MizaLogo/>
+        </div>
         <p className="muted">Son doğruluk verileri, tamamlanmamış konular ve tekrar kuyruğuna göre açıklanabilir 7 günlük çalışma akışı oluşturur. Bu öneri kesin karar değildir.</p>
         <button className="btn primary" onClick={savePlan}>Bu Haftanın Programını Oluştur</button>
       </div>
