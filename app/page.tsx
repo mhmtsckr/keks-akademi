@@ -10,10 +10,7 @@ export default async function Home() {
     <section className="homeHero">
       <nav className="homeNav">
         <a href="/" className="homeBrand" aria-label="KEKS Akademi ana sayfa">
-          <span className="homeBrandMark">
-            <span className="homeBrandOrbit" />
-            <span className="homeBrandCore">K</span>
-          </span>
+          <img className="homeBrandLogo" src="/keks-logo.svg" alt="" />
           <span><strong>KEKS</strong><small>AKADEMİ</small></span>
         </a>
         <div className="homeNavLinks">
@@ -38,37 +35,7 @@ export default async function Home() {
           <i />
         </aside>
 
-        <div className="homeMascot" aria-hidden="true">
-          <svg viewBox="0 0 320 320" role="img">
-            <defs>
-              <linearGradient id="gold" x1="0" x2="1">
-                <stop offset="0" stopColor="#b97818"/>
-                <stop offset=".45" stopColor="#f4cc6a"/>
-                <stop offset="1" stopColor="#a86810"/>
-              </linearGradient>
-              <radialGradient id="face" cx=".42" cy=".3" r=".8">
-                <stop offset="0" stopColor="#ffffff"/>
-                <stop offset=".55" stopColor="#dce7f0"/>
-                <stop offset="1" stopColor="#8091a8"/>
-              </radialGradient>
-            </defs>
-            <circle cx="160" cy="160" r="126" fill="none" stroke="url(#gold)" strokeWidth="5"/>
-            <ellipse cx="160" cy="160" rx="126" ry="74" fill="none" stroke="url(#gold)" strokeWidth="3" transform="rotate(28 160 160)"/>
-            <ellipse cx="160" cy="160" rx="126" ry="74" fill="none" stroke="url(#gold)" strokeWidth="3" transform="rotate(-28 160 160)"/>
-            <circle cx="160" cy="160" r="74" fill="#071d37" stroke="url(#gold)" strokeWidth="5"/>
-            <path d="M106 149c8-45 31-70 67-70 46 0 72 34 68 82-4 45-37 73-80 72-41-1-63-29-55-84Z" fill="url(#face)"/>
-            <path d="M112 145c13-35 34-52 63-52 34 0 55 19 63 52-13-12-31-19-54-19-31 0-54 8-72 19Z" fill="#0a2343"/>
-            <path d="M142 171c13 11 25 15 39 15 17 0 31-6 42-19" fill="none" stroke="#0a2343" strokeWidth="7" strokeLinecap="round"/>
-            <circle cx="143" cy="151" r="8" fill="#0a2343"/>
-            <circle cx="205" cy="151" r="8" fill="#0a2343"/>
-            <circle cx="82" cy="72" r="9" fill="#f4cc6a"/>
-            <circle cx="239" cy="63" r="9" fill="#f4cc6a"/>
-            <circle cx="282" cy="155" r="8" fill="#f4cc6a"/>
-            <circle cx="70" cy="220" r="8" fill="#f4cc6a"/>
-            <circle cx="230" cy="263" r="8" fill="#f4cc6a"/>
-            <path d="M94 254c42 31 101 38 157 4" fill="none" stroke="url(#gold)" strokeWidth="13" strokeLinecap="round"/>
-          </svg>
-        </div>
+        <div className="homeMascot"><img className="homeHeroOfficialLogo" src="/keks-logo.svg" alt="KEKS Akademi" /></div>
 
         <div className="homeHeroCopy">
           <div className="homeEyebrow">KAZANDIRAN EĞİTİM VE KOÇLUK SİSTEMİ</div>
