@@ -33,6 +33,7 @@ import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 import { StudentExamInterventionReport } from '@/app/components/StudentExamInterventionReport';
 import { StudentExamMap } from '@/app/components/StudentExamMap';
 import { StudentMobileQuickActions } from '@/app/components/StudentMobileQuickActions';
+import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { buildStudentExamMap } from '@/lib/examMap';
 
 function pretty(v: unknown) {
@@ -137,6 +138,8 @@ export default async function StudentPage() {
     wide
   >
     <StudentMobileQuickActions examTypes={[...allowedExams]}/>
+
+    <section className="section"><KeksCoreLoop compact/></section>
 
     {featureFlags.TODAY_PLAN&&<section id="bugunun-plani" className="section section-anchor">
       <StudentTodayPlan/>

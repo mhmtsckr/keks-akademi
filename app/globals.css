@@ -950,3 +950,25 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .coachQualityMetric details summary{cursor:pointer;font-size:12px;font-weight:800}
 @media(max-width:1200px){.coachQualityGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.coachQualityGrid{grid-template-columns:1fr}}
+
+
+/* Canonical KEKS product loop */
+.homeCoreSection{max-width:1320px;margin:0 auto;padding:8px 32px 60px}
+.keksCoreLoop{border:1px solid rgba(255,255,255,.10);border-radius:22px;padding:24px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.02));overflow:hidden}
+.keksCoreLoopHeader h2{margin:8px 0 10px;font-size:clamp(24px,3vw,38px);line-height:1.15}
+.keksCoreLoopHeader p{margin:0;color:#9eb0c3;line-height:1.65;max-width:980px}
+.keksCoreLoopSteps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:20px}
+.keksCoreLoopStep{position:relative;min-height:118px;padding:14px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);display:grid;align-content:start;gap:5px}
+.keksCoreLoopStep:not(:last-child):after{content:"→";position:absolute;right:-9px;top:44px;color:#d7aa4d;z-index:2;font-weight:900}
+.keksCoreLoopStep b{color:#6f8298;font-size:11px}
+.keksCoreLoopStep span{color:#f0c966;font-weight:900;font-size:15px}
+.keksCoreLoopStep small{color:#98a9ba;line-height:1.45}
+.keksCoreLoop.compact{padding:16px}
+.keksCoreLoop.compact .keksCoreLoopHeader h2{font-size:20px;margin-bottom:0}
+.keksCoreLoop.compact .keksCoreLoopSteps{margin-top:12px}
+.keksCoreLoop.compact .keksCoreLoopStep{min-height:auto;padding:10px}
+.keksCoreLoop.compact .keksCoreLoopStep span{font-size:12px}
+.keksCoreDetailFlow{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:16px}
+@media(max-width:1050px){.keksCoreLoopSteps{grid-template-columns:repeat(4,1fr)}.keksCoreDetailFlow{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.homeCoreSection{padding-left:20px;padding-right:20px}.keksCoreLoopSteps{grid-template-columns:1fr 1fr}.keksCoreLoopStep:not(:last-child):after{display:none}.keksCoreDetailFlow{grid-template-columns:1fr}}
+@media(max-width:430px){.keksCoreLoopSteps{grid-template-columns:1fr}}
