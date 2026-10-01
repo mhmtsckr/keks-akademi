@@ -18,7 +18,7 @@ linear-gradient(135deg,#06182d 0%,#0b2748 53%,#0c1d33 100%);padding:0 5vw 64px;b
 .homeNavLinks a{font-size:14px;color:#d5deeb;padding:10px 12px;border-radius:10px}
 .homeNavLinks a:hover{background:rgba(255,255,255,.06);color:#fff}
 .homeNavCta{border:1px solid rgba(236,190,81,.55)!important;color:#f2ce73!important}
-.homeHeroGrid{max-width:1440px;margin:46px auto 0;display:grid;grid-template-columns:90px 300px minmax(0,1fr) 340px;gap:28px;align-items:center;position:relative;z-index:2}
+.homeHeroGrid{max-width:1320px;margin:46px auto 0;display:grid;grid-template-columns:90px minmax(0,1fr) 340px;gap:28px;align-items:center;position:relative;z-index:2}
 .homeMotto{display:grid;gap:8px;color:#74869d;font-size:12px;letter-spacing:.28em;text-align:center}
 .homeMotto i{height:2px;width:30px;background:#b8872c;margin:8px auto 0}
 .homeMascot{filter:drop-shadow(0 30px 34px rgba(0,0,0,.34))}
@@ -279,7 +279,7 @@ radial-gradient(circle at 5% 28%,rgba(46,111,171,.10),transparent 25%),
 radial-gradient(circle at 65% 14%,rgba(245,197,88,.13),transparent 22%),
 radial-gradient(circle at 18% 44%,rgba(226,174,67,.11),transparent 18%),
 linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
-.portalBanner{display:grid;grid-template-columns:84px 235px minmax(0,1fr) 300px;gap:24px;align-items:center;min-height:360px;padding:22px 0 42px;position:relative;z-index:1}
+.portalBanner{display:grid;grid-template-columns:84px minmax(0,1fr) 300px;gap:24px;align-items:center;min-height:320px;padding:22px 0 42px;position:relative;z-index:1}
 .portalSideWords{display:grid;gap:7px;color:#687b91;font-size:10px;letter-spacing:.23em;text-align:center;align-content:center}
 .portalSideWords i{height:2px;width:28px;background:#b98529;margin:8px auto 0}
 .portalRobot{filter:drop-shadow(0 28px 30px rgba(0,0,0,.32))}
@@ -974,10 +974,7 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 @media(max-width:430px){.keksCoreLoopSteps{grid-template-columns:1fr}}
 
 /* Official KEKS Akademi logo */
-.homeBrandLogo,.portalBrandLogo{display:block;width:50px;height:50px;object-fit:contain;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.homeBrandLogo,.portalBrandLogo{display:block;width:50px;height:50px;object-fit:contain;border-radius:12px;background:#071b31;box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .portalBrandCompact .portalBrandLogo{width:42px;height:42px}
-.homeHeroOfficialLogo,.portalHeroOfficialLogo{display:block;width:100%;height:auto;object-fit:contain;border-radius:24px;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,.28)}
-.homeMascot{filter:none}
-.portalRobot{filter:none}
 @media(max-width:860px){.homeBrandLogo{width:46px;height:46px}}
-@media(max-width:650px){.portalBrandLogo{width:44px;height:44px}.portalHeroOfficialLogo{max-width:180px;margin:0 auto}}
+@media(max-width:650px){.portalBrandLogo{width:44px;height:44px}}
