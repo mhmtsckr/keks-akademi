@@ -972,3 +972,12 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 @media(max-width:1050px){.keksCoreLoopSteps{grid-template-columns:repeat(4,1fr)}.keksCoreDetailFlow{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.homeCoreSection{padding-left:20px;padding-right:20px}.keksCoreLoopSteps{grid-template-columns:1fr 1fr}.keksCoreLoopStep:not(:last-child):after{display:none}.keksCoreDetailFlow{grid-template-columns:1fr}}
 @media(max-width:430px){.keksCoreLoopSteps{grid-template-columns:1fr}}
+
+/* Official KEKS Akademi logo */
+.homeBrandLogo,.portalBrandLogo{display:block;width:50px;height:50px;object-fit:contain;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.portalBrandCompact .portalBrandLogo{width:42px;height:42px}
+.homeHeroOfficialLogo,.portalHeroOfficialLogo{display:block;width:100%;height:auto;object-fit:contain;border-radius:24px;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,.28)}
+.homeMascot{filter:none}
+.portalRobot{filter:none}
+@media(max-width:860px){.homeBrandLogo{width:46px;height:46px}}
+@media(max-width:650px){.portalBrandLogo{width:44px;height:44px}.portalHeroOfficialLogo{max-width:180px;margin:0 auto}}
