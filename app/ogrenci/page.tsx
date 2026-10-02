@@ -9,6 +9,7 @@ import { StudentProgressTools } from '@/app/components/StudentProgressTools';
 import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation';
 import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
 import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
+import { UnsubscribedStudentTechniques } from '@/app/components/UnsubscribedStudentTechniques';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { getStudentFeatureSnapshot } from '@/lib/systemConfig';
@@ -80,18 +81,7 @@ export default async function StudentPage() {
       select:{fullName:true,techniquePreferences:{}}
     });
     if(!techniqueOnlyStudent)return null;
-    return <PortalShell signedIn
-      active="ogrenci"
-      eyebrow="ÇALIŞMA TEKNİKLERİ"
-      title={'Merhaba, '+techniqueOnlyStudent.fullName}
-      description="Aktif abonelik olmadan yalnızca çalışma teknikleri kullanılabilir."
-      wide
-    >
-      <section id="ogrenme-tekrar" className="section section-anchor">
-        <PortalSectionTitle eyebrow="ÇALIŞMA TEKNİKLERİ" title="Ders Çalışma Teknikleri" description="Pomodoro, aktif hatırlama, Feynman ve diğer çalışma tekniklerini uygula."/>
-        <StudyTechniqueLab initialPreferences={techniqueOnlyStudent.techniquePreferences}/>
-      </section>
-    </PortalShell>;
+    return <UnsubscribedStudentTechniques fullName={techniqueOnlyStudent.fullName} initialPreferences={techniqueOnlyStudent.techniquePreferences}/>;
   }
 
   const student = await db.student.findUnique({
