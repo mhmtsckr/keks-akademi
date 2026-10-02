@@ -27,10 +27,13 @@ async function POST__handler(req:Request){
     },{status:failed.invalidated?429:400});
   }
 
-  await createSession(user.id,challenge.remember,req);
+  const sessionCookie=await createSession(user.id,challenge.remember,req);
   await markChallengeUsed('ADMIN_2FA',challenge.jti,user.id);
   await recordLoginSuccess(req,user.email,user.id);
-  return NextResponse.json({ok:true,role:'ADMIN'});
+  const response=NextResponse.json({ok:true,role:'ADMIN'});
+  response.cookies.set(sessionCookie.name,sessionCookie.value,sessionCookie.options);
+  response.headers.set('cache-control','no-store');
+  return response;
 }
 
 export const POST=withApiErrors(POST__handler);

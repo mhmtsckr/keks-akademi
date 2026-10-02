@@ -90,7 +90,8 @@ export async function createSession(userId:string,remember=false,req?:Request){
     .sign(secret());
 
   const jar=await cookies();
-  jar.set(COOKIE,token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge});
+  const cookieOptions={httpOnly:true,sameSite:'lax' as const,secure:process.env.NODE_ENV==='production',path:'/',maxAge};
+  jar.set(COOKIE,token,cookieOptions);
 
   await writeAudit({
     actorUserId:userId,
@@ -106,6 +107,8 @@ export async function createSession(userId:string,remember=false,req?:Request){
       expiresAt:expiresAt.toISOString()
     }
   });
+
+  return {name:COOKIE,value:token,options:cookieOptions};
 }
 
 export async function destroySession(){
