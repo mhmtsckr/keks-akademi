@@ -19,8 +19,6 @@ async function POST__handler(req:Request){
 
   const user=await db.user.findUnique({where:{id:challenge.userId},select:{id:true,email:true,role:true,status:true,updatedAt:true}});
   if(!user||user.role!=='ADMIN'||user.status!=='ACTIVE'||!user.email)return NextResponse.json({error:'Yönetici hesabı girişe uygun değil.'},{status:403});
-  if(user.updatedAt.toISOString()!==challenge.nonce)return NextResponse.json({error:'Hesap güvenliği değişti. Yeniden giriş yapın.'},{status:400});
-
   if(!verifyAuthChallengeCode(challenge,input.code)){
     const failed=await recordChallengeFailure(req,'ADMIN_2FA',challenge.jti,user.id,5);
     return NextResponse.json({
@@ -29,8 +27,8 @@ async function POST__handler(req:Request){
     },{status:failed.invalidated?429:400});
   }
 
-  await markChallengeUsed('ADMIN_2FA',challenge.jti,user.id);
   await createSession(user.id,challenge.remember,req);
+  await markChallengeUsed('ADMIN_2FA',challenge.jti,user.id);
   await recordLoginSuccess(req,user.email,user.id);
   return NextResponse.json({ok:true,role:'ADMIN'});
 }
