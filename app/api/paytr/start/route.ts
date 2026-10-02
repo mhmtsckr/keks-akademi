@@ -7,12 +7,14 @@ import { createPaytrToken,resolvePaytrCredentials } from '@/lib/paytr';
 import { merchantOid } from '@/lib/security';
 import { turkeyMonthWindow } from '@/lib/monthlyAccess';
 import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
+import { STUDENT_PLANS } from '@/lib/subscriptionPlans';
 
 const schema = z.object({
   email: z.string().email(),
   userName: z.string().min(2).max(120),
   userAddress: z.string().min(5).max(400),
   userPhone: z.string().min(7).max(30),
+  planId: z.string().min(2).max(80),
 });
 
 async function POST__handler(req: Request) {
@@ -26,6 +28,8 @@ async function POST__handler(req: Request) {
   }
   const merchantId=paytr.merchantId;
   const input = await readJson(req, schema);
+  const selectedPlan=STUDENT_PLANS.find(p=>p.id===input.planId);
+  if(!selectedPlan||!selectedPlan.price)return NextResponse.json({error:'Geçersiz abonelik planı.'},{status:400});
   const now=new Date();
   const month=turkeyMonthWindow(now);
   const product=await getKeksMonthlyProduct(now);
@@ -60,19 +64,18 @@ async function POST__handler(req: Request) {
     return NextResponse.json({error:existingPayment.status==='PAID'?'Bu ayın ürünü için ödemeniz zaten alınmış.':'Bu ürün için son 45 dakika içinde başlatılmış bir ödeme oturumunuz var. Yeni ödeme başlatılamaz.',product},{status:409});
   }
 
-  const amountKurus = product.priceKurus;
+  const amountKurus = selectedPlan.price * 100;
   const oid = merchantOid();
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
   const testMode=paytr.testMode;
   const noInstallment = '1';
   const maxInstallment = '0';
   const currency = 'TL';
-  const basketJson = JSON.stringify([[product.name, (amountKurus / 100).toFixed(2), 1]]);
+  const basketJson = JSON.stringify([[selectedPlan.name+' · '+selectedPlan.level, (amountKurus / 100).toFixed(2), 1]]);
   const basket = Buffer.from(basketJson).toString('base64');
 
-  await db.payment.create({
-    data: { studentId: user.student.id, merchantOid: oid, amountKurus },
-  });
+  const payment=await db.payment.create({data:{studentId:user.student.id,merchantOid:oid,amountKurus}});
+  await db.subscription.create({data:{userId:user.id,planId:selectedPlan.id,status:'PENDING',provider:'PAYTR',providerReference:oid}});
 
   const paytrToken = createPaytrToken({
     merchantOid: oid,
@@ -132,7 +135,7 @@ async function POST__handler(req: Request) {
     iframeToken: result.token,
     iframeUrl: `https://www.paytr.com/odeme/guvenli/${result.token}`,
     amountKurus,
-    product
+    product:{id:selectedPlan.id,name:selectedPlan.name,level:selectedPlan.level,price:selectedPlan.price}
   });
 }
 
