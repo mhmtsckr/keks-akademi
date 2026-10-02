@@ -2,7 +2,6 @@ import { StudentMicroLearning } from '@/app/components/StudentMicroLearning';
 import { StudentWeeklyReflection } from '@/app/components/StudentWeeklyReflection';
 import { currentUser } from '@/lib/auth';
 import { hasActiveSubscription } from '@/lib/subscriptionAccess';
-import { SubscriptionRequired } from '@/app/components/SubscriptionRequired';
 import { db } from '@/lib/db';
 import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForms';
 import { StudentActions } from '@/app/components/StudentActions';
@@ -73,7 +72,27 @@ export default async function StudentPage() {
     </PortalShell>;
   }
 
-  if (!(await hasActiveSubscription(user.id,'STUDENT'))) return <SubscriptionRequired role="STUDENT"/>;
+  const hasSubscription=await hasActiveSubscription(user.id,'STUDENT');
+
+  if (!hasSubscription) {
+    const techniqueOnlyStudent=await db.student.findUnique({
+      where:{id:user.student.id},
+      select:{fullName:true,techniquePreferences:{}}
+    });
+    if(!techniqueOnlyStudent)return null;
+    return <PortalShell signedIn
+      active="ogrenci"
+      eyebrow="ÇALIŞMA TEKNİKLERİ"
+      title={'Merhaba, '+techniqueOnlyStudent.fullName}
+      description="Aktif abonelik olmadan yalnızca çalışma teknikleri kullanılabilir."
+      wide
+    >
+      <section id="ogrenme-tekrar" className="section section-anchor">
+        <PortalSectionTitle eyebrow="ÇALIŞMA TEKNİKLERİ" title="Ders Çalışma Teknikleri" description="Pomodoro, aktif hatırlama, Feynman ve diğer çalışma tekniklerini uygula."/>
+        <StudyTechniqueLab initialPreferences={techniqueOnlyStudent.techniquePreferences}/>
+      </section>
+    </PortalShell>;
+  }
 
   const student = await db.student.findUnique({
     where:{id:user.student.id},
