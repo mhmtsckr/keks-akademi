@@ -7,7 +7,8 @@ type InstallPromptEvent = Event & {
   userChoice:Promise<{outcome:'accepted'|'dismissed';platform:string}>;
 };
 
-const DISMISS_KEY='keks-install-banner-dismissed';
+const DISMISS_KEY='keks-install-banner-dismissed-at';
+const DISMISS_FOR_MS=7*24*60*60*1000;
 
 export function MobileInstallBanner(){
   const [mobile,setMobile]=useState(false);
@@ -24,7 +25,8 @@ export function MobileInstallBanner(){
     setMobile(isMobile);
     setStandalone(isStandalone);
     setIos(isIos);
-    setDismissed(localStorage.getItem(DISMISS_KEY)==='1');
+    const dismissedAt=Number(localStorage.getItem(DISMISS_KEY)||0);
+    setDismissed(dismissedAt>0 && Date.now()-dismissedAt<DISMISS_FOR_MS);
 
     const onBeforeInstall=(event:Event)=>{
       event.preventDefault();
@@ -45,7 +47,7 @@ export function MobileInstallBanner(){
   },[]);
 
   const dismiss=()=>{
-    localStorage.setItem(DISMISS_KEY,'1');
+    localStorage.setItem(DISMISS_KEY,String(Date.now()));
     setDismissed(true);
     setShowIosHelp(false);
   };
@@ -70,7 +72,7 @@ export function MobileInstallBanner(){
     color:'#fff',borderBottom:'1px solid rgba(232,187,76,.28)',
     boxShadow:'0 8px 24px rgba(0,0,0,.18)'
   }} role="region" aria-label="KEKS Akademi mobil uygulama kurulumu">
-    <img src="/keks-robot-logo.svg" alt="" width="52" height="40" style={{objectFit:'contain',flex:'0 0 auto'}}/>
+    <img src="/keks-logo.svg" alt="" width="52" height="40" style={{objectFit:'contain',flex:'0 0 auto'}}/>
     <div style={{minWidth:0,flex:1}}>
       <strong style={{display:'block',fontSize:13,lineHeight:1.25}}>KEKS Akademi’yi telefonuna yükle</strong>
       <span style={{display:'block',fontSize:11,color:'#aebfd0',marginTop:2}}>Daha hızlı erişim · Ana ekrandan tek dokunuş</span>
