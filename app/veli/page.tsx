@@ -226,7 +226,9 @@ export default async function ParentPage() {
       <div className="card">{coachNote?<><strong>{latestCoachReport?.title}</strong><p>{coachNote}</p><small className="muted">{latestCoachReport?.createdAt.toLocaleDateString('tr-TR')}</small></>:<p className="muted">Veliyle paylaşılmış yeni bir koç değerlendirmesi bulunmuyor.</p>}</div>
     </section>
 
-    <section id="aylik-keks-gelisim-raporu" className="section section-anchor"><MonthlyDevelopmentReport studentId={student.id} audience="PARENT"/></section>\n\n    <section id="miza-veli" className="section section-anchor">
+    <section id="aylik-keks-gelisim-raporu" className="section section-anchor"><MonthlyDevelopmentReport studentId={student.id} audience="PARENT"/></section>
+
+    <section id="miza-veli" className="section section-anchor">
       <PortalSectionTitle eyebrow="VELİYE ÖZEL MİZA" title="Bu hafta öğrenciyi nasıl desteklemelisiniz?"/>
       <div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
         <div className="card"><div className="moduleEyebrow">DESTEKLEYİN</div><p>{parentDo}</p></div>
