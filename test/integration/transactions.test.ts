@@ -144,7 +144,8 @@ describe('tarama gönderimi — gerçek eşzamanlılık', () => {
 
 describe('PayTR callback — çift bildirim', () => {
   async function odemeOlustur(studentId: string) {
-    return db.payment.create({
+    const student=await db.student.findUniqueOrThrow({where:{id:studentId},select:{userId:true}});
+    const payment=await db.payment.create({
       data: {
         studentId,
         merchantOid: 'KEKS-TEST-OID-1',
@@ -152,25 +153,27 @@ describe('PayTR callback — çift bildirim', () => {
         status: 'PENDING',
       },
     });
+    await db.subscription.create({data:{userId:student.userId!,planId:'student-yks-prep',status:'PENDING',provider:'PAYTR',providerReference:'KEKS-TEST-OID-1'}});
+    return payment;
   }
 
   const basarili = { merchant_oid: 'KEKS-TEST-OID-1', status: 'success', total_amount: '35000' };
 
-  it('art arda gelen iki bildirim tek test erişimi açar', async () => {
+  it('art arda gelen iki bildirim tek aboneliği aktifleştirir', async () => {
     const ogrenci = await ogrenciOlustur();
     await odemeOlustur(ogrenci.id);
 
     expect((await paytrCallback(callbackIstegi(basarili))).status).toBe(200);
     expect((await paytrCallback(callbackIstegi(basarili))).status).toBe(200);
 
-    expect(await db.testAccess.count()).toBe(1);
+    expect(await db.subscription.count({where:{status:'ACTIVE'}})).toBe(1);
     const odeme = await db.payment.findUnique({ where: { merchantOid: 'KEKS-TEST-OID-1' } });
     expect(odeme!.status).toBe('PAID');
   });
 
   // PayTR bildirimi yeniden gonderdiginde iki istek cakisabilir. Kilit
   // olmadan bu senaryo tek odeme icin iki test erisimi aciyordu.
-  it('aynı anda gelen iki bildirim yine tek test erişimi açar', async () => {
+  it('aynı anda gelen iki bildirim yine tek aboneliği aktifleştirir', async () => {
     const ogrenci = await ogrenciOlustur();
     await odemeOlustur(ogrenci.id);
 
@@ -180,7 +183,7 @@ describe('PayTR callback — çift bildirim', () => {
     ]);
 
     expect(yanitlar.map((y:Response) => y.status)).toEqual([200, 200]);
-    expect(await db.testAccess.count()).toBe(1);
+    expect(await db.subscription.count({where:{status:'ACTIVE'}})).toBe(1);
     const odeme = await db.payment.findUnique({ where: { merchantOid: 'KEKS-TEST-OID-1' } });
     expect(odeme!.status).toBe('PAID');
   });
