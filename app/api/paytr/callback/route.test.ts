@@ -36,6 +36,8 @@ beforeEach(() => {
   resetMocks();
   db.payment.findUnique.mockResolvedValue(null);
   db.payment.updateMany.mockResolvedValue({ count: 1 });
+  db.subscription.findFirst.mockResolvedValue(null);
+  db.subscription.updateMany.mockResolvedValue({ count: 1 });
 });
 
 describe('POST /api/paytr/callback — imza doğrulaması', () => {
@@ -76,8 +78,9 @@ describe('POST /api/paytr/callback — ödeme işleme', () => {
     expect(db.payment.update).not.toHaveBeenCalled();
   });
 
-  it('başarılı ödemede ödemeyi PAID yapar ve test erişimi açar', async () => {
+  it('başarılı ödemede ödemeyi PAID yapar ve aboneliği aktifleştirir', async () => {
     db.payment.findUnique.mockResolvedValue(odeme());
+    db.subscription.findFirst.mockResolvedValue({id:'abonelik-1',status:'PENDING'});
     const yanit = await POST(formRequest(URL_, bildirim()));
 
     expect(yanit.status).toBe(200);
@@ -91,9 +94,8 @@ describe('POST /api/paytr/callback — ödeme işleme', () => {
       where: { id: 'odeme-1', status: { not: 'PAID' } },
       data: { status: 'PAID', providerPayload: expect.objectContaining({ status: 'success' }) },
     });
-    expect(db.testAccess.create).toHaveBeenCalledWith({
-      data: { studentId: 'ogrenci-1', source: 'PAID', paymentId: 'odeme-1' },
-    });
+    expect(db.subscription.findFirst).toHaveBeenCalledWith({where:{provider:'PAYTR',providerReference:'KEKS1700000000abcdef01',status:'PENDING'}});
+    expect(db.subscription.update).toHaveBeenCalledWith({where:{id:'abonelik-1'},data:expect.objectContaining({status:'ACTIVE',startsAt:expect.any(Date),endsAt:expect.any(Date)})});
   });
 
   // PayTR aynı bildirimi yeniden gönderebilir; ikinci kez test erişimi
@@ -105,7 +107,7 @@ describe('POST /api/paytr/callback — ödeme işleme', () => {
     expect(yanit.status).toBe(200);
     await expect(yanit.text()).resolves.toBe('OK');
     expect(db.$transaction).not.toHaveBeenCalled();
-    expect(db.testAccess.create).not.toHaveBeenCalled();
+    expect(db.subscription.update).not.toHaveBeenCalled();
     expect(db.payment.update).not.toHaveBeenCalled();
     expect(db.payment.updateMany).not.toHaveBeenCalled();
   });
@@ -120,7 +122,7 @@ describe('POST /api/paytr/callback — ödeme işleme', () => {
 
     expect(yanit.status).toBe(200);
     expect(db.payment.updateMany).toHaveBeenCalledTimes(1);
-    expect(db.testAccess.create).not.toHaveBeenCalled();
+    expect(db.subscription.update).not.toHaveBeenCalled();
   });
 
   it('başarısız bildirimde ödemeyi FAILED yapar, erişim açmaz', async () => {
@@ -132,8 +134,9 @@ describe('POST /api/paytr/callback — ödeme işleme', () => {
       where: { id: 'odeme-1' },
       data: { status: 'FAILED', providerPayload: expect.objectContaining({ status: 'failed' }) },
     });
-    expect(db.testAccess.create).not.toHaveBeenCalled();
-    expect(db.$transaction).not.toHaveBeenCalled();
+    expect(db.subscription.updateMany).toHaveBeenCalledWith({where:{provider:'PAYTR',providerReference:'KEKS1700000000abcdef01',status:'PENDING'},data:{status:'FAILED'}});
+    expect(db.subscription.update).not.toHaveBeenCalled();
+    expect(db.$transaction).toHaveBeenCalledTimes(1);
   });
 
   // Ödenmiş bir kaydı geç gelen başarısız bildirim bozmamalı.
@@ -146,6 +149,6 @@ describe('POST /api/paytr/callback — ödeme işleme', () => {
 
     expect(yanit.status).toBe(200);
     expect(db.payment.update).not.toHaveBeenCalled();
-    expect(db.testAccess.create).not.toHaveBeenCalled();
+    expect(db.subscription.update).not.toHaveBeenCalled();
   });
 });
