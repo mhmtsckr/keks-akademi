@@ -19,7 +19,8 @@
     "mobile:add:android": "cap add android",
     "mobile:add:ios": "cap add ios",
     "mobile:android": "cap open android",
-    "mobile:ios": "cap open ios"
+    "mobile:ios": "cap open ios",
+    "mobile:doctor": "cap doctor"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",
