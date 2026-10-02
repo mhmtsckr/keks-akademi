@@ -170,7 +170,10 @@ export function StudentLoginForm() {
     const fd=new FormData(e.currentTarget);
     const r=await fetch('/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:fd.get('email'),password:fd.get('password'),remember})});
     const j=await r.json();
-    if(!r.ok)return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
+    if(!r.ok){
+      if(r.status===429&&Number(j.retryAfterSeconds)>0){const seconds=Math.max(1,Math.ceil(Number(j.retryAfterSeconds)));setCooldown(seconds);return setMsg(`Yeni yönetici doğrulama kodu için ${seconds} saniye bekleyin.`)}
+      return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
+    }
     if(j.role!=='STUDENT')return setMsg('Hata: Bu hesap öğrenci hesabı değil.');
     location.href='/ogrenci';
   }
@@ -189,6 +192,8 @@ export function AccountLoginForm({redirect='/koc'}:{redirect?:string}) {
   const [remember,setRemember]=useState(false);
   const [forgotOpen,setForgotOpen]=useState(false);
   const [twoFactorChallenge,setTwoFactorChallenge]=useState('');
+  const [cooldown,setCooldown]=useState(0);
+  useEffect(()=>{if(cooldown<=0)return;const timer=window.setInterval(()=>setCooldown(v=>Math.max(0,v-1)),1000);return()=>window.clearInterval(timer)},[cooldown]);
   if(forgotOpen)return <PasswordResetForm role="COACH" onClose={()=>setForgotOpen(false)}/>;
   if(twoFactorChallenge)return <AdminTwoFactorForm challenge={twoFactorChallenge} onCancel={()=>{setTwoFactorChallenge('');setMsg('')}}/>;
 
@@ -208,7 +213,7 @@ export function AccountLoginForm({redirect='/koc'}:{redirect?:string}) {
     <div className="field"><label>E-posta</label><input name="email" type="email" required autoComplete="email"/></div>
     <div className="field"><label>Şifre</label><input name="password" type="password" required autoComplete="current-password"/></div>
     <label className="row" style={{justifyContent:'flex-start',gap:8,cursor:'pointer'}}><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/><span>Bunu hatırla <small className="muted">· Bu cihazdaki oturum 30 güne kadar açık kalır.</small></span></label>
-    <button className="btn primary" type="submit">Giriş Yap</button>
+    <button className="btn primary" type="submit" disabled={cooldown>0}>{cooldown>0?`Yeni kod için ${cooldown} sn`:'Giriş Yap'}</button>
     <button className="btn" type="button" onClick={()=>setForgotOpen(true)}>Şifremi unuttum</button>
     <Message value={msg}/>
   </form>;
