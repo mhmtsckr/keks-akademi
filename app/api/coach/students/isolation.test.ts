@@ -131,6 +131,7 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
 beforeEach(() => {
   resetMocks();
+  db.subscription.findFirst.mockResolvedValue({id:'abonelik-koc',userId:'kullanici-a',planId:'coach-start',status:'ACTIVE',endsAt:new Date(Date.now()+86400000),createdAt:new Date()});
   db.student.findFirst.mockImplementation(async (arg: { where?: Record<string, unknown> }) =>
     prismaBul(arg?.where),
   );

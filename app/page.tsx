@@ -15,6 +15,7 @@ export default async function Home() {
         <div className="homeNavLinks">
           <a href="/sistem">Sistem</a>
           <a href="/ozellikler">Özellikler</a>
+          <a href="/abonelik-planlari">Abonelik Planları</a>
           <a href="/ogrenci">Öğrenci</a>
           <a href="/koc">Koç</a>
           <a href="/veli">Veli</a>

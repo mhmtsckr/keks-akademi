@@ -157,45 +157,18 @@ export default async function ParentPage() {
   >
     <section className="section">
       <PanelNavigator roleLabel="Veli" groups={[
-        {
-          label: 'BU HAFTA',
-          description: 'Öğrencinin çalışma davranışını hızlıca görün.',
-          items: [
-            {
-              href: '#davranis-ozeti',
-              title: 'Davranış Özeti',
-              description: 'Devamlılık, görev tamamlama ve çalışma süresi',
-              badge: 'ÖNCELİKLİ'
-            }
-          ]
-        },
-        {
-          label: 'VELİ REHBERLİĞİ',
-          description: 'Destek verin; baskı ve mikro-yönetim üretmeyin.',
-          items: [
-            {
-              href: '#aylik-keks-gelisim-raporu',
-              title: 'Aylık KEKS Gelişim Raporu',
-              description: 'Akademik gelişim, süreklilik, tekrar ve gelecek ay hedefleri',
-              badge: 'CANLI'
-            },
-            {
-              href: '#gelisim-zaman-cizelgesi',
-              title: '1 Yıllık Gelişim Zaman Çizelgesi',
-              description: 'Değerlendirme, plan, deneme gelişimi, hedef ve koç görüşmeleri',
-              badge: 'YENİ'
-            },
-            {
-              href: '#veli-rehberligi',
-              title: 'Bu Hafta Ne Yapmalı?',
-              description: 'Yapılacaklar, kaçınılacaklar ve koç notu'
-            }
-          ]
-        }
-      ]} />
+        {label:'VELİ PANELİ',description:'Gelişimi anlayın, koçun yönlendirmesini görün ve doğru desteği verin.',items:[
+          {href:'#haftalik-ozet',title:'1. Bu Hafta Ne Oldu?',description:'Devamlılık, görev uygulama ve çalışma ritmi',badge:'ÖNCELİKLİ'},
+          {href:'#akademik-gelisim',title:'2. Akademik Gelişim',description:'Canlı gelişim raporu ve gelişim zaman çizelgesi'},
+          {href:'#calisma-davranisi',title:'3. Çalışma Davranışı',description:'Plan uygulama, odak ve süreklilik'},
+          {href:'#koc-veli',title:'4. Koç–Veli İletişim Merkezi',description:'Koçun veliye açtığı değerlendirme ve yönlendirmeler'},
+          {href:'#aylik-keks-gelisim-raporu',title:'5. KEKS Aylık Veli Raporu',description:'Gelişim, müdahale alanları ve sonraki hedefler',badge:'CANLI'},
+          {href:'#miza-veli',title:'6. Veliye Özel MİZA',description:'Öğrenci mahremiyetini koruyan veli destek rehberi',badge:'YENİ'}
+        ]}
+      ]}/>
     </section>
 
-    <section id="davranis-ozeti" className="section section-anchor">
+    <section id="haftalik-ozet" className="section section-anchor">
       <PortalSectionTitle
         eyebrow="HAFTALIK DAVRANIŞ ÖZETİ"
         title="Bu hafta çalışma düzeni nasıldı?"
@@ -230,7 +203,39 @@ export default async function ParentPage() {
       </div>
     </section>
 
-    <section id="aylik-keks-gelisim-raporu" className="section section-anchor"><MonthlyDevelopmentReport studentId={student.id} audience="PARENT"/></section>\n\n    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="PARENT" compact/></section>
+    <section id="akademik-gelisim" className="section section-anchor">
+      <PortalSectionTitle eyebrow="AKADEMİK GELİŞİM" title="Gelişimi sonuçtan bağımsız, dönemsel olarak izleyin."/>
+      <div className="grid">
+        <div className="card"><div className="moduleEyebrow">GELİŞİM GÖRÜNÜMÜ</div><p>Veliye yalnız paylaşım izni verilmiş gelişim göstergeleri sunulur. Ham cevaplar ve tek tek yanlış sorular öğrenci–koç çalışma alanında kalır.</p></div>
+        <div className="card"><div className="moduleEyebrow">GELİŞİM YÖNÜ</div><p>Haftalık ve aylık değişim; güçlü gelişen alanlar ile destek gerektiren alanlar üzerinden açıklanır.</p></div>
+      </div>
+      <StudentDevelopmentTimeline studentId={student.id} audience="PARENT" compact/>
+    </section>
+
+    <section id="calisma-davranisi" className="section section-anchor">
+      <PortalSectionTitle eyebrow="ÇALIŞMA DAVRANIŞI" title="Öğrenci nasıl çalışıyor?"/>
+      <div className="grid">
+        <div className="card"><div className="moduleEyebrow">SÜREKLİLİK</div><div className="kpi">{activeDays.size}/7</div><p className="muted">Aktif çalışma günü</p></div>
+        <div className="card"><div className="moduleEyebrow">UYGULAMA</div><div className="kpi">%{currentCompletion}</div><p className="muted">Görev tamamlama</p></div>
+        <div className="card"><div className="moduleEyebrow">ODAK</div><div className="kpi">{currentFocus} dk</div><p className="muted">Kayıtlı odak süresi</p></div>
+      </div>
+    </section>
+
+    <section id="koc-veli" className="section section-anchor">
+      <PortalSectionTitle eyebrow="KOÇ–VELİ İLETİŞİM MERKEZİ" title="Koçun veliyle paylaşmayı seçtiği bilgiler"/>
+      <div className="card">{coachNote?<><strong>{latestCoachReport?.title}</strong><p>{coachNote}</p><small className="muted">{latestCoachReport?.createdAt.toLocaleDateString('tr-TR')}</small></>:<p className="muted">Veliyle paylaşılmış yeni bir koç değerlendirmesi bulunmuyor.</p>}</div>
+    </section>
+
+    <section id="aylik-keks-gelisim-raporu" className="section section-anchor"><MonthlyDevelopmentReport studentId={student.id} audience="PARENT"/></section>
+
+    <section id="miza-veli" className="section section-anchor">
+      <PortalSectionTitle eyebrow="VELİYE ÖZEL MİZA" title="Bu hafta öğrenciyi nasıl desteklemelisiniz?"/>
+      <div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
+        <div className="card"><div className="moduleEyebrow">DESTEKLEYİN</div><p>{parentDo}</p></div>
+        <div className="card"><div className="moduleEyebrow">MÜDAHALE ETMEYİN</div><p>{parentAvoid}</p></div>
+      </div>
+      <div className="card" style={{marginTop:14}}><div className="moduleEyebrow">MAHREMİYET SINIRI</div><p>MİZA veli görünümü öğrencinin özel koç görüşmelerini, kişisel notlarını veya MİZA ile özel konuşmalarını veliye aktarmaz. Yalnız veli desteği için paylaşılabilir eğitim verilerinden rehberlik üretir.</p></div>
+    </section>
 
     <section id="veli-rehberligi" className="section section-anchor">
       <PortalSectionTitle

@@ -1,4 +1,6 @@
 import { currentUser } from '@/lib/auth';
+import { hasActiveSubscription } from '@/lib/subscriptionAccess';
+import { SubscriptionRequired } from '@/app/components/SubscriptionRequired';
 import { db } from '@/lib/db';
 import { AccountLoginForm, CoachRegisterForm } from '@/app/components/AuthForms';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
@@ -43,6 +45,8 @@ export default async function CoachPage() {
       </section>
     </PortalShell>;
   }
+
+  if (!(await hasActiveSubscription(user.id,'COACH'))) return <SubscriptionRequired role="COACH"/>;
 
   const now=new Date();
   const sevenDaysAgo=new Date(now.getTime()-7*24*60*60*1000);
