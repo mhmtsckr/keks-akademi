@@ -21,10 +21,18 @@ async function POST__handler(req: Request) {
         data: { status: 'PAID', providerPayload: params }
       });
       if (claim.count !== 1) return;
-      await tx.testAccess.create({ data: { studentId: payment.studentId, source: 'PAID', paymentId: payment.id } });
+      const pendingSubscription=await tx.subscription.findFirst({where:{provider:'PAYTR',providerReference:payment.merchantOid,status:'PENDING'}});
+      if(pendingSubscription){
+        const startsAt=new Date();
+        const endsAt=new Date(startsAt); endsAt.setMonth(endsAt.getMonth()+1);
+        await tx.subscription.update({where:{id:pendingSubscription.id},data:{status:'ACTIVE',startsAt,endsAt}});
+      }
     });
   } else if (params.status !== 'success' && payment.status === 'PENDING') {
-    await db.payment.update({ where: { id: payment.id }, data: { status: 'FAILED', providerPayload: params } });
+    await db.$transaction([
+      db.payment.update({where:{id:payment.id},data:{status:'FAILED',providerPayload:params}}),
+      db.subscription.updateMany({where:{provider:'PAYTR',providerReference:payment.merchantOid,status:'PENDING'},data:{status:'FAILED'}})
+    ]);
   }
   return new NextResponse('OK');
 }
