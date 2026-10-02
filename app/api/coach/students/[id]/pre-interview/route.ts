@@ -1,7 +1,7 @@
 import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireRole } from '@/lib/auth';
+import { requireSubscribedRole } from '@/lib/subscriptionGuard';
 import { db } from '@/lib/db';
 import { buildTrackPlans,detectEducationBand,scoreMotivationSignals } from '@/lib/taskEvaluation';
 import { writeAudit } from '@/lib/audit';
@@ -16,7 +16,7 @@ function dateOnlyUtc(v:string){
 function obj(v:unknown){return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,any>:{};}
 
 async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
-  const user=await requireRole(['COACH']);
+  const user=await requireSubscribedRole(['COACH']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id},select:{id:true,fullName:true,gradeLevel:true}});
@@ -31,7 +31,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
-  const user=await requireRole(['COACH']);
+  const user=await requireSubscribedRole(['COACH']);
   if(!user.coachProfile)return NextResponse.json({error:'Koç profili yok.'},{status:403});
   const {id}=await params;
   const student=await db.student.findFirst({where:{id,coachId:user.coachProfile.id},select:{id:true,fullName:true,gradeLevel:true}});
