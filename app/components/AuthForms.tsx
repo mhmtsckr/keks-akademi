@@ -140,10 +140,10 @@ function AdminTwoFactorForm({challenge,onCancel}:{challenge:string;onCancel:()=>
   async function submit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setBusy(true);setMsg('');
     try{
-      const r=await fetch('/api/auth/admin-2fa/confirm',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({challenge,code})});
+      const r=await fetch('/api/auth/admin-2fa/confirm',{method:'POST',credentials:'include',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({challenge,code})});
       const j=await r.json();
       if(!r.ok)return setMsg('Hata: '+(j.error||'2FA doğrulanamadı.'));
-      location.href='/yonetici';
+      location.replace('/yonetici');
     }finally{setBusy(false)}
   }
   return <div className="card form">
