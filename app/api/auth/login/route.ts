@@ -5,9 +5,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { hashSecret, verifySecret } from '@/lib/security';
 import { createSession } from '@/lib/auth';
-import { checkCodeSendLimit,checkLoginLimit,recordLoginFailure,recordLoginSuccess,reserveCodeSend } from '@/lib/authAbuse';
-import { createAuthChallenge } from '@/lib/authChallenge';
-import { sendAdminTwoFactorCode } from '@/lib/mailer';
+import { checkLoginLimit,recordLoginFailure,recordLoginSuccess } from '@/lib/authAbuse';
 
 const schema = z.object({
   email:z.string().email(),
@@ -66,26 +64,8 @@ async function POST__handler(req: Request) {
   await recordLoginSuccess(req,email,user.id);
 
   if(user.role==='ADMIN'){
-    if(!user.email)return NextResponse.json({error:'Yönetici hesabında 2FA için e-posta adresi bulunmuyor.'},{status:409});
-    const sendGate=await checkCodeSendLimit('ADMIN_2FA',req,user.id,{accountDaily:15,ipDaily:40,cooldownSeconds:60});
-    if(!sendGate.allowed){
-      return NextResponse.json({
-        error:sendGate.reason==='COOLDOWN'
-          ?'Yeni yönetici doğrulama kodu için 60 saniye bekleyin.'
-          :'Yönetici doğrulama kodu gönderim sınırına ulaşıldı.',
-        retryAfterSeconds:sendGate.retryAfterSeconds
-      },{status:429,headers:{'Retry-After':String(sendGate.retryAfterSeconds)}});
-    }
-    await reserveCodeSend('ADMIN_2FA',req,user.id);
-    const challenge=await createAuthChallenge({user,purpose:'ADMIN_2FA',expiresIn:'10m',remember:input.remember});
-    const sent:any=await sendAdminTwoFactorCode({email:user.email,name:user.name,code:challenge.code});
-    if(sent?.skipped||sent?.error)return NextResponse.json({error:'Yönetici 2FA e-postası gönderilemedi.'},{status:503});
-    return NextResponse.json({
-      ok:true,
-      requiresTwoFactor:true,
-      challenge:challenge.token,
-      message:'Yönetici doğrulama kodu e-posta adresinize gönderildi.'
-    });
+    await createSession(user.id,input.remember,req);
+    return NextResponse.json({ok:true,role:'ADMIN'});
   }
 
   await createSession(user.id,input.remember,req);
