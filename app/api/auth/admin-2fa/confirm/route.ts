@@ -30,7 +30,10 @@ async function POST__handler(req:Request){
   await createSession(user.id,challenge.remember,req);
   await markChallengeUsed('ADMIN_2FA',challenge.jti,user.id);
   await recordLoginSuccess(req,user.email,user.id);
-  return NextResponse.json({ok:true,role:'ADMIN'});
+  const response=NextResponse.json({ok:true,role:'ADMIN'});
+  response.headers.set('Cache-Control','no-store, no-cache, must-revalidate');
+  response.headers.set('Pragma','no-cache');
+  return response;
 }
 
 export const POST=withApiErrors(POST__handler);
