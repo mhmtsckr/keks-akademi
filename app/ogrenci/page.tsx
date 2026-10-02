@@ -1,6 +1,8 @@
 import { StudentMicroLearning } from '@/app/components/StudentMicroLearning';
 import { StudentWeeklyReflection } from '@/app/components/StudentWeeklyReflection';
 import { currentUser } from '@/lib/auth';
+import { hasActiveSubscription } from '@/lib/subscriptionAccess';
+import { SubscriptionRequired } from '@/app/components/SubscriptionRequired';
 import { db } from '@/lib/db';
 import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForms';
 import { StudentActions } from '@/app/components/StudentActions';
@@ -70,6 +72,8 @@ export default async function StudentPage() {
       </section>
     </PortalShell>;
   }
+
+  if (!(await hasActiveSubscription(user.id,'STUDENT'))) return <SubscriptionRequired role="STUDENT"/>;
 
   const student = await db.student.findUnique({
     where:{id:user.student.id},
