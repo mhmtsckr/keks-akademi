@@ -1,6 +1,7 @@
 import './globals.css';
 import { PwaRegister } from '@/app/components/PwaRegister';
 import { MobileInstallBanner } from '@/app/components/MobileInstallBanner';
+import { WhatsAppContact } from '@/app/components/WhatsAppContact';
 
 export const metadata = {
   title: 'KEKS Akademi',
@@ -9,5 +10,5 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="tr"><body><PwaRegister/><MobileInstallBanner/>{children}</body></html>;
+  return <html lang="tr"><body><PwaRegister/><MobileInstallBanner/>{children}<WhatsAppContact/></body></html>;
 }
