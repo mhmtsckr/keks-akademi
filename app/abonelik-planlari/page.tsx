@@ -5,7 +5,7 @@ import {StudentPlanSelector} from './StudentPlanSelector';
 
 function coachWhatsappHref(plan:KeksPlan){
   const phone='90'+BUSINESS_INFO.phone.replace(/\D/g,'').replace(/^0/,'');
-  const message=`Merhaba KEKS Akademi! 👋\n\n${plan.name} (${plan.level}) koç paketiniz hakkında bilgi almak istiyorum. Paket kapsamı, kayıt süreci ve ücret hakkında bilgi verebilir misiniz?`;
+  const message=`Merhaba KEKS Akademi! 👋\n\n${plan.name} (${plan.level}) KEKS Partner Koç lisansınız hakkında bilgi almak istiyorum. Paket kapsamı, kayıt süreci ve ücret hakkında bilgi verebilir misiniz?`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
@@ -44,10 +44,14 @@ export default function SubscriptionPlansPage(){
     <section className="section">
       <PortalSectionTitle
         eyebrow="KOÇ"
-        title="Koç abonelik planları"
-        description="Koç planları aktif öğrenci kapasitesi ve profesyonel KEKS araçlarına göre ölçeklenir."
+        title="KEKS Partner Koç lisansları"
+        description="KEKS ana marka olarak kalır; koçlar KEKS Partner Koç lisansıyla aktif öğrenci kapasitesine göre profesyonel araçlara erişir."
       />
-      <div className="subscriptionPlanRail" aria-label="Koç abonelik planları">
+      <div className="notice" style={{marginBottom:16}}>
+        <strong>KEKS ana marka · Partner Koç insan desteği</strong>
+        <div className="muted">Öğrenci deneyimi, MİZA, ölçüm, planlama, tekrar ve raporlar KEKS Akademi markasıyla sunulur. Partner Koç; öğrenciyi takip eder, görüşme yapar ve KEKS aksiyonlarına müdahale eder.</div>
+      </div>
+      <div className="subscriptionPlanRail" aria-label="KEKS Partner Koç lisansları">
         {COACH_PLANS.map(plan=><CoachPlanCard key={plan.id} plan={plan}/>)}
       </div>
     </section>
