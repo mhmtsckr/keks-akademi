@@ -44,5 +44,6 @@ export const COACH_PLANS:KeksPlan[]=[
 {id:'coach-expert',name:'KEKS Partner Koç Expert',audience:'COACH',level:'75 aktif öğrenci',capacity:75,price:14999,features:['Partner Koç Pro özellikleri','Toplu öğrenci yönetimi ve segmentasyon','Gelişmiş performans analitiği','Koç aksiyon etkisi','Geciken görev ve tekrarların toplu takibi','Gelişmiş raporlama ve otomasyon','KEKS Partner Koç operasyon görünümü']},
 {id:'coach-business',name:'KEKS Partner Koç Business',audience:'COACH',level:'150 aktif öğrenci',capacity:150,price:24999,features:['Partner Koç Expert özellikleri','Yüksek hacimli öğrenci yönetimi','Ekip ve operasyon görünümü','Koç kalite metrikleri','Gelişmiş otomasyon ve kapsamlı raporlama','Öncelikli operasyon desteği','KEKS marka standardı ve partner ağı görünümü']},
 {id:'coach-enterprise',name:'KEKS Kurum Partner',audience:'COACH',level:'150+ / çoklu koç',price:null,features:['Çoklu Partner Koç ve yönetici yapısı','Öğrenci-koç dağıtımı','Rol ve yetki yönetimi','Kurum geneli performans analitiği','Koç kalite sistemi','Toplu yönetim ve kurumsal KEKS raporlaması']}
+];
 
 export const ALL_PLANS=[...STUDENT_PLANS,...COACH_PLANS];
