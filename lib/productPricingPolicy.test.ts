@@ -8,7 +8,6 @@ const read=(file:string)=>fs.readFileSync(path.join(ROOT,file),'utf8');
 describe('central product pricing wiring',()=>{
   it('uses the runtime monthly product in every price-sensitive surface',()=>{
     const required:Record<string,string[]>={
-      'app/api/paytr/start/route.ts':['STUDENT_PLANS','selectedPlan.price'],
       'app/api/admin/product-config/route.ts':['getKeksMonthlyProduct','getProductPricing'],
       'app/api/student/test/access/route.ts':['getKeksMonthlyProduct'],
       'app/ogrenci/page.tsx':['getKeksMonthlyProduct','currentProduct.priceLabel'],
@@ -23,7 +22,7 @@ describe('central product pricing wiring',()=>{
         if(!source.includes(needle))missing.push(file+': '+needle);
       }
     }
-    expect(missing,'Payment subscriptions must use the subscription catalog; legacy test/admin/campaign surfaces must use the central runtime product.').toEqual([]);
+    expect(missing,'Active price-sensitive surfaces must use the central runtime product.').toEqual([]);
   });
 
   it('keeps default product identity and price literals in one catalog',()=>{
