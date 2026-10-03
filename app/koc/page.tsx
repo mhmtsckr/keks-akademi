@@ -23,13 +23,13 @@ export default async function CoachPage() {
   if (!user || (user.role !== 'COACH' && user.role !== 'ADMIN') || !user.coachProfile) {
     return <PortalShell
       active="koc"
-      eyebrow="KOÇ GİRİŞİ"
-      title="Öğrencilerini tek merkezden yönet."
-      description="Plan, deneme, hedef, içerik, teknik kullanımı ve koç uyarılarını aynı panelde takip et."
+      eyebrow="KEKS PARTNER KOÇ GİRİŞİ"
+      title="KEKS Partner Koç olarak öğrencilerini tek merkezden yönet."
+      description="KEKS Akademi altyapısıyla plan, deneme, hedef, tekrar, rapor ve koç aksiyonlarını tek panelde yönet."
     >
       <section className="portalLoginGrid">
         <div className="portalLoginIntro">
-          <span className="portalEyebrow">KOÇ KONTROL MERKEZİ</span>
+          <span className="portalEyebrow">KEKS PARTNER KOÇ KONTROL MERKEZİ</span>
           <h2>Veriyi gör, öğrenciyi yönlendir, gelişimi ölç.</h2>
           <p>KEKS koç paneli yalnız öğrenci listesi değildir; hedef açığını, çalışma davranışını ve müdahale gerektiren durumları tek ekranda toplar.</p>
           <div className="portalLoginBullets">
@@ -124,8 +124,8 @@ export default async function CoachPage() {
 
   return <PortalShell signedIn
     active="koc"
-    eyebrow="KOÇ PANELİ"
-    title={'Koç Kontrol Merkezi · '+user.name}
+    eyebrow="KEKS PARTNER KOÇ PANELİ"
+    title={'KEKS Partner Koç Kontrol Merkezi · '+user.name}
     description="Öğrencilerini, çalışma planlarını ve gelişim verilerini tek merkezden yönet."
     meta={<><span>{students.length} öğrenci</span><span>Kişisel takip</span><span>Akıllı uyarılar</span></>}
     wide
