@@ -30,8 +30,8 @@ export default async function CoachPage() {
       <section className="portalLoginGrid">
         <div className="portalLoginIntro">
           <span className="portalEyebrow">KEKS PARTNER KOÇ KONTROL MERKEZİ</span>
-          <h2>Veriyi gör, öğrenciyi yönlendir, gelişimi ölç.</h2>
-          <p>KEKS koç paneli yalnız öğrenci listesi değildir; hedef açığını, çalışma davranışını ve müdahale gerektiren durumları tek ekranda toplar.</p>
+          <h2>KEKS verisini gör, öğrenciyi yönlendir, gelişimi birlikte ölç.</h2>
+          <p>KEKS Partner Koç paneli; KEKS Akademi’nin ölçüm, planlama, tekrar, MİZA ve raporlama altyapısını insan koç müdahalesiyle birleştirir.</p>
           <div className="portalLoginBullets">
             <span>Eğitsel profil, ön görüşme ve öğrenci takip özeti</span>
             <span>Kişisel plan, performans, tekrar ve görüşme öncesi otomatik brifing</span>
@@ -126,7 +126,7 @@ export default async function CoachPage() {
     active="koc"
     eyebrow="KEKS PARTNER KOÇ PANELİ"
     title={'KEKS Partner Koç Kontrol Merkezi · '+user.name}
-    description="Öğrencilerini, çalışma planlarını ve gelişim verilerini tek merkezden yönet."
+    description="KEKS Akademi metodolojisiyle öğrencilerini, çalışma planlarını ve gelişim verilerini tek merkezden yönet."
     meta={<><span>{students.length} öğrenci</span><span>Kişisel takip</span><span>Akıllı uyarılar</span></>}
     wide
   >
@@ -141,7 +141,7 @@ export default async function CoachPage() {
     </section>
 
     <section className="section">
-      <PanelNavigator roleLabel="Koç" groups={[
+      <PanelNavigator roleLabel="KEKS Partner Koç" groups={[
         {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[
           {href:'#morning-brief',title:'Morning Brief',description:'Bugün müdahale gerektiren öğrenciler',badge:'BUGÜN'},
           {href:'#intervention-learning',title:'Müdahale Etkisi',description:'Koçluk kararlarının performans değişimleriyle ilişkisi'},
