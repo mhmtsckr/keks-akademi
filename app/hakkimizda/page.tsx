@@ -21,7 +21,7 @@ export default function AboutPage(){
     <section className="section aboutLead">
       <div className="aboutLeadCopy">
         <span className="portalEyebrow">KEKS AKADEMİ</span>
-        <h2>Ders çalışmayı tesadüften çıkarıp sisteme dönüştürüyoruz.</h2>
+        <h2>Çalışmanı veriye, veriyi başarıya dönüştür.</h2>
         <p>Bir öğrencinin ihtiyacı yalnızca haftalık program almak değildir. Programın uygulanıp uygulanmadığını, hangi konunun unutulduğunu, yanlışların neden oluştuğunu, gerçek çalışma kapasitesini ve bir sonraki müdahalenin ne olması gerektiğini görmek gerekir.</p>
         <p>KEKS Akademi bu süreci öğrenci, KEKS Partner Koç ve veli arasında ortak fakat rol bazlı bir yapıda birleştirir. Öğrenci ne yapacağını görür, koç nerede müdahale etmesi gerektiğini anlar, veli ise baskı kurmadan gelişimin genel yönünü takip eder.</p>
       </div>
