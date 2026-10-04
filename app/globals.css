@@ -1111,3 +1111,85 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .callbackGrid{grid-template-columns:1fr}
   .callbackNote{grid-column:auto}
 }
+
+
+/* Premium homepage conversion journey */
+.homeHeroHeadline{max-width:760px;margin:16px 0 8px;font-size:clamp(28px,4.5vw,54px);line-height:1.04;letter-spacing:-.035em;color:#f7f3e7}
+.homeConversionSection{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:34px;border:1px solid rgba(255,255,255,.08);border-radius:26px;background:linear-gradient(145deg,rgba(255,255,255,.042),rgba(255,255,255,.018));box-shadow:0 22px 70px rgba(0,0,0,.14)}
+.homeConversionHead{max-width:860px;margin-bottom:22px}
+.homeConversionHead>span,.homeCallbackPitch>small,.homeGuaranteeCard small{display:inline-block;color:#efc96d;font-size:11px;font-weight:900;letter-spacing:.12em}
+.homeConversionHead h2{margin:8px 0 10px;font-size:clamp(27px,4vw,42px);line-height:1.12;letter-spacing:-.025em}
+.homeConversionHead p{margin:0;color:#9fb0c2;line-height:1.65;font-size:15px}
+.homeConversionActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+
+.homeCompareScroll{overflow-x:auto;overscroll-behavior-inline:contain;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+.homeCompareTable{display:grid;grid-template-columns:minmax(300px,1.25fr) minmax(230px,.85fr) minmax(230px,.85fr);min-width:850px;border:1px solid rgba(255,255,255,.09);border-radius:22px;overflow:hidden;background:rgba(255,255,255,.018)}
+.homeCompareRow{display:contents}
+.homeCompareHeader{display:flex;align-items:center;justify-content:center;min-height:96px;padding:18px 20px;background:#111923;border-right:1px solid rgba(255,255,255,.07);font-size:18px;font-weight:850;text-align:center;line-height:1.35}
+.homeCompareHeader.feature{justify-content:flex-start;color:#a9b6c4;font-size:12px;letter-spacing:.14em}
+.homeCompareHeader.keks{background:linear-gradient(145deg,#b8791d,#efb94d);color:#111820;font-size:26px}
+.homeCompareFeature,.homeCompareCell{min-height:82px;display:flex;align-items:center;padding:16px 20px;border-top:1px solid rgba(255,255,255,.07);border-right:1px solid rgba(255,255,255,.07)}
+.homeCompareFeature{font-size:15px;font-weight:760;color:#edf2f6}
+.homeCompareCell{justify-content:center;text-align:center;color:#aebac6}
+.homeCompareCell.keks{background:rgba(239,201,109,.045)}
+.homeCompareCheck{width:38px;height:38px;border-radius:999px;display:grid;place-items:center;background:rgba(255,255,255,.075);color:#c6d0da;font-size:18px;font-weight:950}
+.homeCompareCheck.keks{background:linear-gradient(145deg,#d8972e,#f3ca70);color:#15202c;box-shadow:0 8px 24px rgba(216,151,46,.18)}
+.homeCompareText{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.09);font-size:12px;font-weight:800;line-height:1.3}
+.homeCompareText.keks{border-color:rgba(239,201,109,.3);background:rgba(239,201,109,.09);color:#f4d785}
+.homeCompareFootnote{margin-top:12px;color:#74879a;font-size:11px;line-height:1.55}
+
+.homeFirst30Rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,300px);gap:14px;overflow-x:auto;scroll-snap-type:inline mandatory;overscroll-behavior-inline:contain;padding:2px 2px 14px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.homeFirst30Card{scroll-snap-align:start;min-height:240px;padding:20px;border-radius:20px;border:1px solid rgba(255,255,255,.085);background:linear-gradient(155deg,rgba(239,201,109,.07),rgba(255,255,255,.025));display:flex;flex-direction:column;gap:9px}
+.homeFirst30Card>b{font-size:38px;line-height:1;color:rgba(239,201,109,.28);letter-spacing:-.05em}
+.homeFirst30Card>small{color:#efc96d;font-size:11px;font-weight:900;letter-spacing:.09em}
+.homeFirst30Card h3{margin:2px 0 0;font-size:19px;line-height:1.3}
+.homeFirst30Card p{margin:0;color:#9fb0c2;font-size:13px;line-height:1.6}
+
+.homeGuaranteeSection{background:radial-gradient(circle at 90% 0%,rgba(239,201,109,.08),transparent 35%),linear-gradient(145deg,rgba(255,255,255,.042),rgba(255,255,255,.018))}
+.homeGuaranteeGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.homeGuaranteeCard{display:grid;grid-template-columns:auto 1fr;gap:14px;padding:20px;border-radius:19px;border:1px solid rgba(239,201,109,.17);background:rgba(255,255,255,.025)}
+.homeGuaranteeIcon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:rgba(239,201,109,.11);border:1px solid rgba(239,201,109,.25);color:#efc96d;font-weight:950}
+.homeGuaranteeCard h3{margin:6px 0;font-size:18px}
+.homeGuaranteeCard p{margin:0;color:#9fb0c2;font-size:13px;line-height:1.55}
+.homeGuaranteeNote{margin:14px 0 0;padding:13px 15px;border:1px solid rgba(255,255,255,.07);border-radius:13px;background:rgba(255,255,255,.02);color:#7f91a3;font-size:11px;line-height:1.55}
+
+.homeReviewPlaceholder{padding:32px 24px;border-radius:21px;border:1px dashed rgba(239,201,109,.29);background:linear-gradient(135deg,rgba(239,201,109,.055),rgba(255,255,255,.02));text-align:center}
+.homeReviewPlaceholder>div{color:#efc96d;font-size:24px;letter-spacing:5px}
+.homeReviewPlaceholder h3{margin:12px 0 8px;font-size:22px}
+.homeReviewPlaceholder p{max-width:760px;margin:0 auto;color:#9fb0c2;line-height:1.6}
+
+.homeCallbackShell{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:24px;padding:22px;border-radius:22px;border:1px solid rgba(255,255,255,.085);background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(239,201,109,.035))}
+.homeCallbackPitch{padding:8px;align-self:start}
+.homeCallbackPitch h3{margin:8px 0 10px;font-size:clamp(22px,3vw,31px);line-height:1.2}
+.homeCallbackPitch p{margin:0;color:#9fb0c2;line-height:1.6}
+.homeCallbackPitch>div{display:grid;gap:8px;margin-top:18px;color:#d7e1e9;font-size:13px}
+
+.homeFaqList{display:grid;gap:10px}
+.homeFaqItem{border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.025);overflow:hidden}
+.homeFaqItem summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 18px;cursor:pointer;font-weight:850;color:#eef3f6}
+.homeFaqItem summary::-webkit-details-marker{display:none}
+.homeFaqItem summary span{font-size:22px;line-height:1;color:#efc96d;transition:transform .18s ease}
+.homeFaqItem[open] summary span{transform:rotate(45deg)}
+.homeFaqItem p{margin:0;padding:0 18px 18px;color:#9fb0c2;line-height:1.62}
+
+.homeFinalCta{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:clamp(28px,5vw,54px);border-radius:28px;border:1px solid rgba(239,201,109,.25);background:radial-gradient(circle at 85% 20%,rgba(239,201,109,.15),transparent 32%),linear-gradient(140deg,#0c1827,#101d2c 58%,#172232);text-align:center}
+.homeFinalCta>span{color:#efc96d;font-size:11px;font-weight:900;letter-spacing:.15em}
+.homeFinalCta h2{max-width:780px;margin:10px auto;font-size:clamp(30px,5vw,50px);line-height:1.08;letter-spacing:-.035em}
+.homeFinalCta p{max-width:760px;margin:0 auto;color:#a8b6c4;line-height:1.6}
+.homeFinalCta>div{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:22px}
+
+@media(max-width:900px){
+  .homeConversionSection{padding:24px}
+  .homeGuaranteeGrid{grid-template-columns:1fr}
+  .homeCallbackShell{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .homeHeroHeadline{font-size:clamp(28px,10vw,42px)}
+  .homeConversionSection,.homeFinalCta{width:min(100% - 20px,1180px);padding:18px;border-radius:20px}
+  .homeFirst30Rail{grid-auto-columns:min(84vw,290px);margin-inline:-2px}
+  .homeCompareTable{min-width:760px;grid-template-columns:280px 220px 260px}
+  .homeCompareHeader{min-height:82px;font-size:15px}
+  .homeCompareHeader.keks{font-size:21px}
+  .homeCompareFeature,.homeCompareCell{min-height:74px;padding:14px}
+  .homeCallbackShell{padding:15px}
+}
