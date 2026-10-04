@@ -90,6 +90,23 @@ export async function sendPasswordResetCode(input:{email:string;name:string;code
   return sendFromKeksGmail(input.email,'KEKS Akademi | Şifre yenileme kodu',html);
 }
 
+
+export async function sendCallbackRequest(input:{name:string;phone:string;audience:string;education:string;preferredTime:string;note:string}){
+  const recipient=KEKS_CONTACT_EMAIL;
+  const html=`
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#13243a">
+      <h1>KEKS Akademi | Sizi Arayalım Talebi</h1>
+      <p><strong>Ad soyad:</strong> ${escapeHtml(input.name)}</p>
+      <p><strong>Telefon:</strong> ${escapeHtml(input.phone)}</p>
+      <p><strong>Talep sahibi:</strong> ${escapeHtml(input.audience)}</p>
+      <p><strong>Eğitim / sınav:</strong> ${escapeHtml(input.education||'-')}</p>
+      <p><strong>Tercih edilen zaman:</strong> ${escapeHtml(input.preferredTime)}</p>
+      <p><strong>Not:</strong> ${escapeHtml(input.note||'-')}</p>
+      <p>Bu talep KEKS Akademi abonelik sayfasındaki “Sizi Arayalım” formundan gönderildi.</p>
+    </div>`;
+  return sendFromKeksGmail(recipient,'KEKS Akademi | Yeni arama talebi',html);
+}
+
 export async function sendAssessmentReport(input: { studentCode: string; studentName: string; assessmentId: string; report: unknown }) {
   const recipient = KEKS_CONTACT_EMAIL;
   const body = `
