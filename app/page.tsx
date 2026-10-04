@@ -4,6 +4,7 @@ import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { KEKS_CORE_SENTENCE } from '@/lib/keksCore';
 import { HomeMarketingSections } from '@/app/components/HomeMarketingSections';
 import { SiteMenu } from '@/app/components/SiteMenu';
+import { HOME_PHOTOS } from '@/lib/homePhotos';
 
 export const dynamic='force-dynamic';
 
@@ -62,7 +63,7 @@ export default async function Home() {
 
         <div className="homeHeroVisual">
           <div className="homeHeroVisualHalo"/>
-          <Image src="/home-hero-student.svg" alt="KEKS ile planlama, takip ve gelişim araçlarını kullanan öğrenci" width={620} height={520} priority sizes="(max-width: 900px) 92vw, 44vw"/>
+          <Image className="homeRealPhoto homeHeroPhoto" src={HOME_PHOTOS.hero} alt="KEKS Akademi koçuyla birlikte çalışma planını inceleyen öğrenci" width={1260} height={840} priority sizes="(max-width: 900px) 92vw, 44vw"/>
           <div className="homeHeroNote homeHeroNoteOne">Planla · Çalış · Takip et</div>
           <div className="homeHeroNote homeHeroNoteTwo">Daha iyi bir sen mümkün.</div>
         </div>
@@ -83,7 +84,7 @@ export default async function Home() {
         </div>
       </div>
       <div className="homeIntroDashboard">
-        <Image src="/home-system-dashboard.svg" alt="KEKS plan, gelişim ve tekrar takip ekranı illüstrasyonu" width={680} height={410} sizes="(max-width: 900px) 92vw, 46vw"/>
+        <Image className="homeRealPhoto homeSectionPhoto" src={HOME_PHOTOS.system} alt="Koç eşliğinde bilgisayarlarla çalışan öğrenciler" width={1260} height={840} sizes="(max-width: 900px) 92vw, 46vw"/>
       </div>
     </section>
 
@@ -132,7 +133,7 @@ export default async function Home() {
           <p>Öğrenci, Partner Koç, veli ve yönetici aynı KEKS omurgasına bağlanır; herkes yalnızca kendi rolüne uygun ekranı görür.</p>
         </div>
         <div className="homePortalIllustration">
-          <Image src="/home-ecosystem.svg" alt="Öğrenci, koç, veli ve yönetici panellerini bağlayan KEKS ekosistemi" width={640} height={360} sizes="(max-width: 900px) 92vw, 44vw"/>
+          <Image className="homeRealPhoto homeSectionPhoto" src={HOME_PHOTOS.portal} alt="KEKS ekosisteminde birlikte çalışan koç ve öğrenci" width={1100} height={760} sizes="(max-width: 900px) 92vw, 44vw"/>
         </div>
       </div>
       <div className="homePortalGrid">
