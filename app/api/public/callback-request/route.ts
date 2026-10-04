@@ -13,7 +13,7 @@ const callbackSchema=z.object({
   preferredTime:z.enum(['09:00–12:00','12:00–15:00','15:00–18:00','18:00–21:00']),
   note:z.string().trim().max(500).default(''),
   consent:z.literal(true),
-  website:z.string().max(0).optional()
+  website:z.string().max(200).optional()
 });
 
 async function POST__handler(req:Request){
