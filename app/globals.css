@@ -1453,3 +1453,78 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .homePortalTop{gap:12px}
 }
 @media(prefers-reduced-motion:reduce){.homeHeroVisual img{animation:none}.homeFeatures .homeFeature,.homePlanCard,.homeFirst30Card,.homeGuaranteeCard,.homePortalCard{transition:none}}
+
+
+/* Realistic coach/student photography */
+.homeRealPhoto{
+  display:block;
+  object-fit:cover;
+  border-radius:26px;
+  border:1px solid rgba(255,255,255,.14);
+  background:#0b2031;
+  box-shadow:0 24px 54px rgba(0,0,0,.26),0 0 0 1px rgba(239,201,109,.04) inset;
+}
+.homeHeroVisual .homeRealPhoto{
+  width:min(100%,620px);
+  height:470px;
+  object-position:center;
+  filter:none;
+}
+.homeIntroDashboard .homeRealPhoto{
+  width:100%;
+  height:390px;
+  object-position:center;
+  filter:none;
+}
+.homeReviewVisual .homeRealPhoto{
+  width:100%;
+  height:330px;
+  object-position:center;
+  filter:none;
+}
+.homeCallbackVisual .homeRealPhoto{
+  width:min(100%,460px);
+  height:310px;
+  object-position:center;
+  filter:none;
+}
+.homeFaqVisual .homeRealPhoto{
+  width:min(100%,430px);
+  height:310px;
+  object-position:center;
+  filter:none;
+}
+.homePortalIllustration .homeRealPhoto{
+  width:100%;
+  height:340px;
+  object-position:center;
+  filter:none;
+}
+.homeHeroVisual::after,
+.homeIntroDashboard::after,
+.homeReviewVisual::after,
+.homeCallbackVisual::after,
+.homeFaqVisual::after,
+.homePortalIllustration::after{
+  content:'';
+  position:absolute;
+  inset:auto 7% -12px 7%;
+  height:26px;
+  border-radius:50%;
+  background:rgba(0,0,0,.28);
+  filter:blur(18px);
+  pointer-events:none;
+}
+.homeReviewVisual,
+.homeCallbackVisual,
+.homeFaqVisual,
+.homePortalIllustration{position:relative}
+
+@media(max-width:760px){
+  .homeHeroVisual .homeRealPhoto{height:340px}
+  .homeIntroDashboard .homeRealPhoto,
+  .homeReviewVisual .homeRealPhoto,
+  .homeCallbackVisual .homeRealPhoto,
+  .homeFaqVisual .homeRealPhoto,
+  .homePortalIllustration .homeRealPhoto{height:280px}
+}
