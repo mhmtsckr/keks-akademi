@@ -3,32 +3,7 @@ import {PortalShell,PortalSectionTitle} from '@/app/components/PortalShell';
 import {BUSINESS_INFO} from '@/lib/businessInfo';
 import {StudentPlanSelector} from './StudentPlanSelector';
 import {CallbackRequestForm} from './CallbackRequestForm';
-
-const FIRST_30_DAYS=[
-  {range:'1–3. gün',title:'Başlangıç fotoğrafını çıkar',text:'Çalışma düzeni, hedef, mevcut performans, tekrar alışkanlığı ve ihtiyaç alanların ölçülür.'},
-  {range:'4–7. gün',title:'Kişisel planını kur',text:'Günlük kapasiten, ders önceliklerin ve hedeflerine göre uygulanabilir bir çalışma akışı oluşturulur.'},
-  {range:'8–14. gün',title:'Uygula ve veri üret',text:'Görev, soru, süre, doğru–yanlış–boş ve çalışma davranışların kaydedilmeye başlar.'},
-  {range:'15–21. gün',title:'Tekrar ve yanlış döngüsünü çalıştır',text:'Geciken tekrarlar, yanlış sorular ve bilgi hâkimiyeti durumları görünür hâle gelir; plan buna göre güncellenir.'},
-  {range:'22–30. gün',title:'Yeniden ölç ve yönünü netleştir',text:'İlk ay verisi karşılaştırılır; güçlü gelişen alanlar, müdahale gereken noktalar ve sonraki ayın ana hedefleri belirlenir.'}
-];
-
-const GUARANTEES=[
-  {title:'Ölçmeden plan yok',text:'Planın yalnız beyana göre değil, sisteme kaydedilen performans ve çalışma davranışı verilerine göre şekillenir.'},
-  {title:'Kaçan görev kaybolmaz',text:'Tamamlanmayan işler kapasiteye göre yeniden dağıtılır; yalnızca ertesi güne yığılmaz.'},
-  {title:'Tekrar görünür kalır',text:'Geciken tekrarlar ve yanlış sorular takip döngüsünde yeniden önüne gelir.'},
-  {title:'Gelişim açıklanabilir olur',text:'Koç ve öğrenci yalnız bir puan değil; neden, değişim, risk sinyali ve önerilen aksiyonu görür.'}
-];
-
-const FAQ=[
-  ['KEKS Akademi tam olarak nedir?','KEKS; ölçüm, kişisel planlama, uygulama takibi, yanlış soru yönetimi, tekrar, gelişim raporlama ve koç aksiyonlarını tek sistemde birleştiren eğitim ve koçluk platformudur.'],
-  ['İlk 30 günde kesin net artışı olur mu?','KEKS belirli bir net, puan veya sıralama sonucu garanti etmez. İlk 30 günün amacı çalışma düzenini ölçülebilir hâle getirmek, kişisel sistemi kurmak ve sonraki müdahaleler için güvenilir veri oluşturmaktır.'],
-  ['Aylık paketi istediğim zaman iptal edebilir miyim?','Aylık paket her ay yenilenir. Yenileme öncesinde iptal talebi verebilirsiniz. Güncel iptal ve iade koşulları İptal & İade sayfasında yer alır.'],
-  ['3, 6 ve 12 aylık paketlerin farkı nedir?','Temel KEKS çalışma mantığı aynı kalır; süre uzadıkça takip döngüsü daha uzun bir gelişim dönemini kapsar ve toplam fiyat avantajı artar.'],
-  ['MİZA insan koçun yerini mi alıyor?','Hayır. MİZA veri analizi, hatırlatma ve karar desteği sağlar. KEKS Partner Koç ise görüşme, takip, yorumlama ve gerekli insan müdahalesini yürütür.'],
-  ['KEKS Partner Koç nedir?','KEKS ana markası ve metodolojisi içinde çalışan profesyonel koçtur. Öğrenci deneyimi, MİZA, ölçüm, planlama, tekrar ve raporlama KEKS Akademi altyapısıyla yürütülür.'],
-  ['Hangi eğitim ve sınav grupları destekleniyor?','İlkokul, ortaokul, LGS, lise, YKS/mezun, KPSS/EKPSS, DGS, ALES, YDS/YÖKDİL, AGS/YDS ve AGS/ÖABT grupları için farklılaştırılmış planlar bulunur.'],
-  ['Paket seçmeden önce görüşebilir miyim?','Evet. Sizi Arayalım formunu doldurabilir veya sayfadaki WhatsApp butonundan doğrudan KEKS Akademi ile iletişime geçebilirsiniz.']
-];
+import {FIRST_30_DAYS,KEKS_KEKS_GUARANTEES,MARKETING_MARKETING_FAQ} from '@/lib/marketingContent';
 
 function coachWhatsappHref(plan:KeksPlan){
   const phone='90'+BUSINESS_INFO.phone.replace(/\D/g,'').replace(/^0/,'');
@@ -106,7 +81,7 @@ export default function SubscriptionPlansPage(){
         description="KEKS Garantisi; belirli bir net, puan veya sıralamayı değil, aktif abonelik boyunca aşağıdaki çalışma ve takip standardını ifade eder."
       />
       <div className="guaranteeGrid">
-        {GUARANTEES.map((item,index)=><article className="guaranteeCard" key={item.title}>
+        {KEKS_GUARANTEES.map((item,index)=><article className="guaranteeCard" key={item.title}>
           <div className="guaranteeMark">✓</div>
           <div><span className="portalEyebrow">GARANTİ {index+1}</span><h3>{item.title}</h3><p>{item.text}</p></div>
         </article>)}
@@ -151,7 +126,7 @@ export default function SubscriptionPlansPage(){
         description="Paket, iptal, ilk 30 gün, MİZA ve KEKS Partner Koç modeliyle ilgili temel sorular."
       />
       <div className="faqList">
-        {FAQ.map(([question,answer])=><details className="faqItem" key={question}><summary>{question}<span>+</span></summary><p>{answer}</p></details>)}
+        {MARKETING_FAQ.map(([question,answer])=><details className="faqItem" key={question}><summary>{question}<span>+</span></summary><p>{answer}</p></details>)}
       </div>
     </section>
   </PortalShell>;
