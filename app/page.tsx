@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { getKeksMonthlyProduct } from '@/lib/monthlyProduct';
 import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { KEKS_CORE_SENTENCE } from '@/lib/keksCore';
@@ -12,7 +13,7 @@ export default async function Home() {
     <section className="homeHero">
       <nav className="homeNav">
         <a href="/" className="homeBrand" aria-label="KEKS Akademi ana sayfa">
-          <img className="homeBrandLogo" src="/keks-robot-logo.svg" alt="KEKS Akademi" />
+          <Image className="homeBrandLogo" src="/keks-logo.svg" alt="KEKS Akademi" width={180} height={72} priority />
         </a>
         <SiteMenu/>
       </nav>
@@ -59,45 +60,30 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="homeMountain" aria-hidden="true">
-          <svg viewBox="0 0 360 300">
-            <defs>
-              <linearGradient id="mountain" x1="0" y1="1" x2="1" y2="0">
-                <stop offset="0" stopColor="#0b2543"/>
-                <stop offset=".55" stopColor="#28445f"/>
-                <stop offset="1" stopColor="#8a704a"/>
-              </linearGradient>
-              <linearGradient id="road" x1="0" x2="1">
-                <stop offset="0" stopColor="#9d671d"/>
-                <stop offset=".5" stopColor="#f3cf74"/>
-                <stop offset="1" stopColor="#fff1b0"/>
-              </linearGradient>
-            </defs>
-            <path d="M8 280 98 218l44 18 65-92 35 32 54-97 56 201Z" fill="url(#mountain)" opacity=".95"/>
-            <path d="M96 276c33-17 65-23 87-52 24-32-1-44 24-70 20-21 43-9 55-31 9-16 9-32 13-48" fill="none" stroke="url(#road)" strokeWidth="7" strokeLinecap="round"/>
-            <path d="M276 70v-28" stroke="#f4cc6a" strokeWidth="4"/>
-            <path d="M278 42h31l-13 10 13 10h-31Z" fill="#f4cc6a"/>
-            <circle cx="276" cy="69" r="8" fill="#fff3bd"/>
-          </svg>
-          <div className="homeMountainCopy">
-            <span>DAHA BİLİNÇLİ</span>
-            <span>DAHA GÜÇLÜ</span>
-            <span>DAHA SEN</span>
-          </div>
+        <div className="homeHeroVisual">
+          <div className="homeHeroVisualHalo"/>
+          <Image src="/home-hero-student.svg" alt="KEKS ile planlama, takip ve gelişim araçlarını kullanan öğrenci" width={620} height={520} priority sizes="(max-width: 900px) 92vw, 44vw"/>
+          <div className="homeHeroNote homeHeroNoteOne">Planla · Çalış · Takip et</div>
+          <div className="homeHeroNote homeHeroNoteTwo">Daha iyi bir sen mümkün.</div>
         </div>
       </div>
     </section>
 
-    <section id="sistem" className="homeIntro">
-      <div className="homeSectionTitle">
-        <span>KEKS AKADEMİ</span>
-        <h2>Öğrenciyi sadece takip etmeyen, veriyi yorumlayıp yönlendiren sistem.</h2>
-        <p>Koç, öğrenci ve veli aynı gelişim yolculuğunu kendi yetkileriyle görür. Sistem hedefleri, denemeleri, çalışma sürelerini, teknik kullanımını ve konu ilerlemesini tek yerde birleştirir.</p>
+    <section id="sistem" className="homeIntro homeIntroVisualized">
+      <div className="homeIntroCopy">
+        <div className="homeSectionTitle">
+          <span>KEKS AKADEMİ</span>
+          <h2>Öğrenciyi sadece takip etmeyen, veriyi yorumlayıp yönlendiren sistem.</h2>
+          <p>Koç, öğrenci ve veli aynı gelişim yolculuğunu kendi yetkileriyle görür. Sistem hedefleri, denemeleri, çalışma sürelerini, teknik kullanımını ve konu ilerlemesini tek yerde birleştirir.</p>
+        </div>
+        <div className="homeStats">
+          <div><strong>7/24</strong><span>kişisel takip altyapısı</span></div>
+          <div><strong>0–1–3–7–14–28</strong><span>akıllı tekrar döngüsü</span></div>
+          <div><strong>3 Panel</strong><span>öğrenci · koç · veli</span></div>
+        </div>
       </div>
-      <div className="homeStats">
-        <div><strong>7/24</strong><span>kişisel takip altyapısı</span></div>
-        <div><strong>0–1–3–7–14–28</strong><span>akıllı tekrar döngüsü</span></div>
-        <div><strong>3 Panel</strong><span>öğrenci · koç · veli</span></div>
+      <div className="homeIntroDashboard">
+        <Image src="/home-system-dashboard.svg" alt="KEKS plan, gelişim ve tekrar takip ekranı illüstrasyonu" width={680} height={410} sizes="(max-width: 900px) 92vw, 46vw"/>
       </div>
     </section>
 
@@ -118,24 +104,36 @@ export default async function Home() {
       </div>
     </section>
 
-    <section className="homeFeatures" aria-label="KEKS aylık ürün kampanyası">
-      <div className="homeFeature homeFeatureLarge">
+    <section className="homeFeatures homeOfferSection" aria-label="KEKS aylık ürün kampanyası">
+      <div className="homeFeature homeFeatureLarge homeOfferCard">
         <span className="homeFeatureIcon">%</span>
-        <div>
+        <div className="homeOfferCopy">
           <small>{product.monthName} AYI ÜRÜNÜ</small>
           <h3>{product.name}</h3>
           <p>Liste fiyatı <strong>{product.listPriceLabel}</strong>. Güncel satış fiyatı <strong>{product.priceLabel}</strong>{product.discountPercent>0?' · %'+product.discountPercent+' indirim':''}. Fiyat yönetici panelindeki tek merkezi kaynaktan gelir.</p>
           <a className="homeBtn homeBtnGold" href="/ogrenci">Ürünü Gör ve Eriş</a>
+        </div>
+        <div className="homeOfferVisual" aria-hidden="true">
+          <span className="homeOfferBadge">{product.discountPercent>0?'%'+product.discountPercent:'KEKS'}</span>
+          <div className="homeOfferCalendar"><b>{product.monthName.slice(0,3)}</b><strong>30</strong><span>günlük gelişim odağı</span></div>
+          <i className="homeOfferSpark homeOfferSparkOne"/>
+          <i className="homeOfferSpark homeOfferSparkTwo"/>
         </div>
       </div>
     </section>
 
     <HomeMarketingSections/>
 
-    <section className="homePortal">
-      <div className="homePortalCopy">
-        <span>KEKS EKOSİSTEMİNE GİR</span>
-        <h2>Her kullanıcı için ayrı, sade ve güvenli panel.</h2>
+    <section className="homePortal homePortalVisualized">
+      <div className="homePortalTop">
+        <div className="homePortalCopy">
+          <span>KEKS EKOSİSTEMİNE GİR</span>
+          <h2>Her kullanıcı için ayrı, sade ve güvenli panel.</h2>
+          <p>Öğrenci, Partner Koç, veli ve yönetici aynı KEKS omurgasına bağlanır; herkes yalnızca kendi rolüne uygun ekranı görür.</p>
+        </div>
+        <div className="homePortalIllustration">
+          <Image src="/home-ecosystem.svg" alt="Öğrenci, koç, veli ve yönetici panellerini bağlayan KEKS ekosistemi" width={640} height={360} sizes="(max-width: 900px) 92vw, 44vw"/>
+        </div>
       </div>
       <div className="homePortalGrid">
         <a href="/ogrenci" className="homePortalCard"><b>01</b><h3>Öğrenci</h3><p>Planlar, testler, teknikler ve hedef takibi.</p><span>Panele Gir →</span></a>
