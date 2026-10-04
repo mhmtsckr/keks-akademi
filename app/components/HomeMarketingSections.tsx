@@ -2,6 +2,7 @@ import Image from 'next/image';
 import {CallbackRequestForm} from '@/app/abonelik-planlari/CallbackRequestForm';
 import {COACHING_COMPARISON,FIRST_30_DAYS,KEKS_GUARANTEES,MARKETING_FAQ} from '@/lib/marketingContent';
 import {STUDENT_TERM_PRICING} from '@/lib/subscriptionPlans';
+import {HOME_PHOTOS} from '@/lib/homePhotos';
 
 function minFirstMonth(){
   const values=Object.values(STUDENT_TERM_PRICING).map(x=>x.firstMonth);
@@ -163,7 +164,7 @@ export function HomeMarketingSections(){
           </div>
         </div>
         <div className="homeReviewVisual">
-          <Image src="/home-reviews-verified.svg" alt="Doğrulanmış kullanıcı yorumlarını temsil eden konuşma kartları ve onay rozeti" width={520} height={320} sizes="(max-width: 900px) 80vw, 34vw"/>
+          <Image className="homeRealPhoto homeSectionPhoto" src={HOME_PHOTOS.review} alt="Öğrenciyle birebir çalışan KEKS Akademi koçu" width={1100} height={760} sizes="(max-width: 900px) 80vw, 34vw"/>
         </div>
       </div>
     </section>
@@ -181,7 +182,7 @@ export function HomeMarketingSections(){
           <p>Eğitim düzeyi, sınav hedefi, çalışma düzeni veya Partner Koç kapasitesi üzerinden en uygun seçenek birlikte değerlendirilir.</p>
           <div><span>✓ Paket ve süre karşılaştırması</span><span>✓ Öğrenci / veli ihtiyaç değerlendirmesi</span><span>✓ KEKS Partner Koç lisans bilgisi</span></div>
           <div className="homeCallbackVisual">
-            <Image src="/home-callback-support.svg" alt="KEKS Akademi bilgi görüşmesini temsil eden destek illüstrasyonu" width={520} height={390} sizes="(max-width: 900px) 82vw, 34vw"/>
+            <Image className="homeRealPhoto homeSectionPhoto" src={HOME_PHOTOS.callback} alt="Öğrencinin çalışmasını yakından takip eden eğitim koçu" width={1100} height={760} sizes="(max-width: 900px) 82vw, 34vw"/>
           </div>
         </div>
         <CallbackRequestForm/>
@@ -191,7 +192,7 @@ export function HomeMarketingSections(){
     <section className="homeConversionSection homeFaqSection" id="sss">
       <div className="homeFaqLayout">
         <div className="homeFaqVisual">
-          <Image src="/home-faq-help.svg" alt="KEKS Akademi sıkça sorulan sorular yardım illüstrasyonu" width={480} height={330} sizes="(max-width: 900px) 72vw, 31vw"/>
+          <Image className="homeRealPhoto homeSectionPhoto" src={HOME_PHOTOS.faq} alt="Dijital çalışma ortamında ders çalışan öğrenci" width={1100} height={760} sizes="(max-width: 900px) 72vw, 31vw"/>
           <span>Tüm soruların için buradayız.</span>
         </div>
         <div>
