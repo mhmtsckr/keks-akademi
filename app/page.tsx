@@ -1,6 +1,7 @@
 import { getKeksMonthlyProduct } from '@/lib/monthlyProduct';
 import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { KEKS_CORE_SENTENCE } from '@/lib/keksCore';
+import { HomeMarketingSections } from '@/app/components/HomeMarketingSections';
 
 export const dynamic='force-dynamic';
 
@@ -52,10 +53,11 @@ export default async function Home() {
             </svg>
           </div>
           <div className="homeAcademy">AKADEMİ</div>
+          <h1 className="homeHeroHeadline">Ders çalışmayı tesadüften çıkar, sisteme dönüştür.</h1>
           <p className="homeTagline">{KEKS_CORE_SENTENCE}</p>
           <div className="homeActions">
-            <a className="homeBtn homeBtnGold" href="/ogrenci">Öğrenci Girişi</a>
-            <a className="homeBtn homeBtnGhost" href="/koc">Koç Paneli</a>
+            <a className="homeBtn homeBtnGold" href="/abonelik-planlari">Paketleri İncele</a>
+            <a className="homeBtn homeBtnGhost" href="#sizi-arayalim">Sizi Arayalım</a>
           </div>
           <div className="homeTrust">
             <span>Akıllı Eğitim Koçu</span>
@@ -134,6 +136,8 @@ export default async function Home() {
         </div>
       </div>
     </section>
+
+    <HomeMarketingSections/>
 
     <section className="homePortal">
       <div className="homePortalCopy">
