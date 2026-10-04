@@ -32,18 +32,17 @@ function verifySignature(rawBody:string,signature:string|null){
   return a.length===b.length&&crypto.timingSafeEqual(a,b);
 }
 
-function getConfig(){
+function getSendConfig(){
   const accessToken=process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId=process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const verifyToken=process.env.WHATSAPP_VERIFY_TOKEN;
   const graphVersion=process.env.WHATSAPP_GRAPH_VERSION;
-  if(!accessToken||!phoneNumberId||!verifyToken||!graphVersion)return null;
-  return {accessToken,phoneNumberId,verifyToken,graphVersion};
+  if(!accessToken||!phoneNumberId||!graphVersion)return null;
+  return {accessToken,phoneNumberId,graphVersion};
 }
 
 async function sendText(to:string,body:string){
-  const config=getConfig();
-  if(!config)throw new Error('WhatsApp Cloud API yapılandırması eksik.');
+  const config=getSendConfig();
+  if(!config)throw new Error('WhatsApp Cloud API gönderim yapılandırması eksik.');
   const endpoint=`https://graph.facebook.com/${config.graphVersion}/${config.phoneNumberId}/messages`;
   const response=await fetch(endpoint,{
     method:'POST',
@@ -73,14 +72,14 @@ function incomingMessages(payload:WhatsAppWebhookPayload){
 }
 
 export async function GET(request:NextRequest){
-  const config=getConfig();
-  if(!config)return new NextResponse('WhatsApp yapılandırması eksik.',{status:503});
+  const verifyToken=process.env.WHATSAPP_VERIFY_TOKEN;
+  if(!verifyToken)return new NextResponse('WhatsApp webhook doğrulama anahtarı eksik.',{status:503});
 
   const mode=request.nextUrl.searchParams.get('hub.mode');
   const token=request.nextUrl.searchParams.get('hub.verify_token');
   const challenge=request.nextUrl.searchParams.get('hub.challenge');
 
-  if(mode==='subscribe'&&token===config.verifyToken&&challenge){
+  if(mode==='subscribe'&&token===verifyToken&&challenge){
     return new NextResponse(challenge,{status:200,headers:{'Content-Type':'text/plain'}});
   }
   return new NextResponse('Doğrulama başarısız.',{status:403});
