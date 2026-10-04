@@ -1033,8 +1033,8 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .selectedStudentPlan p{margin:0;color:#9fb0c2;line-height:1.55}
 .selectedStudentPlanFeatures{display:grid;gap:8px;align-content:center}
 .selectedStudentPlanFeatures span{font-size:13px;color:#cbd5df;line-height:1.45}
-.studentTermGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.studentTermCard{position:relative;display:flex;flex-direction:column;gap:13px;min-width:0;padding:20px;border-radius:18px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035)}
+.studentTermGrid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(285px,340px);gap:14px;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:inline mandatory;scroll-padding-inline:2px;padding:2px 2px 16px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.studentTermCard{position:relative;display:flex;flex-direction:column;gap:13px;min-width:0;padding:20px;border-radius:18px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035);scroll-snap-align:start}
 .studentTermCard.featured{border-color:rgba(239,201,109,.38);background:linear-gradient(180deg,rgba(239,201,109,.09),rgba(255,255,255,.03))}
 .studentTermBadge{align-self:flex-start;padding:5px 8px;border-radius:999px;background:#efc96d;color:#18202a;font-size:10px;font-weight:900;letter-spacing:.04em}
 .studentTermCardHead{display:grid;gap:5px}
@@ -1045,6 +1045,5 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .studentTermPriceDetail{font-size:12px;font-weight:800;color:#dce5ee;line-height:1.45}
 .studentTermNote{min-height:58px;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.035);color:#91a5ba;font-size:12px;line-height:1.45}
 .studentTermCta{margin-top:auto;text-align:center;justify-content:center}
-@media(max-width:1100px){.studentTermGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.selectedStudentPlan{grid-template-columns:1fr}.studentPlanPickerHeading{align-items:flex-start;flex-direction:column}.studentPlanChoiceGrid,.studentPlanChoiceGrid.compact{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.studentTermGrid{grid-template-columns:1fr}.studentPlanChoiceGrid,.studentPlanChoiceGrid.compact{grid-template-columns:1fr 1fr}.studentTermCardHead p,.studentTermNote{min-height:0}}
+@media(max-width:560px){.studentTermGrid{grid-auto-columns:min(86vw,330px);margin-inline:-4px;padding-inline:4px;padding-bottom:18px}.studentTermGrid::after{content:'';width:8vw}.studentPlanChoiceGrid,.studentPlanChoiceGrid.compact{grid-template-columns:1fr 1fr}.studentTermCardHead p,.studentTermNote{min-height:0}}
