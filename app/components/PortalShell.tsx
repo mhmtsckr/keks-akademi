@@ -1,14 +1,5 @@
 import type { ReactNode } from 'react';
-import { LogoutButton } from './LogoutButton';
-
-const NAV=[
-  ['sistem','/sistem','Sistem'],
-  ['ozellikler','/ozellikler','Özellikler'],
-  ['ogrenci','/ogrenci','Öğrenci'],
-  ['koc','/koc','Koç'],
-  ['veli','/veli','Veli'],
-  ['yonetici','/yonetici','Yönetici'],
-] as const;
+import { SiteMenu } from './SiteMenu';
 
 const ROLE_COPY:Record<string,{left:string[];right:string[]}> = {
   sistem:{left:['FARK ET','ÖĞREN','GELİŞ','BAŞAR'],right:['TEK SİSTEM','ORTAK VERİ','AKILLI YÖN']},
@@ -26,12 +17,9 @@ export function KeksBrand({compact=false}:{compact?:boolean}){
 }
 
 export function KeksNav({active,signedIn=false}:{active?:string;signedIn?:boolean}){
-  return <nav className="portalNav">
+  return <nav className="portalNav" data-active={active||undefined}>
     <KeksBrand/>
-    <div className="portalNavLinks">
-      {NAV.map(([key,href,label])=><a key={key} href={href} className={active===key?'active':''}>{label}</a>)}
-      {signedIn&&<LogoutButton/>}
-    </div>
+    <SiteMenu signedIn={signedIn}/>
   </nav>;
 }
 

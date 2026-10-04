@@ -1,41 +1,40 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
-import { KeksNav } from './PortalShell';
+import {cleanup,render,screen} from '@testing-library/react';
+import {afterEach,describe,expect,it} from 'vitest';
+import {KeksNav} from './PortalShell';
 
 afterEach(cleanup);
 
-const cikis = () => screen.queryByRole('button', { name: /çık/i });
-
-describe('KeksNav', () => {
-  // Cikis butonu yalnizca giris yapilmis kabuklarda gorunmeli; ana sayfa ve
-  // giris ekranlari gibi herkese acik sayfalarda gorunmemeli.
-  it('varsayılan olarak çıkış butonu göstermez', () => {
-    render(<KeksNav />);
-    expect(cikis()).not.toBeInTheDocument();
+describe('KeksNav',()=>{
+  it('üç çizgili menü tetikleyicisini gösterir',()=>{
+    render(<KeksNav/>);
+    expect(screen.getByLabelText('Menüyü aç')).toBeInTheDocument();
   });
 
-  it('signedIn verilmediğinde de göstermez', () => {
-    render(<KeksNav active="ogrenci" />);
-    expect(cikis()).not.toBeInTheDocument();
-  });
-
-  it('signedIn olduğunda çıkış butonunu gösterir', () => {
-    render(<KeksNav active="ogrenci" signedIn />);
-    expect(cikis()).toBeInTheDocument();
-  });
-
-  it('rol bağlantılarını her durumda gösterir', () => {
-    render(<KeksNav active="koc" signedIn />);
-    for (const ad of ['Sistem', 'Özellikler', 'Öğrenci', 'Koç', 'Veli', 'Yönetici']) {
-      expect(screen.getByRole('link', { name: ad })).toBeInTheDocument();
+  it('ana menü bağlantılarını taşır',()=>{
+    const {container}=render(<KeksNav/>);
+    for(const href of ['/abonelik-planlari','/sistem','/kayit#ogrenci','/giris#ogrenci','/hakkimizda']){
+      expect(container.querySelector(`a[href="${href}"]`)).toBeInTheDocument();
     }
   });
 
-  it('aktif bölümü işaretler', () => {
-    render(<KeksNav active="veli" />);
-    expect(screen.getByRole('link', { name: 'Veli' })).toHaveClass('active');
-    expect(screen.getByRole('link', { name: 'Koç' })).not.toHaveClass('active');
+  it('öğrenci, koç ve veli kayıt/giriş bağlantılarını ayrı ayrı sunar',()=>{
+    const {container}=render(<KeksNav/>);
+    for(const href of ['/kayit#ogrenci','/kayit#koc','/kayit#veli','/giris#ogrenci','/giris#koc','/giris#veli']){
+      expect(container.querySelector(`a[href="${href}"]`)).toBeInTheDocument();
+    }
+  });
+
+  it('çıkış kontrolünü yalnız giriş yapılmış kabukta gösterir',()=>{
+    const {container,rerender}=render(<KeksNav/>);
+    expect(container.textContent).not.toContain('Çıkış');
+    rerender(<KeksNav signedIn active="ogrenci"/>);
+    expect(container.textContent).toContain('Çıkış');
+  });
+
+  it('aktif bölüm bilgisini nav üzerinde korur',()=>{
+    const {container}=render(<KeksNav active="veli"/>);
+    expect(container.querySelector('nav')).toHaveAttribute('data-active','veli');
   });
 });

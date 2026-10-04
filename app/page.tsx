@@ -2,6 +2,7 @@ import { getKeksMonthlyProduct } from '@/lib/monthlyProduct';
 import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { KEKS_CORE_SENTENCE } from '@/lib/keksCore';
 import { HomeMarketingSections } from '@/app/components/HomeMarketingSections';
+import { SiteMenu } from '@/app/components/SiteMenu';
 
 export const dynamic='force-dynamic';
 
@@ -13,15 +14,7 @@ export default async function Home() {
         <a href="/" className="homeBrand" aria-label="KEKS Akademi ana sayfa">
           <img className="homeBrandLogo" src="/keks-robot-logo.svg" alt="KEKS Akademi" />
         </a>
-        <div className="homeNavLinks">
-          <a href="/sistem">Sistem</a>
-          <a href="/ozellikler">Özellikler</a>
-          <a href="/abonelik-planlari">Abonelik Planları</a>
-          <a href="/ogrenci">Öğrenci</a>
-          <a href="/koc">Koç</a>
-          <a href="/veli">Veli</a>
-          <a className="homeNavCta" href="/yonetici">Yönetici</a>
-        </div>
+        <SiteMenu/>
       </nav>
 
       <div className="homeHeroGlow homeHeroGlowOne" />
