@@ -3,7 +3,7 @@ import {PortalShell,PortalSectionTitle} from '@/app/components/PortalShell';
 import {BUSINESS_INFO} from '@/lib/businessInfo';
 import {StudentPlanSelector} from './StudentPlanSelector';
 import {CallbackRequestForm} from './CallbackRequestForm';
-import {FIRST_30_DAYS,KEKS_KEKS_GUARANTEES,MARKETING_MARKETING_FAQ} from '@/lib/marketingContent';
+import {FIRST_30_DAYS,KEKS_GUARANTEES,MARKETING_FAQ} from '@/lib/marketingContent';
 
 function coachWhatsappHref(plan:KeksPlan){
   const phone='90'+BUSINESS_INFO.phone.replace(/\D/g,'').replace(/^0/,'');
