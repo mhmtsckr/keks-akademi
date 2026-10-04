@@ -48,7 +48,7 @@ export default async function Home() {
             </svg>
           </div>
           <div className="homeAcademy">AKADEMİ</div>
-          <h1 className="homeHeroHeadline">Ders çalışmayı tesadüften çıkar, sisteme dönüştür.</h1>
+          <h1 className="homeHeroHeadline">Çalışmanı veriye, veriyi başarıya dönüştür.</h1>
           <p className="homeTagline">{KEKS_CORE_SENTENCE}</p>
           <div className="homeActions">
             <a className="homeBtn homeBtnGold" href="/abonelik-planlari">Paketleri İncele</a>

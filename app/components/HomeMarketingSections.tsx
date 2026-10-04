@@ -213,7 +213,7 @@ export function HomeMarketingSections(){
 
     <section className="homeFinalCta">
       <span>KEKS AKADEMİ</span>
-      <h2>Ders çalışmayı tesadüften çıkar, sisteme dönüştür.</h2>
+      <h2>Çalışmanı veriye, veriyi başarıya dönüştür.</h2>
       <p>Ölç → Planla → Uygulat → Kaydet → Tekrar Ettir → Yeniden Ölç → Koça Aksiyon Öner.</p>
       <div>
         <a className="homeBtn homeBtnGold" href="/abonelik-planlari">Paketleri İncele</a>
