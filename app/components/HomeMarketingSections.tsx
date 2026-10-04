@@ -7,6 +7,9 @@ function minFirstMonth(){
   const values=Object.values(STUDENT_TERM_PRICING).map(x=>x.firstMonth);
   return Math.min(...values);
 }
+function minTermPrice(key:'threeMonths'|'sixMonths'|'annual'){
+  return Math.min(...Object.values(STUDENT_TERM_PRICING).map(x=>x[key]));
+}
 
 function cell(value:string,highlight=false){
   if(value==='Var')return <span className={highlight?'homeCompareCheck keks':'homeCompareCheck'}>✓</span>;
@@ -26,7 +29,58 @@ function MilestoneIcon({index}:{index:number}){
 
 export function HomeMarketingSections(){
   const startingPrice=minFirstMonth().toLocaleString('tr-TR')+' TL’den';
+  const threeMonth=minTermPrice('threeMonths');
+  const sixMonth=minTermPrice('sixMonths');
+  const annual=minTermPrice('annual');
   return <>
+    <section className="homeConversionSection homePlanShowcase" id="paketler">
+      <div className="homeConversionHead homePlanShowcaseHead">
+        <span>ABONELİK PLANLARI</span>
+        <h2>Hedefine uygun süreyi seç, KEKS sistemine başla.</h2>
+        <p>Fiyatlar eğitim düzeyi ve sınav türüne göre farklılaşır. Aşağıdaki tutarlar öğrenci planlarının en düşük başlangıç fiyatlarını gösterir.</p>
+      </div>
+      <div className="homePlanRail">
+        <a className="homePlanCard monthly" href="/abonelik-planlari">
+          <span className="homePlanArt"><i className="homeCalendarIcon"><b>1</b><small>AY</small></i></span>
+          <small>ESNEK BAŞLANGIÇ</small>
+          <h3>Aylık Plan</h3>
+          <p>İlk ay özel başlangıç fiyatıyla dene; sonraki aylarda standart ücretle devam et.</p>
+          <strong>{startingPrice}</strong>
+          <em>Her ay yenilenir · istediğin zaman iptal</em>
+          <b>Detayları Gör →</b>
+        </a>
+        <a className="homePlanCard camp featured" href="/abonelik-planlari">
+          <span className="homePlanRibbon">EN ÇOK TERCİH EDİLEN</span>
+          <span className="homePlanArt"><i className="homeTargetIcon">◎</i></span>
+          <small>90 GÜNLÜK RİTİM</small>
+          <h3>3 Aylık KEKS Kamp</h3>
+          <p>Çalışma düzenini kurmak, takip döngüsünü oturtmak ve ivme kazanmak için.</p>
+          <strong>{threeMonth.toLocaleString('tr-TR')} TL’den</strong>
+          <em>Eğitim düzeyine göre toplam paket</em>
+          <b>Detayları Gör →</b>
+        </a>
+        <a className="homePlanCard growth" href="/abonelik-planlari">
+          <span className="homePlanArt"><i className="homeGrowthIcon">↗</i></span>
+          <small>ORTA VADELİ GELİŞİM</small>
+          <h3>6 Aylık Güçlenme</h3>
+          <p>Yeni döneme, sınıf geçişine veya sınav sürecine daha sağlam hazırlanmak için.</p>
+          <strong>{sixMonth.toLocaleString('tr-TR')} TL’den</strong>
+          <em>6 aylık takip ve gelişim döngüsü</em>
+          <b>Detayları Gör →</b>
+        </a>
+        <a className="homePlanCard annual" href="/abonelik-planlari">
+          <span className="homePlanRibbon advantage">EN AVANTAJLI</span>
+          <span className="homePlanArt"><i className="homeCrownIcon">✦</i></span>
+          <small>12 AYLIK KEKS 360</small>
+          <h3>Yıllık Plan</h3>
+          <p>Uzun vadeli planlama, takip ve tekrar sistemini tek dönemde kesintisiz yürüt.</p>
+          <strong>{annual.toLocaleString('tr-TR')} TL’den</strong>
+          <em>Tek seferlik yıllık paket</em>
+          <b>Detayları Gör →</b>
+        </a>
+      </div>
+    </section>
+
     <section className="homeConversionSection homeCompareSection" id="karsilastirma">
       <div className="homeConversionHead">
         <span>KARŞILAŞTIRMA</span>
