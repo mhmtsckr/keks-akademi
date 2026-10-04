@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { SiteMenu } from './SiteMenu';
 
@@ -12,7 +13,7 @@ const ROLE_COPY:Record<string,{left:string[];right:string[]}> = {
 
 export function KeksBrand({compact=false}:{compact?:boolean}){
   return <a href="/" className={compact?'portalBrand portalBrandCompact':'portalBrand'} aria-label="KEKS Akademi ana sayfa">
-    <img className="portalBrandLogo" src="/keks-robot-logo.svg" alt="KEKS Akademi" />
+    <Image className="portalBrandLogo" src="/keks-logo.svg" alt="KEKS Akademi" width={180} height={72} />
   </a>;
 }
 
