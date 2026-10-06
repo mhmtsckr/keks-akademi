@@ -11,13 +11,14 @@ import { withOabtFieldApproval } from '@/lib/oabtFieldApproval';
 import { isEmailVerified,issueEmailVerification,markEmailVerificationRequired } from '@/lib/emailVerification';
 import { withApiErrors } from '@/lib/apiGuard';
 import {publicEducationContext,resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
+import {withRequiredStudentOnboarding} from '@/lib/studentOnboarding';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
   email:z.string().email().refine(v=>v.toLowerCase().endsWith('@gmail.com'),'Gmail adresi kullanın.'),
   gradeLevel:z.string().min(1).max(80),
   academicTrack:z.string().max(120).nullable().optional(),
-  coachId:z.string().min(1),
+  coachId:z.string().min(1).optional().nullable(),
   password:z.string().min(12).max(128)
 });
 
@@ -49,7 +50,7 @@ async function POST__handler(req:Request){
   const academicTrack=isAgsOabt?requestedTrack:isAgsYds?'YDS':(requestedTrack||null);
   const educationProfile=resolveEducationLevelProfile(gradeLevel,academicTrack);
   const educationContext=publicEducationContext(educationProfile);
-  const baseProfile=educationContext?{educationContext}:{};
+  const baseProfile=withRequiredStudentOnboarding(educationContext?{educationContext}:{},registrationTime);
   const initialProfile=isAgsOabt?withOabtFieldApproval(baseProfile,{
     status:'APPROVED',
     requestedField:requestedTrack,
@@ -60,7 +61,7 @@ async function POST__handler(req:Request){
     rejectedAt:null,
     rejectedByUserId:null,
     rejectionNote:null
-  }):educationContext?baseProfile:null;
+  }):baseProfile;
 
   const existing=await db.user.findUnique({where:{email}});
   if(existing?.status==='SUSPENDED'){
@@ -77,11 +78,11 @@ async function POST__handler(req:Request){
     return NextResponse.json({error:'Bu Gmail adresiyle daha önce hesap oluşturulmuş.'},{status:409});
   }
 
-  const coach=await db.coachProfile.findFirst({
+  const coach=input.coachId?await db.coachProfile.findFirst({
     where:{id:input.coachId,user:{status:'ACTIVE',role:'COACH'}},
     include:{user:{select:{name:true}}}
-  });
-  if(!coach)return NextResponse.json({error:'Seçilen koç aktif değil veya bulunamadı.'},{status:400});
+  }):null;
+  if(input.coachId&&!coach)return NextResponse.json({error:'Seçilen koç aktif değil veya bulunamadı.'},{status:400});
 
   const studentCode=await uniqueStudentCode();
   const monthlyCode=randomCode('KEKS');
@@ -104,14 +105,14 @@ async function POST__handler(req:Request){
     if(legacyColumns[0]?.exists){
       const studentId=crypto.randomUUID();
       const now=new Date();
-      const profileJson=initialProfile?JSON.stringify(initialProfile):null;
+      const profileJson=JSON.stringify(initialProfile);
       await tx.$executeRawUnsafe(
         `INSERT INTO "Student"
           ("id","userId","coachId","studentCode","accessKeyHash","accessKeyExpiresAt","credentialsDeliveryStatus","fullName","gradeLevel","academicTrack","profile","createdAt","updatedAt")
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$12)`,
         studentId,
         user.id,
-        coach.id,
+        coach?.id||null,
         studentCode,
         'RETIRED_EMAIL_PASSWORD_AUTH',
         new Date(0),
@@ -131,8 +132,8 @@ async function POST__handler(req:Request){
           fullName:input.fullName,
           gradeLevel,
           academicTrack,
-          ...(initialProfile?{profile:initialProfile as any}:{}),
-          coachId:coach.id
+          profile:initialProfile as any,
+          coachId:coach?.id||null
         }
       });
     }
@@ -146,7 +147,7 @@ async function POST__handler(req:Request){
         useCount:0,
         active:true,
         monthlyRecurring:true,
-        createdByUserId:coach.userId
+        createdByUserId:coach?.userId||user.id
       }
     });
     return {user,student};
@@ -165,8 +166,8 @@ async function POST__handler(req:Request){
     action:'STUDENT_APPLICATION_CREATED',
     entityType:'Student',
     entityId:created.student.id,
-    summary:input.fullName+' öğrenci başvurusu oluşturuldu, seçtiği koça bağlandı ve yönetici kayıtlarına otomatik KEKS ürün kodu eklendi.',
-    metadata:{coachId:coach.id,gradeLevel,academicTrack,educationProfileKey:educationProfile?.key||null,recommendedPlanId:educationProfile?.recommendedPlanId||null,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'APPROVED':null,oabtAutoApproved:isAgsOabt,email,automaticKeksProductCode:true}
+    summary:input.fullName+' öğrenci başvurusu oluşturuldu. Koç seçimi ilk giriş sihirbazına bırakıldı ve otomatik KEKS ürün kodu eklendi.',
+    metadata:{coachId:coach?.id||null,gradeLevel,academicTrack,educationProfileKey:educationProfile?.key||null,recommendedPlanId:educationProfile?.recommendedPlanId||null,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'APPROVED':null,oabtAutoApproved:isAgsOabt,email,automaticKeksProductCode:true}
   });
 
   return NextResponse.json({

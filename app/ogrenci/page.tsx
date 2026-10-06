@@ -1,3 +1,4 @@
+import {redirect} from 'next/navigation';
 import { StudentMicroLearning } from '@/app/components/StudentMicroLearning';
 import { StudentWeeklyReflection } from '@/app/components/StudentWeeklyReflection';
 import { currentUser } from '@/lib/auth';
@@ -37,6 +38,7 @@ import { StudentExamMap } from '@/app/components/StudentExamMap';
 import { StudentMobileQuickActions } from '@/app/components/StudentMobileQuickActions';
 import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { buildStudentExamMap } from '@/lib/examMap';
+import { isStudentOnboardingRequired } from '@/lib/studentOnboarding';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -67,21 +69,36 @@ export default async function StudentPage() {
         </div>
         <div className="stack">
           <div className="card"><h2>Öğrenci Girişi</h2><p className="muted">Kayıtlı e-posta adresiniz ve kendi oluşturduğunuz şifreyle giriş yapın.</p><StudentLoginForm/></div>
-          <div className="card"><h2>Öğrenci Kaydı</h2><p className="muted">Bilgilerinizi girin, güçlü şifrenizi oluşturun ve aktif koçlardan birini seçin.</p><StudentRegisterForm/></div>
+          <div className="card"><h2>Öğrenci Kaydı</h2><p className="muted">Bilgilerinizi girin ve güçlü şifrenizi oluşturun. Koç seçimi ile çalışma profili ilk giriş sihirbazında tamamlanır.</p><StudentRegisterForm/></div>
         </div>
       </section>
     </PortalShell>;
   }
+
+  if(isStudentOnboardingRequired(user.student.profile))redirect('/ogrenci/baslangic');
 
   const hasSubscription=await hasActiveSubscription(user.id,'STUDENT');
 
   if (!hasSubscription) {
     const techniqueOnlyStudent=await db.student.findUnique({
       where:{id:user.student.id},
-      select:{fullName:true,techniquePreferences:{}}
+      select:{
+        fullName:true,
+        techniquePreferences:{},
+        plans:{
+          where:{title:'İlk 7 Günlük Başlangıç Planı',active:true},
+          orderBy:{createdAt:'desc'},
+          take:1,
+          select:{payload:true}
+        }
+      }
     });
     if(!techniqueOnlyStudent)return null;
-    return <UnsubscribedStudentTechniques fullName={techniqueOnlyStudent.fullName} initialPreferences={techniqueOnlyStudent.techniquePreferences}/>;
+    return <UnsubscribedStudentTechniques
+      fullName={techniqueOnlyStudent.fullName}
+      initialPreferences={techniqueOnlyStudent.techniquePreferences}
+      starterPlan={techniqueOnlyStudent.plans[0]?.payload||null}
+    />;
   }
 
   const student = await db.student.findUnique({

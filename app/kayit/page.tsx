@@ -19,7 +19,7 @@ export default function RegisterHubPage(){
         <article className="roleAccessCard section-anchor" id="ogrenci">
           <span className="portalEyebrow">ÖĞRENCİ</span>
           <h2>Öğrenci Kaydı</h2>
-          <p>Eğitim düzeyinizi, hedefinizi ve aktif KEKS Partner Koçunuzu seçerek öğrenci hesabınızı oluşturun.</p>
+          <p>Temel bilgilerinizi ve eğitim düzeyinizi girerek hesabınızı oluşturun; hedef, çalışma düzeni ve KEKS Partner Koç seçimi ilk giriş sihirbazında tamamlanır.</p>
           <StudentRegisterForm/>
           <a className="roleAccessLink" href="/giris#ogrenci">Zaten hesabın var mı? Giriş yap →</a>
         </article>
