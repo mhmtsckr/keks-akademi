@@ -82,7 +82,7 @@ describe('dynamic capacity-aware study plan',()=>{
   it('publishes the dynamic engine version while keeping student API simple',()=>{
     const engine=read('lib/learningEngine.ts');
     const route=read('app/api/student/today/route.ts');
-    expect(engine).toContain("engineVersion:'TODAY_PLAN_V4_DYNAMIC'");
+    expect(engine).toContain("engineVersion:'TODAY_PLAN_V5_EDUCATION_BACKBONE'");
     expect(route).not.toContain('policy:');
     expect(route).not.toContain('deferred:');
     expect(route).not.toContain('capacity:');
