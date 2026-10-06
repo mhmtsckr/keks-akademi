@@ -82,10 +82,23 @@ export default async function StudentPage() {
   if (!hasSubscription) {
     const techniqueOnlyStudent=await db.student.findUnique({
       where:{id:user.student.id},
-      select:{fullName:true,techniquePreferences:{}}
+      select:{
+        fullName:true,
+        techniquePreferences:{},
+        plans:{
+          where:{title:'İlk 7 Günlük Başlangıç Planı',active:true},
+          orderBy:{createdAt:'desc'},
+          take:1,
+          select:{payload:true}
+        }
+      }
     });
     if(!techniqueOnlyStudent)return null;
-    return <UnsubscribedStudentTechniques fullName={techniqueOnlyStudent.fullName} initialPreferences={techniqueOnlyStudent.techniquePreferences}/>;
+    return <UnsubscribedStudentTechniques
+      fullName={techniqueOnlyStudent.fullName}
+      initialPreferences={techniqueOnlyStudent.techniquePreferences}
+      starterPlan={techniqueOnlyStudent.plans[0]?.payload||null}
+    />;
   }
 
   const student = await db.student.findUnique({
