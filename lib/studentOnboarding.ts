@@ -111,11 +111,11 @@ export function buildSevenDayStarterPlan(input:{
     const primary=focus[i%focus.length]||allowed[0]||'Genel';
     const secondary=focus[(i+1)%focus.length]||allowed[1]||primary;
     const isReview=i===6;
-    const primaryMinutes=Math.max(15,Math.round(dailyMinutes*(isReview?.35:.5)));
-    const secondaryMinutes=Math.max(10,Math.round(dailyMinutes*(isReview?.25:.3)));
+    const primaryMinutes=Math.max(15,Math.round(dailyMinutes*(isReview ? .35 : .5)));
+    const secondaryMinutes=Math.max(10,Math.round(dailyMinutes*(isReview ? .25 : .3)));
     const reviewMinutes=Math.max(10,dailyMinutes-primaryMinutes-secondaryMinutes);
-    const primaryQuestions=Math.max(5,Math.round(baseQuestions*(isReview?.35:.6)));
-    const secondaryQuestions=Math.max(5,Math.round(baseQuestions*(isReview?.25:.4)));
+    const primaryQuestions=Math.max(5,Math.round(baseQuestions*(isReview ? .35 : .6)));
+    const secondaryQuestions=Math.max(5,Math.round(baseQuestions*(isReview ? .25 : .4)));
     const tasks=isReview?[
       {title:'Haftalık tekrar ve yanlış kontrolü',subject:'Genel',type:'REVIEW',minutes:primaryMinutes,questions:0,reason:'İlk 6 günün öğrenmesini kalıcılaştırmak için.'},
       humanTask(primary,secondaryMinutes,primaryQuestions,'Haftanın en zayıf alanını yeniden ölçmek için.'),
