@@ -11,6 +11,7 @@ import { withOabtFieldApproval } from '@/lib/oabtFieldApproval';
 import { isEmailVerified,issueEmailVerification,markEmailVerificationRequired } from '@/lib/emailVerification';
 import { withApiErrors } from '@/lib/apiGuard';
 import {publicEducationContext,resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
+import {withRequiredStudentOnboarding} from '@/lib/studentOnboarding';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -49,7 +50,7 @@ async function POST__handler(req:Request){
   const academicTrack=isAgsOabt?requestedTrack:isAgsYds?'YDS':(requestedTrack||null);
   const educationProfile=resolveEducationLevelProfile(gradeLevel,academicTrack);
   const educationContext=publicEducationContext(educationProfile);
-  const baseProfile=educationContext?{educationContext}:{};
+  const baseProfile=withRequiredStudentOnboarding(educationContext?{educationContext}:{},registrationTime);
   const initialProfile=isAgsOabt?withOabtFieldApproval(baseProfile,{
     status:'APPROVED',
     requestedField:requestedTrack,
@@ -60,7 +61,7 @@ async function POST__handler(req:Request){
     rejectedAt:null,
     rejectedByUserId:null,
     rejectionNote:null
-  }):educationContext?baseProfile:null;
+  }):baseProfile;
 
   const existing=await db.user.findUnique({where:{email}});
   if(existing?.status==='SUSPENDED'){
@@ -104,7 +105,7 @@ async function POST__handler(req:Request){
     if(legacyColumns[0]?.exists){
       const studentId=crypto.randomUUID();
       const now=new Date();
-      const profileJson=initialProfile?JSON.stringify(initialProfile):null;
+      const profileJson=JSON.stringify(initialProfile);
       await tx.$executeRawUnsafe(
         `INSERT INTO "Student"
           ("id","userId","coachId","studentCode","accessKeyHash","accessKeyExpiresAt","credentialsDeliveryStatus","fullName","gradeLevel","academicTrack","profile","createdAt","updatedAt")
@@ -131,7 +132,7 @@ async function POST__handler(req:Request){
           fullName:input.fullName,
           gradeLevel,
           academicTrack,
-          ...(initialProfile?{profile:initialProfile as any}:{}),
+          profile:initialProfile as any,
           coachId:coach.id
         }
       });
