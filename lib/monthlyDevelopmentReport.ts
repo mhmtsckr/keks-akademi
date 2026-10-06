@@ -1,4 +1,5 @@
 import {db} from '@/lib/db';
+import {publicEducationContext,resolveEducationLevelProfile,subjectMatchesEducationLevel} from '@/lib/educationLevelProfile';
 
 export type MonthlyReportAudience='STUDENT'|'COACH'|'PARENT';
 
@@ -61,7 +62,7 @@ export async function buildMonthlyDevelopmentReport(
   const student=await db.student.findUnique({
     where:{id:studentId},
     select:{
-      id:true,fullName:true,studentCode:true,gradeLevel:true,goal:true,
+      id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true,goal:true,
       examResults:{
         where:{createdAt:{gte:from,lt:to}},
         orderBy:{createdAt:'asc'},
@@ -104,6 +105,7 @@ export async function buildMonthlyDevelopmentReport(
     }
   });
   if(!student)return null;
+  const educationProfile=resolveEducationLevelProfile(student.gradeLevel,student.academicTrack);
 
   const inPeriod=<T extends {createdAt?:Date;date?:Date;taskDate?:Date|null;weekStart?:Date}>(rows:T[],p:Period,field:'createdAt'|'date'|'taskDate'|'weekStart')=>
     rows.filter(x=>{
@@ -117,8 +119,8 @@ export async function buildMonthlyDevelopmentReport(
   const currentExamAvg=avg(examValues(currentExams));
   const previousExamAvg=avg(examValues(previousExams));
 
-  const currentPractice=inPeriod(student.practiceLogs,current,'date');
-  const previousPractice=inPeriod(student.practiceLogs,previous,'date');
+  const currentPractice=inPeriod(student.practiceLogs,current,'date').filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile));
+  const previousPractice=inPeriod(student.practiceLogs,previous,'date').filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile));
   const currentAccuracy=weightedAccuracy(currentPractice);
   const previousAccuracy=weightedAccuracy(previousPractice);
 
@@ -220,6 +222,7 @@ export async function buildMonthlyDevelopmentReport(
 
   return {
     student:{id:student.id,name:student.fullName,code:student.studentCode,gradeLevel:student.gradeLevel,goal:student.goal,target:target?target.institutionName+(target.departmentName?' · '+target.departmentName:''):null},
+    educationContext:publicEducationContext(educationProfile),
     period:{key:current.key,label:current.label,start:current.start,end:current.end,previousLabel:previous.label},
     confidence:dataConfidence,
     academic:{
@@ -229,7 +232,7 @@ export async function buildMonthlyDevelopmentReport(
       practiceQuestions:currentPractice.reduce((s,x)=>s+x.total,0),
       accuracy:currentAccuracy,
       accuracyDelta:delta(currentAccuracy,previousAccuracy),
-      completedTopics:student.topicProgress.filter(x=>x.completed&&x.completedAt&&x.completedAt>=current.start&&x.completedAt<current.end).length
+      completedTopics:student.topicProgress.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile)&&x.completed&&x.completedAt&&x.completedAt>=current.start&&x.completedAt<current.end).length
     },
     behavior:{
       taskCount:currentActions.length,
