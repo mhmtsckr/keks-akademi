@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { ADULT_EXAM_GROUPS, AGS_OABT_FIELDS } from '@/lib/agsExamOptions';
 import { passwordPolicyErrors } from '@/lib/passwordPolicy';
 import { EDUCATION_LEVEL_OPTIONS } from '@/lib/educationLevels';
@@ -247,17 +247,12 @@ export function CoachRegisterForm() {
 
 export function StudentRegisterForm() {
   const [msg,setMsg]=useState('');
-  const [coaches,setCoaches]=useState<Array<{id:string;name:string;studentCount:number}>>([]);
-  const [loadingCoaches,setLoadingCoaches]=useState(true);
   const [gradeLevel,setGradeLevel]=useState('');
   const [password,setPassword]=useState('');
   const [verification,setVerification]=useState<{email:string;challenge:string|null}|null>(null);
   const isAgsOabt=gradeLevel==='AGS/ÖABT';
   const isAgsYds=gradeLevel==='AGS/YDS';
   const recommendedPlan=recommendedStudentPlanForEducationLevel(gradeLevel);
-
-  async function loadCoaches(){setLoadingCoaches(true);try{const r=await fetch('/api/public/coaches');const j=await r.json();if(r.ok&&j.ok)setCoaches(j.coaches||[])}catch{setCoaches([])}finally{setLoadingCoaches(false)}}
-  useEffect(()=>{void loadCoaches()},[]);
 
   if(verification)return <EmailVerificationForm email={verification.email} role="STUDENT" challenge={verification.challenge} onCancel={()=>setVerification(null)} onVerified={()=>{location.href='/ogrenci'}}/>;
 
@@ -270,7 +265,7 @@ export function StudentRegisterForm() {
     const email=String(fd.get('email')||'');
     const r=await fetch('/api/auth/student-register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
       fullName:fd.get('fullName'),email,gradeLevel:fd.get('gradeLevel'),
-      academicTrack:isAgsOabt?fd.get('academicTrack'):isAgsYds?'YDS':null,coachId:fd.get('coachId'),password
+      academicTrack:isAgsOabt?fd.get('academicTrack'):isAgsYds?'YDS':null,password
     })});
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Başvuru oluşturulamadı.'));
@@ -294,10 +289,9 @@ export function StudentRegisterForm() {
     {recommendedPlan&&<div className="notice"><strong>Bu düzey için önerilen KEKS paketi: {recommendedPlan.name}</strong><div className="muted">{recommendedPlan.level} profili; ders, soru tipi, çalışma yükü, rapor ve paket önerisini otomatik belirler.</div></div>}
     {isAgsOabt&&<div className="field agsBranchField"><label>ÖABT alanı</label><select name="academicTrack" required defaultValue=""><option value="">Alanınızı seçiniz</option>{AGS_OABT_FIELDS.map(field=><option key={field} value={field}>{field}</option>)}</select><small className="muted">Seçtiğiniz alan kayıt tamamlandığında otomatik olarak onaylanır ve kilitlenir.</small></div>}
     {isAgsYds&&<div className="notice"><strong>AGS/YDS çalışma grubu</strong><div className="muted">Alan bilgisi otomatik YDS olarak kaydedilir.</div></div>}
-    <div className="field"><label>Koçunu seç</label><select name="coachId" required defaultValue=""><option value="">{loadingCoaches?'Koçlar yükleniyor…':coaches.length?'Koç seçiniz':'Aktif koç yok'}</option>{coaches.map(c=><option value={c.id} key={c.id}>{c.name} · {c.studentCount} öğrenci</option>)}</select></div>
-    {!loadingCoaches&&coaches.length===0&&<div className="notice error" role="alert">Şu anda başvuruya açık koç bulunmuyor. Lütfen daha sonra tekrar deneyin.</div>}
-    <div className="notice">Kayıt sırası: <strong>Bilgiler → e-posta doğrulama kodu → hesap aktif</strong>. E-posta doğrulanmadan öğrenci hesabına giriş yapılamaz.</div>
-    <button className="btn" type="submit" disabled={loadingCoaches||coaches.length===0}>Kaydı Başlat</button>
+    <div className="notice"><strong>Koç seçimi kayıt sonrasında yapılır.</strong><div className="muted">E-posta doğrulamasından sonra açılan 8 adımlı başlangıç sihirbazının son adımında aktif KEKS Partner Koçunu seçersin.</div></div>
+    <div className="notice">Kayıt sırası: <strong>Bilgiler → e-posta doğrulama → ilk giriş sihirbazı → İlk 7 Günlük Başlangıç Planı</strong>.</div>
+    <button className="btn" type="submit">Kaydı Başlat</button>
     <Message value={msg}/>
   </form>;
 }
