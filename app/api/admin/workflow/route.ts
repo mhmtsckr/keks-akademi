@@ -6,6 +6,7 @@ import { readJson,withApiErrors } from '@/lib/apiGuard';
 import { detectEducationBand,type EducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm,SCREENING_FORM_LABELS } from '@/lib/screeningForms';
 import { writeAudit } from '@/lib/audit';
+import { SCREENING_EDUCATION_LABELS } from '@/lib/educationLevels';
 
 const schema=z.discriminatedUnion('action',[
   z.object({action:z.literal('approve_screening'),assessmentId:z.string()}),
@@ -99,15 +100,7 @@ async function GET__handler(){
     LISE_11_12:5,
     YETISKIN_SINAV:6
   };
-  const preInterviewBandLabel:Record<string,string>={
-    ILKOKUL_1_2:'İlkokul 1-2',
-    ILKOKUL_3_4:'İlkokul 3-4',
-    ORTAOKUL_5_6:'Ortaokul 5-6',
-    ORTAOKUL_7_8:'Ortaokul 7-8 / LGS',
-    LISE_9_10:'Lise 9-10',
-    LISE_11_12:'Lise 11-12 / YKS / Lise Mezunu',
-    YETISKIN_SINAV:'Yetişkin Sınav Grubu'
-  };
+  const preInterviewBandLabel:Record<string,string>={...SCREENING_EDUCATION_LABELS};
   const openEndedForms=preInterviewForms
     .sort((a,b)=>(preInterviewBandOrder[a.educationBand]??99)-(preInterviewBandOrder[b.educationBand]??99))
     .map(form=>({
