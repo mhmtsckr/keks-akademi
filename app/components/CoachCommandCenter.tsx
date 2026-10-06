@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo,useState } from 'react';
+import { normalizeLegacyEducationLevel } from '@/lib/educationLevels';
 
 type PriorityStudent={
   id:string;fullName:string;studentCode:string;gradeLevel:string|null;
@@ -57,7 +58,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
         <div className="row"><button className={'btn '+(filter==='ALL'?'primary':'')} onClick={()=>setFilter('ALL')}>Tümü</button><button className={'btn '+(filter==='HIGH'?'primary':'')} onClick={()=>setFilter('HIGH')}>Acil</button><button className={'btn '+(filter==='MEDIUM'?'primary':'')} onClick={()=>setFilter('MEDIUM')}>İzlem</button></div></div>
         <div className="priorityQueue">{visible.slice(0,12).map(s=><a className="priorityStudent" href={'/koc/ogrenci/'+s.id} key={s.id}>
           <div className={'priorityDot '+s.priorityLevel.toLowerCase()}/>
-          <div className="priorityStudentMain"><strong>{s.fullName}</strong><span>{s.gradeLevel||'Grup yok'} · {s.studentCode}</span><small>{s.reasons.join(' · ')||'Aktif uyarı yok'}</small><small><strong>Önerilen koç aksiyonu:</strong> {s.suggestedAction}</small></div>
+          <div className="priorityStudentMain"><strong>{s.fullName}</strong><span>{normalizeLegacyEducationLevel(s.gradeLevel)||'Grup yok'} · {s.studentCode}</span><small>{s.reasons.join(' · ')||'Aktif uyarı yok'}</small><small><strong>Önerilen koç aksiyonu:</strong> {s.suggestedAction}</small></div>
         </a>)}</div>
       </div>
 

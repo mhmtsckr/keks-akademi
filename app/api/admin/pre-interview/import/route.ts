@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { SCREENING_EDUCATION_LABELS } from '@/lib/educationLevels';
 
 const question=z.object({
   orderNo:z.number().int().positive(),
@@ -29,18 +30,7 @@ async function POST__handler(req:Request){
   const targetVersion=input.version.startsWith('PREINT_V1_')
     ?input.version.replace('PREINT_V1_','PREINT_OPEN_V2_')
     :input.version;
-  const titleByBand:Record<string,string>={
-    ILKOKUL_1_2:'İlkokul 1–2',
-    ILKOKUL_3_4:'İlkokul 3–4',
-    ORTAOKUL_5_6:'Ortaokul 5–6',
-    ORTAOKUL_7_8:'Ortaokul 7–8 / LGS',
-    LISE_9_10:'Lise 9–10',
-    LISE_11_12:'Lise 11–12 / YKS / Lise Mezunu',
-    YETISKIN_MEZUN:'Lise 11–12 / YKS / Lise Mezunu',
-    YETISKIN_SINAV:'Yetişkin Sınav Grubu',
-    GENERAL:'Genel'
-  };
-  const targetTitle=titleByBand[normalizedBand]||input.title;
+  const targetTitle=SCREENING_EDUCATION_LABELS[normalizedBand as keyof typeof SCREENING_EDUCATION_LABELS]||input.title;
 
   await db.preInterviewForm.updateMany({where:{active:true,educationBand:normalizedBand,version:{not:targetVersion}},data:{active:false}});
   const form=await db.preInterviewForm.upsert({

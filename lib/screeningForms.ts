@@ -1,5 +1,6 @@
 import type { EducationBand } from '@/lib/taskEvaluation';
 import { PROFESSIONAL_BASELINE_FORMS } from '@/lib/professionalScreeningData';
+import { SCREENING_EDUCATION_LABELS } from '@/lib/educationLevels';
 
 export type ScreeningQuestion={id:string;orderNo:number;dimension:string;tendencyKey?:string;habitKey?:string;prompt:string;reverse:boolean;kind:'TENDENCY'|'HABIT'};
 export type ScreeningForm={title:string;version:string;educationBand:EducationBand;questions:ScreeningQuestion[];disclaimer:string;instruction:string;scale:readonly string[]};
@@ -26,17 +27,7 @@ const FORM_DATA_KEYS:Record<EducationBand,string>={
   GENERAL:'LISE_9_10'
 };
 
-export const SCREENING_FORM_LABELS:Record<EducationBand,string>={
-  ILKOKUL_1_2:'İlkokul 1-2',
-  ILKOKUL_3_4:'İlkokul 3-4',
-  ORTAOKUL_5_6:'Ortaokul 5-6',
-  ORTAOKUL_7_8:'Ortaokul 7-8 / LGS',
-  LISE_9_10:'Lise 9-10',
-  LISE_11_12:'Lise 11-12 / YKS / Lise Mezunu',
-  YETISKIN_MEZUN:'Lise 11-12 / YKS / Lise Mezunu',
-  YETISKIN_SINAV:'Yetişkin Sınav Grubu',
-  GENERAL:'Genel'
-};
+export const SCREENING_FORM_LABELS:Record<EducationBand,string>={...SCREENING_EDUCATION_LABELS};
 
 export function getScreeningForm(band:EducationBand):ScreeningForm{
   const dataKey=FORM_DATA_KEYS[band]||'LISE_9_10';

@@ -24,7 +24,7 @@ export function CoachStudentTable({students}:{students:StudentRow[]}){
   const [priority,setPriority]=useState<'ALL'|'HIGH'|'MEDIUM'|'LOW'>('ALL');
   const visible=useMemo(()=>students.filter(s=>{
     const q=search.trim().toLocaleLowerCase('tr-TR');
-    const match=!q||s.fullName.toLocaleLowerCase('tr-TR').includes(q)||s.studentCode.toLocaleLowerCase('tr-TR').includes(q)||(s.gradeLevel||'').toLocaleLowerCase('tr-TR').includes(q)||(s.academicTrack||'').toLocaleLowerCase('tr-TR').includes(q);
+    const match=!q||s.fullName.toLocaleLowerCase('tr-TR').includes(q)||s.studentCode.toLocaleLowerCase('tr-TR').includes(q)||displayExamGroupWithTrack(s.gradeLevel,s.academicTrack).toLocaleLowerCase('tr-TR').includes(q)||(s.academicTrack||'').toLocaleLowerCase('tr-TR').includes(q);
     return match&&(priority==='ALL'||s.priorityLevel===priority);
   }),[students,search,priority]);
 
