@@ -64,7 +64,8 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
     new Date(),
     assignment.form.educationBand as any,
     assessment?.scores,
-    motivationSignals
+    motivationSignals,
+    student.gradeLevel
   );
   const draft=obj(attemptReport.planDraft);
   const plans={
