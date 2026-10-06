@@ -169,6 +169,15 @@ export function educationLevelKey(value?:string|null):EducationLevelKey|null{
     if(normalized===EDUCATION_LEVELS[key])return key;
   }
   const raw=(value||'').toLocaleUpperCase('tr-TR');
+  const grade=Number((raw.match(/(?:^|\\D)(1[0-2]|[1-9])(?:\\D|$)/)||[])[1]);
+  if(grade>=1&&grade<=3)return 'PRIMARY_123';
+  if(grade===4)return 'PRIMARY_4';
+  if(grade===5||grade===6)return 'MIDDLE_56';
+  if(grade===7)return 'MIDDLE_7';
+  if(grade===8)return 'MIDDLE_8';
+  if(grade===9||grade===10)return 'HIGH_910';
+  if(grade===11)return 'HIGH_11';
+  if(grade===12)return 'HIGH_12';
   if(/MEZUN/.test(raw)&&/YKS/.test(raw))return 'GRADUATE_YKS';
   if(/İLKOKUL|ILKOKUL/.test(raw)&&/(?:^|\D)4(?:\D|$)/.test(raw))return 'PRIMARY_4';
   if(/İLKOKUL|ILKOKUL/.test(raw))return 'PRIMARY_123';
