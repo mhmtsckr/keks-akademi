@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { ADULT_EXAM_GROUPS, AGS_OABT_FIELDS } from '@/lib/agsExamOptions';
 import { passwordPolicyErrors } from '@/lib/passwordPolicy';
 import { EDUCATION_LEVEL_OPTIONS } from '@/lib/educationLevels';
+import { recommendedStudentPlanForEducationLevel } from '@/lib/subscriptionPlans';
 
 function Message({value}:{value:string}) {
   if (!value) return null;
@@ -253,6 +254,7 @@ export function StudentRegisterForm() {
   const [verification,setVerification]=useState<{email:string;challenge:string|null}|null>(null);
   const isAgsOabt=gradeLevel==='AGS/ÖABT';
   const isAgsYds=gradeLevel==='AGS/YDS';
+  const recommendedPlan=recommendedStudentPlanForEducationLevel(gradeLevel);
 
   async function loadCoaches(){setLoadingCoaches(true);try{const r=await fetch('/api/public/coaches');const j=await r.json();if(r.ok&&j.ok)setCoaches(j.coaches||[])}catch{setCoaches([])}finally{setLoadingCoaches(false)}}
   useEffect(()=>{void loadCoaches()},[]);
@@ -289,6 +291,7 @@ export function StudentRegisterForm() {
       </optgroup>
       <optgroup label="Sınav Grubu">{ADULT_EXAM_GROUPS.map(group=><option key={group} value={group}>{group}</option>)}</optgroup>
     </select><small className="muted">AGS/ÖABT seçildiğinde alan seçimi zorunludur.</small></div>
+    {recommendedPlan&&<div className="notice"><strong>Bu düzey için önerilen KEKS paketi: {recommendedPlan.name}</strong><div className="muted">{recommendedPlan.level} profili; ders, soru tipi, çalışma yükü, rapor ve paket önerisini otomatik belirler.</div></div>}
     {isAgsOabt&&<div className="field agsBranchField"><label>ÖABT alanı</label><select name="academicTrack" required defaultValue=""><option value="">Alanınızı seçiniz</option>{AGS_OABT_FIELDS.map(field=><option key={field} value={field}>{field}</option>)}</select><small className="muted">Seçtiğiniz alan kayıt tamamlandığında otomatik olarak onaylanır ve kilitlenir.</small></div>}
     {isAgsYds&&<div className="notice"><strong>AGS/YDS çalışma grubu</strong><div className="muted">Alan bilgisi otomatik YDS olarak kaydedilir.</div></div>}
     <div className="field"><label>Koçunu seç</label><select name="coachId" required defaultValue=""><option value="">{loadingCoaches?'Koçlar yükleniyor…':coaches.length?'Koç seçiniz':'Aktif koç yok'}</option>{coaches.map(c=><option value={c.id} key={c.id}>{c.name} · {c.studentCount} öğrenci</option>)}</select></div>

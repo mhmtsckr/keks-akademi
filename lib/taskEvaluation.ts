@@ -1,4 +1,5 @@
 import {normalizeLegacyEducationLevel} from '@/lib/educationLevels';
+import {resolveEducationLevelProfile,scalePracticeQuestionsForEducationLevel} from '@/lib/educationLevelProfile';
 export function evaluateTaskSubmission(input:{totalQuestions:number;correct:number;wrong:number;blank:number;targetValue:number;late:boolean}){
   const {totalQuestions,correct,wrong,blank,targetValue,late}=input;
   const net=Number((correct-wrong/4).toFixed(2));
@@ -209,7 +210,9 @@ function adultExamSubjects(track:string){
   return TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL;
 }
 
-function bandConfig(band:EducationBand,track:string){
+function bandConfig(band:EducationBand,track:string,gradeLevel?:string|null){
+  const exact=resolveEducationLevelProfile(gradeLevel,track);
+  if(exact)return {subjects:exact.subjects,questions:scalePracticeQuestionsForEducationLevel(20,exact),minutes:exact.study.defaultFocusMinutes};
   if(band==='ILKOKUL_1_2')return {subjects:['Okuma','Türkçe','Matematik','Hayat Bilgisi'],questions:8,minutes:20};
   if(band==='ILKOKUL_3_4')return {subjects:['Türkçe','Matematik','Fen Bilimleri','Sosyal Bilgiler'],questions:15,minutes:30};
   if(band==='ORTAOKUL_5_6')return {subjects:['Türkçe','Matematik','Fen Bilimleri','Sosyal Bilgiler','İngilizce'],questions:25,minutes:45};
@@ -221,8 +224,8 @@ function bandConfig(band:EducationBand,track:string){
   return {subjects:TRACK_SUBJECTS[track]||TRACK_SUBJECTS.GENERAL,questions:30,minutes:60};
 }
 
-export function buildTrackPlans(track:string,scores:Record<string,number>,start=new Date(),educationBand:EducationBand='GENERAL',assessmentScores?:unknown,motivationSignals?:Record<string,number>){
-  const config=bandConfig(educationBand,track);
+export function buildTrackPlans(track:string,scores:Record<string,number>,start=new Date(),educationBand:EducationBand='GENERAL',assessmentScores?:unknown,motivationSignals?:Record<string,number>,gradeLevel?:string|null){
+  const config=bandConfig(educationBand,track,gradeLevel);
   const weak=Object.entries(scores).sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0]);
   const report=buildInterviewReport(scores,track,assessmentScores,educationBand,motivationSignals);
   const p=report.programParameters;

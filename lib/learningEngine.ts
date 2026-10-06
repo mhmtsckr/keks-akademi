@@ -3,6 +3,7 @@ import { isFeatureEnabled } from '@/lib/systemConfig';
 import { aggregateInterventionPatterns,buildImpactHeadline,classifyCoachDecision,interventionKindLabel,summarizeImpactWindow,type InterventionKind } from '@/lib/coachInterventionImpact';
 import { rankGoalContributionAreas,targetNetFromBenchmarks } from '@/lib/goalDistance';
 import { buildActionWhy,buildPracticeWhy,buildReviewWhy } from '@/lib/planExplanation';
+import {publicEducationContext,resolveEducationLevelProfile,scalePracticeQuestionsForEducationLevel,subjectMatchesEducationLevel} from '@/lib/educationLevelProfile';
 
 export type MasteryStatus='NEW'|'LEARNING'|'REINFORCING'|'DURABLE'|'RISKY';
 
@@ -337,7 +338,7 @@ export function capacityDayFactor(lowCompletionDays:{day:string;completionRate:n
 export async function buildCapacityProfile(studentId:string,now=new Date()){
   const since=new Date(now.getTime()-35*86400000);
   const [student,sessions,submissions,actions]=await Promise.all([
-    db.student.findUnique({where:{id:studentId},select:{profile:true}}),
+    db.student.findUnique({where:{id:studentId},select:{profile:true,gradeLevel:true,academicTrack:true}}),
     db.techniquePracticeSession.findMany({
       where:{studentId,createdAt:{gte:since}},
       select:{startedAt:true,completedAt:true,activeSeconds:true,durationMinutes:true,completed:true},
@@ -354,6 +355,7 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
   ]);
 
   const plannedMinutes=readPlannedMinutes(student?.profile);
+  const educationProfile=resolveEducationLevelProfile(student?.gradeLevel,student?.academicTrack);
   const minutesByDay=new Map<string,number>();
   for(const session of sessions){
     const key=trDateKey(session.startedAt);
@@ -373,10 +375,15 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
   const questionCapacity=questionDays.length?Math.round(average(questionDays)):0;
   const efficientWindow=inferEfficientStudyWindow(sessions,submissions);
   const focusDrop=inferFocusDrop(sessions,submissions);
-  const focusBlockMinutes=recommendedFocusBlockMinutes(
+  const observedFocusBlockMinutes=recommendedFocusBlockMinutes(
     focusDrop.afterMinutes,
     sessions.map(x=>Math.max(0,(x.activeSeconds||0)/60))
   );
+  const focusBlockMinutes=educationProfile&&sessions.length<3
+    ?educationProfile.study.defaultFocusMinutes
+    :educationProfile
+      ?Math.min(observedFocusBlockMinutes,educationProfile.study.defaultFocusMinutes+10)
+      :observedFocusBlockMinutes;
 
   const weekdayStats=new Map<string,{total:number;completed:number}>();
   for(const action of actions){
@@ -394,11 +401,17 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
     .slice(0,2);
 
   const evidenceDays=new Set([...minutesByDay.keys(),...questionsByDay.keys()]).size;
-  const behavioralBase=actualAverageMinutes||plannedMinutes||90;
+  const behavioralBase=actualAverageMinutes||plannedMinutes||educationProfile?.study.defaultDailyMinutes||90;
+  const levelMinimum=educationProfile?.study.minDailyMinutes??45;
+  const minimum=actualAverageMinutes>0
+    ?Math.min(45,levelMinimum)
+    :Math.min(levelMinimum,plannedMinutes||levelMinimum);
+  const levelMaximum=educationProfile?.study.maxDailyMinutes??240;
+  const maximum=Math.max(minimum,plannedMinutes?Math.min(levelMaximum,Math.max(60,plannedMinutes)):levelMaximum);
   const suggestedDailyMinutes=Math.round(clamp(
     actualAverageMinutes>0?actualAverageMinutes*1.1:behavioralBase,
-    45,
-    plannedMinutes?Math.max(60,plannedMinutes):240
+    minimum,
+    maximum
   ));
   const actualVsPlannedDeltaMinutes=plannedMinutes!=null&&actualAverageMinutes>0
     ?actualAverageMinutes-plannedMinutes
@@ -424,6 +437,7 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
     evidenceDays,
     confidence:evidenceDays>=14?'HIGH':evidenceDays>=7?'MEDIUM':'LOW',
     measurementSource:observedMinutes.length?'ACTIVE_TIMER':'TASK_EVIDENCE_ONLY',
+    educationContext:publicEducationContext(educationProfile),
     note:evidenceDays<7
       ?'Kapasite profili henüz düşük veriyle oluşturuluyor; yeni kayıtlarla otomatik güncellenir.'
       :'Program önerisi beyan edilen süreden çok gözlenen davranışa dayanır.'
@@ -696,7 +710,8 @@ function literatureConnectionDimension(questionType:string,topic:string|null){
 
 export async function buildSubjectLearningModels(studentId:string,now=new Date()){
   const since=new Date(now.getTime()-60*86400000);
-  const [practice,analytics,reviews,techniqueSessions]=await Promise.all([
+  const [student,practice,analytics,reviews,techniqueSessions]=await Promise.all([
+    db.student.findUnique({where:{id:studentId},select:{gradeLevel:true,academicTrack:true}}),
     db.practiceLog.findMany({
       where:{studentId,date:{gte:since}},
       select:{subject:true,topic:true,total:true,correct:true,wrong:true,blank:true,errorReason:true,date:true}
@@ -715,13 +730,14 @@ export async function buildSubjectLearningModels(studentId:string,now=new Date()
     })
   ]);
 
+  const educationProfile=resolveEducationLevelProfile(student?.gradeLevel,student?.academicTrack);
   const subjects=new Set<string>([
     ...practice.map(x=>x.subject),
     ...analytics.map(x=>x.subject),
     ...reviews.map(x=>x.question.subject)
   ]);
 
-  return [...subjects].map(subject=>{
+  return [...subjects].filter(subject=>subjectMatchesEducationLevel(subject,educationProfile)).map(subject=>{
     const family=subjectFamily(subject) as SubjectLearningFamily;
     const p=practice.filter(x=>x.subject===subject);
     const a=analytics.filter(x=>x.subject===subject);
@@ -861,7 +877,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   const [capacity,mastery,student,actions,reviews,incompleteTopics,lastExam,recentPractice]=await Promise.all([
     buildCapacityProfile(studentId,now),
     buildTopicMastery(studentId,now),
-    db.student.findUnique({where:{id:studentId},select:{profile:true}}),
+    db.student.findUnique({where:{id:studentId},select:{profile:true,gradeLevel:true,academicTrack:true}}),
     db.coachingAction.findMany({
       where:{studentId,taskDate:{gte:today,lt:tomorrow},status:{in:['ACTIVE','COMPLETED']}},
       include:{submission:true},
@@ -886,7 +902,14 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     })
   ]);
 
-  const masteryMap=new Map(mastery.map(x=>[x.subject+'|'+x.topic,x]));
+  const educationProfile=resolveEducationLevelProfile(student?.gradeLevel,student?.academicTrack);
+  const educationMastery=educationProfile
+    ?mastery.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile))
+    :mastery;
+  const educationTopics=educationProfile
+    ?incompleteTopics.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile))
+    :incompleteTopics;
+  const masteryMap=new Map(educationMastery.map(x=>[x.subject+'|'+x.topic,x]));
   const items:any[]=[];
   const actionTitleKeys=new Set<string>();
 
@@ -943,7 +966,10 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
 
   const dayFactor=capacityDayFactor(capacity.lowCompletionDays,now);
   const effectiveDailyBudget=Math.max(30,Math.round(capacity.suggestedDailyMinutes*dayFactor));
-  const maxReviews=effectiveDailyBudget>=240?4:effectiveDailyBudget>=150?3:2;
+  const behaviorReviewCap=effectiveDailyBudget>=240?4:effectiveDailyBudget>=150?3:2;
+  const maxReviews=educationProfile
+    ?Math.min(behaviorReviewCap,educationProfile.study.maxReviewsPerDay)
+    :behaviorReviewCap;
   const reviewBatch=reviews.slice(0,maxReviews);
   if(reviewBatch.length){
     const item={
@@ -966,11 +992,11 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
 
-  const weakest=mastery.find(x=>x.status==='RISKY'||x.status==='LEARNING'||x.status==='REINFORCING')||mastery[0]||null;
+  const weakest=educationMastery.find(x=>x.status==='RISKY'||x.status==='LEARNING'||x.status==='REINFORCING')||educationMastery[0]||null;
   const focusTopic=
-    (weakest?incompleteTopics.find(x=>x.subject===weakest.subject&&x.topic===weakest.topic):null)
-    ||(weakest?incompleteTopics.find(x=>x.subject===weakest.subject):null)
-    ||incompleteTopics[0]
+    (weakest?educationTopics.find(x=>x.subject===weakest.subject&&x.topic===weakest.topic):null)
+    ||(weakest?educationTopics.find(x=>x.subject===weakest.subject):null)
+    ||educationTopics[0]
     ||(weakest?{id:'mastery-focus',examType:lastExam?.examType||'GENEL',subject:weakest.subject,topic:weakest.topic,updatedAt:now}:null);
 
   if(focusTopic){
@@ -992,10 +1018,10 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     }
 
     const matchingMastery=masteryMap.get(focusTopic.subject+'|'+focusTopic.topic)||weakest;
-    const questionTarget=dailyPracticeQuestionTarget({
+    const questionTarget=scalePracticeQuestionsForEducationLevel(dailyPracticeQuestionTarget({
       questionCapacity:capacity.questionCapacity,
       accuracy:matchingMastery?.latestTestAccuracy??matchingMastery?.accuracy??null
-    });
+    }),educationProfile);
     const alreadyHasQuestionAction=items.some(x=>x.source==='ACTION'&&!x.completed&&x.metricType==='QUESTIONS'&&x.subject===focusTopic.subject&&(x.topic||'Genel/Karma')===focusTopic.topic);
     if(!alreadyHasQuestionAction){
       const topicPractice=recentPractice
@@ -1070,8 +1096,9 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   if(capacity.focusDropAfterMinutes)notifications.push(capacity.focusDropAfterMinutes+' dakikayı aşan gözlemlenmiş oturumlarda doğruluk düşüşü görüldüğü için odak blokları '+capacity.recommendedFocusBlockMinutes+' dk ile sınırlandı.');
 
   return {
-    engineVersion:'TODAY_PLAN_V4_DYNAMIC',
+    engineVersion:'TODAY_PLAN_V5_EDUCATION_BACKBONE',
     generatedAt:now.toISOString(),
+    educationContext:publicEducationContext(educationProfile),
     date:todayKey,
     capacity,
     plan:selected.filter(x=>x.inTodayPlan).map((x,index)=>({...x,order:index+1})),
@@ -1079,7 +1106,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     plannedMinutes:usedMinutes,
     masteryFocus:weakest||null,
     notifications,
-    explanation:'Günlük sıra; temel rutinler, vadesi gelen tekrarlar, tamamlanmamış konu, ardından performans ölçümü ve kalan görevler olacak şekilde kapasiteye göre oluşturulur.'
+    explanation:(educationProfile?educationProfile.label+' profili temel alındı. ':'')+'Günlük sıra; eğitim düzeyine uygun ders/kazanım havuzu, temel rutinler, vadesi gelen tekrarlar, tamamlanmamış konu, performans ölçümü ve gözlenen kapasiteye göre oluşturulur.'
   };
 }
 
@@ -1194,6 +1221,21 @@ export async function saveTodayLearningPlanSnapshot(
   return plan;
 }
 
+async function currentEducationContext(studentId:string){
+  const student=await db.student.findUnique({
+    where:{id:studentId},
+    select:{gradeLevel:true,academicTrack:true}
+  });
+  return publicEducationContext(resolveEducationLevelProfile(student?.gradeLevel,student?.academicTrack));
+}
+
+function todayPlanEducationMatches(stored:TodayLearningPlan,current:ReturnType<typeof publicEducationContext>){
+  const saved=(stored as any).educationContext;
+  const savedKey=saved&&typeof saved==='object'?String(saved.key||''):null;
+  const currentKey=current?.key||null;
+  return savedKey===currentKey;
+}
+
 export async function ensureTodayLearningPlan(
   studentId:string,
   now=new Date(),
@@ -1201,14 +1243,22 @@ export async function ensureTodayLearningPlan(
 ){
   const dateKey=trDateKey(now);
   const stored=await storedTodayLearningPlan(studentId,dateKey);
-  if(stored)return hydrateTodayPlanCompletion(studentId,stored);
+  if(stored){
+    const educationContext=await currentEducationContext(studentId);
+    if(todayPlanEducationMatches(stored,educationContext)){
+      return hydrateTodayPlanCompletion(studentId,stored);
+    }
+  }
   const created=await saveTodayLearningPlanSnapshot(studentId,now,generationSource);
   return hydrateTodayPlanCompletion(studentId,created);
 }
 
 export async function readTodayLearningPlan(studentId:string,now=new Date()){
   const stored=await storedTodayLearningPlan(studentId,trDateKey(now));
-  return stored?hydrateTodayPlanCompletion(studentId,stored):null;
+  if(!stored)return null;
+  const educationContext=await currentEducationContext(studentId);
+  if(!todayPlanEducationMatches(stored,educationContext))return null;
+  return hydrateTodayPlanCompletion(studentId,stored);
 }
 
 export async function generateMorningTodayPlans(now=new Date()){
@@ -1255,7 +1305,7 @@ export async function generateMorningTodayPlans(now=new Date()){
     rebalancedStudents,
     redistributedTasks,
     deferredTasks,
-    engineVersion:'TODAY_PLAN_V4_DYNAMIC'
+    engineVersion:'TODAY_PLAN_V5_EDUCATION_BACKBONE'
   };
 }
 
@@ -1877,7 +1927,8 @@ export async function buildStudentTimeline(studentId:string){
 
 
 export async function buildExamKnowledgeMap(studentId:string){
-  const [progress,analytics]=await Promise.all([
+  const [student,progress,analytics]=await Promise.all([
+    db.student.findUnique({where:{id:studentId},select:{gradeLevel:true,academicTrack:true}}),
     db.topicProgress.findMany({
       where:{studentId},
       select:{examType:true,subject:true,topic:true,completed:true,updatedAt:true}
@@ -1888,6 +1939,7 @@ export async function buildExamKnowledgeMap(studentId:string){
       orderBy:{examDate:'desc'},take:1000
     })
   ]);
+  const educationProfile=resolveEducationLevelProfile(student?.gradeLevel,student?.academicTrack);
   type TopicNode={topic:string;completed:boolean;questionTypes:Set<string>;correct:number;total:number;avgSeconds:number[];lastAt:Date|null};
   const exams=new Map<string,Map<string,Map<string,TopicNode>>>();
   const ensure=(examType:string,subject:string,topic:string)=>{
@@ -1898,11 +1950,13 @@ export async function buildExamKnowledgeMap(studentId:string){
     return node;
   };
   for(const row of progress){
+    if(!subjectMatchesEducationLevel(row.subject,educationProfile))continue;
     const node=ensure(row.examType,row.subject,row.topic);
     node.completed=row.completed;
     if(!node.lastAt||row.updatedAt>node.lastAt)node.lastAt=row.updatedAt;
   }
   for(const row of analytics){
+    if(!subjectMatchesEducationLevel(row.subject,educationProfile))continue;
     const node=ensure(row.examType,row.subject,row.topic);
     node.questionTypes.add(row.questionType||'GENEL');
     const total=row.correct+row.wrong+row.blank;

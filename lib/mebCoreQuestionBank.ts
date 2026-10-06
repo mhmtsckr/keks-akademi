@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import {educationLevelKey} from '@/lib/educationLevelProfile';
 
 type CoreItem={
   examType:string;
@@ -15,28 +16,28 @@ const Y=2026;
 
 export const MEB_CORE_ITEMS:CoreItem[]=[
   {
-    examType:'ILKOKUL_1_2',subject:'Matematik',topic:'Sayılar ve Nicelikler',
+    examType:'ILKOKUL_1_2_3',subject:'Matematik',topic:'Sayılar ve Nicelikler',
     prompt:'Sayıları yazmak için kullandığımız işaretlere ne ad verilir?',
     options:{A:'Rakam',B:'Örüntü',C:'Nicelik',D:'İşlem'},correctAnswer:'A',
     explanation:'Rakamlar sayıları yazmak için kullanılan sembollerdir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/ilkokul-matematik-dersi/unite/45'
   },
   {
-    examType:'ILKOKUL_1_2',subject:'Matematik',topic:'Sayılar ve Nicelikler',
+    examType:'ILKOKUL_1_2_3',subject:'Matematik',topic:'Sayılar ve Nicelikler',
     prompt:'İki nesne grubundan hangisinin daha fazla olduğunu belirlemek hangi beceriyle ilgilidir?',
     options:{A:'Karşılaştırma',B:'Boyama',C:'Ezberleme',D:'Yazma'},correctAnswer:'A',
     explanation:'Niceliklerin büyüklüklerini karşılaştırmak sayılar ve nicelikler temasının temel becerilerindendir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/ilkokul-matematik-dersi/unite/45'
   },
   {
-    examType:'ILKOKUL_1_2',subject:'Matematik',topic:'Sayılar ve Nicelikler',
+    examType:'ILKOKUL_1_2_3',subject:'Matematik',topic:'Sayılar ve Nicelikler',
     prompt:'Belirli bir kurala göre devam eden sayı veya şekil dizisine ne denir?',
     options:{A:'Örüntü',B:'Cümle',C:'Karışım',D:'Harita'},correctAnswer:'A',
     explanation:'Örüntü, belirli bir kurala göre devam eden sayı veya şekil düzenidir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/ilkokul-matematik-dersi/unite/45'
   },
   {
-    examType:'ILKOKUL_1_2',subject:'Matematik',topic:'Sayılar ve Nicelikler',
+    examType:'ILKOKUL_1_2_3',subject:'Matematik',topic:'Sayılar ve Nicelikler',
     prompt:'Bir grupta kaç nesne bulunduğunu anlatan büyüklük hangi kavramla ilişkilidir?',
     options:{A:'Nicelik',B:'Renk',C:'Ses',D:'Yön'},correctAnswer:'A',
     explanation:'Nicelik, sayılabilen ya da ölçülebilen büyüklüğü ifade eder.',
@@ -44,35 +45,35 @@ export const MEB_CORE_ITEMS:CoreItem[]=[
   },
 
   {
-    examType:'ILKOKUL_3_4',subject:'Fen Bilimleri',topic:'Maddeyi Tanıyalım, Karıştırıp Ayıralım',
+    examType:'ILKOKUL_4',subject:'Fen Bilimleri',topic:'Maddeyi Tanıyalım, Karıştırıp Ayıralım',
     prompt:'Maddeler temel olarak hangi üç hâlde sınıflandırılır?',
     options:{A:'Katı-sıvı-gaz',B:'Büyük-küçük-orta',C:'Sıcak-soğuk-ılık',D:'Canlı-cansız-karışık'},correctAnswer:'A',
     explanation:'Bu ünitede maddeler katı, sıvı ve gaz hâllerine göre sınıflandırılır.',
     officialSourceUrl:'https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/334'
   },
   {
-    examType:'ILKOKUL_3_4',subject:'Fen Bilimleri',topic:'Maddeyi Tanıyalım, Karıştırıp Ayıralım',
+    examType:'ILKOKUL_4',subject:'Fen Bilimleri',topic:'Maddeyi Tanıyalım, Karıştırıp Ayıralım',
     prompt:'Birden fazla maddenin bir araya gelmesiyle oluşan yapıya ne denir?',
     options:{A:'Karışım',B:'Fosil',C:'Kayaç',D:'Elektrik'},correctAnswer:'A',
     explanation:'Karışım, birden fazla maddenin özelliklerini tamamen kaybetmeden bir araya gelmesiyle oluşur.',
     officialSourceUrl:'https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/334'
   },
   {
-    examType:'ILKOKUL_3_4',subject:'Fen Bilimleri',topic:'Maddeyi Tanıyalım, Karıştırıp Ayıralım',
+    examType:'ILKOKUL_4',subject:'Fen Bilimleri',topic:'Maddeyi Tanıyalım, Karıştırıp Ayıralım',
     prompt:'Karışımdaki farklı maddeleri yeniden birbirinden ayırmaya ne denir?',
     options:{A:'Karışımı ayırma',B:'Sayma',C:'Ölçme',D:'Canlandırma'},correctAnswer:'A',
     explanation:'Ünitede karışımların uygun yöntemlerle ayrılması üzerinde durulur.',
     officialSourceUrl:'https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/334'
   },
   {
-    examType:'ILKOKUL_3_4',subject:'Fen Bilimleri',topic:'Yer Bilimciler İş Başında',
+    examType:'ILKOKUL_4',subject:'Fen Bilimleri',topic:'Yer Bilimciler İş Başında',
     prompt:'Geçmişte yaşamış canlıların iz veya kalıntılarına ne denir?',
     options:{A:'Fosil',B:'Mineral',C:'Karışım',D:'Buhar'},correctAnswer:'A',
     explanation:'Fosiller geçmişte yaşamış canlılara ilişkin iz veya kalıntılardır.',
     officialSourceUrl:'https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/454'
   },
   {
-    examType:'ILKOKUL_3_4',subject:'Fen Bilimleri',topic:'Yer Bilimciler İş Başında',
+    examType:'ILKOKUL_4',subject:'Fen Bilimleri',topic:'Yer Bilimciler İş Başında',
     prompt:'Kayaçların yapısında bulunabilen doğal maddelerden biri hangisidir?',
     options:{A:'Mineral',B:'Cümle',C:'Paragraf',D:'Ritim'},correctAnswer:'A',
     explanation:'Kayaçlar ve mineraller arasında ilişki kurmak bu ünitenin temel kavramlarındandır.',
@@ -123,28 +124,28 @@ export const MEB_CORE_ITEMS:CoreItem[]=[
   },
 
   {
-    examType:'ORTAOKUL_7_8',subject:'Fen Bilimleri',topic:'Sürdürülebilir Yaşam ve Madde Döngüleri',
+    examType:'ORTAOKUL_8',subject:'Fen Bilimleri',topic:'Sürdürülebilir Yaşam ve Madde Döngüleri',
     prompt:'Bitkilerin ışık enerjisinden yararlanarak besin üretme sürecine ne denir?',
     options:{A:'Fotosentez',B:'Solunum',C:'Erozyon',D:'Buharlaşma'},correctAnswer:'A',
     explanation:'Fotosentez ve fotosentez hızına etki eden faktörler 8. sınıf ünitesinin temel kavramlarındandır.',
     officialSourceUrl:'https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/441'
   },
   {
-    examType:'ORTAOKUL_7_8',subject:'Fen Bilimleri',topic:'Sürdürülebilir Yaşam ve Madde Döngüleri',
+    examType:'ORTAOKUL_8',subject:'Fen Bilimleri',topic:'Sürdürülebilir Yaşam ve Madde Döngüleri',
     prompt:'Canlıların enerji elde etmesiyle ilişkili temel yaşamsal süreç hangisidir?',
     options:{A:'Solunum',B:'Yazım',C:'Örüntü',D:'Karşılaştırma'},correctAnswer:'A',
     explanation:'Canlılarda solunum bu ünitenin temel içeriklerinden biridir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/441'
   },
   {
-    examType:'ORTAOKUL_7_8',subject:'Fen Bilimleri',topic:'Sürdürülebilir Yaşam ve Madde Döngüleri',
+    examType:'ORTAOKUL_8',subject:'Fen Bilimleri',topic:'Sürdürülebilir Yaşam ve Madde Döngüleri',
     prompt:'Karbon ve su gibi maddelerin doğadaki canlı ve cansız ortamlar arasında dolaşmasına ne denir?',
     options:{A:'Madde döngüsü',B:'Söz varlığı',C:'Rakam',D:'Sembol'},correctAnswer:'A',
     explanation:'Madde döngülerinin yaşam açısından önemi ünitenin ana konularındandır.',
     officialSourceUrl:'https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/441'
   },
   {
-    examType:'ORTAOKUL_7_8',subject:'Fen Bilimleri',topic:'Sürdürülebilir Yaşam ve Madde Döngüleri',
+    examType:'ORTAOKUL_8',subject:'Fen Bilimleri',topic:'Sürdürülebilir Yaşam ve Madde Döngüleri',
     prompt:'Uzun dönem sıcaklık ve yağış düzenlerinde küresel ölçekte görülen değişim hangi kavramla ilişkilidir?',
     options:{A:'İklim değişikliği',B:'Sözcük türü',C:'Ritim',D:'Nicelik'},correctAnswer:'A',
     explanation:'Küresel iklim değişikliğinin nedenleri, sonuçları ve çözüm önerileri ünitede ele alınır.',
@@ -210,28 +211,28 @@ export const MEB_CORE_ITEMS:CoreItem[]=[
   },
 
   {
-    examType:'LISE_11_12',subject:'Türk Dili ve Edebiyatı',topic:'Bir Diyeceğim Var!',
+    examType:'LISE_11',subject:'Türk Dili ve Edebiyatı',topic:'Bir Diyeceğim Var!',
     prompt:'Geleneksel Türk gölge oyununun başlıca kahramanlarından biri hangisidir?',
     options:{A:'Karagöz',B:'Atom',C:'Fotosentez',D:'Nicelik'},correctAnswer:'A',
     explanation:'Karagöz, 11. sınıf Bir Diyeceğim Var! temasında incelenen geleneksel Türk tiyatrosu bağlamındaki temel kavramlardan biridir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/267'
   },
   {
-    examType:'LISE_11_12',subject:'Türk Dili ve Edebiyatı',topic:'Bir Diyeceğim Var!',
+    examType:'LISE_11',subject:'Türk Dili ve Edebiyatı',topic:'Bir Diyeceğim Var!',
     prompt:'Bir kişinin başka bir kişiye duygu, düşünce veya haber iletmek amacıyla yazdığı öğretici metin türü hangisidir?',
     options:{A:'Mektup',B:'Roman',C:'Destan',D:'Masal'},correctAnswer:'A',
     explanation:'Mektup, bu temada incelenen öğretici metin türlerinden biridir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/267'
   },
   {
-    examType:'LISE_11_12',subject:'Türk Dili ve Edebiyatı',topic:'Bir Diyeceğim Var!',
+    examType:'LISE_11',subject:'Türk Dili ve Edebiyatı',topic:'Bir Diyeceğim Var!',
     prompt:'Resmî bir makama istek veya şikâyeti yazılı olarak bildiren metin türü hangisidir?',
     options:{A:'Dilekçe',B:'Şiir',C:'Hikâye',D:'Tiyatro'},correctAnswer:'A',
     explanation:'Dilekçe temanın günlük yaşamda dilin işlevsel kullanımıyla ilişkilendirilen metin türlerindendir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/267'
   },
   {
-    examType:'LISE_11_12',subject:'Türk Dili ve Edebiyatı',topic:'Bir Diyeceğim Var!',
+    examType:'LISE_11',subject:'Türk Dili ve Edebiyatı',topic:'Bir Diyeceğim Var!',
     prompt:'İnternet üzerinden gönderilen yazılı iletişim iletisine ne ad verilir?',
     options:{A:'E-posta',B:'Fosil',C:'Periyodik tablo',D:'Örüntü'},correctAnswer:'A',
     explanation:'E-posta yazma, temadaki yazma becerisi uygulamalarından biridir.',
@@ -239,28 +240,28 @@ export const MEB_CORE_ITEMS:CoreItem[]=[
   },
 
   {
-    examType:'LISE_11_12',subject:'Tarih',topic:'Dönüşüm Sürecinde Osmanlı (1789-1908)',
+    examType:'LISE_11',subject:'Tarih',topic:'Dönüşüm Sürecinde Osmanlı (1789-1908)',
     prompt:'1789 yılında başlayarak Avrupa ve Osmanlı dünyasında siyasal ve toplumsal etkiler oluşturan olay hangisidir?',
     options:{A:'Fransız İhtilali',B:'Sanayi Devrimi',C:'Coğrafi Keşifler',D:'Rönesans'},correctAnswer:'A',
     explanation:'Fransız İhtilali’nin devlet ve toplum hayatındaki etkileri 11. sınıf ünitesinde ele alınır.',
     officialSourceUrl:'https://tymm.meb.gov.tr/tarih-dersi/unite/72'
   },
   {
-    examType:'LISE_11_12',subject:'Tarih',topic:'Dönüşüm Sürecinde Osmanlı (1789-1908)',
+    examType:'LISE_11',subject:'Tarih',topic:'Dönüşüm Sürecinde Osmanlı (1789-1908)',
     prompt:'Bir devletin yönetim yapısı ve kurumlarıyla ilgili değişimler hangi alanla ifade edilir?',
     options:{A:'İdari',B:'Jeolojik',C:'Biyolojik',D:'Dilbilimsel'},correctAnswer:'A',
     explanation:'Ünitede 1789-1908 arasındaki siyasi, askerî ve idari gelişmeler birlikte değerlendirilir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/tarih-dersi/unite/72'
   },
   {
-    examType:'LISE_11_12',subject:'Tarih',topic:'Dönüşüm Sürecinde Osmanlı (1789-1908)',
+    examType:'LISE_11',subject:'Tarih',topic:'Dönüşüm Sürecinde Osmanlı (1789-1908)',
     prompt:'Üretimde makineleşme ve fabrika sisteminin yaygınlaşması hangi süreçle ilişkilidir?',
     options:{A:'Sanayileşme',B:'Fosilleşme',C:'Fotosentez',D:'Söz varlığı'},correctAnswer:'A',
     explanation:'Osmanlı Devleti’nin sanayileşme çabaları ünitenin temel içeriklerindendir.',
     officialSourceUrl:'https://tymm.meb.gov.tr/tarih-dersi/unite/72'
   },
   {
-    examType:'LISE_11_12',subject:'Tarih',topic:'Dönüşüm Sürecinde Osmanlı (1789-1908)',
+    examType:'LISE_11',subject:'Tarih',topic:'Dönüşüm Sürecinde Osmanlı (1789-1908)',
     prompt:'Geçmişteki bir gelişmenin öncesi ve sonrasındaki farklılıkları incelemek hangi tarihsel düşünme yaklaşımıyla ilişkilidir?',
     options:{A:'Değişim ve süreklilik',B:'Ritim',C:'Nicelik',D:'Elektron dizilimi'},correctAnswer:'A',
     explanation:'Değişim ve sürekliliği neden-sonuçlarıyla yorumlama ünitenin öne çıkan tarihsel becerilerindendir.',
@@ -303,12 +304,15 @@ export async function ensureMebCoreQuestionBank(){
 }
 
 export function gameAudiencesForGradeLevel(gradeLevel?:string|null){
-  const g=(gradeLevel||'').toLocaleLowerCase('tr-TR');
-  if(/(^|\D)(1|2)(\D|$)/.test(g)||g.includes('ilkokul 1')||g.includes('ilkokul 2'))return ['ILKOKUL_1_2'];
-  if(/(^|\D)(3|4)(\D|$)/.test(g)||g.includes('ilkokul 3')||g.includes('ilkokul 4'))return ['ILKOKUL_3_4'];
-  if(/(^|\D)(5|6)(\D|$)/.test(g)||g.includes('ortaokul 5')||g.includes('ortaokul 6'))return ['ORTAOKUL_5_6'];
-  if(/(^|\D)(7|8)(\D|$)/.test(g)||g.includes('ortaokul 7')||g.includes('ortaokul 8')||g.includes('lgs'))return ['ORTAOKUL_7_8','LGS'];
-  if(/(^|\D)(9|10)(\D|$)/.test(g)||g.includes('lise 9')||g.includes('lise 10'))return ['LISE_9_10','TYT'];
-  if(/(^|\D)(11|12)(\D|$)/.test(g)||g.includes('lise 11')||g.includes('lise 12')||g.includes('yks')||g.includes('mezun'))return ['LISE_11_12','TYT','AYT'];
+  const level=educationLevelKey(gradeLevel);
+  if(level==='PRIMARY_123')return ['ILKOKUL_1_2_3'];
+  if(level==='PRIMARY_4')return ['ILKOKUL_4'];
+  if(level==='MIDDLE_56')return ['ORTAOKUL_5_6'];
+  if(level==='MIDDLE_7')return ['ORTAOKUL_7'];
+  if(level==='MIDDLE_8')return ['ORTAOKUL_8','LGS'];
+  if(level==='HIGH_910')return ['LISE_9_10','TYT'];
+  if(level==='HIGH_11')return ['LISE_11','TYT','AYT'];
+  if(level==='HIGH_12')return ['LISE_12','TYT','AYT'];
+  if(level==='GRADUATE_YKS')return ['YKS_MEZUN','TYT','AYT'];
   return ['GENEL'];
 }
