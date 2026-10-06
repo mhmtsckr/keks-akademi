@@ -1,4 +1,5 @@
 import {EDUCATION_LEVELS} from '@/lib/educationLevels';
+import {resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
 export type Audience='STUDENT'|'COACH';
 export type KeksPlan={id:string;name:string;audience:Audience;level:string;price:number|null;capacity?:number;features:string[]};
 export type StudentTermPricing={firstMonth:number;monthly:number;threeMonths:number;sixMonths:number;annual:number};
@@ -48,3 +49,10 @@ export const COACH_PLANS:KeksPlan[]=[
 ];
 
 export const ALL_PLANS=[...STUDENT_PLANS,...COACH_PLANS];
+
+
+export function recommendedStudentPlanForEducationLevel(gradeLevel?:string|null,academicTrack?:string|null){
+  const profile=resolveEducationLevelProfile(gradeLevel,academicTrack);
+  if(!profile)return null;
+  return STUDENT_PLANS.find(plan=>plan.id===profile.recommendedPlanId)||null;
+}
