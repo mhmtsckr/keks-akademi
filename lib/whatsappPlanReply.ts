@@ -44,8 +44,8 @@ export function detectStudentPlanFromWhatsAppMessage(message:string):WhatsAppPla
   const gradeMatch=text.match(/(?:^|\D)(1[0-2]|[1-9])\s*\.?\s*(?:sinif|sinifi)\b/);
   if(gradeMatch){
     const grade=Number(gradeMatch[1]);
-    if(grade<=2)return planById('student-primary-12');
-    if(grade<=4)return planById('student-primary-34');
+    if(grade<=3)return planById('student-primary-12');
+    if(grade===4)return planById('student-primary-34');
     if(grade<=6)return planById('student-middle-56');
     if(grade===7)return planById('student-lgs-prep');
     if(grade===8)return planById('student-lgs-360');
@@ -105,4 +105,4 @@ export function looksLikeKeksPlanInquiry(message:string){
   );
 }
 
-export const WHATSAPP_LEVEL_PROMPT='Eğitim düzeyinizi veya hazırlanılan sınavı (ör. 8. Sınıf / LGS, 11. Sınıf, YKS Mezun, KPSS, DGS, ALES, YDS, AGS / ÖABT) yazarsanız size uygun KEKS paketini ve güncel ücretleri hemen paylaşabilirim.';
+export const WHATSAPP_LEVEL_PROMPT='Eğitim düzeyinizi veya hazırlanılan sınavı (ör. İlkokul 4 | Proje Ortaokuluna Hazırlık, Ortaokul 8 | Maarif Model, Lise 11 | Maarif Model (Alan), Lise 12 | YKS, Mezun | YKS, KPSS, DGS, ALES, YDS, AGS / ÖABT) yazarsanız size uygun KEKS paketini ve güncel ücretleri hemen paylaşabilirim.';
