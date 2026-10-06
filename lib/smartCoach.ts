@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { buildCapacityProfile,buildSubjectLearningModels,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
+import {publicEducationContext,resolveEducationLevelProfile,scalePracticeQuestionsForEducationLevel,subjectMatchesEducationLevel} from '@/lib/educationLevelProfile';
 
 export const REVIEW_DAYS=[0,1,3,7,14,28];
 
@@ -66,10 +67,13 @@ export async function buildWeeklyPlan(studentId:string){
     buildSubjectLearningModels(studentId)
   ]);
   if(!student) throw new Error('Öğrenci bulunamadı');
+  const educationProfile=resolveEducationLevelProfile(student.gradeLevel,student.academicTrack);
+  const eligiblePractice=educationProfile?practice.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile)):practice;
+  const eligibleTopics=educationProfile?topics.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile)):topics;
   const bySubject=new Map<string,{q:number;c:number;w:number;n:number}>();
-  for(const p of practice){const x=bySubject.get(p.subject)||{q:0,c:0,w:0,n:0};x.q+=p.total;x.c+=p.correct;x.w+=p.wrong;x.n+=p.net;bySubject.set(p.subject,x);}
+  for(const p of eligiblePractice){const x=bySubject.get(p.subject)||{q:0,c:0,w:0,n:0};x.q+=p.total;x.c+=p.correct;x.w+=p.wrong;x.n+=p.net;bySubject.set(p.subject,x);}
   const weak=[...bySubject.entries()].map(([subject,x])=>({subject,accuracy:x.q?x.c/x.q:1,net:x.n,questions:x.q})).sort((a,b)=>a.accuracy-b.accuracy);
-  const incomplete=topics.filter(x=>!x.completed);
+  const incomplete=eligibleTopics.filter(x=>!x.completed);
   const subjectModelMap=new Map(subjectModels.map(x=>[x.subject,x]));
   const today=new Date();today.setHours(0,0,0,0);
   const lowCompletion=new Map((capacity.lowCompletionDays||[]).map(x=>[x.day,x.completionRate]));
@@ -96,10 +100,10 @@ export async function buildWeeklyPlan(studentId:string){
       :'Konu ilerleme kaydında henüz tamamlanmadığı için gözlenen odak kapasitesine göre plana alındı.'});
     if(weakSub){
       const model=subjectModelMap.get(weakSub.subject);
-      const questions=dailyPracticeQuestionTarget({
+      const questions=scalePracticeQuestionsForEducationLevel(dailyPracticeQuestionTarget({
         questionCapacity:capacity.questionCapacity,
         accuracy:Math.round(weakSub.accuracy*100)
-      });
+      }),educationProfile);
       const duration=Math.max(15,Math.min(30,Math.round(questions*1.5)));
       const family=model?.family||'GENERAL';
       const weakestType=model?.weakestQuestionType?.questionType;
@@ -163,6 +167,7 @@ export async function buildWeeklyPlan(studentId:string){
     });
   }
   return {
+    educationContext:publicEducationContext(educationProfile),
     goal,
     capacityProfile:{
       plannedMinutes:capacity.plannedMinutes,
@@ -174,8 +179,8 @@ export async function buildWeeklyPlan(studentId:string){
       lowCompletionDays:capacity.lowCompletionDays,
       confidence:capacity.confidence
     },
-    explanation:'Bu plan; vadesi gelen tekrarlar ve akademik performansın yanında öğrencinin ölçülen gerçek çalışma süresi, verimli saat aralığı, odak bloğu ve haftanın düşük tamamlama günleri kullanılarak oluşturulur. Beyan edilen süre tek başına plan kapasitesi değildir.',
-    inputs:{practiceRecords:practice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length,capacityEvidenceDays:capacity.evidenceDays,subjectModels:subjectModels.length},
+    explanation:(educationProfile?educationProfile.label+' ders ve çalışma profili uygulanır. ':'')+'Bu plan; eğitim düzeyine uygun ders/kazanım havuzu, vadesi gelen tekrarlar ve akademik performansın yanında öğrencinin ölçülen gerçek çalışma süresi, verimli saat aralığı, odak bloğu ve haftanın düşük tamamlama günleri kullanılarak oluşturulur. Beyan edilen süre tek başına plan kapasitesi değildir.',
+    inputs:{practiceRecords:eligiblePractice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length,capacityEvidenceDays:capacity.evidenceDays,subjectModels:subjectModels.length},
     days
   };
 }
