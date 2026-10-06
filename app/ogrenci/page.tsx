@@ -69,7 +69,7 @@ export default async function StudentPage() {
         </div>
         <div className="stack">
           <div className="card"><h2>Öğrenci Girişi</h2><p className="muted">Kayıtlı e-posta adresiniz ve kendi oluşturduğunuz şifreyle giriş yapın.</p><StudentLoginForm/></div>
-          <div className="card"><h2>Öğrenci Kaydı</h2><p className="muted">Bilgilerinizi girin, güçlü şifrenizi oluşturun ve aktif koçlardan birini seçin.</p><StudentRegisterForm/></div>
+          <div className="card"><h2>Öğrenci Kaydı</h2><p className="muted">Bilgilerinizi girin ve güçlü şifrenizi oluşturun. Koç seçimi ile çalışma profili ilk giriş sihirbazında tamamlanır.</p><StudentRegisterForm/></div>
         </div>
       </section>
     </PortalShell>;
