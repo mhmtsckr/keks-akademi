@@ -1,3 +1,4 @@
+import {normalizeLegacyEducationLevel} from '@/lib/educationLevels';
 export function evaluateTaskSubmission(input:{totalQuestions:number;correct:number;wrong:number;blank:number;targetValue:number;late:boolean}){
   const {totalQuestions,correct,wrong,blank,targetValue,late}=input;
   const net=Number((correct-wrong/4).toFixed(2));
@@ -52,7 +53,7 @@ export function normalizeEducationLevelLabel(gradeLevel?:string|null){
   if(/DGS/.test(raw))return 'Yetişkin Sınav Grubu · DGS';
   if(/ALES/.test(raw))return 'Yetişkin Sınav Grubu · ALES';
   if(/YDS/.test(raw))return 'Yetişkin Sınav Grubu · YDS';
-  return original;
+  return normalizeLegacyEducationLevel(original);
 }
 
 export function detectEducationBand(gradeLevel?:string|null):EducationBand{
@@ -62,13 +63,13 @@ export function detectEducationBand(gradeLevel?:string|null):EducationBand{
   if(/LGS/.test(raw))return 'ORTAOKUL_7_8';
   if(/YKS|TYT|AYT/.test(raw)&&!/9|10/.test(raw))return 'LISE_11_12';
   const n=Number((raw.match(/(?:^|\D)(1[0-2]|[1-9])(?:\D|$)/)||[])[1]);
-  if(n===1||n===2)return 'ILKOKUL_1_2';
-  if(n===3||n===4)return 'ILKOKUL_3_4';
+  if(n===1||n===2||n===3)return 'ILKOKUL_1_2';
+  if(n===4)return 'ILKOKUL_3_4';
   if(n===5||n===6)return 'ORTAOKUL_5_6';
   if(n===7||n===8)return 'ORTAOKUL_7_8';
   if(n===9||n===10)return 'LISE_9_10';
   if(n===11||n===12)return 'LISE_11_12';
-  if(/İLKOKUL|ILKOKUL/.test(raw))return 'ILKOKUL_3_4';
+  if(/İLKOKUL|ILKOKUL/.test(raw))return 'ILKOKUL_1_2';
   if(/ORTAOKUL/.test(raw))return 'ORTAOKUL_7_8';
   if(/LİSE|LISE/.test(raw))return 'LISE_11_12';
   return 'GENERAL';
