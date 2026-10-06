@@ -1221,6 +1221,21 @@ export async function saveTodayLearningPlanSnapshot(
   return plan;
 }
 
+async function currentEducationContext(studentId:string){
+  const student=await db.student.findUnique({
+    where:{id:studentId},
+    select:{gradeLevel:true,academicTrack:true}
+  });
+  return publicEducationContext(resolveEducationLevelProfile(student?.gradeLevel,student?.academicTrack));
+}
+
+function todayPlanEducationMatches(stored:TodayLearningPlan,current:ReturnType<typeof publicEducationContext>){
+  const saved=(stored as any).educationContext;
+  const savedKey=saved&&typeof saved==='object'?String(saved.key||''):null;
+  const currentKey=current?.key||null;
+  return savedKey===currentKey;
+}
+
 export async function ensureTodayLearningPlan(
   studentId:string,
   now=new Date(),
@@ -1228,14 +1243,22 @@ export async function ensureTodayLearningPlan(
 ){
   const dateKey=trDateKey(now);
   const stored=await storedTodayLearningPlan(studentId,dateKey);
-  if(stored)return hydrateTodayPlanCompletion(studentId,stored);
+  if(stored){
+    const educationContext=await currentEducationContext(studentId);
+    if(todayPlanEducationMatches(stored,educationContext)){
+      return hydrateTodayPlanCompletion(studentId,stored);
+    }
+  }
   const created=await saveTodayLearningPlanSnapshot(studentId,now,generationSource);
   return hydrateTodayPlanCompletion(studentId,created);
 }
 
 export async function readTodayLearningPlan(studentId:string,now=new Date()){
   const stored=await storedTodayLearningPlan(studentId,trDateKey(now));
-  return stored?hydrateTodayPlanCompletion(studentId,stored):null;
+  if(!stored)return null;
+  const educationContext=await currentEducationContext(studentId);
+  if(!todayPlanEducationMatches(stored,educationContext))return null;
+  return hydrateTodayPlanCompletion(studentId,stored);
 }
 
 export async function generateMorningTodayPlans(now=new Date()){
