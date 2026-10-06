@@ -179,7 +179,7 @@ export async function buildWeeklyPlan(studentId:string){
       lowCompletionDays:capacity.lowCompletionDays,
       confidence:capacity.confidence
     },
-    explanation:(educationProfile?educationProfile.label+' ders ve çalışma profili uygulanır. ':'')+'Bu plan; eğitim düzeyine uygun ders/kazanım havuzu, vadesi gelen tekrarlar ve akademik performansın yanında öğrencinin ölçülen gerçek çalışma süresi, verimli saat aralığı, odak bloğu ve haftanın düşük tamamlama günleri kullanılarak oluşturulur. Beyan edilen süre tek başına plan kapasitesi değildir.',
+    explanation:'Bu plan; '+(educationProfile?educationProfile.label+' ders ve çalışma profilini, ':'')+'eğitim düzeyine uygun ders/kazanım havuzunu, vadesi gelen tekrarları ve akademik performansın yanında öğrencinin ölçülen gerçek çalışma süresini, verimli saat aralığını, odak bloğunu ve haftanın düşük tamamlama günlerini kullanarak oluşturulur. Beyan edilen süre tek başına plan kapasitesi değildir.',
     inputs:{practiceRecords:eligiblePractice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length,capacityEvidenceDays:capacity.evidenceDays,subjectModels:subjectModels.length},
     days
   };
