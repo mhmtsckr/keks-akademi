@@ -169,7 +169,7 @@ export function educationLevelKey(value?:string|null):EducationLevelKey|null{
     if(normalized===EDUCATION_LEVELS[key])return key;
   }
   const raw=(value||'').toLocaleUpperCase('tr-TR');
-  const grade=Number((raw.match(/(?:^|\\D)(1[0-2]|[1-9])(?:\\D|$)/)||[])[1]);
+  const grade=Number((raw.match(/(?:^|\D)(1[0-2]|[1-9])(?:\D|$)/)||[])[1]);
   if(grade>=1&&grade<=3)return 'PRIMARY_123';
   if(grade===4)return 'PRIMARY_4';
   if(grade===5||grade===6)return 'MIDDLE_56';
