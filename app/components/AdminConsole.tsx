@@ -8,6 +8,7 @@ import { AccountSecurity } from '@/app/components/AccountSecurity';
 import { AdminProductConfig } from '@/app/components/AdminProductConfig';
 import { AdminFeatureFlags } from '@/app/components/AdminFeatureFlags';
 import { AdminErrorMonitor } from '@/app/components/AdminErrorMonitor';
+import { normalizeLegacyEducationLevel } from '@/lib/educationLevels';
 
 type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
@@ -313,7 +314,7 @@ export function AdminConsole(){
           <td><span className="pill">{u.role}</span></td>
           <td>{u.student?<>
             <strong>Kod {u.student.studentCode}</strong>
-            <div className="muted">{u.student.gradeLevel||'—'}{u.student.coach?.user?.name?' · Koç '+u.student.coach.user.name:''}</div>
+            <div className="muted">{normalizeLegacyEducationLevel(u.student.gradeLevel)||'—'}{u.student.coach?.user?.name?' · Koç '+u.student.coach.user.name:''}</div>
             <div className="muted">Giriş yöntemi: E-posta + kullanıcı şifresi</div>
           </>:u.coachProfile?u.coachProfile._count.students+' öğrenci':u.parentProfile?'Öğrenci: '+u.parentProfile.student.fullName:'—'}</td>
           <td><span className={'adminStatus '+u.status.toLowerCase()}>{u.status}</span></td>
