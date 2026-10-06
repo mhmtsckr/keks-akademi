@@ -73,9 +73,9 @@ function dayName(date:Date){
   return new Intl.DateTimeFormat('tr-TR',{timeZone:'Europe/Istanbul',weekday:'long'}).format(date);
 }
 
-function humanTask(subject:string,minutes:number,questions:number,reason:string){
+function humanTask(subject:string,minutes:number,questions:number,reason:string,resourceTitle?:string|null){
   return {
-    title:subject+' başlangıç çalışması',
+    title:resourceTitle?subject+' · '+resourceTitle:subject+' başlangıç çalışması',
     subject,
     type:'FOCUS',
     minutes,
@@ -110,28 +110,36 @@ export function buildSevenDayStarterPlan(input:{
     const date=new Date(now.getTime()+i*86400000);
     const primary=focus[i%focus.length]||allowed[0]||'Genel';
     const secondary=focus[(i+1)%focus.length]||allowed[1]||primary;
+    const label=dayName(date);
+    const preferred=input.preferredDays.includes(label);
     const isReview=i===6;
-    const primaryMinutes=Math.max(15,Math.round(dailyMinutes*(isReview ? .35 : .5)));
-    const secondaryMinutes=Math.max(10,Math.round(dailyMinutes*(isReview ? .25 : .3)));
-    const reviewMinutes=Math.max(10,dailyMinutes-primaryMinutes-secondaryMinutes);
-    const primaryQuestions=Math.max(5,Math.round(baseQuestions*(isReview ? .35 : .6)));
-    const secondaryQuestions=Math.max(5,Math.round(baseQuestions*(isReview ? .25 : .4)));
-    const tasks=isReview?[
+    const dayBudget=preferred?dailyMinutes:Math.max(20,Math.min(45,Math.round(dailyMinutes*.3)));
+    const primaryResource=input.resources.find(x=>x.subject===primary)?.title||null;
+    const secondaryResource=input.resources.find(x=>x.subject===secondary)?.title||null;
+    const primaryMinutes=Math.max(10,Math.round(dayBudget*(isReview ? .35 : .5)));
+    const secondaryMinutes=Math.max(8,Math.round(dayBudget*(isReview ? .25 : .3)));
+    const reviewMinutes=Math.max(5,dayBudget-primaryMinutes-secondaryMinutes);
+    const questionFactor=preferred?1:.35;
+    const primaryQuestions=Math.max(5,Math.round(baseQuestions*(isReview ? .35 : .6)*questionFactor));
+    const secondaryQuestions=Math.max(5,Math.round(baseQuestions*(isReview ? .25 : .4)*questionFactor));
+    const tasks=!preferred&&!isReview?[
+      {title:'Hafif tekrar · '+primary,subject:primary,type:'LIGHT_REVIEW',minutes:dayBudget,questions:Math.max(5,Math.round(baseQuestions*.2)),reason:'Bu günü yoğun çalışma günü olarak seçmediğin için yük azaltıldı; süreklilik korunuyor.'}
+    ]:isReview?[
       {title:'Haftalık tekrar ve yanlış kontrolü',subject:'Genel',type:'REVIEW',minutes:primaryMinutes,questions:0,reason:'İlk 6 günün öğrenmesini kalıcılaştırmak için.'},
-      humanTask(primary,secondaryMinutes,primaryQuestions,'Haftanın en zayıf alanını yeniden ölçmek için.'),
+      humanTask(primary,secondaryMinutes,primaryQuestions,'Haftanın en zayıf alanını yeniden ölçmek için.',primaryResource),
       {title:'Mini başlangıç denemesi',subject:'Genel',type:'CHECK',minutes:reviewMinutes,questions:Math.max(10,Math.round(baseQuestions*.5)),reason:'İkinci haftanın planına veri üretmek için.'}
     ]:[
-      humanTask(primary,primaryMinutes,primaryQuestions,'Sihirbazda zayıf alan olarak işaretlendiği için önceliklendirildi.'),
-      humanTask(secondary,secondaryMinutes,secondaryQuestions,'Tek derse yüklenmeden ikinci önceliği korumak için.'),
+      humanTask(primary,primaryMinutes,primaryQuestions,'Sihirbazda zayıf alan olarak işaretlendiği için önceliklendirildi.',primaryResource),
+      humanTask(secondary,secondaryMinutes,secondaryQuestions,'Tek derse yüklenmeden ikinci önceliği korumak için.',secondaryResource),
       {title:'Kısa tekrar / yanlış notu',subject:primary,type:'REVIEW',minutes:reviewMinutes,questions:0,reason:'Aynı gün öğrenilen bilgiyi geri çağırmak için.'}
     ];
     days.push({
       day:i+1,
       date:trDateKey(date),
-      dayName:dayName(date),
-      preferred:Boolean(input.preferredDays.includes(dayName(date))),
+      dayName:label,
+      preferred,
       studyWindow:input.studyStart+'–'+input.studyEnd,
-      dailyMinutes,
+      dailyMinutes:dayBudget,
       tasks
     });
   }
