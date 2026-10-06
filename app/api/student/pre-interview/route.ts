@@ -145,7 +145,7 @@ async function POST__handler(req:Request){
   if(form.educationBand==='YETISKIN_SINAV'&&isAgsExam&&academicTrack==='GENERAL')return NextResponse.json({error:'AGS/YDS veya AGS/ÖABT alan bilginiz bulunamadı. Öğrenci panelinden alanınızı seçip kaydedin.'},{status:400});
 
   const interviewReport=buildInterviewReport(scores,academicTrack,assessment.scores,form.educationBand as any,motivationSignals);
-  const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores,motivationSignals);
+  const plans=buildTrackPlans(academicTrack,scores,new Date(),form.educationBand as any,assessment.scores,motivationSignals,studentRecord?.gradeLevel);
   const combinedReport={
     ...interviewReport,
     product,
