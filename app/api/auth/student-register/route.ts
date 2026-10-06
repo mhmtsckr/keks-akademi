@@ -10,6 +10,7 @@ import { AGS_OABT_FIELDS,isAgsOabtLabel,isAgsYdsLabel } from '@/lib/agsExamOptio
 import { withOabtFieldApproval } from '@/lib/oabtFieldApproval';
 import { isEmailVerified,issueEmailVerification,markEmailVerificationRequired } from '@/lib/emailVerification';
 import { withApiErrors } from '@/lib/apiGuard';
+import {publicEducationContext,resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -46,7 +47,10 @@ async function POST__handler(req:Request){
   }
   const registrationTime=new Date().toISOString();
   const academicTrack=isAgsOabt?requestedTrack:isAgsYds?'YDS':(requestedTrack||null);
-  const initialProfile=isAgsOabt?withOabtFieldApproval(null,{
+  const educationProfile=resolveEducationLevelProfile(gradeLevel,academicTrack);
+  const educationContext=publicEducationContext(educationProfile);
+  const baseProfile=educationContext?{educationContext}:{};
+  const initialProfile=isAgsOabt?withOabtFieldApproval(baseProfile,{
     status:'APPROVED',
     requestedField:requestedTrack,
     requestedAt:registrationTime,
@@ -56,7 +60,7 @@ async function POST__handler(req:Request){
     rejectedAt:null,
     rejectedByUserId:null,
     rejectionNote:null
-  }):null;
+  }):educationContext?baseProfile:null;
 
   const existing=await db.user.findUnique({where:{email}});
   if(existing?.status==='SUSPENDED'){
@@ -162,7 +166,7 @@ async function POST__handler(req:Request){
     entityType:'Student',
     entityId:created.student.id,
     summary:input.fullName+' öğrenci başvurusu oluşturuldu, seçtiği koça bağlandı ve yönetici kayıtlarına otomatik KEKS ürün kodu eklendi.',
-    metadata:{coachId:coach.id,gradeLevel,academicTrack,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'APPROVED':null,oabtAutoApproved:isAgsOabt,email,automaticKeksProductCode:true}
+    metadata:{coachId:coach.id,gradeLevel,academicTrack,educationProfileKey:educationProfile?.key||null,recommendedPlanId:educationProfile?.recommendedPlanId||null,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'APPROVED':null,oabtAutoApproved:isAgsOabt,email,automaticKeksProductCode:true}
   });
 
   return NextResponse.json({
