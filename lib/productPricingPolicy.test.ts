@@ -25,6 +25,13 @@ describe('central product pricing wiring',()=>{
     expect(missing,'Active price-sensitive surfaces must use the central runtime product.').toEqual([]);
   });
 
+  it('keeps PayTR payment initiation disabled',()=>{
+    const source=read('app/api/paytr/start/route.ts');
+    expect(source).toContain("status:410");
+    expect(source).toContain('WhatsApp');
+    expect(source).not.toContain('createPaytrToken');
+  });
+
   it('keeps default product identity and price literals in one catalog',()=>{
     const catalog=read('lib/productCatalog.ts');
     const system=read('lib/systemConfig.ts');
