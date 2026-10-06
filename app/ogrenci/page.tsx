@@ -1,3 +1,4 @@
+import {redirect} from 'next/navigation';
 import { StudentMicroLearning } from '@/app/components/StudentMicroLearning';
 import { StudentWeeklyReflection } from '@/app/components/StudentWeeklyReflection';
 import { currentUser } from '@/lib/auth';
@@ -37,6 +38,7 @@ import { StudentExamMap } from '@/app/components/StudentExamMap';
 import { StudentMobileQuickActions } from '@/app/components/StudentMobileQuickActions';
 import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { buildStudentExamMap } from '@/lib/examMap';
+import { isStudentOnboardingRequired } from '@/lib/studentOnboarding';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -72,6 +74,8 @@ export default async function StudentPage() {
       </section>
     </PortalShell>;
   }
+
+  if(isStudentOnboardingRequired(user.student.profile))redirect('/ogrenci/baslangic');
 
   const hasSubscription=await hasActiveSubscription(user.id,'STUDENT');
 
