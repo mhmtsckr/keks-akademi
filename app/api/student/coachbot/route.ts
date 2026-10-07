@@ -70,7 +70,7 @@ async function POST__handler(req:Request){
   }
   if(!/Dayanak:/i.test(reply))reply=reply.trim()+'\n\n'+basis;
   await db.coachBotMessage.create({data:{studentId:student.id,role:'assistant',content:reply,intent:'GENERAL_GUIDANCE'}});
-  return NextResponse.json({ok:true,reply,basis,mode:'GUIDANCE'});
+  return NextResponse.json({ok:true,reply,basis});
 }
 
 export const POST = withApiErrors(POST__handler);
