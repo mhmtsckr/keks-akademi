@@ -16,6 +16,7 @@ import {
 } from '@/lib/learningEngine';
 import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 import { listResourceTracking } from '@/lib/resourceTracking';
+import { buildStudentIndicators } from '@/lib/studentIndicators';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -34,7 +35,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   const student=await ownedStudent(id,user.coachProfile.id);
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
 
-  const [capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,resources]=await Promise.all([
+  const [capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,resources,indicators]=await Promise.all([
     buildCapacityProfile(id),
     buildTopicMastery(id),
     buildSubjectLearningModels(id),
@@ -44,7 +45,8 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     buildLatestExamInterventionReport(id),
     buildExamKnowledgeMap(id),
     buildCoachStudentAlignmentSignals(id),
-    listResourceTracking(id)
+    listResourceTracking(id),
+    buildStudentIndicators(id)
   ]);
 
   const resourceSummary={
@@ -55,7 +57,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     resources
   };
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,resourceTracking:resourceSummary});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,resourceTracking:resourceSummary});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){

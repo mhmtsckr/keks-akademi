@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { rebalanceMissedTasksCapacityAware } from '@/lib/learningEngine';
+import { buildStudentIndicators } from '@/lib/studentIndicators';
 
 function trKey(d:Date){
   return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
@@ -44,7 +45,7 @@ export async function buildStudentCommandCenter(studentId:string){
   const tomorrow=new Date(today);tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
   const sevenDaysAgo=new Date(now.getTime()-7*86400000);
   const {currentStart,nextStart,previousStart}=monthWindows(now);
-  const [todayTasks,reviews,nextSession,target,latestExam,practice,submissions,techniqueSessions,latestReflection,missedCount,monthSubmissions,monthTechniqueSessions,monthReviews,recentExams,activePlans,latestAssessment,latestPreInterview]=await Promise.all([
+  const [todayTasks,reviews,nextSession,target,latestExam,practice,submissions,techniqueSessions,latestReflection,missedCount,monthSubmissions,monthTechniqueSessions,monthReviews,recentExams,activePlans,latestAssessment,latestPreInterview,weeklyIndicators]=await Promise.all([
     db.coachingAction.findMany({where:{studentId,taskDate:{gte:today,lt:tomorrow},status:{in:['ACTIVE','COMPLETED']}},include:{submission:true},orderBy:{createdAt:'asc'}}),
     db.reviewQueueItem.findMany({where:{studentId,status:{in:['DUE','PENDING']},dueAt:{lte:now}},include:{question:true},orderBy:{dueAt:'asc'},take:30}),
     db.coachingSession.findFirst({where:{studentId,status:'SCHEDULED',startsAt:{gte:now}},orderBy:{startsAt:'asc'}}),
@@ -61,7 +62,8 @@ export async function buildStudentCommandCenter(studentId:string){
     db.examResult.findMany({where:{studentId,createdAt:{gte:previousStart,lt:nextStart}},orderBy:{createdAt:'asc'},take:20}),
     db.studyPlan.findMany({where:{studentId,active:true},select:{id:true,title:true,payload:true}}),
     db.assessment.findFirst({where:{studentId},orderBy:{completedAt:'desc'},select:{id:true,completedAt:true,report:true}}),
-    db.preInterviewAttempt.findFirst({where:{studentId},orderBy:{completedAt:'desc'},select:{id:true,completedAt:true,reviewStatus:true,report:true}})
+    db.preInterviewAttempt.findFirst({where:{studentId},orderBy:{completedAt:'desc'},select:{id:true,completedAt:true,reviewStatus:true,report:true}}),
+    buildStudentIndicators(studentId,now)
   ]);
 
   const weak=new Map<string,{subject:string;topic:string;total:number;correct:number;wrong:number;blank:number;reasons:Record<string,number>}>();
@@ -171,6 +173,7 @@ export async function buildStudentCommandCenter(studentId:string){
       reviewDiscipline:Math.max(0,100-Math.min(100,reviews.length*8)),
       focusMinutes:activeMinutes
     },
+    weeklyIndicators,
     systemStatus:{
       screening:Boolean(latestAssessment),
       screeningWorkflow:String(assessmentReport.workflowStatus||'NOT_STARTED'),
