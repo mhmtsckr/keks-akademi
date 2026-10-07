@@ -72,8 +72,8 @@ export function StudentCommandCenter(){
   if(!data)return <div className="card"><p className="muted">Bugünkü çalışma merkezi hazırlanıyor…</p></div>;
 
   const t=data.today;
-  const axes=data.progressAxes||{};
   const system=data.systemStatus||{};
+  const weeklyIndicators=data.weeklyIndicators?.indicators||[];
   const monthly=data.monthlyDevelopment||{};
   const currentMonth=monthly.current||{};
   const previousMonth=monthly.previous||{};
@@ -85,6 +85,22 @@ export function StudentCommandCenter(){
       <div className="card todayMissionCard"><div className="moduleEyebrow">BUGÜN NE YAPACAĞIM?</div><h2>{t.totalTasks-t.completedTasks} görev kaldı</h2><p>{t.targetQuestions} hedef soru</p><a className="btn primary" href="#gunluk-gorevler">Günlük görevleri aç</a></div>
       <div className="card"><div className="moduleEyebrow">KAÇINI TAMAMLADIM?</div><h2>{t.completedTasks} / {t.totalTasks}</h2><div className="goldProgress"><i style={{width:(t.totalTasks?Math.round(t.completedTasks/t.totalTasks*100):0)+'%'}}/></div></div>
       <div className="card"><div className="moduleEyebrow">SIRADA HANGİ TEKRAR VAR?</div><h2>{t.dueReviews ? t.dueReviews+' tekrar bekliyor' : 'Bugün tekrar yok'}</h2><a className="btn" href="#yanlis-soru-bankasi">Tekrar kuyruğunu aç</a></div>
+    </div>
+
+    <div className="card">
+      <div className="moduleHeaderRow">
+        <div>
+          <div className="moduleEyebrow">HAFTALIK DURUM · TEK KEKS SKORU YOK</div>
+          <h2>Beş anlaşılır gelişim göstergesi</h2>
+          <p className="muted">Her gösterge kendi kanıtıyla hesaplanır. Karşılaştırma, geçen haftanın aynı gün sayısıyla yapılır.</p>
+        </div>
+        <span className="pill">{data.weeklyIndicators?.period?.comparisonLabel||'Haftalık karşılaştırma'}</span>
+      </div>
+      <div className="studentMonthlyAxes">
+        {weeklyIndicators.map((x:any)=><WeeklyIndicator key={x.key} item={x}/>)}
+      </div>
+      {weeklyIndicators.length===0&&<p className="muted">Haftalık göstergeler için henüz kayıt yok.</p>}
+      <div className="notice" style={{marginTop:14}}>KEKS bu göstergeleri tek bir gizemli puana toplamaz. Hangi alanın yükseldiği veya düştüğü ayrı ayrı görünür.</div>
     </div>
 
     <details className="card"><summary>Diğer alanlar ve gelişim ayrıntıları</summary><div className="studentSystemJourney">
@@ -144,16 +160,6 @@ export function StudentCommandCenter(){
 
     <details className="card"><summary>Gelişim, eksik haritası ve haftalık değerlendirme</summary><div className="stack"><div className="studentInsightGrid">
       <div className="card">
-        <div className="moduleEyebrow">GERÇEK İLERLEMEM</div><h2>Dört gelişim ekseni</h2>
-        <div className="studentAxisList">
-          <Axis label="Görev devamlılığı" value={axes.continuity||0} suffix="%"/>
-          <Axis label="Soru doğruluğu" value={axes.accuracy||0} suffix="%"/>
-          <Axis label="Tekrar disiplini" value={axes.reviewDiscipline||0} suffix="%"/>
-          <Axis label="Son 7 gün odak" value={Math.min(100,Math.round((axes.focusMinutes||0)/4))} display={(axes.focusMinutes||0)+' dk'}/>
-        </div>
-      </div>
-
-      <div className="card">
         <div className="moduleEyebrow">EKSİK HARİTASI</div><h2>Önce buraya çalış</h2>
         {!data.weaknessMap?.length?<p className="muted">Eksik haritası için soru çözüm verisi gerekli.</p>:<div className="studentWeakList">{data.weaknessMap.slice(0,5).map((x:any)=><div className="studentWeakRow" key={x.subject+x.topic}>
           <div><strong>{x.subject}</strong><span>{x.topic}</span>{x.primaryReason&&<small>En sık neden: {reasonLabel[x.primaryReason]||x.primaryReason}</small>}</div>
@@ -198,6 +204,31 @@ export function StudentCommandCenter(){
   </div>;
 }
 
+function WeeklyIndicator({item}:{item:any}){
+  const value=typeof item.value==='number'?item.value:null;
+  const delta=typeof item.delta==='number'?item.delta:null;
+  const width=value==null?0:Math.max(0,Math.min(100,value));
+  const deltaText=delta==null?'Karşılaştırma verisi yok':delta===0?'Geçen haftaya göre aynı':(delta>0?'+':'')+delta+' puan · geçen haftaya göre';
+  return <div className="monthlyAxisCard">
+    <div className="monthlyAxisHead">
+      <strong>{item.label}</strong>
+      <span className={delta!=null&&delta<0?'riskText':''}>{value==null?'Veri yok':'%'+value}</span>
+    </div>
+    <div className="goldProgress"><i style={{width:width+'%'}}/></div>
+    <p style={{margin:'8px 0 4px'}}><strong>{deltaText}</strong></p>
+    <small className="muted">{item.evidence}</small>
+    <details style={{marginTop:8}}>
+      <summary>Neden böyle?</summary>
+      <div className="stack" style={{marginTop:8}}>
+        {(item.reasons||[]).map((reason:string,i:number)=><small key={i}>{reason}</small>)}
+        <small className="muted"><strong>Hesap:</strong> {item.formula}</small>
+        <small className="muted"><strong>Geçen hafta:</strong> {item.previousEvidence}</small>
+        <small className="muted">Veri güveni: {item.confidence}</small>
+      </div>
+    </details>
+  </div>;
+}
+
 function MonthAxis({label,current,previous,suffix='',normalize=100}:{label:string;current:number;previous:number;suffix?:string;normalize?:number}){
   const delta=Number((current-previous).toFixed(1));
   const pct=Math.max(0,Math.min(100,normalize?current/normalize*100:current));
@@ -206,9 +237,4 @@ function MonthAxis({label,current,previous,suffix='',normalize=100}:{label:strin
     <div className="goldProgress"><i style={{width:pct+'%'}}/></div>
     <small className="muted">Önceki ay: {Math.round(previous)}{suffix}</small>
   </div>;
-}
-
-function Axis({label,value,suffix='',display}:{label:string;value:number;suffix?:string;display?:string}){
-  const v=Math.max(0,Math.min(100,value));
-  return <div className="studentAxis"><div><strong>{label}</strong><span>{display??Math.round(v)+suffix}</span></div><div className="goldProgress"><i style={{width:v+'%'}}/></div></div>;
 }
