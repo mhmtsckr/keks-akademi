@@ -28,6 +28,22 @@ describe('MİZA günlük orkestrasyon',()=>{
     expect(x.coachBoundary.authority).toBe('COACH_OVERRIDES_MIZA');
     expect(formatMizaTodayReply(x)).toContain('Toplam yaklaşık süre: 38 dk');
   });
+
+  it('kapasiteye sığmayan kaçırılmış görevi koça eskale eder',()=>{
+    const x=buildMizaTodayOrchestration({
+      date:'2026-10-07',
+      plan:[{id:'review-batch:1',order:1,source:'REVIEW_BATCH',title:'2 gecikmiş tekrar',targetValue:2,metricType:'REVIEWS',estimatedMinutes:8,completed:false,reviewIds:['r1','r2']}]
+    },{
+      created:[{sourceActionId:'a1'}],
+      deferred:[{sourceActionId:'a2',unallocated:20}]
+    });
+    expect(x.rebalance.redistributedTasks).toBe(1);
+    expect(x.rebalance.deferredTasks).toBe(1);
+    expect(x.rebalance.deferredUnits).toBe(20);
+    expect(x.coachEscalation.required).toBe(true);
+    expect(x.coachEscalation.code).toBe('CAPACITY_BLOCKED_CARRYOVER');
+    expect(formatMizaTodayReply(x)).toContain('Koç müdahalesi gerekiyor');
+  });
 });
 
 
