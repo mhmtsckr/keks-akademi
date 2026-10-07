@@ -8,6 +8,7 @@ import { isFeatureEnabled } from '@/lib/systemConfig';
 import { ensureTodayLearningPlan,rebalanceMissedTasksCapacityAware } from '@/lib/learningEngine';
 import { buildMizaCoachHandoffReply,buildMizaTodayOrchestration,formatMizaTodayReply,isMizaCoachAuthorityIntent,isMizaTodayPlanIntent } from '@/lib/mizaOrchestrator';
 import {recordMizaDailySummary} from '@/lib/mizaLearningService';
+import {ensureMizaCapacityCoachAlert} from '@/lib/mizaCapacityEscalation';
 
 const schema=z.object({message:z.string().min(2).max(2000)});
 
@@ -82,9 +83,10 @@ async function POST__handler(req:Request){
     if(!(await isFeatureEnabled('TODAY_PLAN',student.studentCode)))return NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403});
 
     await db.coachBotMessage.create({data:{studentId:student.id,role:'user',content:message,intent:'TODAY_ORCHESTRATION'}});
-    await rebalanceMissedTasksCapacityAware(student.id);
+    const rebalance=await rebalanceMissedTasksCapacityAware(student.id);
+    await ensureMizaCapacityCoachAlert(student.id,rebalance);
     const today=await ensureTodayLearningPlan(student.id);
-    const orchestration=buildMizaTodayOrchestration(today);
+    const orchestration=buildMizaTodayOrchestration(today,rebalance);
     await recordMizaDailySummary(student.id,orchestration);
     const reply=formatMizaTodayReply(orchestration);
     const basis='Dayanak: Bugünün Planı motoru; koç aksiyonları, vadesi gelen tekrarlar, konu/performans sinyalleri ve öğrencinin gözlenen günlük kapasitesi.';
