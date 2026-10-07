@@ -64,4 +64,10 @@ describe('Partner Koç eşleştirme ağı',()=>{
   it('eski eğitim düzeyi etiketlerini güncel düzeyle eşleyebilir',()=>{
     expect(coachSupportsEducationLevel(['8. Sınıf / LGS'],'Ortaokul 8 | Maarif Model')).toBe(true);
   });
+  it('profili kalite eşiğini tamamlamayan koçu yeni eşleşmeye açmaz',()=>{
+    const incomplete=coach({displayTitle:null,bio:null,specialties:[],supportedEducationLevels:[],profileCompleteness:0});
+    expect(rankPartnerCoach(incomplete,{gradeLevel:'Lise 12 | YKS',academicTrack:'EŞİT AĞIRLIK'}).eligible).toBe(false);
+    expect(rankPartnerCoach(incomplete,{gradeLevel:'Lise 12 | YKS',academicTrack:'EŞİT AĞIRLIK',currentCoachId:'coach-1'}).eligible).toBe(true);
+  });
+
 });
