@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import {NextRequest,NextResponse} from 'next/server';
 import {db} from '@/lib/db';
-import {buildWhatsAppPlanReply,looksLikeKeksPlanInquiry,WHATSAPP_LEVEL_PROMPT} from '@/lib/whatsappPlanReply';
+import {buildWhatsAppPlanReply,detectStudentPlanFromWhatsAppMessage,looksLikeKeksPlanInquiry,WHATSAPP_LEVEL_PROMPT} from '@/lib/whatsappPlanReply';
+import {upsertSalesLeadInquiry} from '@/lib/salesLead';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -117,9 +118,19 @@ export async function POST(request:NextRequest){
     });
     if(duplicate)continue;
 
+    const planMatch=detectStudentPlanFromWhatsAppMessage(body);
     const planReply=buildWhatsAppPlanReply(body);
     const reply=planReply??(looksLikeKeksPlanInquiry(body)?WHATSAPP_LEVEL_PROMPT:null);
     if(!reply)continue;
+
+    const lead=await upsertSalesLeadInquiry({
+      source:'WHATSAPP',
+      phone:from,
+      audience:body.toLocaleLowerCase('tr-TR').includes('veliyim')?'VELİ':'ÖĞRENCİ',
+      educationLevel:planMatch?.plan.level||null,
+      inquiryPlanId:planMatch?.plan.id||null,
+      lastMessage:body
+    });
 
     await sendText(from,reply);
     await db.auditLog.create({
@@ -127,10 +138,12 @@ export async function POST(request:NextRequest){
         action:'WHATSAPP_AUTO_REPLY',
         entityType:'WHATSAPP_MESSAGE',
         entityId:messageId,
-        summary:planReply?'Eğitim düzeyine uygun paket yanıtı gönderildi.':'Eğitim düzeyi bilgisi istendi.',
+        summary:planReply?'Eğitim düzeyine uygun paket yanıtı gönderildi ve satış lead’i güncellendi.':'Eğitim düzeyi bilgisi istendi ve satış lead’i güncellendi.',
         metadata:{
           source:'WHATSAPP_CLOUD_API',
-          replyType:planReply?'PLAN':'LEVEL_PROMPT'
+          replyType:planReply?'PLAN':'LEVEL_PROMPT',
+          leadId:lead.id,
+          inquiryPlanId:planMatch?.plan.id||null
         }
       }
     });
