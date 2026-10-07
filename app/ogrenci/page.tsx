@@ -39,6 +39,8 @@ import { StudentMobileQuickActions } from '@/app/components/StudentMobileQuickAc
 import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { buildStudentExamMap } from '@/lib/examMap';
 import { isStudentOnboardingRequired } from '@/lib/studentOnboarding';
+import { publicEducationCurriculum } from '@/lib/educationCurriculumMap';
+import { educationLevelKey } from '@/lib/educationLevelProfile';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -138,15 +140,24 @@ export default async function StudentPage() {
   );
   const activeTarget = student.targets[0];
   const grade=(student.gradeLevel||'').toLowerCase();
+  const levelKey=educationLevelKey(student.gradeLevel);
+  const educationCurriculum=publicEducationCurriculum(student.gradeLevel,student.academicTrack);
   const isAgsOabt=isAgsOabtStudentRecord({gradeLevel:student.gradeLevel,academicTrack:student.academicTrack,profile:student.profile});
   const adultExamGroup=isAgsOabt?'AGS/ÖABT':getAdultExamGroup(student.gradeLevel);
-  const allowedExams=adultExamGroup==='AGS/ÖABT'?['AGS','OABT'] as const:
-    adultExamGroup==='AGS/YDS'?['AGS','YDS'] as const:
-    adultExamGroup==='KPSS'?['KPSS'] as const:
-    adultExamGroup==='ALES'?['ALES'] as const:
-    adultExamGroup==='DGS'?['DGS'] as const:
-    adultExamGroup==='YDS'||adultExamGroup==='YÖKDİL'?['YDS'] as const:
-    (grade.includes('8')||grade.includes('ortaokul'))?['LGS'] as const:['TYT','AYT'] as const;
+  const schoolMap=educationCurriculum?.examType;
+  const allowedExams:string[]=adultExamGroup==='AGS/ÖABT'?['AGS','OABT']:
+    adultExamGroup==='AGS/YDS'?['AGS','YDS']:
+    adultExamGroup==='KPSS'?['KPSS']:
+    adultExamGroup==='ALES'?['ALES']:
+    adultExamGroup==='DGS'?['DGS']:
+    adultExamGroup==='YDS'||adultExamGroup==='YÖKDİL'?['YDS']:
+    levelKey==='MIDDLE_8'?[schoolMap||'ORTAOKUL_8','LGS']:
+    levelKey==='HIGH_910'?[schoolMap||'LISE_9_10','TYT']:
+    levelKey==='HIGH_11'?[schoolMap||'LISE_11','TYT','AYT']:
+    levelKey==='HIGH_12'?[schoolMap||'LISE_12','TYT','AYT']:
+    levelKey==='GRADUATE_YKS'?['TYT','AYT']:
+    schoolMap?[schoolMap]:
+    (grade.includes('8')?['LGS']:['TYT','AYT']);
   const defaultWrongExam=adultExamGroup||(grade.includes('8')||grade.includes('ortaokul')?'LGS':'TYT');
   const oabtField=isAgsOabt?getEffectiveOabtField(student.academicTrack,student.profile):null;
   const studentGroupLabel=isAgsOabt
@@ -295,7 +306,7 @@ export default async function StudentPage() {
 
     <section id="kaynak-takibi" className="section section-anchor"><PortalSectionTitle eyebrow="KAYNAK TAKİP SİSTEMİ" title="Kitap ve Kaynak Çalışmalarım" description="Kullandığın kaynağı ekle; konu, sayfa, soru ve doğruluk ilerlemesini kaydet. Koçun da kaynak kullanım ritmini görebilsin."/><StudentResourceTracker/></section>
 
-    <section id="akademik-performans" className="section section-anchor"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><PortalSectionTitle eyebrow="AKADEMİK PERFORMANS MERKEZİ" title="Konu, Soru ve Hata Analizi" description="Doğru, yanlış, boş, net, konu ilerlemesi ve hata nedenlerini birlikte takip et."/><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={[...allowedExams]} oabtField={oabtField} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>{const m=learningMetricByPracticeId.get(x.id);return {id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString(),errorReason:x.errorReason,durationSeconds:typeof m?.durationSeconds==='number'?m.durationSeconds:null,questionType:typeof m?.questionType==='string'?m.questionType:null,problemType:typeof m?.problemType==='string'?m.problemType:null,masteryScore:typeof m?.masteryScore==='number'?m.masteryScore:null,masteryState:typeof m?.masteryState==='string'?m.masteryState:null,metricPayload:m||null}})}/></section>
+    <section id="akademik-performans" className="section section-anchor"><div className="row" style={{justifyContent:'space-between',alignItems:'center'}}><PortalSectionTitle eyebrow="AKADEMİK PERFORMANS MERKEZİ" title="Konu, Soru ve Hata Analizi" description="Doğru, yanlış, boş, net, konu ilerlemesi ve hata nedenlerini birlikte takip et."/><a className="btn primary" href="/ogrenci/testler">Konu Bazlı Test Çöz</a></div><StudentProgressTools allowedExams={allowedExams} educationCurriculum={educationCurriculum} oabtField={oabtField} initialProgress={student.topicProgress.map(x=>({examType:x.examType,subject:x.subject,topic:x.topic,completed:x.completed}))} initialPractice={student.practiceLogs.map(x=>{const m=learningMetricByPracticeId.get(x.id);return {id:x.id,examType:x.examType,subject:x.subject,topic:x.topic,correct:x.correct,wrong:x.wrong,blank:x.blank,net:x.net,date:x.date.toISOString(),errorReason:x.errorReason,durationSeconds:typeof m?.durationSeconds==='number'?m.durationSeconds:null,questionType:typeof m?.questionType==='string'?m.questionType:null,problemType:typeof m?.problemType==='string'?m.problemType:null,masteryScore:typeof m?.masteryScore==='number'?m.masteryScore:null,masteryState:typeof m?.masteryState==='string'?m.masteryState:null,metricPayload:m||null}})}/></section>
 
     <section id="hesap-guvenligi" className="section section-anchor"><PortalSectionTitle eyebrow="HESAP & GÜVENLİK" title="Hesap Güvenliği" description="Şifrenizi, son girişlerinizi ve aktif oturumlarınızı yönetin."/><AccountSecurity loginPath="/ogrenci"/></section>
 
