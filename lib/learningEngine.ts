@@ -1098,7 +1098,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   if(capacity.focusDropAfterMinutes)notifications.push(capacity.focusDropAfterMinutes+' dakikayı aşan gözlemlenmiş oturumlarda doğruluk düşüşü görüldüğü için odak blokları '+capacity.recommendedFocusBlockMinutes+' dk ile sınırlandı.');
 
   return {
-    engineVersion:'TODAY_PLAN_V5_EDUCATION_BACKBONE',
+    engineVersion:CURRENT_TODAY_PLAN_ENGINE_VERSION,
     generatedAt:now.toISOString(),
     educationContext:publicEducationContext(educationProfile),
     date:todayKey,
@@ -1243,11 +1243,13 @@ async function currentEducationContext(studentId:string){
   return publicEducationContext(resolveEducationLevelProfile(student?.gradeLevel,student?.academicTrack));
 }
 
+const CURRENT_TODAY_PLAN_ENGINE_VERSION='TODAY_PLAN_V6_MIZA_ORCHESTRATION';
+
 function todayPlanEducationMatches(stored:TodayLearningPlan,current:ReturnType<typeof publicEducationContext>){
   const saved=(stored as any).educationContext;
   const savedKey=saved&&typeof saved==='object'?String(saved.key||''):null;
   const currentKey=current?.key||null;
-  return savedKey===currentKey;
+  return savedKey===currentKey&&String((stored as any).engineVersion||'')===CURRENT_TODAY_PLAN_ENGINE_VERSION;
 }
 
 export async function ensureTodayLearningPlan(
@@ -1319,7 +1321,7 @@ export async function generateMorningTodayPlans(now=new Date()){
     rebalancedStudents,
     redistributedTasks,
     deferredTasks,
-    engineVersion:'TODAY_PLAN_V5_EDUCATION_BACKBONE'
+    engineVersion:CURRENT_TODAY_PLAN_ENGINE_VERSION
   };
 }
 
