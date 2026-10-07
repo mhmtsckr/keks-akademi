@@ -4,6 +4,7 @@ import {withApiErrors} from '@/lib/apiGuard';
 import {ensureTodayLearningPlan} from '@/lib/learningEngine';
 import {buildMizaTodayOrchestration,formatMizaTodayReply} from '@/lib/mizaOrchestrator';
 import {isFeatureEnabled} from '@/lib/systemConfig';
+import {recordMizaDailySummary} from '@/lib/mizaLearningService';
 
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
@@ -13,6 +14,7 @@ async function GET__handler(){
 
   const today=await ensureTodayLearningPlan(user.student.id);
   const orchestration=buildMizaTodayOrchestration(today);
+  await recordMizaDailySummary(user.student.id,orchestration);
   return NextResponse.json({
     ok:true,
     mode:'TODAY_ORCHESTRATION',
