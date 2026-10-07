@@ -1,5 +1,6 @@
 import {db} from '@/lib/db';
 import {normalizeEducationLevelLabel} from '@/lib/taskEvaluation';
+import {educationLevelKey} from '@/lib/educationLevelProfile';
 
 export const KEKS_PARTNER_STANDARD_VERSION='KEKS_PARTNER_V1';
 
@@ -70,11 +71,18 @@ export function median(values:number[]){
   return sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;
 }
 
+function canonicalEducationLevel(value?:string|null){
+  const raw=(value||'').trim();
+  const schoolKey=educationLevelKey(raw);
+  if(schoolKey)return 'SCHOOL:'+schoolKey;
+  return 'LABEL:'+(normalizeEducationLevelLabel(raw)||raw).toLocaleUpperCase('tr-TR');
+}
+
 export function coachSupportsEducationLevel(levels:string[],gradeLevel?:string|null){
   if(!gradeLevel)return true;
   if(!levels.length)return true;
-  const normalized=normalizeEducationLevelLabel(gradeLevel)||gradeLevel;
-  return levels.some(x=>(normalizeEducationLevelLabel(x)||x)===normalized);
+  const target=canonicalEducationLevel(gradeLevel);
+  return levels.some(x=>canonicalEducationLevel(x)===target);
 }
 
 function specialtyFit(specialties:string[],gradeLevel?:string|null,academicTrack?:string|null){
@@ -82,7 +90,7 @@ function specialtyFit(specialties:string[],gradeLevel?:string|null,academicTrack
   const track=(academicTrack||'').toLocaleUpperCase('tr-TR');
   const wanted:string[]=[];
   if(level.includes('ORTAOKUL 8')||level.includes('LGS'))wanted.push('LGS');
-  if(level.includes('LİSE 12')||level.includes('MEZUN')||level.includes('YKS')){
+  if(level.includes('LİSE 11')||level.includes('LISE 11')||level.includes('LİSE 12')||level.includes('LISE 12')||level.includes('MEZUN')||level.includes('YKS')){
     if(track.includes('SAY'))wanted.push('YKS Sayısal');
     else if(track.includes('EŞİT')||track.includes('ESIT'))wanted.push('YKS Eşit Ağırlık');
     else if(track.includes('SÖZ')||track.includes('SOZ'))wanted.push('YKS Sözel');
@@ -123,6 +131,7 @@ export function rankPartnerCoach(input:PartnerCoachRecord,student:{gradeLevel?:s
   else if(levelMatch){fitRank+=15;fitReasons.push('Düzey kapsamı henüz profilinde doğrulanmadı; mevcut Partner Koç havuzunda değerlendirildi.')}
   if(specialty.matched.length){fitRank+=20;fitReasons.push('Uzmanlık eşleşmesi: '+specialty.matched.join(', ')+'.')}
   if(availableSlots>0){fitRank+=Math.min(10,availableSlots);fitReasons.push(availableSlots+' öğrenci kapasitesi açık.')}
+  else if(isCurrentCoach){fitRank+=10;fitReasons.push('Mevcut Partner Koç eşleşmeniz kapasite dolsa da korunuyor.')}
   if(input.responseHours!=null&&input.responseHours<=input.responseTargetHours){fitRank+=10;fitReasons.push('Son 30 günlük takip yanıt medyanı hedef süre içinde.')}
   if(input.sessionCompletionRate!=null&&input.sessionCompletionRate>=85){fitRank+=10;fitReasons.push('Görüşme tamamlama oranı KEKS standardında.')}
   if(input.responseHours==null)fitReasons.push('Yanıt süresi için henüz yeterli operasyon örneği yok.')
