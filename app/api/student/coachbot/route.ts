@@ -5,6 +5,8 @@ import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { buildWeeklyPlan } from '@/lib/smartCoach';
 import { isFeatureEnabled } from '@/lib/systemConfig';
+import { ensureTodayLearningPlan,rebalanceMissedTasksCapacityAware } from '@/lib/learningEngine';
+import { buildMizaTodayOrchestration,formatMizaTodayReply,isMizaTodayPlanIntent } from '@/lib/mizaOrchestrator';
 
 const schema=z.object({message:z.string().min(2).max(2000)});
 
@@ -25,11 +27,26 @@ function fallbackReply(message:string,student:any){
 async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
-  if(!(await isFeatureEnabled('SMART_COACH',user.student.studentCode)))return NextResponse.json({error:'KEKS Rehber bu hesap için etkin değil.'},{status:403});
   const {message}=await readJson(req, schema);
   const student=await db.student.findUnique({where:{id:user.student.id},include:{practiceLogs:{orderBy:{date:'desc'},take:20},coachingActions:{where:{status:'ACTIVE'},orderBy:{periodEnd:'asc'},take:10},plans:{where:{active:true},orderBy:{updatedAt:'desc'},take:3}}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
-  await db.coachBotMessage.create({data:{studentId:student.id,role:'user',content:message}});
+
+  if(isMizaTodayPlanIntent(message)){
+    if(!(await isFeatureEnabled('MIZA_ORCHESTRATOR',student.studentCode)))return NextResponse.json({error:'MİZA Öğrenme Orkestratörü bu hesap için etkin değil.'},{status:403});
+    if(!(await isFeatureEnabled('TODAY_PLAN',student.studentCode)))return NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403});
+
+    await db.coachBotMessage.create({data:{studentId:student.id,role:'user',content:message,intent:'TODAY_ORCHESTRATION'}});
+    await rebalanceMissedTasksCapacityAware(student.id);
+    const today=await ensureTodayLearningPlan(student.id);
+    const orchestration=buildMizaTodayOrchestration(today);
+    const reply=formatMizaTodayReply(orchestration);
+    const basis='Dayanak: Bugünün Planı motoru; koç aksiyonları, vadesi gelen tekrarlar, konu/performans sinyalleri ve öğrencinin gözlenen günlük kapasitesi.';
+    await db.coachBotMessage.create({data:{studentId:student.id,role:'assistant',content:reply,intent:'TODAY_ORCHESTRATION'}});
+    return NextResponse.json({ok:true,mode:'TODAY_ORCHESTRATION',reply,basis,orchestration});
+  }
+
+  if(!(await isFeatureEnabled('SMART_COACH',student.studentCode)))return NextResponse.json({error:'KEKS Rehber bu hesap için etkin değil.'},{status:403});
+  await db.coachBotMessage.create({data:{studentId:student.id,role:'user',content:message,intent:'GENERAL_GUIDANCE'}});
   let reply=fallbackReply(message,student);
   const basis='Dayanak: son '+student.practiceLogs.length+' çalışma kaydı, '+student.coachingActions.length+' aktif koçluk aksiyonu ve '+student.plans.length+' aktif plan değerlendirildi.';
   let planPreview='';
@@ -52,7 +69,7 @@ async function POST__handler(req:Request){
     }catch{}
   }
   if(!/Dayanak:/i.test(reply))reply=reply.trim()+'\n\n'+basis;
-  await db.coachBotMessage.create({data:{studentId:student.id,role:'assistant',content:reply}});
+  await db.coachBotMessage.create({data:{studentId:student.id,role:'assistant',content:reply,intent:'GENERAL_GUIDANCE'}});
   return NextResponse.json({ok:true,reply,basis});
 }
 
