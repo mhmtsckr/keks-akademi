@@ -61,7 +61,6 @@ export default async function ParentPage() {
   }
 
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
 
   const [student,weeklyIndicators] = await Promise.all([
@@ -84,7 +83,8 @@ export default async function ParentPage() {
           status: true,
           submission: { select: { submittedAt: true } }
         }
-      }    }
+      }
+    }
   }),
     buildStudentIndicators(user.parentProfile.studentId, now)
   ]);
@@ -144,7 +144,7 @@ export default async function ParentPage() {
         <p>{parentBrief.reassurance.detail}</p>
       </div>
 
-      <div className="grid" style={{gridTemplateColumns:'repeat(3,minmax(0,1fr))',marginTop:14}}>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',marginTop:14}}>
         <div className="card">
           <div className="moduleEyebrow">BU HAFTA İYİ GİDENLER</div>
           <div className="stack">
