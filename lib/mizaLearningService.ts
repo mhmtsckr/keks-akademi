@@ -1,5 +1,5 @@
 import {db} from '@/lib/db';
-import type {buildMizaTodayOrchestration} from '@/lib/mizaOrchestrator';
+import {buildMizaTodayOrchestration} from '@/lib/mizaOrchestrator';
 
 type MizaOrchestration=ReturnType<typeof buildMizaTodayOrchestration>;
 
