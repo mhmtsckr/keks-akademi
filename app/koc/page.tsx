@@ -53,6 +53,9 @@ export default async function CoachPage() {
   const now=new Date();
   const sevenDaysAgo=new Date(now.getTime()-7*24*60*60*1000);
   const sevenDaysAhead=new Date(now.getTime()+7*24*60*60*1000);
+  const todayKey=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+  const todayStart=new Date(todayKey+'T00:00:00+03:00');
+  const tomorrowStart=new Date(todayStart.getTime()+24*60*60*1000);
   const students = await db.student.findMany({
     where:{coachId:user.coachProfile.id},
     select:{
@@ -71,6 +74,22 @@ export default async function CoachPage() {
     },
     orderBy:{createdAt:'desc'}
   });
+  const mizaDailyLogs=students.length?await db.dailyLog.findMany({
+    where:{
+      studentId:{in:students.map(s=>s.id)},
+      date:{gte:todayStart,lt:tomorrowStart},
+      payload:{path:['type'],equals:'MIZA_DAILY_ORCHESTRATION_SUMMARY'}
+    },
+    select:{studentId:true,payload:true,createdAt:true},
+    orderBy:{createdAt:'desc'}
+  }):[];
+  const mizaSummaryByStudent=new Map<string,Record<string,any>>();
+  for(const row of mizaDailyLogs){
+    if(mizaSummaryByStudent.has(row.studentId))continue;
+    const payload=row.payload&&typeof row.payload==='object'&&!Array.isArray(row.payload)?row.payload as Record<string,any>:{};
+    mizaSummaryByStudent.set(row.studentId,payload);
+  }
+
   const coachTasks=await db.coachTask.findMany({
     where:{coachId:user.coachProfile.id,status:{in:['OPEN','COMPLETED']}},
     include:{student:{select:{id:true,fullName:true}}},
@@ -116,6 +135,7 @@ export default async function CoachPage() {
       preInterviewReady:Boolean(s.preInterviewAttempts[0]),
       monthlyDevelopmentReady:Boolean(s.weeklyReflections[0]),
       hasExamData:Boolean(s.examResults[0]),
+      mizaTodaySummary:mizaSummaryByStudent.get(s.id)||null,
       lastActivity:lastActivity?lastActivity.toISOString():null
     };
   }).sort((a,b)=>b.priorityScore-a.priorityScore);
@@ -183,7 +203,7 @@ export default async function CoachPage() {
       <CoachCommandCenter
         students={priorityStudents}
         agenda={agenda}
-        initialTasks={coachTasks.map(t=>({id:t.id,title:t.title,description:t.description,priority:t.priority,status:t.status,dueAt:t.dueAt?.toISOString()||null,student:t.student}))}
+        initialTasks={coachTasks.map(t=>({id:t.id,title:t.title,description:t.description,priority:t.priority,status:t.status,dueAt:t.dueAt?.toISOString()||null,sourceType:t.sourceType,student:t.student}))}
       />
     </section>
 
