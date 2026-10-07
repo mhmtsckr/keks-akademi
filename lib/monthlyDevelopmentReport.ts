@@ -1,5 +1,6 @@
 import {db} from '@/lib/db';
 import {publicEducationContext,resolveEducationLevelProfile,subjectMatchesEducationLevel} from '@/lib/educationLevelProfile';
+import {buildStudentExamMap} from '@/lib/examMap';
 
 export type MonthlyReportAudience='STUDENT'|'COACH'|'PARENT';
 
@@ -105,7 +106,10 @@ export async function buildMonthlyDevelopmentReport(
     }
   });
   if(!student)return null;
-  const educationProfile=resolveEducationLevelProfile(student.gradeLevel,student.academicTrack);
+  const [educationProfile,curriculumMap]=await Promise.all([
+    Promise.resolve(resolveEducationLevelProfile(student.gradeLevel,student.academicTrack)),
+    buildStudentExamMap(studentId)
+  ]);
 
   const inPeriod=<T extends {createdAt?:Date;date?:Date;taskDate?:Date|null;weekStart?:Date}>(rows:T[],p:Period,field:'createdAt'|'date'|'taskDate'|'weekStart')=>
     rows.filter(x=>{
@@ -187,6 +191,16 @@ export async function buildMonthlyDevelopmentReport(
   }
 
   const interventionAreas:{title:string;detail:string;priority:number}[]=[];
+  const acquisitionWeaknesses=(curriculumMap?.weakest||[])
+    .filter((x:any)=>x.last3MeasurementCount>=3&&x.last3Accuracy!=null)
+    .slice(0,3);
+  for(const x of acquisitionWeaknesses){
+    interventionAreas.push({
+      title:x.subject+' · '+x.subTopic,
+      detail:(x.acquisitionId?x.acquisitionId+' · ':'')+x.acquisition+' · son 3 ölçümde %'+x.last3Accuracy+' başarı · '+x.last3Questions+' soru kanıtı',
+      priority:130-(x.last3Accuracy||0)
+    });
+  }
   subjectTrends.filter(x=>x.currentQuestions>=10&&x.currentAcc!=null&&x.currentAcc<65)
     .forEach(x=>interventionAreas.push({title:x.subject,detail:`Bu ay doğruluk %${x.currentAcc} · ${x.currentQuestions} soru`,priority:100-(x.currentAcc||0)}));
   if(overdueReviews>=3)interventionAreas.push({title:'Tekrar disiplini',detail:`${overdueReviews} gecikmiş tekrar bulunuyor.`,priority:95});
@@ -201,6 +215,10 @@ export async function buildMonthlyDevelopmentReport(
   if(weakest?.title==='Tekrar disiplini')nextGoals.push(`Gecikmiş tekrarları ${overdueReviews} kayıttan 0–2 aralığına indirmek.`);
   else if(weakest?.title==='Görev sürekliliği')nextGoals.push(`Aylık görev tamamlama oranını en az %${Math.min(85,currentTaskCompletion+15)} düzeyine çıkarmak.`);
   else if(weakest?.title==='Çalışma sürekliliği')nextGoals.push('Haftada en az 4 gün düzenli çalışma kaydı oluşturmak.');
+  else if(acquisitionWeaknesses[0]&&weakest?.title===acquisitionWeaknesses[0].subject+' · '+acquisitionWeaknesses[0].subTopic){
+    const x:any=acquisitionWeaknesses[0];
+    nextGoals.push(x.subject+' · '+x.subTopic+' kazanımında son 3 ölçüm başarısını %'+Math.min(85,(x.last3Accuracy||0)+10)+' düzeyine çıkarmak.');
+  }
   else if(weakest&&subjectTrends.some(x=>x.subject===weakest.title))nextGoals.push(`${weakest.title} doğruluğunu gelecek ay en az 8 puan artırmak.`);
 
   if(overdueReviews>0&&!nextGoals.some(x=>x.includes('tekrar')))nextGoals.push('0–1–3–7–14–28 tekrar takvimindeki gecikmeleri haftalık olarak kapatmak.');
@@ -223,6 +241,7 @@ export async function buildMonthlyDevelopmentReport(
   return {
     student:{id:student.id,name:student.fullName,code:student.studentCode,gradeLevel:student.gradeLevel,goal:student.goal,target:target?target.institutionName+(target.departmentName?' · '+target.departmentName:''):null},
     educationContext:publicEducationContext(educationProfile),
+    curriculumSignals:{headline:curriculumMap?.headline||null,weakestAcquisitions:acquisitionWeaknesses},
     period:{key:current.key,label:current.label,start:current.start,end:current.end,previousLabel:previous.label},
     confidence:dataConfidence,
     academic:{
