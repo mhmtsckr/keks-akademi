@@ -30,7 +30,7 @@ export const KEKS_PARTNER_OPERATION_STANDARDS=[
   {key:'REPORT',title:'Rapor disiplini',target:'Uygun öğrenciler için 30 günlük gelişim raporu kapsaması'}
 ] as const;
 
-type PartnerCoachRecord={
+export type PartnerCoachRecord={
   id:string;
   userId:string;
   name:string;
