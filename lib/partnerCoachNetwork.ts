@@ -123,12 +123,16 @@ export function rankPartnerCoach(input:PartnerCoachRecord,student:{gradeLevel?:s
   const availableSlots=Math.max(0,input.maxActiveStudents-input.studentCount);
   const isCurrentCoach=Boolean(student.currentCoachId&&student.currentCoachId===input.id);
   const capacityEligible=availableSlots>0||isCurrentCoach;
-  const eligible=input.partnerStatus==='ACTIVE'&&input.acceptingStudents&&capacityEligible&&levelMatch;
+  const profileReady=input.profileCompleteness>=75&&input.supportedEducationLevels.length>0;
+  const eligible=input.partnerStatus==='ACTIVE'
+    &&capacityEligible
+    &&levelMatch
+    &&(isCurrentCoach||(input.acceptingStudents&&profileReady));
   const fitReasons:string[]=[];
   let fitRank=0;
 
   if(levelMatch&&input.supportedEducationLevels.length){fitRank+=50;fitReasons.push('Eğitim düzeyini aktif olarak takip ediyor.')}
-  else if(levelMatch){fitRank+=15;fitReasons.push('Düzey kapsamı henüz profilinde doğrulanmadı; mevcut Partner Koç havuzunda değerlendirildi.')}
+  else if(levelMatch&&isCurrentCoach){fitRank+=10;fitReasons.push('Mevcut Partner Koç bağlantınız profil geçişi sırasında korunuyor.')}
   if(specialty.matched.length){fitRank+=20;fitReasons.push('Uzmanlık eşleşmesi: '+specialty.matched.join(', ')+'.')}
   if(availableSlots>0){fitRank+=Math.min(10,availableSlots);fitReasons.push(availableSlots+' öğrenci kapasitesi açık.')}
   else if(isCurrentCoach){fitRank+=10;fitReasons.push('Mevcut Partner Koç eşleşmeniz kapasite dolsa da korunuyor.')}
