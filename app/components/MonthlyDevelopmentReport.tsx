@@ -39,6 +39,7 @@ export async function MonthlyDevelopmentReport({
 
     <section className="monthlyReportSection">
       <div className="moduleEyebrow">AKADEMİK GELİŞİM</div>
+      {report.curriculumSignals?.headline&&<div className="notice" style={{marginBottom:12}}><strong>Kazanım sinyali:</strong> {report.curriculumSignals.headline}</div>}
       <div className="monthlyReportMetrics">
         <div className="card"><b>{report.academic.examCount}</b><span>Bu ay deneme</span>{report.academic.examDelta!=null&&<small>{signed(report.academic.examDelta,' net')} önceki aya göre</small>}</div>
         {audience!=='PARENT'&&<div className="card"><b>{metric(report.academic.examAverage)}</b><span>Deneme ortalaması</span></div>}

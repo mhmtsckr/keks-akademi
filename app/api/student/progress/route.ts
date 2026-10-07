@@ -7,6 +7,7 @@ import { calcNet } from '@/lib/performance';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
 import { calculateLearningSnapshot } from '@/lib/learningModel';
 import { inferPracticeErrorReason } from '@/lib/learningEngine';
+import {findCurriculumPath,getEducationCurriculum} from '@/lib/educationCurriculumMap';
 
 const TOPIC_REVIEW_SOURCE='TOPIC_REVIEW_01371428';
 
@@ -19,7 +20,7 @@ function turkeyDayStart(offsetDays=0){
 
 const schema=z.discriminatedUnion('action',[
  z.object({action:z.literal('topic'),examType:z.string().min(2),subject:z.string().min(2),topic:z.string().min(2),completed:z.boolean()}),
- z.object({action:z.literal('practice'),examType:z.string().min(2),subject:z.string().min(2),topic:z.string().optional(),subTopic:z.string().max(160).optional(),acquisition:z.string().max(300).optional(),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),errorReason:z.enum(['BILGI_EKSIKLIGI','ISLEM_HATASI','DIKKAT','SORU_KOKU','SURE','YONTEM_BILMEME','UNUTMA']).optional(),durationSeconds:z.number().int().min(0).max(7200).optional(),questionType:z.string().max(120).optional(),problemType:z.string().max(120).optional(),activeRecallScore:z.number().min(0).max(100).optional(),reviewSuccessScore:z.number().min(0).max(100).optional(),connectionScore:z.number().min(0).max(100).optional(),conceptScore:z.number().min(0).max(100).optional(),misconception:z.string().max(300).optional(),difficulty:z.number().int().min(1).max(5).optional()}),
+ z.object({action:z.literal('practice'),examType:z.string().min(2),subject:z.string().min(2),unit:z.string().max(200).optional(),topic:z.string().optional(),subTopic:z.string().max(160).optional(),acquisition:z.string().max(400).optional(),acquisitionId:z.string().max(120).optional(),correct:z.number().int().min(0),wrong:z.number().int().min(0),blank:z.number().int().min(0),errorReason:z.enum(['BILGI_EKSIKLIGI','ISLEM_HATASI','DIKKAT','SORU_KOKU','SURE','YONTEM_BILMEME','UNUTMA']).optional(),durationSeconds:z.number().int().min(0).max(7200).optional(),questionType:z.string().max(120).optional(),problemType:z.string().max(120).optional(),activeRecallScore:z.number().min(0).max(100).optional(),reviewSuccessScore:z.number().min(0).max(100).optional(),connectionScore:z.number().min(0).max(100).optional(),conceptScore:z.number().min(0).max(100).optional(),misconception:z.string().max(300).optional(),difficulty:z.number().int().min(1).max(5).optional()}),
 ]);
 
 async function POST__handler(req:Request){
@@ -79,6 +80,28 @@ async function POST__handler(req:Request){
    })):[];
    return NextResponse.json({ok:true,row,reviewSchedule});
  }
+ const curriculum=getEducationCurriculum(user.student.gradeLevel,user.student.academicTrack);
+ const selectedPath=input.examType===curriculum?.examType?findCurriculumPath({
+   curriculum,
+   subject:input.subject,
+   unit:input.unit,
+   topic:input.topic,
+   subTopic:input.subTopic,
+   acquisition:input.acquisitionId||input.acquisition,
+   questionType:input.questionType||input.problemType
+ }):null;
+ if(input.examType===curriculum?.examType&&!selectedPath){
+   return NextResponse.json({error:'Seçilen ders/ünite/konu/kazanım yolu bu eğitim düzeyinin müfredat haritasında bulunmuyor.'},{status:400});
+ }
+ const canonical={
+   unit:selectedPath?.unit||input.unit||null,
+   topic:selectedPath?.topic||input.topic||null,
+   subTopic:selectedPath?.subTopic||input.subTopic||null,
+   acquisition:selectedPath?.acquisition||input.acquisition||null,
+   acquisitionId:selectedPath?.acquisitionId||input.acquisitionId||null,
+   questionType:selectedPath?.questionType||input.questionType||null,
+   sourceUrl:selectedPath?.sourceUrl||null
+ };
  const total=input.correct+input.wrong+input.blank;
  const net=calcNet(input.correct,input.wrong);
  const inferredReason=input.errorReason||inferPracticeErrorReason(input);
@@ -95,19 +118,25 @@ async function POST__handler(req:Request){
  const history=learningLogs.flatMap(log=>{
    const p=(log.payload&&typeof log.payload==='object'&&!Array.isArray(log.payload)?log.payload:{}) as Record<string,any>;
    if(p.type!=='LEARNING_METRIC'||p.examType!==input.examType||p.subject!==input.subject)return [];
-   if((input.topic||'')!==String(p.topic||''))return [];
+   if((canonical.topic||'')!==String(p.topic||''))return [];
+   if(canonical.acquisitionId&&String(p.acquisitionId||'')!==canonical.acquisitionId)return [];
    return [{date:log.date,masteryScore:typeof p.masteryScore==='number'?p.masteryScore:null,metricPayload:p}];
  });
- const snapshot=calculateLearningSnapshot(input,history);
+ const snapshot=calculateLearningSnapshot({...input,topic:canonical.topic||undefined,questionType:canonical.questionType||undefined},history);
  const metricPayload={
    type:'LEARNING_METRIC',
    examType:input.examType,
    subject:input.subject,
-   topic:input.topic||null,
+   educationLevelKey:curriculum?.educationLevelKey||null,
+   educationLevelLabel:curriculum?.educationLevelLabel||user.student.gradeLevel||null,
+   unit:canonical.unit,
+   topic:canonical.topic,
    durationSeconds:input.durationSeconds??null,
-   subTopic:input.subTopic||null,
-   acquisition:input.acquisition||null,
-   questionType:input.questionType||null,
+   subTopic:canonical.subTopic,
+   acquisition:canonical.acquisition,
+   acquisitionId:canonical.acquisitionId,
+   questionType:canonical.questionType,
+   curriculumSourceUrl:canonical.sourceUrl,
    problemType:input.problemType||null,
    activeRecallScore:input.activeRecallScore??null,
    reviewSuccessScore:input.reviewSuccessScore??null,
@@ -125,7 +154,7 @@ async function POST__handler(req:Request){
  };
  const result=await db.$transaction(async tx=>{
    const row=await tx.practiceLog.create({data:{
-     studentId,examType:input.examType,subject:input.subject,topic:input.topic||null,
+     studentId,examType:input.examType,subject:input.subject,topic:canonical.topic,
      correct:input.correct,wrong:input.wrong,blank:input.blank,total,net,errorReason:inferredReason
    }});
    await tx.dailyLog.create({data:{
