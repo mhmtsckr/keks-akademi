@@ -74,11 +74,11 @@ export function SmartCoachDashboard(){
 
       <div className="card planActionCard">
         <div className="moduleHeaderRow">
-          <div><div className="moduleEyebrow">MİZA · YAPAY ZEKÂ ASİSTANI</div><h2>Akıllı programı güncelle</h2></div>
+          <div><div className="moduleEyebrow">MİZA · ÖĞRENME ORKESTRATÖRÜ</div><h2>Haftalık plan taslağını hazırla</h2></div>
           <MizaLogo/>
         </div>
-        <p className="muted">Son doğruluk verileri, tamamlanmamış konular ve tekrar kuyruğuna göre açıklanabilir 7 günlük çalışma akışı oluşturur. Bu öneri kesin karar değildir.</p>
-        <button className="btn primary" onClick={savePlan}>Bu Haftanın Programını Oluştur</button>
+        <p className="muted">Son doğruluk verileri, tamamlanmamış konular ve tekrar kuyruğuna göre açıklanabilir 7 günlük çalışma taslağı oluşturur. MİZA koçun hedefini veya müdahale kararını değiştirmez; taslak koçluk sürecinin yerine geçmez.</p>
+        <button className="btn primary" onClick={savePlan}>Haftalık Taslağı Oluştur</button>
       </div>
 
       <div className="card dueReviewCard">
