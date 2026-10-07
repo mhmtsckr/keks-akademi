@@ -42,6 +42,7 @@ import { isStudentOnboardingRequired } from '@/lib/studentOnboarding';
 import { publicEducationCurriculum } from '@/lib/educationCurriculumMap';
 import { educationLevelKey } from '@/lib/educationLevelProfile';
 import { RealUserReviewPrompt } from '@/app/components/RealUserReviewPrompt';
+import { MizaLearningOrchestrator } from '@/app/components/MizaLearningOrchestrator';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -185,6 +186,10 @@ export default async function StudentPage() {
 
     <section className="section"><RealUserReviewPrompt/></section>
 
+    {featureFlags.MIZA_ORCHESTRATOR&&featureFlags.TODAY_PLAN&&<section id="miza-orkestrator" className="section section-anchor">
+      <MizaLearningOrchestrator/>
+    </section>}
+
     {featureFlags.TODAY_PLAN&&<section id="bugunun-plani" className="section section-anchor">
       <StudentTodayPlan/>
     </section>}
@@ -208,6 +213,7 @@ export default async function StudentPage() {
     <section className="section"><details className="card"><summary>Diğer bölümler ve ayrıntılı araçlar</summary>
       <PanelNavigator roleLabel="Öğrenci" groups={[
         {label:'BUGÜN & PLANLAMA',description:'Günün öncelikleri, görevleri ve kişisel program.',items:[
+          ...(featureFlags.MIZA_ORCHESTRATOR&&featureFlags.TODAY_PLAN?[{href:'#miza-orkestrator',title:'MİZA Öğrenme Orkestratörü',description:'Bugünkü sırayı çıkarır ve çalışma sonucunu KEKS’e kaydeder',badge:'MİZA'}]:[]),
           ...(featureFlags.TODAY_PLAN?[{href:'#bugunun-plani',title:'Bugünün Planı',description:'Gerçek kapasiteye göre sıralanmış günlük akış',badge:'ŞİMDİ'}]:[]),
           ...(featureFlags.SMART_NOTIFICATIONS?[{href:'#akilli-bildirimler',title:'Akıllı Bildirimler',description:'Yalnız eylem gerektiren çalışma sinyalleri'}]:[]),
           {href:'#genel-bakis',title:'Kontrol Merkezi',description:'Bugünkü durum ve hızlı aksiyonlar'},
