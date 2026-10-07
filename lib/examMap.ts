@@ -72,7 +72,7 @@ const DETAILED_MAP:Record<string,DetailedTopic>={
 };
 
 function norm(v:string){
-  return v.toLocaleLowerCase('tr-TR').replace(/[‐‑–—]/g,'-').replace(/s+/g,' ').trim();
+  return v.toLocaleLowerCase('tr-TR').replace(/[‐‑–—]/g,'-').replace(/\s+/g,' ').trim();
 }
 
 export function getExamMapTopic(examType:string,subject:string,topic:string):DetailedTopic{
@@ -95,7 +95,7 @@ export function resolveExamMapLeaf(input:{
   subTopic?:string|null;acquisition?:string|null;questionType?:string|null;problemType?:string|null;
 }):ExamMapLeaf{
   const curriculum=getEducationCurriculum(input.gradeLevel,input.academicTrack);
-  const curriculumPath=findCurriculumPath({
+  const curriculumPath=input.examType===curriculum?.examType?findCurriculumPath({
     curriculum,
     subject:input.subject,
     unit:input.unit,
@@ -103,7 +103,7 @@ export function resolveExamMapLeaf(input:{
     subTopic:input.subTopic,
     acquisition:input.acquisition,
     questionType:input.questionType||input.problemType
-  });
+  }):null;
   if(curriculumPath){
     return {
       examType:input.examType,
