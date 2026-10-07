@@ -10,6 +10,7 @@ import { AdminFeatureFlags } from '@/app/components/AdminFeatureFlags';
 import { AdminErrorMonitor } from '@/app/components/AdminErrorMonitor';
 import { normalizeLegacyEducationLevel } from '@/lib/educationLevels';
 import { AdminPartnerCoachNetwork } from '@/app/components/AdminPartnerCoachNetwork';
+import { AdminTestimonials } from '@/app/components/AdminTestimonials';
 
 type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
 
@@ -257,6 +258,7 @@ export function AdminConsole(){
     {tab==='overview'&&dashboard&&<section className="adminPanelSection">
       <AdminCoachQuickApprovals/>
       <AdminPartnerCoachNetwork/>
+      <AdminTestimonials/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">SİSTEM ÖZETİ</div><h2>Genel Bakış</h2><p className="muted">KEKS Akademi'nin güncel operasyon göstergeleri.</p></div><button className="btn" onClick={refresh}>Yenile</button></div>
       <div className="adminKpiGrid">
         <AdminKpi icon="👥" value={dashboard.users} label="Toplam kullanıcı"/>
