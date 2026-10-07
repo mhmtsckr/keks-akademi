@@ -6,7 +6,8 @@ import { requireRole } from '@/lib/auth';
 import { buildWeeklyPlan } from '@/lib/smartCoach';
 import { isFeatureEnabled } from '@/lib/systemConfig';
 import { ensureTodayLearningPlan,rebalanceMissedTasksCapacityAware } from '@/lib/learningEngine';
-import { buildMizaTodayOrchestration,formatMizaTodayReply,isMizaTodayPlanIntent } from '@/lib/mizaOrchestrator';
+import { buildMizaCoachHandoffReply,buildMizaTodayOrchestration,formatMizaTodayReply,isMizaCoachAuthorityIntent,isMizaTodayPlanIntent } from '@/lib/mizaOrchestrator';
+import {recordMizaDailySummary} from '@/lib/mizaLearningService';
 
 const schema=z.object({message:z.string().min(2).max(2000)});
 
@@ -31,6 +32,51 @@ async function POST__handler(req:Request){
   const student=await db.student.findUnique({where:{id:user.student.id},include:{practiceLogs:{orderBy:{date:'desc'},take:20},coachingActions:{where:{status:'ACTIVE'},orderBy:{periodEnd:'asc'},take:10},plans:{where:{active:true},orderBy:{updatedAt:'desc'},take:3}}});
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
 
+  if(isMizaCoachAuthorityIntent(message)){
+    if(!(await isFeatureEnabled('MIZA_ORCHESTRATOR',student.studentCode)))return NextResponse.json({error:'MİZA Öğrenme Orkestratörü bu hesap için etkin değil.'},{status:403});
+
+    const userMessage=await db.coachBotMessage.create({data:{studentId:student.id,role:'user',content:message,intent:'COACH_HANDOFF'}});
+    let handoffCreated=false;
+    if(student.coachId){
+      const coach=await db.coachProfile.findUnique({where:{id:student.coachId},select:{responseTargetHours:true}});
+      const duplicate=await db.coachTask.findFirst({
+        where:{
+          coachId:student.coachId,
+          studentId:student.id,
+          sourceType:'MIZA_HANDOFF',
+          status:'OPEN',
+          description:{contains:message},
+          createdAt:{gte:new Date(Date.now()-24*60*60*1000)}
+        },
+        select:{id:true}
+      });
+      if(!duplicate){
+        await db.coachTask.create({data:{
+          coachId:student.coachId,
+          studentId:student.id,
+          title:'MİZA · Öğrenci plan değişikliği talebi',
+          description:'Öğrenci talebi: “'+message+'”\n\nMİZA bu talebi otomatik uygulamadı; mevcut plan ve koç görevleri korunuyor.',
+          priority:'MEDIUM',
+          dueAt:new Date(Date.now()+Math.max(1,coach?.responseTargetHours||24)*60*60*1000),
+          sourceType:'MIZA_HANDOFF',
+          sourceId:userMessage.id
+        }});
+        handoffCreated=true;
+      }
+    }
+    const reply=buildMizaCoachHandoffReply({handoffCreated,hasCoach:Boolean(student.coachId)});
+    await db.coachBotMessage.create({data:{studentId:student.id,role:'assistant',content:reply,intent:'COACH_HANDOFF'}});
+    await db.auditLog.create({data:{
+      actorUserId:user.id,
+      action:'MIZA_COACH_HANDOFF',
+      entityType:'Student',
+      entityId:student.id,
+      summary:student.coachId?'MİZA plan değişikliği talebini koça devretti; öğrenci planını değiştirmedi.':'MİZA koç yetkisi gerektiren talebi uygulamadı; öğrenciye sınırı açıkladı.',
+      metadata:{handoffCreated,coachId:student.coachId||null,userMessageId:userMessage.id}
+    }});
+    return NextResponse.json({ok:true,mode:'COACH_HANDOFF',reply,handoffCreated,coachAssigned:Boolean(student.coachId)});
+  }
+
   if(isMizaTodayPlanIntent(message)){
     if(!(await isFeatureEnabled('MIZA_ORCHESTRATOR',student.studentCode)))return NextResponse.json({error:'MİZA Öğrenme Orkestratörü bu hesap için etkin değil.'},{status:403});
     if(!(await isFeatureEnabled('TODAY_PLAN',student.studentCode)))return NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403});
@@ -39,6 +85,7 @@ async function POST__handler(req:Request){
     await rebalanceMissedTasksCapacityAware(student.id);
     const today=await ensureTodayLearningPlan(student.id);
     const orchestration=buildMizaTodayOrchestration(today);
+    await recordMizaDailySummary(student.id,orchestration);
     const reply=formatMizaTodayReply(orchestration);
     const basis='Dayanak: Bugünün Planı motoru; koç aksiyonları, vadesi gelen tekrarlar, konu/performans sinyalleri ve öğrencinin gözlenen günlük kapasitesi.';
     await db.coachBotMessage.create({data:{studentId:student.id,role:'assistant',content:reply,intent:'TODAY_ORCHESTRATION'}});
