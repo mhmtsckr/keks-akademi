@@ -28,6 +28,8 @@ type Orchestration={
   dueReviews:number;
   explanation:string;
   notifications:string[];
+  rebalance:{redistributedTasks:number;deferredTasks:number;deferredUnits:number};
+  coachEscalation:{required:boolean;severity:string;message:string};
   tasks:MizaTask[];
   remainingTasks:number;
   completedTasks:number;
@@ -82,7 +84,7 @@ export function MizaLearningOrchestrator(){
   }
 
   async function loadToday(){
-    const r=await fetch('/api/student/miza/today',{cache:'no-store'});
+    const r=await fetch('/api/student/miza/today',{method:'POST',cache:'no-store'});
     const j=await r.json();
     if(!r.ok){setMsg(j.error||'MİZA günlük planı yükleyemedi.');return}
     await applyPayload(j);
@@ -135,6 +137,16 @@ export function MizaLearningOrchestrator(){
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
 
     {orchestration&&<>
+      {orchestration.coachEscalation?.required&&<div className="notice error mizaCoachEscalation">
+        <strong>Koç değerlendirmesi gerekiyor.</strong>
+        <div>{orchestration.coachEscalation.message}</div>
+        <div className="muted">MİZA bu yükü günlük plana zorla eklemedi ve koç görevlerini değiştirmedi.</div>
+      </div>}
+
+      {orchestration.rebalance?.redistributedTasks>0&&<div className="notice">
+        <strong>Kapasiteye göre yeniden dengeleme:</strong> {orchestration.rebalance.redistributedTasks} kaçırılan görev ileri günlere dağıtıldı.
+      </div>}
+
       <div className="mizaSummaryGrid">
         <span><strong>{orchestration.remainingTasks}</strong> kalan görev</span>
         <span><strong>{orchestration.plannedMinutes}</strong> dk plan</span>
