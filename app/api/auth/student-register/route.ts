@@ -12,6 +12,7 @@ import { isEmailVerified,issueEmailVerification,markEmailVerificationRequired } 
 import { withApiErrors } from '@/lib/apiGuard';
 import {publicEducationContext,resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
 import {withRequiredStudentOnboarding} from '@/lib/studentOnboarding';
+import {buildPartnerCoachDirectory} from '@/lib/partnerCoachNetwork';
 
 const schema=z.object({
   fullName:z.string().min(2).max(120),
@@ -78,11 +79,13 @@ async function POST__handler(req:Request){
     return NextResponse.json({error:'Bu Gmail adresiyle daha önce hesap oluşturulmuş.'},{status:409});
   }
 
-  const coach=input.coachId?await db.coachProfile.findFirst({
-    where:{id:input.coachId,user:{status:'ACTIVE',role:'COACH'}},
-    include:{user:{select:{name:true}}}
-  }):null;
-  if(input.coachId&&!coach)return NextResponse.json({error:'Seçilen koç aktif değil veya bulunamadı.'},{status:400});
+  const partnerDirectory=input.coachId
+    ?await buildPartnerCoachDirectory({gradeLevel,academicTrack})
+    :[];
+  const coach=input.coachId?partnerDirectory.find(x=>x.id===input.coachId)||null:null;
+  if(input.coachId&&!coach){
+    return NextResponse.json({error:'Seçilen Partner Koç bu eğitim düzeyi için uygun, aktif veya açık kontenjanlı değil.'},{status:400});
+  }
 
   const studentCode=await uniqueStudentCode();
   const monthlyCode=randomCode('KEKS');
@@ -166,8 +169,8 @@ async function POST__handler(req:Request){
     action:'STUDENT_APPLICATION_CREATED',
     entityType:'Student',
     entityId:created.student.id,
-    summary:input.fullName+' öğrenci başvurusu oluşturuldu. Koç seçimi ilk giriş sihirbazına bırakıldı ve otomatik KEKS ürün kodu eklendi.',
-    metadata:{coachId:coach?.id||null,gradeLevel,academicTrack,educationProfileKey:educationProfile?.key||null,recommendedPlanId:educationProfile?.recommendedPlanId||null,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'APPROVED':null,oabtAutoApproved:isAgsOabt,email,automaticKeksProductCode:true}
+    summary:input.fullName+' öğrenci başvurusu oluşturuldu. '+(coach?'Uygun Partner Koç eşleşmesi kayıt sırasında seçildi.':'Partner Koç seçimi ilk giriş sihirbazına bırakıldı.')+' Otomatik KEKS ürün kodu eklendi.',
+    metadata:{coachId:coach?.id||null,gradeLevel,academicTrack,educationProfileKey:educationProfile?.key||null,recommendedPlanId:educationProfile?.recommendedPlanId||null,requestedOabtField:isAgsOabt?requestedTrack:null,oabtApprovalStatus:isAgsOabt?'APPROVED':null,oabtAutoApproved:isAgsOabt,email,automaticKeksProductCode:true,partnerCoachSelectedAtRegistration:Boolean(coach)}
   });
 
   return NextResponse.json({
