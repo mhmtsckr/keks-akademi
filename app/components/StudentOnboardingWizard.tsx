@@ -1,12 +1,17 @@
 'use client';
 
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {ADULT_EXAM_GROUPS} from '@/lib/agsExamOptions';
 import {EDUCATION_LEVEL_OPTIONS} from '@/lib/educationLevels';
 import {defaultExamTypeForOnboarding,subjectsForOnboarding} from '@/lib/studentOnboarding';
 import {resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
 
-type Coach={id:string;name:string;studentCount:number};
+type Coach={
+  id:string;name:string;studentCount:number;
+  displayTitle:string|null;specialties:string[];availableSlots:number;
+  responseHours:number|null;responseTargetHours:number;
+  sessionCompletionRate:number|null;profileCompleteness:number;fitReasons:string[];
+};
 type Resource={title:string;subject:string;publisher:string};
 
 const STEPS=[
@@ -25,19 +30,25 @@ const DAYS=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Paz
 export function StudentOnboardingWizard({
   initialGradeLevel,
   initialGoal,
+  initialAcademicTrack,
   initialCoachId,
   coaches
 }:{
   initialGradeLevel:string;
   initialGoal:string;
+  initialAcademicTrack:string;
   initialCoachId:string;
   coaches:Coach[];
 }){
   const [step,setStep]=useState(0);
   const [goal,setGoal]=useState(initialGoal||'');
   const [gradeLevel,setGradeLevel]=useState(initialGradeLevel||'');
-  const profile=useMemo(()=>resolveEducationLevelProfile(gradeLevel),[gradeLevel]);
-  const subjects=useMemo(()=>subjectsForOnboarding(gradeLevel),[gradeLevel]);
+  const [academicTrack,setAcademicTrack]=useState(initialAcademicTrack||'');
+  const [coachOptions,setCoachOptions]=useState<Coach[]>(coaches);
+  const [coachLoading,setCoachLoading]=useState(false);
+  const profile=useMemo(()=>resolveEducationLevelProfile(gradeLevel,academicTrack),[gradeLevel,academicTrack]);
+  const trackSensitive=['HIGH_11','HIGH_12','GRADUATE_YKS'].includes(profile?.key||'');
+  const subjects=useMemo(()=>subjectsForOnboarding(gradeLevel,academicTrack),[gradeLevel,academicTrack]);
   const [dailyMinutes,setDailyMinutes]=useState(profile?.study.defaultDailyMinutes||90);
   const [weakSubjects,setWeakSubjects]=useState<string[]>([]);
   const [resources,setResources]=useState<Resource[]>([]);
@@ -54,6 +65,19 @@ export function StudentOnboardingWizard({
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
   const [result,setResult]=useState<any>(null);
+
+  useEffect(()=>{
+    if(!gradeLevel)return;
+    const controller=new AbortController();
+    setCoachLoading(true);
+    const q=new URLSearchParams({gradeLevel});
+    if(academicTrack)q.set('academicTrack',academicTrack);
+    fetch('/api/public/coaches?'+q.toString(),{signal:controller.signal,cache:'no-store'})
+      .then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||'Koçlar yüklenemedi.');setCoachOptions(j.coaches||[]);})
+      .catch(e=>{if(e?.name!=='AbortError')setError('Partner Koç önerileri yenilenemedi.');})
+      .finally(()=>setCoachLoading(false));
+    return ()=>controller.abort();
+  },[gradeLevel,academicTrack]);
 
   function toggleWeak(subject:string){
     setWeakSubjects(current=>current.includes(subject)?current.filter(x=>x!==subject):current.length<5?[...current,subject]:current);
@@ -72,6 +96,9 @@ export function StudentOnboardingWizard({
     setNoResources(false);
     setResourceDraft({title:'',subject:'',publisher:''});
     setExamType(defaultExamTypeForOnboarding(value));
+    setCoachId('');
+    const nextProfile=resolveEducationLevelProfile(value,academicTrack);
+    if(!['HIGH_11','HIGH_12','GRADUATE_YKS'].includes(nextProfile?.key||''))setAcademicTrack(initialAcademicTrack||'');
   }
 
   function addResource(){
@@ -88,6 +115,7 @@ export function StudentOnboardingWizard({
   function validateCurrent(){
     if(step===0&&goal.trim().length<3)return 'Hedefini en az birkaç kelimeyle yaz.';
     if(step===1&&!gradeLevel)return 'Eğitim düzeyini seç.';
+    if(step===1&&trackSensitive&&!academicTrack)return 'Alanını seç.';
     if(step===2&&(dailyMinutes<30||dailyMinutes>(profile?.study.maxDailyMinutes||480)))return 'Bu düzey için gerçekçi bir günlük süre seç.';
     if(step===3&&!weakSubjects.length)return 'En az bir zayıf ders seç.';
     if(step===4&&!noResources&&!resources.length)return 'En az bir kaynak ekle veya “Henüz kaynak kullanmıyorum” seçeneğini işaretle.';
@@ -117,6 +145,7 @@ export function StudentOnboardingWizard({
           action:'complete',
           goal:goal.trim(),
           gradeLevel,
+          academicTrack:academicTrack||null,
           dailyMinutes,
           weakSubjects,
           resources:noResources?[]:resources.map(x=>({...x,publisher:x.publisher||null})),
@@ -196,6 +225,13 @@ export function StudentOnboardingWizard({
           <optgroup label="Eğitim Düzeyi">{EDUCATION_LEVEL_OPTIONS.map(x=><option key={x} value={x}>{x}</option>)}</optgroup>
           <optgroup label="Sınav Grubu">{ADULT_EXAM_GROUPS.map(x=><option key={x} value={x}>{x}</option>)}</optgroup>
         </select>
+        {trackSensitive&&<div className="field"><label>Alan</label><select value={academicTrack} onChange={e=>{setAcademicTrack(e.target.value);setCoachId('')}}>
+          <option value="">Alan seçiniz</option>
+          <option value="SAYISAL">Sayısal</option>
+          <option value="EŞİT AĞIRLIK">Eşit Ağırlık</option>
+          <option value="SÖZEL">Sözel</option>
+          <option value="DİL">Dil</option>
+        </select><small className="muted">Partner Koç eşleştirmesi alan uzmanlığını da kullanır.</small></div>}
         {profile&&<div className="notice"><strong>{profile.curriculumScope}</strong><div className="muted">{profile.subjects.join(' · ')}</div></div>}
       </>}
 
@@ -248,12 +284,24 @@ export function StudentOnboardingWizard({
       </>}
 
       {step===7&&<>
-        <label>KEKS Partner Koçunu seç / doğrula</label>
-        <select value={coachId} onChange={e=>setCoachId(e.target.value)}>
-          <option value="">Koç seçiniz</option>
-          {coaches.map(coach=><option key={coach.id} value={coach.id}>{coach.name} · {coach.studentCount} öğrenci</option>)}
-        </select>
-        <div className="notice"><strong>Bu son adım.</strong><div className="muted">Tamamladığında KEKS bilgilerini tek profile bağlayacak ve ilk 7 günlük planını anında oluşturacak.</div></div>
+        <label>KEKS Partner Koç eşleşmesi</label>
+        {coachLoading&&<div className="notice">Uygun Partner Koçlar güncelleniyor…</div>}
+        {!coachLoading&&coachOptions.length===0&&<div className="notice error"><strong>Şu anda bu düzey için açık kontenjanlı Partner Koç görünmüyor.</strong><div className="muted">KEKS ekibi yeni eşleşme açana kadar kayıt tamamlanamaz.</div></div>}
+        <div className="stack">
+          {coachOptions.slice(0,5).map((coach,index)=><button type="button" key={coach.id} className={coachId===coach.id?'card btn primary':'card btn'} style={{textAlign:'left'}} onClick={()=>setCoachId(coach.id)}>
+            <div className="row" style={{justifyContent:'space-between',gap:10,alignItems:'flex-start'}}>
+              <div><strong>{index===0?'Önerilen · ':''}{coach.name}</strong><div className="muted">{coach.displayTitle||'KEKS Partner Koç'}</div></div>
+              <span className="pill">{coach.availableSlots} kontenjan</span>
+            </div>
+            <div className="muted" style={{marginTop:8}}>{coach.specialties.slice(0,3).join(' · ')||'Uzmanlık profili tamamlanıyor'}</div>
+            <div className="row" style={{marginTop:8,gap:8,flexWrap:'wrap'}}>
+              <span className="pill">Yanıt: {coach.responseHours==null?'veri birikiyor':coach.responseHours+' sa medyan'}</span>
+              <span className="pill">Görüşme: {coach.sessionCompletionRate==null?'veri birikiyor':'%'+coach.sessionCompletionRate}</span>
+            </div>
+            {coach.fitReasons.slice(0,3).map((reason,i)=><small key={i} style={{display:'block',marginTop:5}}>• {reason}</small>)}
+          </button>)}
+        </div>
+        <div className="notice"><strong>Eşleştirme nasıl yapılıyor?</strong><div className="muted">Eğitim düzeyi, alan/uzmanlık, açık kapasite, yanıt süresi ve görüşme tamamlama disiplini kullanılır. Bu sıralama tek başına bir “koç başarı puanı” değildir.</div></div>
       </>}
 
       {error&&<div className="notice error" role="alert">{error}</div>}

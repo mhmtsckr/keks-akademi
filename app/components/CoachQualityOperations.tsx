@@ -16,9 +16,12 @@ export async function CoachQualityOperations({coachId}:{coachId:string}){
       <div>
         <div className="moduleEyebrow">KOÇ KALİTE SİSTEMİ · SON 30 GÜN</div>
         <h2>Operasyon kalitesi</h2>
-        <p className="muted">Öğrenci sayısı veya görüşme hacmi yerine, zamanında geri dönüş ve takip disiplinini gösterir.</p>
+        <p className="muted">Öğrenci sayısı veya görüşme hacmi yerine; yanıt süresi, görüşme tamamlama ve takip disiplinini gösterir.</p>
       </div>
-      <span className="pill">{data.summary?.operationalSamples||0} ölçülebilir olay</span>
+      <div className="row" style={{gap:8,justifyContent:'flex-end'}}>
+        <span className="pill">{data.summary?.standardsMet||0}/{data.summary?.standardsMeasured||0} standart karşılandı</span>
+        <span className="pill">{data.summary?.operationalSamples||0} ölçülebilir olay</span>
+      </div>
     </div>
 
     {data.metrics.length===0

@@ -5,6 +5,7 @@ import {readJson,withApiErrors} from '@/lib/apiGuard';
 import {db} from '@/lib/db';
 import {encodeResourceMeta} from '@/lib/resourceTracking';
 import {publicEducationContext,resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
+import {buildPartnerCoachDirectory} from '@/lib/partnerCoachNetwork';
 import {
   buildSevenDayStarterPlan,
   defaultExamTypeForOnboarding,
@@ -30,6 +31,7 @@ const completeSchema=z.object({
   action:z.literal('complete'),
   goal:z.string().trim().min(3).max(240),
   gradeLevel:z.string().trim().min(1).max(100),
+  academicTrack:z.string().trim().max(120).optional().nullable(),
   dailyMinutes:z.number().int().min(30).max(480),
   weakSubjects:z.array(z.string().trim().min(1).max(80)).min(1).max(5),
   resources:z.array(resourceSchema).max(8),
@@ -78,7 +80,7 @@ async function POST__handler(req:Request){
 
   const student=await db.student.findUnique({
     where:{id:user.student.id},
-    select:{id:true,profile:true,academicTrack:true}
+    select:{id:true,profile:true,academicTrack:true,coachId:true}
   });
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
 
@@ -90,20 +92,27 @@ async function POST__handler(req:Request){
     return NextResponse.json({ok:true,alreadyCompleted:true,plan:existing?.payload||null});
   }
 
-  const coach=await db.coachProfile.findFirst({
-    where:{id:input.coachId,user:{status:'ACTIVE',role:'COACH'}},
-    select:{id:true,userId:true,user:{select:{name:true}}}
-  });
-  if(!coach)return NextResponse.json({error:'Seçilen koç aktif değil veya bulunamadı.'},{status:400});
+  const effectiveAcademicTrack=(input.academicTrack||student.academicTrack||'').trim()||null;
+  const education=resolveEducationLevelProfile(input.gradeLevel,effectiveAcademicTrack);
+  if(['HIGH_11','HIGH_12','GRADUATE_YKS'].includes(education?.key||'')&&!effectiveAcademicTrack){
+    return NextResponse.json({error:'Bu eğitim düzeyi için alan seçimi gereklidir.'},{status:400});
+  }
 
-  const allowedSubjects=subjectsForOnboarding(input.gradeLevel,student.academicTrack);
+  const partnerCoaches=await buildPartnerCoachDirectory({
+    gradeLevel:input.gradeLevel,
+    academicTrack:effectiveAcademicTrack,
+    currentCoachId:student.coachId
+  });
+  const coach=partnerCoaches.find(x=>x.id===input.coachId)||null;
+  if(!coach)return NextResponse.json({error:'Seçilen Partner Koç bu eğitim düzeyi için uygun, aktif veya açık kontenjanlı değil.'},{status:400});
+
+  const allowedSubjects=subjectsForOnboarding(input.gradeLevel,effectiveAcademicTrack);
   const invalidWeak=input.weakSubjects.filter(x=>!allowedSubjects.includes(x));
   const invalidResources=input.resources.filter(x=>!allowedSubjects.includes(x.subject));
   if(invalidWeak.length||invalidResources.length){
     return NextResponse.json({error:'Zayıf ders veya kaynak dersi seçilen eğitim düzeyiyle uyumlu değil.'},{status:400});
   }
 
-  const education=resolveEducationLevelProfile(input.gradeLevel,student.academicTrack);
   const maxDaily=education?.study.maxDailyMinutes||480;
   if(input.dailyMinutes>maxDaily){
     return NextResponse.json({error:'Bu eğitim düzeyi için günlük süre çok yüksek. En fazla '+maxDaily+' dakika seçin.'},{status:400});
@@ -111,7 +120,7 @@ async function POST__handler(req:Request){
 
   const starterPlan=buildSevenDayStarterPlan({
     gradeLevel:input.gradeLevel,
-    academicTrack:student.academicTrack,
+    academicTrack:effectiveAcademicTrack,
     goal:input.goal,
     dailyMinutes:input.dailyMinutes,
     weakSubjects:input.weakSubjects,
@@ -220,6 +229,7 @@ async function POST__handler(req:Request){
       data:{
         goal:input.goal,
         gradeLevel:input.gradeLevel,
+        academicTrack:effectiveAcademicTrack,
         coachId:coach.id,
         profile:profile as any
       }
@@ -237,6 +247,7 @@ async function POST__handler(req:Request){
     metadata:{
       version:STUDENT_ONBOARDING_VERSION,
       gradeLevel:input.gradeLevel,
+      academicTrack:effectiveAcademicTrack,
       dailyMinutes:input.dailyMinutes,
       weakSubjects:input.weakSubjects,
       resourceCount:input.resources.length,
@@ -250,7 +261,7 @@ async function POST__handler(req:Request){
     ok:true,
     planId:result.planId,
     completedAt:result.completedAt,
-    coach:{id:coach.id,name:coach.user.name},
+    coach:{id:coach.id,name:coach.name},
     plan:starterPlan
   });
 }

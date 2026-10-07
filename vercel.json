@@ -12,5 +12,6 @@
       "*": false,
       "main": true
     }
-  }
+  },
+  "buildCommand": "npm run db:migrate && npm run build"
 }

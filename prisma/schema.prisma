@@ -62,6 +62,16 @@ model CoachProfile {
   id        String    @id @default(cuid())
   userId    String    @unique
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayTitle String?
+  bio       String?
+  specialties Json    @default("[]")
+  supportedEducationLevels Json @default("[]")
+  maxActiveStudents Int @default(30)
+  acceptingStudents Boolean @default(true)
+  partnerStatus String @default("ACTIVE")
+  operationsStandardVersion String @default("KEKS_PARTNER_V1")
+  responseTargetHours Int @default(24)
+  profileUpdatedAt DateTime?
   students  Student[]
   calendarConnections CalendarConnection[]
   coachingSessions CoachingSession[]
@@ -70,6 +80,8 @@ model CoachProfile {
   preInterviewAssignments PreInterviewAssignment[]
   coachAccessClaims CoachAccessCode[]
   createdAt DateTime  @default(now())
+
+  @@index([partnerStatus, acceptingStudents])
 }
 
 model Student {
