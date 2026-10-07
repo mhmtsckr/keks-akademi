@@ -64,6 +64,7 @@ export function MizaLearningOrchestrator(){
   const [msg,setMsg]=useState('');
 
   const reviewIds=useMemo(()=>new Set((orchestration?.tasks||[]).flatMap(x=>x.reviewIds||[])),[orchestration]);
+  const nextTask=useMemo(()=>orchestration?.tasks?.find(x=>!x.completed)||null,[orchestration]);
 
   async function loadReviews(ids:Set<string>){
     if(!ids.size){setReviews([]);return}
@@ -147,6 +148,20 @@ export function MizaLearningOrchestrator(){
         <strong>Kapasiteye göre yeniden dengeleme:</strong> {orchestration.rebalance.redistributedTasks} kaçırılan görev ileri günlere dağıtıldı.
       </div>}
 
+      {nextTask&&<div className="card todayMissionCard" style={{margin:'14px 0'}}>
+        <div className="moduleEyebrow">MİZA · ŞİMDİ UYGULA</div>
+        <h3>{nextTask.title}</h3>
+        <p className="muted">{nextTask.why||'KEKS verisine göre şu anda en yüksek öncelikli görev.'}</p>
+        <div className="row" style={{flexWrap:'wrap'}}>
+          <span className="pill">{taskTarget(nextTask)}</span>
+          <span className="pill">~{nextTask.estimatedMinutes} dk</span>
+          <span className="pill">{nextTask.source==='ACTION'?'KOÇ ÖNCELİĞİ':nextTask.source==='REVIEW_BATCH'?'GECİKMİŞ TEKRAR':'SIRADAKİ AKSİYON'}</span>
+        </div>
+        <div style={{marginTop:12}}>
+          <TaskControls task={nextTask} reviews={reviews.filter(x=>nextTask.reviewIds.includes(x.id))} onSaved={refreshed}/>
+        </div>
+      </div>}
+
       <div className="mizaSummaryGrid">
         <span><strong>{orchestration.remainingTasks}</strong> kalan görev</span>
         <span><strong>{orchestration.plannedMinutes}</strong> dk plan</span>
@@ -170,7 +185,7 @@ export function MizaLearningOrchestrator(){
               <span className="pill">{task.completed?'TAMAMLANDI':task.source==='ACTION'?'KOÇ GÖREVİ':task.source==='REVIEW_BATCH'?'TEKRAR':'MİZA SIRASI'}</span>
             </div>
             {task.why&&<details><summary>Neden bu görev?</summary><p className="muted">{task.why}</p></details>}
-            {!task.completed&&<TaskControls task={task} reviews={reviews.filter(x=>task.reviewIds.includes(x.id))} onSaved={refreshed}/>}
+            {!task.completed&&task.id!==nextTask?.id&&<TaskControls task={task} reviews={reviews.filter(x=>task.reviewIds.includes(x.id))} onSaved={refreshed}/>}
           </div>
         </article>)}
       </div>
