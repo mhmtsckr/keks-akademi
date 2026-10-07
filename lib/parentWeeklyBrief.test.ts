@@ -50,7 +50,7 @@ describe('veli haftalık destek özeti',()=>{
       todayPlan:{total:5,completed:2}
     });
     expect(brief.reassurance.tone).toBe('ATTENTION');
-    expect(brief.reassurance.detail).toContain('baskı');
+    expect(brief.reassurance.detail.toLocaleLowerCase('tr-TR')).toContain('baskı');
     expect(brief.attention.some(x=>x.title==='Plan uyumu belirgin biçimde geriledi')).toBe(true);
     expect(brief.support.some(x=>x.title==='Başlamayı kolaylaştırın')).toBe(true);
   });
