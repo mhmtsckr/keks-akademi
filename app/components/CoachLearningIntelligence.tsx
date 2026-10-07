@@ -51,6 +51,7 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
   const subjects=data.subjects||[];
   const impact=(data.impact||[]).slice(0,6);
   const timeline=(data.timeline||[]).slice(-12).reverse();
+  const weeklyIndicators=data.indicators?.indicators||[];
 
   return <div className="stack">
     {msg&&<div className="notice error">{msg}</div>}
@@ -75,6 +76,48 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       </div>}
       {c.lowCompletionDays?.length>0&&<div className="notice" style={{marginTop:10}}><strong>Düşük tamamlama günleri:</strong> {c.lowCompletionDays.map((x:any)=>x.day+' %'+x.completionRate).join(' · ')}</div>}
       <p className="muted" style={{marginTop:10}}>Veri kaynağı: {c.measurementSource==='ACTIVE_TIMER'?'gerçek aktif çalışma zamanlayıcısı + görev sonuçları':'görev/soru kayıtları'} · {c.evidenceDays||0} kanıt günü. Sistem veri yetersizse kesin odak veya saat sonucu üretmez.</p>
+    </div>
+
+    <div className="card">
+      <div className="moduleHeaderRow">
+        <div>
+          <div className="moduleEyebrow">HAFTALIK ÖĞRENCİ GÖSTERGELERİ · TEK PUAN YOK</div>
+          <h2>Neden yükseldi, neden düştü?</h2>
+          <p className="muted">Koç kararını tek bir KEKS skoruna göre değil; çalışma, tekrar, bilgi, doğruluk ve plan kanıtlarına göre verir.</p>
+        </div>
+        <span className="pill">{data.indicators?.period?.comparisonLabel||'Haftalık karşılaştırma'}</span>
+      </div>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))'}}>
+        {weeklyIndicators.map((x:any)=>{
+          const value=typeof x.value==='number'?x.value:null;
+          const d=typeof x.delta==='number'?x.delta:null;
+          return <div className="card" key={x.key} style={{margin:0}}>
+            <div className="moduleHeaderRow">
+              <strong>{x.label}</strong>
+              <span className={d!=null&&d<0?'riskText':''}>{value==null?'Veri yok':'%'+value}</span>
+            </div>
+            <p><strong>{d==null?'Karşılaştırma yok':d===0?'Geçen haftaya göre aynı':(d>0?'+':'')+d+' puan · geçen haftaya göre'}</strong></p>
+            <div className="goldProgress"><i style={{width:(value==null?0:Math.max(0,Math.min(100,value)))+'%'}}/></div>
+            <p className="muted">{x.evidence}</p>
+            <div className="stack">
+              {(x.reasons||[]).map((reason:string,i:number)=><small key={i}>• {reason}</small>)}
+            </div>
+            <details style={{marginTop:8}}>
+              <summary>Hesaplama kanıtı</summary>
+              <small className="muted"><strong>Formül:</strong> {x.formula}</small><br/>
+              <small className="muted"><strong>Geçen hafta:</strong> {x.previousEvidence}</small><br/>
+              <small className="muted"><strong>Veri güveni:</strong> {x.confidence}</small>
+            </details>
+          </div>;
+        })}
+      </div>
+      {weeklyIndicators.length===0&&<p className="muted">Karşılaştırılabilir haftalık veri henüz oluşmadı.</p>}
+      {data.indicators?.summary?.declining?.length>0&&<div className="notice error" style={{marginTop:12}}>
+        <strong>Düşen göstergeler:</strong> {data.indicators.summary.declining.join(' · ')}. Yukarıdaki kartlarda düşüşün hangi kanıttan geldiği açıkça gösterilir.
+      </div>}
+      {data.indicators?.summary?.improving?.length>0&&<div className="notice" style={{marginTop:12}}>
+        <strong>İyileşen göstergeler:</strong> {data.indicators.summary.improving.join(' · ')}.
+      </div>}
     </div>
 
     {goal&&<div className="card">
