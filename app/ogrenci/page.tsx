@@ -43,6 +43,7 @@ import { publicEducationCurriculum } from '@/lib/educationCurriculumMap';
 import { educationLevelKey } from '@/lib/educationLevelProfile';
 import { RealUserReviewPrompt } from '@/app/components/RealUserReviewPrompt';
 import { MizaLearningOrchestrator } from '@/app/components/MizaLearningOrchestrator';
+import { StudentActionHub } from '@/app/components/StudentActionHub';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -182,37 +183,34 @@ export default async function StudentPage() {
   >
     <StudentMobileQuickActions examTypes={[...allowedExams]}/>
 
-    <section className="section"><KeksCoreLoop compact/></section>
-
-    <section className="section"><RealUserReviewPrompt/></section>
+    {featureFlags.TODAY_PLAN&&<section id="sonraki-aksiyon" className="section section-anchor">
+      <StudentActionHub/>
+    </section>}
 
     {featureFlags.MIZA_ORCHESTRATOR&&featureFlags.TODAY_PLAN&&<section id="miza-orkestrator" className="section section-anchor">
       <MizaLearningOrchestrator/>
     </section>}
 
-    {featureFlags.TODAY_PLAN&&<section id="bugunun-plani" className="section section-anchor">
-      <StudentTodayPlan/>
-    </section>}
-
-    {featureFlags.MICRO_LEARNING&&<section id="mikro-ogrenme" className="section section-anchor"><StudentMicroLearning/></section>}
-
-    <section id="haftalik-oz-degerlendirme" className="section section-anchor">
-      <StudentWeeklyReflection/>
+    <section className="section">
+      <details className="card">
+        <summary>Bugünün ayrıntıları ve diğer öğrenci araçları</summary>
+        <div className="stack" style={{marginTop:16}}>
+          <KeksCoreLoop compact/>
+          {featureFlags.TODAY_PLAN&&<div id="bugunun-plani" className="section-anchor"><StudentTodayPlan/></div>}
+          {featureFlags.MICRO_LEARNING&&<div id="mikro-ogrenme" className="section-anchor"><StudentMicroLearning/></div>}
+          <div id="haftalik-oz-degerlendirme" className="section-anchor"><StudentWeeklyReflection/></div>
+          {featureFlags.SMART_NOTIFICATIONS&&<div id="akilli-bildirimler" className="section-anchor"><StudentSmartNotifications/></div>}
+          <div id="genel-bakis" className="section-anchor"><StudentCommandCenter/></div>
+          <div id="gunluk-gorevler" className="section-anchor"><PortalSectionTitle eyebrow="BUGÜN" title="Günlük Görevlerim" description="Koçunuzun verdiği görevleri soru sonuçlarıyla birlikte kaydedin."/><StudentDailyTasks/></div>
+          <RealUserReviewPrompt/>
+        </div>
+      </details>
     </section>
-
-    {featureFlags.SMART_NOTIFICATIONS&&<section id="akilli-bildirimler" className="section section-anchor">
-      <StudentSmartNotifications/>
-    </section>}
-
-    <section id="genel-bakis" className="section section-anchor">
-      <StudentCommandCenter/>
-    </section>
-
-    <section id="gunluk-gorevler" className="section section-anchor"><PortalSectionTitle eyebrow="BUGÜN" title="Günlük Görevlerim" description="Koçunuzun verdiği görevleri soru sonuçlarıyla birlikte kaydedin."/><StudentDailyTasks/></section>
 
     <section className="section"><details className="card"><summary>Diğer bölümler ve ayrıntılı araçlar</summary>
       <PanelNavigator roleLabel="Öğrenci" groups={[
-        {label:'BUGÜN & PLANLAMA',description:'Günün öncelikleri, görevleri ve kişisel program.',items:[
+        {label:'BUGÜN & PLANLAMA',description:'Önce tek doğru aksiyon; ayrıntılar yalnız gerektiğinde açılır.',items:[
+          ...(featureFlags.TODAY_PLAN?[{href:'#sonraki-aksiyon',title:'Sonraki En Doğru Aksiyon',description:'KEKS verisine göre şimdi yapılacak tek işi gösterir',badge:'ÖNCE BUNU'}]:[]),
           ...(featureFlags.MIZA_ORCHESTRATOR&&featureFlags.TODAY_PLAN?[{href:'#miza-orkestrator',title:'MİZA Öğrenme Orkestratörü',description:'Bugünkü sırayı çıkarır ve çalışma sonucunu KEKS’e kaydeder',badge:'MİZA'}]:[]),
           ...(featureFlags.TODAY_PLAN?[{href:'#bugunun-plani',title:'Bugünün Planı',description:'Gerçek kapasiteye göre sıralanmış günlük akış',badge:'ŞİMDİ'}]:[]),
           ...(featureFlags.SMART_NOTIFICATIONS?[{href:'#akilli-bildirimler',title:'Akıllı Bildirimler',description:'Yalnız eylem gerektiren çalışma sinyalleri'}]:[]),
