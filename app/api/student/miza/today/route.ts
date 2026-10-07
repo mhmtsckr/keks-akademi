@@ -6,18 +6,13 @@ import {buildMizaTodayOrchestration,formatMizaTodayReply} from '@/lib/mizaOrches
 import {isFeatureEnabled} from '@/lib/systemConfig';
 import {ensureMizaCapacityCoachAlert} from '@/lib/mizaCoachEscalation';
 
-async function studentContext(){
-  const user=await requireRole(['STUDENT']);
-  if(!user.student)return {response:NextResponse.json({error:'Öğrenci profili yok.'},{status:400})};
-  if(!(await isFeatureEnabled('MIZA_ORCHESTRATOR',user.student.studentCode)))return {response:NextResponse.json({error:'MİZA Öğrenme Orkestratörü bu hesap için etkin değil.'},{status:403})};
-  if(!(await isFeatureEnabled('TODAY_PLAN',user.student.studentCode)))return {response:NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403})};
-  return {user,student:user.student};
-}
-
 async function GET__handler(){
-  const context=await studentContext();
-  if('response' in context)return context.response;
-  const today=await readTodayLearningPlan(context.student.id);
+  const user=await requireRole(['STUDENT']);
+  if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('MIZA_ORCHESTRATOR',user.student.studentCode)))return NextResponse.json({error:'MİZA Öğrenme Orkestratörü bu hesap için etkin değil.'},{status:403});
+  if(!(await isFeatureEnabled('TODAY_PLAN',user.student.studentCode)))return NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403});
+
+  const today=await readTodayLearningPlan(user.student.id);
   if(!today)return NextResponse.json({error:'MİZA günlük planı henüz hazırlanmadı.'},{status:404});
   const orchestration=buildMizaTodayOrchestration(today);
   return NextResponse.json({
@@ -29,13 +24,15 @@ async function GET__handler(){
 }
 
 async function POST__handler(){
-  const context=await studentContext();
-  if('response' in context)return context.response;
+  const user=await requireRole(['STUDENT']);
+  if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  if(!(await isFeatureEnabled('MIZA_ORCHESTRATOR',user.student.studentCode)))return NextResponse.json({error:'MİZA Öğrenme Orkestratörü bu hesap için etkin değil.'},{status:403});
+  if(!(await isFeatureEnabled('TODAY_PLAN',user.student.studentCode)))return NextResponse.json({error:'Bugünün Planı bu hesap için etkin değil.'},{status:403});
 
-  const rebalance=await rebalanceMissedTasksCapacityAware(context.student.id);
-  await ensureMizaCapacityCoachAlert(context.student.id,rebalance);
+  const rebalance=await rebalanceMissedTasksCapacityAware(user.student.id);
+  await ensureMizaCapacityCoachAlert(user.student.id,rebalance);
 
-  const today=await ensureTodayLearningPlan(context.student.id);
+  const today=await ensureTodayLearningPlan(user.student.id);
   const orchestration=buildMizaTodayOrchestration(today,rebalance);
   return NextResponse.json({
     ok:true,
