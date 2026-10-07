@@ -109,11 +109,13 @@ function roundedHours(v:number|null){
   return v==null?null:Math.round(v*10)/10;
 }
 
-export function rankPartnerCoach(input:PartnerCoachRecord,student:{gradeLevel?:string|null;academicTrack?:string|null}):PartnerCoachMatch{
+export function rankPartnerCoach(input:PartnerCoachRecord,student:{gradeLevel?:string|null;academicTrack?:string|null;currentCoachId?:string|null}):PartnerCoachMatch{
   const levelMatch=coachSupportsEducationLevel(input.supportedEducationLevels,student.gradeLevel);
   const specialty=specialtyFit(input.specialties,student.gradeLevel,student.academicTrack);
   const availableSlots=Math.max(0,input.maxActiveStudents-input.studentCount);
-  const eligible=input.partnerStatus==='ACTIVE'&&input.acceptingStudents&&availableSlots>0&&levelMatch;
+  const isCurrentCoach=Boolean(student.currentCoachId&&student.currentCoachId===input.id);
+  const capacityEligible=availableSlots>0||isCurrentCoach;
+  const eligible=input.partnerStatus==='ACTIVE'&&input.acceptingStudents&&capacityEligible&&levelMatch;
   const fitReasons:string[]=[];
   let fitRank=0;
 
@@ -129,7 +131,7 @@ export function rankPartnerCoach(input:PartnerCoachRecord,student:{gradeLevel?:s
   return {...input,availableSlots,eligible,fitReasons,fitRank};
 }
 
-export async function buildPartnerCoachDirectory(student:{gradeLevel?:string|null;academicTrack?:string|null}={}){
+export async function buildPartnerCoachDirectory(student:{gradeLevel?:string|null;academicTrack?:string|null;currentCoachId?:string|null}={}){
   const now=new Date();
   const start=new Date(now.getTime()-30*86400000);
   const coaches=await db.coachProfile.findMany({
