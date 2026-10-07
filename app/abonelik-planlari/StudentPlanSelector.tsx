@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import {BUSINESS_INFO} from '@/lib/businessInfo';
 import {STUDENT_PLANS,STUDENT_TERM_PRICING,type KeksPlan,type StudentTermPricing} from '@/lib/subscriptionPlans';
+import {recommendPackageTerm,type StudyRoutine,type TrackingNeed} from '@/lib/packageRecommendation';
 
 type TermKey='monthly'|'threeMonths'|'sixMonths'|'annual';
 
@@ -65,8 +66,12 @@ export function StudentPlanSelector(){
   const educationPlans=getPlans(EDUCATION_PLAN_IDS);
   const examPlans=getPlans(EXAM_PLAN_IDS);
   const [selectedId,setSelectedId]=useState(educationPlans[0]?.id??STUDENT_PLANS[0].id);
+  const [monthsToGoal,setMonthsToGoal]=useState(8);
+  const [trackingNeed,setTrackingNeed]=useState<TrackingNeed>('regular');
+  const [studyRoutine,setStudyRoutine]=useState<StudyRoutine>('irregular');
   const selectedPlan=STUDENT_PLANS.find(plan=>plan.id===selectedId)??STUDENT_PLANS[0];
   const pricing=STUDENT_TERM_PRICING[selectedPlan.id];
+  const recommendation=recommendPackageTerm({monthsToGoal,trackingNeed,studyRoutine});
 
   return <div className="studentPricingSelector">
     <div className="studentPlanPicker">
@@ -108,11 +113,50 @@ export function StudentPlanSelector(){
       </div>
     </div>
 
+    <section className="packageRecommendationShell" aria-labelledby="packageRecommendationTitle">
+      <div className="packageRecommendationIntro">
+        <span className="portalEyebrow">AKILLI PAKET ÖNERİSİ</span>
+        <h3 id="packageRecommendationTitle">Sana uygun süreyi birlikte bulalım.</h3>
+        <p>Üç kısa bilgi ver; KEKS yalnız fiyatları sıralamak yerine kullanım süresini ihtiyacına göre önerir. Öneri fiyat seviyesinden bağımsız hesaplanır.</p>
+      </div>
+
+      <div className="packageRecommendationInputs">
+        <label>
+          <span>Sınava / hedef döneme kaç ay kaldı?</span>
+          <input type="number" min={1} max={24} inputMode="numeric" value={monthsToGoal} onChange={event=>setMonthsToGoal(Math.max(1,Math.min(24,Number(event.target.value)||1)))} />
+        </label>
+        <label>
+          <span>Takip ihtiyacın</span>
+          <select value={trackingNeed} onChange={event=>setTrackingNeed(event.target.value as TrackingNeed)}>
+            <option value="light">Esnek takip</option>
+            <option value="regular">Düzenli takip</option>
+            <option value="intensive">Yoğun takip</option>
+          </select>
+        </label>
+        <label>
+          <span>Çalışma düzenin</span>
+          <select value={studyRoutine} onChange={event=>setStudyRoutine(event.target.value as StudyRoutine)}>
+            <option value="starting">Yeni başlıyorum</option>
+            <option value="irregular">Düzensiz / sürdürülemiyor</option>
+            <option value="regular">Düzenli çalışıyorum</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="packageRecommendationResult" aria-live="polite">
+        <span>SANA ÖNERİMİZ</span>
+        <strong>{recommendation.title}</strong>
+        <p>{recommendation.explanation}</p>
+        <small>Bu öneri satın alma tutarına göre değil; süre, takip ihtiyacı ve çalışma düzenine göre hesaplanır.</small>
+      </div>
+    </section>
+
     <div className="studentTermGrid" aria-live="polite">
       {TERM_OPTIONS.map(option=>{
         const price=termPrice(pricing,option.key);
-        return <article className={`studentTermCard ${option.badge?'featured':''}`} key={option.key}>
-          {option.badge&&<span className="studentTermBadge">{option.badge}</span>}
+        const isRecommended=option.key===recommendation.term;
+        return <article className={`studentTermCard ${option.badge?'featured':''} ${isRecommended?'recommended':''}`} key={option.key}>
+          {(isRecommended||option.badge)&&<span className="studentTermBadge">{isRecommended?'SANA ÖNERİMİZ':option.badge}</span>}
           <div className="studentTermCardHead">
             <span>{selectedPlan.level}</span>
             <h3>{option.title}</h3>
