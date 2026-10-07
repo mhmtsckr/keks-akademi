@@ -47,4 +47,19 @@ describe('gerçek kullanıcı yorumu motoru',()=>{
     expect(result.piiFlagged).toBe(true);
     expect(testimonialSubmissionStatus(true,result.piiFlagged)).toBe('REVIEW');
   });
+
+  it('kurum, adres, sosyal medya ve sabit hat bilgisini yayın metninden çıkarır',()=>{
+    const result=sanitizeTestimonial(
+      'Atatürk Anadolu Lisesi öğrencisiyim. Dicle Mah. 12. Sokak 4 numarada oturuyorum. @ornekhesap ve 0412 123 45 67 üzerinden ulaşabilirsiniz.'
+    );
+    expect(result.piiFlagged).toBe(true);
+    expect(result.sanitized).not.toContain('Atatürk Anadolu Lisesi');
+    expect(result.sanitized).not.toContain('@ornekhesap');
+    expect(result.sanitized).not.toContain('0412 123 45 67');
+    expect(result.sanitized).toContain('[kurum bilgisi kaldırıldı]');
+    expect(result.sanitized).toContain('[adres bilgisi kaldırıldı]');
+    expect(result.sanitized).toContain('[sosyal medya kullanıcı adı kaldırıldı]');
+    expect(result.sanitized).toContain('[telefon kaldırıldı]');
+  });
+
 });
