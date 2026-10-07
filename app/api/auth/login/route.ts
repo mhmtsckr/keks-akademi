@@ -10,7 +10,8 @@ import { checkLoginLimit,recordLoginFailure,recordLoginSuccess } from '@/lib/aut
 const schema = z.object({
   email:z.string().email(),
   password:z.string().min(1),
-  remember:z.boolean().optional().default(false)
+  remember:z.boolean().optional().default(false),
+  expectedRole:z.enum(['ADMIN','COACH']).optional()
 });
 
 function safeEqual(a: string, b: string) {
@@ -60,16 +61,23 @@ async function POST__handler(req: Request) {
 
   if (user.status === 'SUSPENDED') return NextResponse.json({ error: 'Bu hesap askıya alınmış durumda.' }, { status: 403 });
   if (user.status !== 'ACTIVE') return NextResponse.json({ error: 'Hesap henüz aktif değil.' }, { status: 403 });
+  if(input.expectedRole&&user.role!==input.expectedRole){
+    return NextResponse.json({
+      error:input.expectedRole==='ADMIN'
+        ?'Bu hesap yönetici hesabı değil. Yönetici hesabınızla giriş yapın.'
+        :'Bu hesap KEKS Partner Koç hesabı değil.'
+    },{status:403,headers:{'Cache-Control':'no-store'}});
+  }
 
   await recordLoginSuccess(req,email,user.id);
 
   if(user.role==='ADMIN'){
     await createSession(user.id,input.remember,req);
-    return NextResponse.json({ok:true,role:'ADMIN'});
+    return NextResponse.json({ok:true,role:'ADMIN'},{headers:{'Cache-Control':'no-store'}});
   }
 
   await createSession(user.id,input.remember,req);
-  return NextResponse.json({ ok: true, role: user.role });
+  return NextResponse.json({ ok: true, role: user.role },{headers:{'Cache-Control':'no-store'}});
 }
 
 export const POST = withApiErrors(POST__handler);

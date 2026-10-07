@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import {cleanup,render,screen} from '@testing-library/react';
+import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {StudentRegisterForm} from './AuthForms';
+import {AccountLoginForm,StudentRegisterForm} from './AuthForms';
 
 afterEach(()=>{
   cleanup();
@@ -25,5 +25,30 @@ describe('StudentRegisterForm — ilk giriş akışı',()=>{
     render(<StudentRegisterForm/>);
     expect(screen.getByText(/ilk giriş sihirbazı/i)).toBeInTheDocument();
     expect(screen.getByText(/İlk 7 Günlük Başlangıç Planı/i)).toBeInTheDocument();
+  });
+});
+
+
+describe('AccountLoginForm — rol kontrollü giriş',()=>{
+  it('yönetici girişinde ADMIN rolünü sunucuya zorunlu beklenti olarak gönderir',async()=>{
+    const fetchMock=vi.fn().mockResolvedValue({
+      ok:false,
+      json:async()=>({error:'Bu hesap yönetici hesabı değil.'})
+    });
+    vi.stubGlobal('fetch',fetchMock);
+
+    render(<AccountLoginForm redirect="/yonetici" requiredRole="ADMIN"/>);
+    const email=document.querySelector('input[name="email"]') as HTMLInputElement;
+    const password=document.querySelector('input[name="password"]') as HTMLInputElement;
+    fireEvent.change(email,{target:{value:'admin@example.com'}});
+    fireEvent.change(password,{target:{value:'secret-password'}});
+    fireEvent.click(screen.getByRole('button',{name:'Giriş Yap'}));
+
+    await screen.findByText(/Bu hesap yönetici hesabı değil/i);
+    await waitFor(()=>expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [,options]=fetchMock.mock.calls[0];
+    expect(JSON.parse(options.body)).toMatchObject({expectedRole:'ADMIN'});
+    expect(options.credentials).toBe('include');
+    expect(options.cache).toBe('no-store');
   });
 });

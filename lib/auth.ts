@@ -132,6 +132,11 @@ export async function currentSessionClaims(){
   return readSessionClaims();
 }
 
+export async function sessionCookiePresent(){
+  const jar=await cookies();
+  return Boolean(jar.get(COOKIE)?.value);
+}
+
 export async function revokeAllSessions(userId:string){
   return db.user.update({
     where:{id:userId},
@@ -155,7 +160,11 @@ export async function currentUser(){
       if(claims.stamp!==sessionStamp(user.updatedAt))return null;
     }
     return user;
-  }catch{return null}
+  }catch(error){
+    const err=error as {name?:string;code?:string};
+    console.error('AUTH_CURRENT_USER_LOOKUP_FAILED',{name:err?.name||'Error',code:err?.code||'UNKNOWN'});
+    return null;
+  }
 }
 
 export async function requireRole(roles:Array<'ADMIN'|'COACH'|'STUDENT'|'PARENT'>){

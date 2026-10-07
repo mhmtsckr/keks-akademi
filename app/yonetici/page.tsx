@@ -27,7 +27,7 @@ export default async function AdminPage() {
         <div className="card">
           <h2>Yönetici Girişi</h2>
           <p className="muted">Bu alan yalnızca KEKS sistem yöneticisine açıktır.</p>
-          <AccountLoginForm redirect="/yonetici"/>
+          <AccountLoginForm redirect="/yonetici" requiredRole="ADMIN"/>
         </div>
       </section>
     </PortalShell>;

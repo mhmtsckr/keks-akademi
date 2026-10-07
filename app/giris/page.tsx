@@ -28,7 +28,7 @@ export default function LoginHubPage(){
           <span className="portalEyebrow">KEKS PARTNER KOÇ</span>
           <h2>Partner Koç Girişi</h2>
           <p>Öğrenci yönetimi, MİZA, görüşme hazırlığı, rapor ve koç aksiyonlarına erişin.</p>
-          <AccountLoginForm redirect="/koc"/>
+          <AccountLoginForm redirect="/koc" requiredRole="COACH"/>
           <a className="roleAccessLink" href="/kayit#koc">Partner Koç hesabı oluştur →</a>
         </article>
 
