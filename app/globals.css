@@ -481,6 +481,7 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .interviewScoreGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0}.interviewAnswers{margin-top:18px}.interviewAnswerRow{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(140px,.7fr);gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}.interviewAnswerRow>div{display:grid;grid-template-columns:28px 1fr;gap:8px}.interviewAnswerRow>div>span{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:rgba(231,183,72,.1);color:#e9c267;font-weight:900;font-size:10px}.interviewAnswerRow strong{line-height:1.4}.interviewAnswerRow small{grid-column:2;color:#73869a}.interviewAnswerRow p{margin:0;color:#e7edf3}
 .taskCoachTable{display:grid;overflow-x:auto;margin-top:12px}.taskCoachHead,.taskCoachRow{display:grid;grid-template-columns:minmax(180px,1.5fr) 60px 80px 60px 85px 70px 110px;gap:10px;align-items:center;min-width:760px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}.taskCoachHead{font-size:10px;color:#72869a;font-weight:900;letter-spacing:.06em}.taskCoachRow{font-size:12px}.taskCoachRow.late{background:linear-gradient(90deg,rgba(127,25,30,.16),transparent)}.taskCoachRow>div{display:grid;gap:2px}.taskCoachRow small{color:#708398}
 @media(max-width:900px){.dailyTaskGrid{grid-template-columns:1fr}.taskSubmissionForm{grid-template-columns:repeat(2,1fr)}.taskSubmissionForm .btn{grid-column:1/-1}.interviewScoreGrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.homeVerifiedReviewGrid{grid-template-columns:1fr}}
 @media(max-width:620px){.preInterviewQuestion{grid-template-columns:1fr}.interviewAnswerRow{grid-template-columns:1fr}.taskResultSummary{grid-template-columns:repeat(2,1fr)}}
 
 /* Coach-controlled pre-interview publishing */
@@ -1157,6 +1158,15 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .homeReviewPlaceholder>div{color:#efc96d;font-size:24px;letter-spacing:5px}
 .homeReviewPlaceholder h3{margin:12px 0 8px;font-size:22px}
 .homeReviewPlaceholder p{max-width:760px;margin:0 auto;color:#9fb0c2;line-height:1.6}
+.homeVerifiedReviewGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.homeVerifiedReviewCard{padding:20px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(35,177,165,.035));box-shadow:0 14px 34px rgba(0,0,0,.12)}
+.homeVerifiedStars{color:#efc96d;font-size:18px;letter-spacing:2px}
+.homeVerifiedStars span{color:rgba(255,255,255,.15)}
+.homeVerifiedReviewCard blockquote{margin:14px 0 18px;color:#eef3f6;font-size:15px;line-height:1.65}
+.homeVerifiedReviewCard footer{display:flex;flex-direction:column;gap:4px}
+.homeVerifiedReviewCard footer strong{font-size:12px;color:#71dcd2}
+.homeVerifiedReviewCard footer span{font-size:11px;color:#91a5b7}
+
 
 .homeCallbackShell{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:24px;padding:22px;border-radius:22px;border:1px solid rgba(255,255,255,.085);background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(239,201,109,.035))}
 .homeCallbackPitch{padding:8px;align-self:start}
