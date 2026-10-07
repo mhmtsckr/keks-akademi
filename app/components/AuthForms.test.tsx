@@ -38,8 +38,10 @@ describe('AccountLoginForm — rol kontrollü giriş',()=>{
     vi.stubGlobal('fetch',fetchMock);
 
     render(<AccountLoginForm redirect="/yonetici" requiredRole="ADMIN"/>);
-    fireEvent.change(screen.getByLabelText('E-posta'),{target:{value:'admin@example.com'}});
-    fireEvent.change(screen.getByLabelText('Şifre'),{target:{value:'secret-password'}});
+    const email=document.querySelector('input[name="email"]') as HTMLInputElement;
+    const password=document.querySelector('input[name="password"]') as HTMLInputElement;
+    fireEvent.change(email,{target:{value:'admin@example.com'}});
+    fireEvent.change(password,{target:{value:'secret-password'}});
     fireEvent.click(screen.getByRole('button',{name:'Giriş Yap'}));
 
     await screen.findByText(/Bu hesap yönetici hesabı değil/i);
