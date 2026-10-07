@@ -25,6 +25,7 @@ export function PartnerCoachProfile(){
   const [profile,setProfile]=useState<Profile|null>(null);
   const [specialtyOptions,setSpecialtyOptions]=useState<string[]>([]);
   const [levelOptions,setLevelOptions]=useState<string[]>([]);
+  const [standards,setStandards]=useState<Array<{key:string;title:string;target:string}>>([]);
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
 
@@ -35,6 +36,7 @@ export function PartnerCoachProfile(){
       setProfile(j.profile);
       setSpecialtyOptions(j.options?.specialties||[]);
       setLevelOptions(j.options?.educationLevels||[]);
+      setStandards(j.operationStandards||[]);
     }).catch(e=>setMsg('Hata: '+e.message));
   },[]);
 
@@ -101,6 +103,14 @@ export function PartnerCoachProfile(){
         <strong>{profile.operationsStandardVersion}</strong>
         <p className="muted">Kalite metrikleri sistem verisinden otomatik hesaplanır.</p>
       </div>
+    </div>
+
+    <div className="notice" style={{marginTop:16}}>
+      <strong>KEKS operasyon standartları</strong>
+      <div className="stack" style={{marginTop:8}}>
+        {standards.map(item=><div key={item.key}><strong>{item.title}</strong><div className="muted">{item.target}</div></div>)}
+      </div>
+      <small className="muted">Bu hedefler profil beyanı değildir; aşağıdaki Koç Kalite Sistemi gerçek KEKS kayıtlarından otomatik ölçer.</small>
     </div>
 
     <div className="form" style={{marginTop:16}}>
