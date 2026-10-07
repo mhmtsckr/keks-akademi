@@ -1581,3 +1581,52 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .mizaResultBox{align-items:stretch}
   .mizaResultBox>.btn{width:100%}
 }
+
+/* Sales mini CRM */
+.salesCrm{display:grid;gap:18px}
+.salesKpiGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.salesKpiGrid .card{display:grid;gap:4px;min-height:130px}
+.salesKpiGrid .card>strong{font-size:30px;color:#f2cf75;letter-spacing:-.03em}
+.salesKpiGrid .card>small{color:#7f94a9}
+.salesAnalyticsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.salesFunnel,.salesRankList{display:grid;gap:8px;margin-top:14px}
+.salesFunnel>div,.salesRankList>div{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 12px;border-radius:12px;background:#091f38;border:1px solid rgba(255,255,255,.06)}
+.salesFunnel span,.salesRankList span{color:#aab8c6;font-size:13px}
+.salesFunnel strong,.salesRankList strong{color:#f0cb70;font-size:13px;text-align:right}
+.salesFilterBar{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(150px,.7fr) minmax(150px,.7fr) auto;gap:10px;align-items:end}
+.salesLeadList{display:grid;gap:12px}
+.salesLeadCard{display:grid;gap:14px;border-left:3px solid rgba(255,255,255,.12)}
+.salesLeadCard.status-new{border-left-color:#6aa9e9}
+.salesLeadCard.status-called,.salesLeadCard.status-spoken{border-left-color:#e5b84f}
+.salesLeadCard.status-package_recommended{border-left-color:#b18be9}
+.salesLeadCard.status-won{border-left-color:#51c69d}
+.salesLeadCard.status-lost{border-left-color:#df766d}
+.salesLeadHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.salesLeadHead h3{margin:3px 0 5px}
+.salesLeadHead p{margin:0;color:#90a4b8}
+.salesLeadMeta{display:flex;gap:8px;flex-wrap:wrap}
+.salesLeadMeta span{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);color:#8296aa;font-size:11px}
+.salesLeadContext{padding:13px 14px;border-radius:13px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06)}
+.salesLeadContext p{margin:0;color:#aebdcb;line-height:1.55;font-size:13px;overflow-wrap:anywhere}
+.salesLeadContext p+p{margin-top:8px}
+.salesLeadEditor{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.salesLeadEditor label{display:grid;gap:6px}
+.salesLeadEditor label>span{font-size:11px;font-weight:800;color:#cdd7e1}
+.salesLeadEditor select,.salesLeadEditor input{width:100%;min-height:43px;padding:9px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.1);background:#091f38;color:#f2f5f8;font:inherit}
+.salesLeadEditor .salesLeadWide{grid-column:span 2}
+.salesLeadEditor>.btn{min-height:43px}
+.adminStatus.package_recommended{background:rgba(177,139,233,.12);color:#d3b9f8;border-color:rgba(177,139,233,.25)}
+.adminStatus.won{background:rgba(81,198,157,.12);color:#a8ecd1;border-color:rgba(81,198,157,.25)}
+.adminStatus.lost{background:rgba(223,118,109,.12);color:#ffc1bb;border-color:rgba(223,118,109,.25)}
+.adminStatus.called,.adminStatus.spoken{background:rgba(229,184,79,.12);color:#f0d184;border-color:rgba(229,184,79,.25)}
+.adminStatus.new{background:rgba(106,169,233,.12);color:#b9dcff;border-color:rgba(106,169,233,.25)}
+@media(max-width:1050px){
+  .salesKpiGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .salesLeadEditor{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .salesFilterBar{grid-template-columns:1fr 1fr}
+}
+@media(max-width:680px){
+  .salesKpiGrid,.salesAnalyticsGrid,.salesLeadEditor,.salesFilterBar{grid-template-columns:1fr}
+  .salesLeadEditor .salesLeadWide{grid-column:auto}
+  .salesLeadHead{flex-direction:column}
+}
