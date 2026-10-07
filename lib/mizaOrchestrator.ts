@@ -24,6 +24,31 @@ export type MizaTodayTask={
   resultMode:MizaResultMode;
 };
 
+
+export function isMizaCoachAuthorityIntent(message:string){
+  const text=message.toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim();
+  if(!text)return false;
+
+  const changeVerb=/(değiştir|değişiklik|sil|kaldır|iptal|ertele|azalt|arttır|artır|yenile|revize|başka güne al|zorunlu olmasın)/;
+  const protectedObject=/(koç(?:um|un)?(?:un)?\s+(?:görev|plan|program|hedef)|görev(?:im|imi|lerim|lerimi)?|haftalık plan(?:ım|ımı)?|çalışma plan(?:ım|ımı)?|program(?:ım|ımı)?|hedef(?:im|imi)?)/;
+
+  if(changeVerb.test(text)&&protectedObject.test(text))return true;
+  if(/koç(?:um|un)?(?:un)?\s+(?:verdiği|yazdığı)\s+(?:görev|program|plan).*(?:istemiyorum|yapmayacağım|uygun değil)/.test(text))return true;
+  if(/(?:bu|bugünkü)\s+görevi\s+(?:yapmasam|atlayabilir miyim|geçebilir miyim)/.test(text))return true;
+
+  return false;
+}
+
+export function buildMizaCoachHandoffReply(input:{handoffCreated:boolean;hasCoach:boolean}){
+  if(!input.hasCoach){
+    return 'Bu talep mevcut çalışma planını veya hedefi değiştirebilir. MİZA bunu tek başına uygulamaz. Hesabına bir koç atandığında bu değişikliği koçunla birlikte değerlendirmelisin; mevcut plan şimdilik korunuyor.';
+  }
+  if(input.handoffCreated){
+    return 'Bu değişiklik koç yetkisine giriyor. MİZA mevcut planı değiştirmedi; talebini koçunun takip kutusuna iletti. Koçun değerlendirene kadar mevcut görev ve hedefler korunuyor.';
+  }
+  return 'Bu değişiklik koç yetkisine giriyor. Aynı talep koçunun takip kutusunda zaten açık; MİZA planı değiştirmedi ve mevcut görevler korunuyor.';
+}
+
 export function isMizaTodayPlanIntent(message:string){
   const text=message.toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim();
   if(!text)return false;
