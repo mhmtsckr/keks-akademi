@@ -20,7 +20,8 @@
     "mobile:add:ios": "cap add ios",
     "mobile:android": "cap open android",
     "mobile:ios": "cap open ios",
-    "mobile:doctor": "cap doctor"
+    "mobile:doctor": "cap doctor",
+    "db:deploy:additive": "prisma db execute --file prisma/production/20261007_partner_coach_quality_network.sql --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",
