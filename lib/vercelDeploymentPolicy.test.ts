@@ -24,12 +24,13 @@ describe('Vercel deployment policy',()=>{
   it('uses an additive idempotent production schema step instead of baselining the legacy database',()=>{
     const config=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8'));
     const pkg=JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8'));
-    const sql=fs.readFileSync(path.join(ROOT,'prisma/production/20261007_partner_coach_quality_network.sql'),'utf8');
+    const sql=fs.readFileSync(path.join(ROOT,'prisma/production/additive_schema.sql'),'utf8');
     expect(config.buildCommand).toBe('npm run db:deploy:additive && npm run build');
     expect(pkg.scripts?.['db:deploy:additive']).toContain('prisma db execute');
     expect(pkg.scripts?.['db:deploy:additive']).not.toContain('migrate deploy');
     expect(sql).toContain('ADD COLUMN IF NOT EXISTS');
     expect(sql).toContain('CREATE INDEX IF NOT EXISTS');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS \"UserTestimonial\"');
     expect(sql).not.toMatch(/\\b(DROP|TRUNCATE|RENAME)\\b/i);
   });
 

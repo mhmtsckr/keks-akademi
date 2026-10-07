@@ -7,6 +7,7 @@ import { MonthlyDevelopmentReport } from '@/app/components/MonthlyDevelopmentRep
 import { StudentDevelopmentTimeline } from '@/app/components/StudentDevelopmentTimeline';
 import { buildStudentIndicators } from '@/lib/studentIndicators';
 import { buildParentWeeklyBrief } from '@/lib/parentWeeklyBrief';
+import { RealUserReviewPrompt } from '@/app/components/RealUserReviewPrompt';
 
 function trDay(v: Date) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -119,6 +120,8 @@ export default async function ParentPage() {
     meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel && <span>{student.gradeLevel}</span>}<span>{continuityMeta}</span></>}
     wide
   >
+    <section className="section"><RealUserReviewPrompt/></section>
+
     <section className="section">
       <PanelNavigator roleLabel="Veli" groups={[
         {label:'VELİ PANELİ',description:'Gelişimi anlayın, koçun yönlendirmesini görün ve doğru desteği verin.',items:[

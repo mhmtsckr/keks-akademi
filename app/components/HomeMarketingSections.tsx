@@ -3,6 +3,7 @@ import {CallbackRequestForm} from '@/app/abonelik-planlari/CallbackRequestForm';
 import {COACHING_COMPARISON,FIRST_30_DAYS,KEKS_GUARANTEES,MARKETING_FAQ} from '@/lib/marketingContent';
 import {STUDENT_TERM_PRICING} from '@/lib/subscriptionPlans';
 import {HOME_PHOTOS} from '@/lib/homePhotos';
+import {HomeVerifiedTestimonials} from '@/app/components/HomeVerifiedTestimonials';
 
 function minFirstMonth(){
   const values=Object.values(STUDENT_TERM_PRICING).map(x=>x.firstMonth);
@@ -157,11 +158,7 @@ export function HomeMarketingSections(){
             <h2>Gerçek deneyimler, doğrulanmış kullanıcılar.</h2>
             <p>KEKS yalnızca izin alınmış gerçek kullanıcı yorumlarını yayınlar. Yapay veya doğrulanmamış bir yorumu gerçek deneyim gibi göstermiyoruz.</p>
           </div>
-          <div className="homeReviewPlaceholder">
-            <div aria-hidden="true">★★★★★</div>
-            <h3>Doğrulanmış kullanıcı yorumları burada yayınlanacak.</h3>
-            <p>İlk onaylı öğrenci, veli ve KEKS Partner Koç yorumları geldikçe bu alan otomatik olarak büyütülebilecek şekilde hazırlandı.</p>
-          </div>
+          <HomeVerifiedTestimonials/>
         </div>
         <div className="homeReviewVisual">
           <Image className="homeRealPhoto homeSectionPhoto" src={HOME_PHOTOS.review} alt="Öğrenciyle birebir çalışan KEKS Akademi koçu" width={1100} height={760} sizes="(max-width: 900px) 80vw, 34vw"/>
