@@ -56,6 +56,32 @@ model User {
   generatedContent GeneratedContent[] @relation("GeneratedContentCreator")
   auditLogs AuditLog[]
   subscriptions Subscription[]
+  testimonial UserTestimonial?
+}
+
+model UserTestimonial {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role             String
+  rating           Int?
+  comment          String?
+  sanitizedComment String?
+  contextLabel     String
+  usageStartedAt   DateTime
+  publishConsent   Boolean  @default(false)
+  status           String   @default("DRAFT")
+  piiFlagged       Boolean  @default(false)
+  promptedAt       DateTime?
+  nextPromptAt     DateTime?
+  submittedAt      DateTime?
+  publishedAt      DateTime?
+  consentUpdatedAt DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([role, submittedAt])
 }
 
 model CoachProfile {
