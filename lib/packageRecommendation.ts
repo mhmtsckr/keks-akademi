@@ -96,10 +96,17 @@ export function recommendPackageTerm(input:PackageRecommendationInput):PackageRe
     routineLabel(input.studyRoutine)
   ];
 
+  const fitText:Record<RecommendationTerm,string>={
+    monthly:'kısa süreli ve esnek başlangıç daha uygun görünüyor.',
+    threeMonths:'3 aylık dönem çalışma ritmini kurmak ve ölçmek için daha dengeli görünüyor.',
+    sixMonths:'6 aylık takip, düzeni güçlendirmek ve gelişimi ölçmek için daha dengeli görünüyor.',
+    annual:'uzun hedef süresini kesintisiz takip etmek için yıllık plan daha uygun görünüyor.'
+  };
+
   return {
     term,
     title:TERM_TITLES[term],
-    explanation:`Sınava/hedefine ${months} ay kaldığı, ${trackingLabel(input.trackingNeed)} ihtiyacın olduğu ve ${routineLabel(input.studyRoutine)} için.`,
+    explanation:`Sınava/hedefine ${months} ay kaldığı ve ${trackingLabel(input.trackingNeed)} ihtiyacın olduğu için ${fitText[term]} Ayrıca ${routineLabel(input.studyRoutine)} bu öneriyi güçlendiriyor.`,
     reasons,
     score:scores[term]
   };
