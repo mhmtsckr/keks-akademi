@@ -80,7 +80,7 @@ async function POST__handler(req:Request){
 
   const student=await db.student.findUnique({
     where:{id:user.student.id},
-    select:{id:true,profile:true,academicTrack:true}
+    select:{id:true,profile:true,academicTrack:true,coachId:true}
   });
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
 
@@ -100,7 +100,8 @@ async function POST__handler(req:Request){
 
   const partnerCoaches=await buildPartnerCoachDirectory({
     gradeLevel:input.gradeLevel,
-    academicTrack:effectiveAcademicTrack
+    academicTrack:effectiveAcademicTrack,
+    currentCoachId:student.coachId
   });
   const coach=partnerCoaches.find(x=>x.id===input.coachId)||null;
   if(!coach)return NextResponse.json({error:'Seçilen Partner Koç bu eğitim düzeyi için uygun, aktif veya açık kontenjanlı değil.'},{status:400});
