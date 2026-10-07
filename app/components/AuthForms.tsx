@@ -187,31 +187,56 @@ export function StudentLoginForm() {
   </form>;
 }
 
-export function AccountLoginForm({redirect='/koc'}:{redirect?:string}) {
+export function AccountLoginForm({redirect='/koc',requiredRole}:{redirect?:string;requiredRole?:'ADMIN'|'COACH'}) {
   const [msg,setMsg]=useState('');
   const [remember,setRemember]=useState(false);
   const [forgotOpen,setForgotOpen]=useState(false);
   const [twoFactorChallenge,setTwoFactorChallenge]=useState('');
+  const [busy,setBusy]=useState(false);
   if(forgotOpen)return <PasswordResetForm role="COACH" onClose={()=>setForgotOpen(false)}/>;
   if(twoFactorChallenge)return <AdminTwoFactorForm challenge={twoFactorChallenge} onCancel={()=>{setTwoFactorChallenge('');setMsg('')}}/>;
 
   async function submit(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault();setMsg('');
+    e.preventDefault();setMsg('');setBusy(true);
     const fd=new FormData(e.currentTarget);
-    const r=await fetch('/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:fd.get('email'),password:fd.get('password'),remember})});
-    const j=await r.json();
-    if(!r.ok)return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
-    if(j.requiresTwoFactor&&j.challenge){setTwoFactorChallenge(j.challenge);return}
-    if(j.role==='ADMIN')location.href='/yonetici';
-    else if(j.role==='COACH')location.href=redirect;
-    else if(j.role==='STUDENT')location.href='/ogrenci';
-    else location.href='/veli';
+    try{
+      const r=await fetch('/api/auth/login',{
+        method:'POST',
+        credentials:'include',
+        cache:'no-store',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({email:fd.get('email'),password:fd.get('password'),remember,expectedRole:requiredRole})
+      });
+      const j=await r.json();
+      if(!r.ok)return setMsg('Hata: '+(j.error||'Giriş başarısız.'));
+      if(j.requiresTwoFactor&&j.challenge){setTwoFactorChallenge(j.challenge);return}
+
+      const sessionResponse=await fetch('/api/auth/session',{credentials:'include',cache:'no-store'});
+      const session=await sessionResponse.json().catch(()=>null);
+      if(!sessionResponse.ok||!session?.authenticated){
+        const detail=session?.cookiePresent
+          ?'Oturum çerezi oluştu ancak sunucu oturumu doğrulayamadı.'
+          :'Tarayıcı oturum çerezini kaydetmedi.';
+        return setMsg('Hata: '+detail+' Sayfayı yenileyip tekrar deneyin.');
+      }
+      if(requiredRole&&session.role!==requiredRole){
+        await fetch('/api/auth/logout',{method:'POST',credentials:'include',cache:'no-store'}).catch(()=>undefined);
+        return setMsg(requiredRole==='ADMIN'
+          ?'Hata: Bu hesap yönetici hesabı değil.'
+          :'Hata: Bu hesap KEKS Partner Koç hesabı değil.');
+      }
+
+      const target=session.role==='ADMIN'?'/yonetici'
+        :session.role==='COACH'?redirect
+        :session.role==='STUDENT'?'/ogrenci':'/veli';
+      location.replace(target);
+    }finally{setBusy(false)}
   }
   return <form className="form" onSubmit={submit}>
     <div className="field"><label>E-posta</label><input name="email" type="email" required autoComplete="email"/></div>
     <div className="field"><label>Şifre</label><input name="password" type="password" required autoComplete="current-password"/></div>
     <label className="row" style={{justifyContent:'flex-start',gap:8,cursor:'pointer'}}><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/><span>Bunu hatırla <small className="muted">· Bu cihazdaki oturum 30 güne kadar açık kalır.</small></span></label>
-    <button className="btn primary" type="submit">Giriş Yap</button>
+    <button className="btn primary" type="submit" disabled={busy}>{busy?'Giriş yapılıyor…':'Giriş Yap'}</button>
     <button className="btn" type="button" onClick={()=>setForgotOpen(true)}>Şifremi unuttum</button>
     <Message value={msg}/>
   </form>;
