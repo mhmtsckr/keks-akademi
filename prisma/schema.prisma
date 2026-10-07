@@ -1078,3 +1078,40 @@ model Subscription {
   @@index([userId, status, endsAt])
   @@index([provider, providerReference])
 }
+
+model SalesLead {
+  id                   String   @id @default(cuid())
+  phone                String
+  phoneNormalized      String   @unique
+  name                 String?
+  source               String
+  lastSource           String
+  inquiryCount         Int      @default(1)
+  callbackRequestCount Int      @default(0)
+  whatsappRequestCount Int      @default(0)
+  status               String   @default("NEW")
+  audience             String?
+  educationLevel       String?
+  inquiryPlanId        String?
+  recommendedPlanId    String?
+  recommendedTerm      String?
+  soldPlanId           String?
+  soldTerm             String?
+  saleAmountKurus      Int?
+  preferredTime        String?
+  note                 String?
+  lastMessage          String?
+  lostReason           String?
+  firstSeenAt          DateTime @default(now())
+  lastSeenAt           DateTime @default(now())
+  lastContactedAt      DateTime?
+  wonAt                DateTime?
+  lostAt               DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([educationLevel, createdAt])
+  @@index([source, createdAt])
+  @@index([soldPlanId, soldTerm])
+}
