@@ -12,7 +12,8 @@ export default async function StudentOnboardingPage(){
 
   const coaches=await buildPartnerCoachDirectory({
     gradeLevel:user.student.gradeLevel,
-    academicTrack:user.student.academicTrack
+    academicTrack:user.student.academicTrack,
+    currentCoachId:user.student.coachId
   });
 
   return <PortalShell
