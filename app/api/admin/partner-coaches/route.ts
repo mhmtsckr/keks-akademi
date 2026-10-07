@@ -4,7 +4,7 @@ import {requireRole} from '@/lib/auth';
 import {readJson,withApiErrors} from '@/lib/apiGuard';
 import {db} from '@/lib/db';
 import {writeAudit} from '@/lib/audit';
-import {buildCoachQualityOperations} from '@/lib/coachQualityOperations';
+import {buildCoachQualityOperationsBatch} from '@/lib/coachQualityOperations';
 
 function list(value:unknown){
   return Array.isArray(value)?value.filter((x):x is string=>typeof x==='string'):[];
@@ -31,8 +31,9 @@ async function GET__handler(){
     take:100
   });
 
-  const rows=await Promise.all(coaches.map(async coach=>{
-    const quality=await buildCoachQualityOperations(coach.id);
+  const qualityByCoach=await buildCoachQualityOperationsBatch(coaches.map(x=>x.id));
+  const rows=coaches.map(coach=>{
+    const quality=qualityByCoach[coach.id];
     const response=quality?.metrics.find(x=>x.key==='RESPONSE_TIME')||null;
     const sessions=quality?.metrics.find(x=>x.key==='SESSION_COMPLETION')||null;
     const specialties=list(coach.specialties);
@@ -66,7 +67,7 @@ async function GET__handler(){
       operationsStandardVersion:coach.operationsStandardVersion,
       profileUpdatedAt:coach.profileUpdatedAt
     };
-  }));
+  });
 
   return NextResponse.json({ok:true,coaches:rows});
 }
