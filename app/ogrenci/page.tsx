@@ -41,6 +41,7 @@ import { buildStudentExamMap } from '@/lib/examMap';
 import { isStudentOnboardingRequired } from '@/lib/studentOnboarding';
 import { publicEducationCurriculum } from '@/lib/educationCurriculumMap';
 import { educationLevelKey } from '@/lib/educationLevelProfile';
+import { RealUserReviewPrompt } from '@/app/components/RealUserReviewPrompt';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -181,6 +182,8 @@ export default async function StudentPage() {
     <StudentMobileQuickActions examTypes={[...allowedExams]}/>
 
     <section className="section"><KeksCoreLoop compact/></section>
+
+    <section className="section"><RealUserReviewPrompt/></section>
 
     {featureFlags.TODAY_PLAN&&<section id="bugunun-plani" className="section section-anchor">
       <StudentTodayPlan/>
