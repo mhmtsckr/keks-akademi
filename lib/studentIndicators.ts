@@ -143,9 +143,11 @@ function periodStats(e:StudentIndicatorEvidence,w:Window){
   const masteredTopics=measuredTopics.filter(x=>x.accuracy>=70);
   const weakestTopic=[...measuredTopics].sort((a,b)=>a.accuracy-b.accuracy)[0]||null;
 
+  const hasContinuityEvidence=practice.length>0||completedActions.length>0||techniques.length>0||actions.length>0;
+
   return {
     activeDays:activeDays.size,
-    continuity:pct(activeDays.size,w.days),
+    continuity:hasContinuityEvidence?pct(activeDays.size,w.days):null,
     actions:actions.length,
     completedActions:completedActions.length,
     planAlignment:pct(completedActions.length,actions.length),
