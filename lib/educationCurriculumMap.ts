@@ -56,7 +56,7 @@ const MIDDLE_7_MATH:CurriculumSubject={
           {
             name:'Rasyonel Sayılarla İşlemler',
             acquisitions:[
-              q('MAT.7.1.1-ISLEM','Rasyonel sayılarla işlemleri problem durumlarında kullanır ve sonucu yorumlar.',['İşlem','Çok adımlı işlem','Gerçek yaşam problemi','Hata analizi'])
+              q('KEKS.MAT.7.1.1.ISLEM','Rasyonel sayılarla işlemleri problem durumlarında kullanır ve sonucu yorumlar.',['İşlem','Çok adımlı işlem','Gerçek yaşam problemi','Hata analizi'])
             ]
           }
         ]
@@ -97,7 +97,7 @@ const MIDDLE_7_MATH:CurriculumSubject={
         subTopics:[{
           name:'Cebirsel İfadeler ve Değişim',
           acquisitions:[
-            q('MAT.7.T2','Cebirsel ilişkileri farklı temsillerle açıklar ve problem durumlarında kullanır.',['Cebirsel ifade','Örüntü-genelleme','Denklem modelleme','Problem çözme'])
+            q('KEKS.MAT.7.T2','Cebirsel ilişkileri farklı temsillerle açıklar ve problem durumlarında kullanır.',['Cebirsel ifade','Örüntü-genelleme','Denklem modelleme','Problem çözme'])
           ]
         }]
       }]
@@ -109,7 +109,7 @@ const MIDDLE_7_MATH:CurriculumSubject={
         name:'Geometrik Dönüşümler',
         subTopics:[{
           name:'Dönüşüm ve Temsil',
-          acquisitions:[q('MAT.7.T3','Geometrik dönüşümleri tanır, temsil eder ve ilişkilerini yorumlar.',['Dönüşüm tanıma','Şekil üzerinde uygulama','Koordinat/temsil','Muhakeme'])]
+          acquisitions:[q('KEKS.MAT.7.T3','Geometrik dönüşümleri tanır, temsil eder ve ilişkilerini yorumlar.',['Dönüşüm tanıma','Şekil üzerinde uygulama','Koordinat/temsil','Muhakeme'])]
         }]
       }]
     },
@@ -120,7 +120,7 @@ const MIDDLE_7_MATH:CurriculumSubject={
         name:'Geometrik Ölçme',
         subTopics:[{
           name:'Uzunluk, Alan ve Hacim İlişkileri',
-          acquisitions:[q('MAT.7.T4','Geometrik nicelikler arasındaki ilişkileri problem durumlarında kullanır.',['Alan problemi','Çevre problemi','Hacim problemi','Birim dönüşümü'])]
+          acquisitions:[q('KEKS.MAT.7.T4','Geometrik nicelikler arasındaki ilişkileri problem durumlarında kullanır.',['Alan problemi','Çevre problemi','Hacim problemi','Birim dönüşümü'])]
         }]
       }]
     },
@@ -131,7 +131,7 @@ const MIDDLE_7_MATH:CurriculumSubject={
         name:'Geometrik Şekiller ve Özellikleri',
         subTopics:[{
           name:'Şekil Özellikleri',
-          acquisitions:[q('MAT.7.T5','Geometrik şekillerin özelliklerini analiz eder ve ilişkileri gerekçelendirir.',['Özellik belirleme','Açı ilişkisi','Çizim-inşa','Gerekçelendirme'])]
+          acquisitions:[q('KEKS.MAT.7.T5','Geometrik şekillerin özelliklerini analiz eder ve ilişkileri gerekçelendirir.',['Özellik belirleme','Açı ilişkisi','Çizim-inşa','Gerekçelendirme'])]
         }]
       }]
     },
@@ -142,7 +142,7 @@ const MIDDLE_7_MATH:CurriculumSubject={
         name:'İstatistiksel Araştırma',
         subTopics:[{
           name:'Veri Toplama, Temsil ve Yorum',
-          acquisitions:[q('MAT.7.T6','İstatistiksel araştırma sürecini yürütür, verileri temsil eder ve sonuçları yorumlar.',['Veri toplama','Tablo-grafik','Merkezî eğilim','Yorumlama'])]
+          acquisitions:[q('KEKS.MAT.7.T6','İstatistiksel araştırma sürecini yürütür, verileri temsil eder ve sonuçları yorumlar.',['Veri toplama','Tablo-grafik','Merkezî eğilim','Yorumlama'])]
         }]
       }]
     },
@@ -153,7 +153,7 @@ const MIDDLE_7_MATH:CurriculumSubject={
         name:'Teorik Olasılık',
         subTopics:[{
           name:'Olay ve Olasılık',
-          acquisitions:[q('MAT.7.T7','Olayların teorik olasılıklarını örnek uzay üzerinden yorumlar.',['Örnek uzay','Olay olasılığı','Tümleyen olay','Ayrık olay','Açık uçlu olasılık'])]
+          acquisitions:[q('KEKS.MAT.7.T7','Olayların teorik olasılıklarını örnek uzay üzerinden yorumlar.',['Örnek uzay','Olay olasılığı','Tümleyen olay','Ayrık olay','Açık uçlu olasılık'])]
         }]
       }]
     }
@@ -224,27 +224,27 @@ const MIDDLE_8_MATH:CurriculumSubject={
     {
       name:'3. Tema: Geometrik Şekiller',
       sourceUrl:'https://tymm.meb.gov.tr/ogretim-programlari/ortaokul-matematik-dersi/9',
-      topics:[{name:'Geometrik Şekiller',subTopics:[{name:'Şekil İlişkileri',acquisitions:[q('MAT.8.T3','Geometrik şekillerin özelliklerini analiz eder ve ilişkileri gerekçelendirir.',['Şekil analizi','Açı-kenar ilişkisi','İnşa','Gerekçelendirme'])]}]}]
+      topics:[{name:'Geometrik Şekiller',subTopics:[{name:'Şekil İlişkileri',acquisitions:[q('KEKS.MAT.8.T3','Geometrik şekillerin özelliklerini analiz eder ve ilişkileri gerekçelendirir.',['Şekil analizi','Açı-kenar ilişkisi','İnşa','Gerekçelendirme'])]}]}]
     },
     {
       name:'4. Tema: Geometrik Nicelikler',
       sourceUrl:'https://tymm.meb.gov.tr/ogretim-programlari/ortaokul-matematik-dersi/9',
-      topics:[{name:'Geometrik Nicelikler',subTopics:[{name:'Ölçme ve Problem Çözme',acquisitions:[q('MAT.8.T4','Geometrik nicelikleri ölçme ve problem çözme bağlamında kullanır.',['Alan-hacim','Birim ilişkisi','Problem çözme','Modelleme'])]}]}]
+      topics:[{name:'Geometrik Nicelikler',subTopics:[{name:'Ölçme ve Problem Çözme',acquisitions:[q('KEKS.MAT.8.T4','Geometrik nicelikleri ölçme ve problem çözme bağlamında kullanır.',['Alan-hacim','Birim ilişkisi','Problem çözme','Modelleme'])]}]}]
     },
     {
       name:'5. Tema: Dönüşüm',
       sourceUrl:'https://tymm.meb.gov.tr/ogretim-programlari/ortaokul-matematik-dersi/9',
-      topics:[{name:'Geometrik Dönüşümler',subTopics:[{name:'Dönüşüm ve Koordinat',acquisitions:[q('MAT.8.T5','Geometrik dönüşümleri temsil eder ve dönüşüm altındaki değişmezlikleri yorumlar.',['Dönüşüm','Koordinat','Şekil karşılaştırma','Muhakeme'])]}]}]
+      topics:[{name:'Geometrik Dönüşümler',subTopics:[{name:'Dönüşüm ve Koordinat',acquisitions:[q('KEKS.MAT.8.T5','Geometrik dönüşümleri temsil eder ve dönüşüm altındaki değişmezlikleri yorumlar.',['Dönüşüm','Koordinat','Şekil karşılaştırma','Muhakeme'])]}]}]
     },
     {
       name:'6. Tema: İstatistiksel Araştırma Süreci',
       sourceUrl:'https://tymm.meb.gov.tr/ogretim-programlari/ortaokul-matematik-dersi/9',
-      topics:[{name:'İstatistiksel Araştırma',subTopics:[{name:'Veri ve Çıkarım',acquisitions:[q('MAT.8.T6','İstatistiksel araştırma sürecini yürütür, verileri analiz eder ve çıkarım yapar.',['Veri toplama','Grafik-tablosu','Dağılım yorumlama','Çıkarım'])]}]}]
+      topics:[{name:'İstatistiksel Araştırma',subTopics:[{name:'Veri ve Çıkarım',acquisitions:[q('KEKS.MAT.8.T6','İstatistiksel araştırma sürecini yürütür, verileri analiz eder ve çıkarım yapar.',['Veri toplama','Grafik-tablosu','Dağılım yorumlama','Çıkarım'])]}]}]
     },
     {
       name:'7. Tema: Veriden Olasılığa',
       sourceUrl:'https://tymm.meb.gov.tr/ogretim-programlari/ortaokul-matematik-dersi/9',
-      topics:[{name:'Olasılık',subTopics:[{name:'Olasılıksal Muhakeme',acquisitions:[q('MAT.8.T7','Olasılık durumlarını örnek uzay ve veri üzerinden analiz eder.',['Örnek uzay','Olasılık hesabı','Karşılaştırma','Yorumlama'])]}]}]
+      topics:[{name:'Olasılık',subTopics:[{name:'Olasılıksal Muhakeme',acquisitions:[q('KEKS.MAT.8.T7','Olasılık durumlarını örnek uzay ve veri üzerinden analiz eder.',['Örnek uzay','Olasılık hesabı','Karşılaştırma','Yorumlama'])]}]}]
     }
   ]
 };
