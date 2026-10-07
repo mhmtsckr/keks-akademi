@@ -1,19 +1,18 @@
 import {redirect} from 'next/navigation';
 import {currentUser} from '@/lib/auth';
-import {db} from '@/lib/db';
 import {isStudentOnboardingRequired} from '@/lib/studentOnboarding';
 import {PortalShell,PortalSectionTitle} from '@/app/components/PortalShell';
 import {StudentOnboardingWizard} from '@/app/components/StudentOnboardingWizard';
+import {buildPartnerCoachDirectory} from '@/lib/partnerCoachNetwork';
 
 export default async function StudentOnboardingPage(){
   const user=await currentUser();
   if(!user||user.role!=='STUDENT'||!user.student)redirect('/ogrenci');
   if(!isStudentOnboardingRequired(user.student.profile))redirect('/ogrenci');
 
-  const coaches=await db.coachProfile.findMany({
-    where:{user:{status:'ACTIVE',role:'COACH'}},
-    select:{id:true,user:{select:{name:true}},_count:{select:{students:true}}},
-    orderBy:{user:{name:'asc'}}
+  const coaches=await buildPartnerCoachDirectory({
+    gradeLevel:user.student.gradeLevel,
+    academicTrack:user.student.academicTrack
   });
 
   return <PortalShell
@@ -33,8 +32,16 @@ export default async function StudentOnboardingPage(){
       <StudentOnboardingWizard
         initialGradeLevel={user.student.gradeLevel||''}
         initialGoal={user.student.goal||''}
+        initialAcademicTrack={user.student.academicTrack||''}
         initialCoachId={user.student.coachId||''}
-        coaches={coaches.map(coach=>({id:coach.id,name:coach.user.name,studentCount:coach._count.students}))}
+        coaches={coaches.map(coach=>({
+          id:coach.id,name:coach.name,studentCount:coach.studentCount,
+          displayTitle:coach.displayTitle,specialties:coach.specialties,
+          availableSlots:coach.availableSlots,responseHours:coach.responseHours,
+          responseTargetHours:coach.responseTargetHours,
+          sessionCompletionRate:coach.sessionCompletionRate,
+          profileCompleteness:coach.profileCompleteness,fitReasons:coach.fitReasons
+        }))}
       />
     </section>
   </PortalShell>;
