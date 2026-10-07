@@ -70,7 +70,7 @@ export function buildParentWeeklyBrief(input:{
     reassurance={
       tone:'ATTENTION',
       headline:'Bugün baskı değil, başlangıcı kolaylaştıran destek gerekli.',
-      detail:'Bugünkü plan uyumu %'+todayPct+'. Eksik görevleri tek tek sorgulamak yerine sakin bir çalışma ortamı ve net bir başlangıç zamanı sağlayın.'
+      detail:'Bugünkü plan uyumu %'+todayPct+'. Baskı kurmak veya eksik görevleri tek tek sorgulamak yerine sakin bir çalışma ortamı ve net bir başlangıç zamanı sağlayın.'
     };
   }else if(plan?.value!=null&&plan.value>=85){
     reassurance={
