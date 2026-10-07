@@ -6,6 +6,12 @@ export type MizaResultMode=
   |'REVIEW_FLOW'
   |'SIMPLE_COMPLETE';
 
+export type MizaRebalanceSummary={
+  redistributedTasks:number;
+  deferredTasks:number;
+  deferredUnits:number;
+};
+
 export type MizaTodayTask={
   id:string;
   order:number;
@@ -71,7 +77,7 @@ function resultMode(item:any):MizaResultMode{
   return 'SIMPLE_COMPLETE';
 }
 
-export function buildMizaTodayOrchestration(today:any){
+export function buildMizaTodayOrchestration(today:any,rebalance?:any){
   const tasks:MizaTodayTask[]=(Array.isArray(today?.plan)?today.plan:[]).map((item:any,index:number)=>({
     id:String(item.id),
     order:Number(item.order||index+1),
@@ -94,6 +100,27 @@ export function buildMizaTodayOrchestration(today:any){
   const coachTasks=remaining.filter(x=>x.source==='ACTION').length;
   const dueReviews=remaining.filter(x=>x.source==='REVIEW_BATCH').reduce((n,x)=>n+x.targetValue,0);
   const plannedMinutes=remaining.reduce((n,x)=>n+x.estimatedMinutes,0);
+  const deferredRows=Array.isArray(rebalance?.deferred)?rebalance.deferred:[];
+  const movedRows=Array.isArray(rebalance?.created)?rebalance.created:[];
+  const deferredUnits=deferredRows.reduce((n:number,x:any)=>n+Math.max(0,Number(x?.unallocated||0)),0);
+  const rebalanceSummary:MizaRebalanceSummary={
+    redistributedTasks:movedRows.length,
+    deferredTasks:deferredRows.length,
+    deferredUnits
+  };
+  const coachEscalation=deferredRows.length
+    ?{
+        required:true,
+        code:'CAPACITY_BLOCKED_CARRYOVER' as const,
+        severity:deferredRows.length>=2?'HIGH' as const:'MEDIUM' as const,
+        message:'Kaçırılan '+deferredRows.length+' görev öğrencinin güvenli kapasitesi içine otomatik sığdırılamadı. MİZA bu görevleri zorla plana eklemez; koçun yeniden planlama kararı vermesi gerekir.'
+      }
+    :{
+        required:false,
+        code:null,
+        severity:'NONE' as const,
+        message:'Koç müdahalesi gerektiren kapasite çakışması yok.'
+      };
 
   return {
     mode:'TODAY_ORCHESTRATION' as const,
@@ -105,12 +132,14 @@ export function buildMizaTodayOrchestration(today:any){
     dueReviews,
     explanation:String(today?.explanation||''),
     notifications:Array.isArray(today?.notifications)?today.notifications.map(String):[],
+    rebalance:rebalanceSummary,
+    coachEscalation,
     tasks,
     remainingTasks:remaining.length,
     completedTasks:tasks.length-remaining.length,
     coachBoundary:{
       authority:'COACH_OVERRIDES_MIZA' as const,
-      message:'MİZA koçun hedefini, görevini veya müdahale kararını değiştirmez. Koç aksiyonlarını önceliklendirir; günlük sırayı KEKS verisinden oluşturur ve yalnız öğrencinin çalışma sonucunu kaydeder.'
+      message:'MİZA koçun hedefini, görevini, haftalık planını veya müdahale kararını değiştirmez. Koç aksiyonlarını önceliklendirir; günlük sırayı KEKS verisinden oluşturur, güvenli kapasiteyi aşan durumu koça eskale eder ve yalnız öğrencinin çalışma sonucunu kaydeder.'
     }
   };
 }
@@ -139,6 +168,12 @@ export function formatMizaTodayReply(orchestration:ReturnType<typeof buildMizaTo
     'Toplam yaklaşık süre: '+orchestration.plannedMinutes+' dk.'
       +(orchestration.dueReviews?' Gecikmiş tekrar: '+orchestration.dueReviews+'.':'')
       +(orchestration.coachTasks?' Koç görevi: '+orchestration.coachTasks+'.':''),
-    'Bu sıra; mevcut koç görevlerini değiştirmez. MİZA yalnız önceliklendirir ve çalışma sonucunu KEKS’e kaydeder.'
-  ].join('\n');
+    orchestration.rebalance.redistributedTasks
+      ?'Kaçırılan '+orchestration.rebalance.redistributedTasks+' görev gerçek kapasiteye göre ileri günlere dengeli dağıtıldı.'
+      :'',
+    orchestration.coachEscalation.required
+      ?'Koç müdahalesi gerekiyor: '+orchestration.coachEscalation.message
+      :'',
+    'Bu sıra; mevcut koç görevlerini değiştirmez. MİZA yalnız önceliklendirir, kapasite dışı durumu koça iletir ve çalışma sonucunu KEKS’e kaydeder.'
+  ].filter(Boolean).join('\n');
 }
