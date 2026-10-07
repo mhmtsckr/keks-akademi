@@ -3,7 +3,7 @@ import {db} from '@/lib/db';
 export type CoachQualityStatus='GOOD'|'WATCH'|'ACTION'|'NO_DATA';
 
 export type CoachQualityMetric={
-  key:'RESPONSE_SLA'|'SESSION_ACTION'|'INTERVENTION_LATENCY'|'REVIEW_FOLLOWUP'|'REPORT_COVERAGE';
+  key:'RESPONSE_TIME'|'RESPONSE_SLA'|'SESSION_COMPLETION'|'SESSION_ACTION'|'INTERVENTION_LATENCY'|'REVIEW_FOLLOWUP'|'REPORT_COVERAGE';
   title:string;
   value:string;
   detail:string;
@@ -58,12 +58,12 @@ export async function buildCoachQualityOperations(coachId:string,now=new Date())
   const [tasks,sessions,signals,actions,reviews,reports]=await Promise.all([
     db.coachTask.findMany({
       where:{coachId,dueAt:{gte:start,lte:now}},
-      select:{id:true,title:true,dueAt:true,status:true,completedAt:true,student:{select:{fullName:true}}}
+      select:{id:true,title:true,createdAt:true,dueAt:true,status:true,completedAt:true,student:{select:{fullName:true}}}
     }),
     db.coachingSession.findMany({
-      where:{coachId,completedAt:{gte:start,lte:now}},
+      where:{coachId,startsAt:{gte:start,lte:now},status:{not:'CANCELLED'}},
       select:{
-        id:true,title:true,startsAt:true,completedAt:true,
+        id:true,title:true,startsAt:true,status:true,completedAt:true,
         student:{select:{id:true,fullName:true}},
         actions:{select:{id:true,createdAt:true,createdByUserId:true}}
       }
@@ -103,18 +103,29 @@ export async function buildCoachQualityOperations(coachId:string,now=new Date())
     })
   ]);
 
+  // 0) Takip yanıt süresi: açılan koç işinden tamamlanmasına kadar geçen medyan süre.
+  const responseHours=tasks
+    .filter(x=>x.completedAt)
+    .map(x=>hoursBetween(x.createdAt,x.completedAt as Date));
+  const medianResponse=roundedHours(median(responseHours));
+  const responseTargetHours=24;
+  const responseTimeStatus:CoachQualityStatus=medianResponse==null?'NO_DATA':medianResponse<=responseTargetHours?'GOOD':medianResponse<=48?'WATCH':'ACTION';
+
   // 1) Zamanında geri dönüş: vadesi dolan koç işlerinin SLA içinde kapanması.
   const slaEligible=tasks.filter(x=>x.dueAt);
   const slaOnTime=slaEligible.filter(x=>x.completedAt&&x.dueAt&&x.completedAt<=x.dueAt);
   const slaPct=pct(slaOnTime.length,slaEligible.length);
 
   // 2) Görüşme sonrası aksiyon: tamamlanan görüşmeye bağlı aksiyonun 24 saat içinde oluşturulması.
-  const sessionsWithAction=sessions.filter(session=>{
+  const completedSessions=sessions.filter(session=>Boolean(session.completedAt)||session.status==='COMPLETED');
+  const sessionCompletionPct=pct(completedSessions.length,sessions.length);
+
+  const sessionsWithAction=completedSessions.filter(session=>{
     if(!session.completedAt)return false;
     const deadline=new Date(session.completedAt.getTime()+24*3600000);
     return session.actions.some(a=>a.createdByUserId===coach.userId&&a.createdAt<=deadline);
   });
-  const sessionPct=pct(sessionsWithAction.length,sessions.length);
+  const sessionPct=pct(sessionsWithAction.length,completedSessions.length);
 
   // 3) Program müdahale süresi: öğrenci geç/uyarı sinyalinden sonraki ilk koç aksiyonuna kadar süre.
   const interventionHours:number[]=[];
@@ -161,6 +172,14 @@ export async function buildCoachQualityOperations(coachId:string,now=new Date())
 
   const metrics:CoachQualityMetric[]=[
     {
+      key:'RESPONSE_TIME',
+      title:'Takip yanıt süresi',
+      value:medianResponse==null?'Veri yok':medianResponse+' saat medyan',
+      detail:'Koç takip işinin açılmasından tamamlanmasına kadar geçen medyan süre. KEKS hedefi: 24 saat veya daha kısa.',
+      numerator:responseHours.filter(x=>x<=responseTargetHours).length,denominator:responseHours.length,status:responseTimeStatus,
+      evidence:tasks.filter(x=>x.completedAt).slice(0,3).map(x=>(x.student?.fullName||'Genel iş')+' · '+Math.round(hoursBetween(x.createdAt,x.completedAt as Date))+' saat')
+    },
+    {
       key:'RESPONSE_SLA',
       title:'Zamanında geri dönüş',
       value:slaPct==null?'Veri yok':'%'+slaPct,
@@ -169,11 +188,19 @@ export async function buildCoachQualityOperations(coachId:string,now=new Date())
       evidence:slaEligible.filter(x=>x.completedAt&&x.dueAt).slice(0,3).map(x=>(x.student?.fullName||'Genel iş')+' · '+x.title)
     },
     {
+      key:'SESSION_COMPLETION',
+      title:'Görüşme tamamlama oranı',
+      value:sessionCompletionPct==null?'Veri yok':'%'+sessionCompletionPct,
+      detail:'Son 30 günde zamanı gelen ve iptal edilmemiş görüşmelerin tamamlanma oranı. KEKS hedefi: en az %85.',
+      numerator:completedSessions.length,denominator:sessions.length,status:qualityStatus(sessionCompletionPct,85,70),
+      evidence:completedSessions.slice(0,3).map(x=>x.student.fullName+' · '+x.title)
+    },
+    {
       key:'SESSION_ACTION',
       title:'Görüşme sonrası aksiyon',
       value:sessionPct==null?'Veri yok':'%'+sessionPct,
       detail:'Tamamlanan görüşmelerden sonra 24 saat içinde öğrenciye bağlı aksiyon oluşturma oranı.',
-      numerator:sessionsWithAction.length,denominator:sessions.length,status:qualityStatus(sessionPct,80,60),
+      numerator:sessionsWithAction.length,denominator:completedSessions.length,status:qualityStatus(sessionPct,80,60),
       evidence:sessionsWithAction.slice(0,3).map(x=>x.student.fullName+' · '+x.title)
     },
     {
@@ -207,8 +234,10 @@ export async function buildCoachQualityOperations(coachId:string,now=new Date())
     metrics,
     summary:{
       studentCount:coach.students.length,
-      completedSessions:sessions.length,
-      operationalSamples:metrics.reduce((s,x)=>s+x.denominator,0)
+      completedSessions:completedSessions.length,
+      operationalSamples:metrics.reduce((s,x)=>s+x.denominator,0),
+      standardsMet:metrics.filter(x=>x.status==='GOOD').length,
+      standardsMeasured:metrics.filter(x=>x.status!=='NO_DATA').length
     },
     note:'Bu ekran tek bir koç puanı üretmez. Her gösterge yalnız koçun operasyonel olarak kontrol edebildiği süreç adımlarını ve gerçek örneklem büyüklüğünü gösterir.'
   };
