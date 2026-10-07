@@ -101,7 +101,9 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
   }
 
   const completedCount=useMemo(()=>progress.filter(x=>x.examType===exam&&x.completed).length,[progress,exam]);
-  const totalCount=useMemo(()=>Object.values(EXAM_CATALOG[exam]).reduce((a:any,b:any)=>a+b.length,0),[exam]);
+  const totalCount=useMemo(()=>activeCurriculum
+    ?activeCurriculum.subjects.reduce((sum,s)=>sum+s.units.reduce((uSum,u)=>uSum+u.topics.length,0),0)
+    :Object.values((EXAM_CATALOG as Record<string,Record<string,readonly string[]>>)[exam]||{}).reduce((sum,rows)=>sum+rows.length,0),[exam,activeCurriculum]);
   const pct=totalCount?Math.round((completedCount/totalCount)*100):0;
   const topicTrends=useMemo(()=>{
     const now=Date.now();const week=7*86400000;
