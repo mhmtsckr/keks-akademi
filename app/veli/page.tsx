@@ -5,6 +5,8 @@ import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { PanelNavigator } from '@/app/components/PanelNavigator';
 import { MonthlyDevelopmentReport } from '@/app/components/MonthlyDevelopmentReport';
 import { StudentDevelopmentTimeline } from '@/app/components/StudentDevelopmentTimeline';
+import { buildStudentIndicators } from '@/lib/studentIndicators';
+import { buildParentWeeklyBrief } from '@/lib/parentWeeklyBrief';
 
 function trDay(v: Date) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -15,11 +17,6 @@ function trDay(v: Date) {
   }).format(v);
 }
 
-function deltaLabel(value: number, unit = 'puan') {
-  if (value === 0) return 'Önceki haftayla aynı';
-  return `${value > 0 ? '+' : ''}${value} ${unit} önceki haftaya göre`;
-}
-
 export default async function ParentPage() {
   const user = await currentUser();
 
@@ -28,7 +25,7 @@ export default async function ParentPage() {
       active="veli"
       eyebrow="VELİ GİRİŞİ"
       title="Öğrencinin gelişimini baskı kurmadan takip et."
-      description="Veli paneli sonuçları ve yanlışları değil; devamlılık, görev uygulama, çalışma ritmi ve koç rehberliğini gösterir."
+      description="Veli paneli ham sonuçları değil; bu hafta iyi gidenleri, dikkat alanlarını ve veliden beklenen doğru desteği gösterir."
     >
       <section className="portalLoginGrid">
         <div className="portalLoginIntro">
@@ -38,7 +35,7 @@ export default async function ParentPage() {
           <div className="portalLoginBullets">
             <span>Haftalık devamlılık</span>
             <span>Görev tamamlama</span>
-            <span>Çalışma süresi trendi</span>
+            <span>Plan uyumu ve tekrar disiplini</span>
             <span>Koçun veliye notu</span>
             <span>Bu hafta ne yapmalı / ne yapmamalı</span>
           </div>
@@ -64,10 +61,10 @@ export default async function ParentPage() {
   }
 
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
 
-  const student = await db.student.findUnique({
+  const [student,weeklyIndicators] = await Promise.all([
+    db.student.findUnique({
     where: { id: user.parentProfile.studentId },
     include: {
       reports: {
@@ -86,65 +83,32 @@ export default async function ParentPage() {
           status: true,
           submission: { select: { submittedAt: true } }
         }
-      },
-      techniqueSessions: {
-        where: { createdAt: { gte: fourteenDaysAgo, lte: now } },
-        select: { createdAt: true, activeSeconds: true }
       }
     }
-  });
+  }),
+    buildStudentIndicators(user.parentProfile.studentId, now)
+  ]);
 
   if (!student) return null;
 
-  const currentActions = student.coachingActions.filter(x => x.taskDate && x.taskDate >= sevenDaysAgo);
-  const previousActions = student.coachingActions.filter(x => x.taskDate && x.taskDate < sevenDaysAgo);
-
-  const completed = (rows: typeof currentActions) =>
-    rows.filter(x => x.submission || x.status === 'COMPLETED').length;
-
-  const completionRate = (rows: typeof currentActions) =>
-    rows.length ? Math.round((completed(rows) / rows.length) * 100) : 0;
-
-  const currentSessions = student.techniqueSessions.filter(x => x.createdAt >= sevenDaysAgo);
-  const previousSessions = student.techniqueSessions.filter(x => x.createdAt < sevenDaysAgo);
-
-  const focusMinutes = (rows: typeof currentSessions) =>
-    Math.round(rows.reduce((sum, x) => sum + (x.activeSeconds || 0), 0) / 60);
-
-  const currentFocus = focusMinutes(currentSessions);
-  const previousFocus = focusMinutes(previousSessions);
-  const focusDelta = currentFocus - previousFocus;
-
-  const activeDays = new Set<string>();
-  for (const action of currentActions) {
-    if (action.submission) activeDays.add(trDay(action.submission.submittedAt));
-  }
-  for (const session of currentSessions) {
-    if ((session.activeSeconds || 0) > 0) activeDays.add(trDay(session.createdAt));
-  }
-
-  const previousActiveDays = new Set<string>();
-  for (const action of previousActions) {
-    if (action.submission) previousActiveDays.add(trDay(action.submission.submittedAt));
-  }
-  for (const session of previousSessions) {
-    if ((session.activeSeconds || 0) > 0) previousActiveDays.add(trDay(session.createdAt));
-  }
-
-  const currentCompletion = completionRate(currentActions);
-  const previousCompletion = completionRate(previousActions);
-  const completionDelta = currentCompletion - previousCompletion;
-  const continuityDelta = activeDays.size - previousActiveDays.size;
   const latestCoachReport = student.reports[0] || null;
   const coachNote = latestCoachReport?.summary || latestCoachReport?.content || null;
+  const indicator=(key:string)=>weeklyIndicators.indicators.find(x=>x.key===key)||null;
+  const continuityIndicator=indicator('CONTINUITY');
+  const planIndicator=indicator('PLAN_ALIGNMENT');
+  const reviewIndicator=indicator('REVIEW_DISCIPLINE');
+  const todayKey=trDay(now);
+  const todayActions=student.coachingActions.filter(x=>x.taskDate&&trDay(x.taskDate)===todayKey);
+  const todayCompleted=todayActions.filter(x=>x.submission||x.status==='COMPLETED').length;
+  const parentBrief=buildParentWeeklyBrief({
+    indicators:weeklyIndicators.indicators,
+    todayPlan:{total:todayActions.length,completed:todayCompleted},
+    coachNote
+  });
 
-  const parentDo = currentCompletion < 60
-    ? 'Görev sayısını artırmak yerine düzenli başlama saatini ve sakin çalışma ortamını destekleyin. Program hacmini koçun değerlendirmesine bırakın.'
-    : activeDays.size < 4
-      ? 'Öğrencinin belirli gün ve saatlerde çalışmaya başlamasını kolaylaştırın. Hatırlatın, fakat başında bekleyerek kontrol etmeyin.'
-      : 'Mevcut çalışma ritmini korumasına yardımcı olun. Çabayı ve sürekliliği fark edin; program sorumluluğunu öğrencide bırakın.';
-
+  const parentDo = parentBrief.support[0]?.detail || 'Mevcut çalışma ritmini destekleyin ve program sorumluluğunu öğrencide bırakın.';
   const parentAvoid = 'Tek tek yanlışları sorgulamayın, deneme sonucunu ceza veya ödül aracına çevirmeyin, başka öğrencilerle kıyaslamayın ve koç planına habersiz ek görev yüklemeyin.';
+  const continuityMeta=continuityIndicator?.value==null?'Süreklilik verisi birikiyor':'Çalışma sürekliliği %'+continuityIndicator.value;
 
   return <PortalShell
     signedIn
@@ -152,15 +116,15 @@ export default async function ParentPage() {
     eyebrow="VELİ PANELİ"
     title={student.fullName + ' · Haftalık Davranış Özeti'}
     description="Sonuçları değil; çalışma düzenini ve destek ihtiyacını görün."
-    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel && <span>{student.gradeLevel}</span>}<span>{activeDays.size}/7 aktif gün</span></>}
+    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel && <span>{student.gradeLevel}</span>}<span>{continuityMeta}</span></>}
     wide
   >
     <section className="section">
       <PanelNavigator roleLabel="Veli" groups={[
         {label:'VELİ PANELİ',description:'Gelişimi anlayın, koçun yönlendirmesini görün ve doğru desteği verin.',items:[
-          {href:'#haftalik-ozet',title:'1. Bu Hafta Ne Oldu?',description:'Devamlılık, görev uygulama ve çalışma ritmi',badge:'ÖNCELİKLİ'},
+          {href:'#haftalik-ozet',title:'1. Bu Haftanın Veli Özeti',description:'İyi gidenler, dikkat alanları ve sizden beklenen destek',badge:'ÖNCELİKLİ'},
           {href:'#akademik-gelisim',title:'2. Akademik Gelişim',description:'Canlı gelişim raporu ve gelişim zaman çizelgesi'},
-          {href:'#calisma-davranisi',title:'3. Çalışma Davranışı',description:'Plan uygulama, odak ve süreklilik'},
+          {href:'#calisma-davranisi',title:'3. Çalışma Davranışı',description:'Plan uyumu, tekrar disiplini ve çalışma sürekliliği'},
           {href:'#koc-veli',title:'4. Koç–Veli İletişim Merkezi',description:'Koçun veliye açtığı değerlendirme ve yönlendirmeler'},
           {href:'#aylik-keks-gelisim-raporu',title:'5. KEKS Aylık Veli Raporu',description:'Gelişim, müdahale alanları ve sonraki hedefler',badge:'CANLI'},
           {href:'#miza-veli',title:'6. Veliye Özel MİZA',description:'Öğrenci mahremiyetini koruyan veli destek rehberi',badge:'YENİ'}
@@ -170,37 +134,61 @@ export default async function ParentPage() {
 
     <section id="haftalik-ozet" className="section section-anchor">
       <PortalSectionTitle
-        eyebrow="HAFTALIK DAVRANIŞ ÖZETİ"
-        title="Bu hafta çalışma düzeni nasıldı?"
+        eyebrow="HAFTALIK VELİ ÖZETİ"
+        title="Bu hafta ne bilmeniz ve ne yapmanız gerekiyor?"
       />
 
-      <div className="grid">
+      <div className={'card '+(parentBrief.reassurance.tone==='ATTENTION'?'notice error':'')}>
+        <div className="moduleEyebrow">BUGÜN VELİ MÜDAHALESİ GEREKİYOR MU?</div>
+        <h2>{parentBrief.reassurance.headline}</h2>
+        <p>{parentBrief.reassurance.detail}</p>
+      </div>
+
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',marginTop:14}}>
         <div className="card">
-          <div className="moduleEyebrow">HAFTALIK DEVAMLILIK</div>
-          <div className="kpi">{activeDays.size}/7</div>
-          <div className="muted">Aktif çalışma günü</div>
-          <small>{deltaLabel(continuityDelta, 'gün')}</small>
+          <div className="moduleEyebrow">BU HAFTA İYİ GİDENLER</div>
+          <div className="stack">
+            {parentBrief.good.map((item,i)=><div key={i}>
+              <strong>{item.title}</strong>
+              <p style={{margin:'6px 0'}}>{item.detail}</p>
+              {item.evidence&&<small className="muted">{item.evidence}</small>}
+            </div>)}
+          </div>
         </div>
 
         <div className="card">
-          <div className="moduleEyebrow">GÖREV TAMAMLAMA</div>
-          <div className="kpi">%{currentCompletion}</div>
-          <div className="muted">{completed(currentActions)} / {currentActions.length} görev tamamlandı</div>
-          <small>{deltaLabel(completionDelta)}</small>
+          <div className="moduleEyebrow">DİKKAT EDİLMESİ GEREKENLER</div>
+          <div className="stack">
+            {parentBrief.attention.map((item,i)=><div key={i}>
+              <strong>{item.title}</strong>
+              <p style={{margin:'6px 0'}}>{item.detail}</p>
+              {item.evidence&&<small className="muted">{item.evidence}</small>}
+            </div>)}
+          </div>
         </div>
 
         <div className="card">
-          <div className="moduleEyebrow">ÇALIŞMA SÜRESİ TRENDİ</div>
-          <div className="kpi">{currentFocus} dk</div>
-          <div className="muted">Bu hafta kayıtlı odak süresi</div>
-          <small>{deltaLabel(focusDelta, 'dk')}</small>
+          <div className="moduleEyebrow">VELİDEN BEKLENEN DESTEK</div>
+          <div className="stack">
+            {parentBrief.support.map((item,i)=><div key={i}>
+              <strong>{item.title}</strong>
+              <p style={{margin:'6px 0'}}>{item.detail}</p>
+            </div>)}
+          </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 14 }}>
-        <div className="moduleEyebrow">VELİ PANELİ İLKESİ</div>
-        <p>Bu ekranda yanlış soru listesi, ham test cevapları, ayrıntılı deneme dökümü veya ders bazlı hata takibi gösterilmez. Bu veriler öğrenci ve koçun çalışma alanında kalır.</p>
-      </div>
+      <details className="card" style={{marginTop:14}}>
+        <summary><strong>Bu özet hangi göstergelerden üretildi?</strong></summary>
+        <div className="grid" style={{marginTop:12}}>
+          {[continuityIndicator,planIndicator,reviewIndicator].filter(Boolean).map((item:any)=><div key={item.key}>
+            <strong>{item.label}: {item.value==null?'Veri yok':'%'+item.value}</strong>
+            <p className="muted">{item.evidence}</p>
+            <small>{item.delta==null?'Geçen hafta karşılaştırması yok':item.delta===0?'Geçen haftayla aynı':(item.delta>0?'+':'')+item.delta+' puan geçen haftaya göre'}</small>
+          </div>)}
+        </div>
+        <p className="muted">{parentBrief.privacyNote}</p>
+      </details>
     </section>
 
     <section id="akademik-gelisim" className="section section-anchor">
@@ -213,11 +201,11 @@ export default async function ParentPage() {
     </section>
 
     <section id="calisma-davranisi" className="section section-anchor">
-      <PortalSectionTitle eyebrow="ÇALIŞMA DAVRANIŞI" title="Öğrenci nasıl çalışıyor?"/>
+      <PortalSectionTitle eyebrow="ÇALIŞMA DAVRANIŞI" title="Ham tablo yerine davranışın yönünü görün."/>
       <div className="grid">
-        <div className="card"><div className="moduleEyebrow">SÜREKLİLİK</div><div className="kpi">{activeDays.size}/7</div><p className="muted">Aktif çalışma günü</p></div>
-        <div className="card"><div className="moduleEyebrow">UYGULAMA</div><div className="kpi">%{currentCompletion}</div><p className="muted">Görev tamamlama</p></div>
-        <div className="card"><div className="moduleEyebrow">ODAK</div><div className="kpi">{currentFocus} dk</div><p className="muted">Kayıtlı odak süresi</p></div>
+        <div className="card"><div className="moduleEyebrow">ÇALIŞMA SÜREKLİLİĞİ</div><div className="kpi">{continuityIndicator?.value==null?'—':'%'+continuityIndicator.value}</div><p className="muted">{continuityIndicator?.delta==null?'Karşılaştırma verisi birikiyor':continuityIndicator.delta===0?'Geçen haftayla aynı':(continuityIndicator.delta>0?'+':'')+continuityIndicator.delta+' puan'}</p></div>
+        <div className="card"><div className="moduleEyebrow">PLAN UYUMU</div><div className="kpi">{planIndicator?.value==null?'—':'%'+planIndicator.value}</div><p className="muted">{planIndicator?.delta==null?'Karşılaştırma verisi birikiyor':planIndicator.delta===0?'Geçen haftayla aynı':(planIndicator.delta>0?'+':'')+planIndicator.delta+' puan'}</p></div>
+        <div className="card"><div className="moduleEyebrow">TEKRAR DİSİPLİNİ</div><div className="kpi">{reviewIndicator?.value==null?'—':'%'+reviewIndicator.value}</div><p className="muted">{reviewIndicator?.delta==null?'Karşılaştırma verisi birikiyor':reviewIndicator.delta===0?'Geçen haftayla aynı':(reviewIndicator.delta>0?'+':'')+reviewIndicator.delta+' puan'}</p></div>
       </div>
     </section>
 
