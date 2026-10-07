@@ -85,8 +85,9 @@ export function sanitizeTestimonial(input:string,privateTokens:Array<string|null
   const replacements:Array<[RegExp,string]>=[
     [/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[e-posta kaldırıldı]'],
     [/https?:\/\/\S+|www\.\S+/gi,'[bağlantı kaldırıldı]'],
-    [/(?:\+?90[\s.-]?)?(?:0?[\s.-]?)?5\d{2}[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/g,'[telefon kaldırıldı]'],
-    [/\b[1-9]\d{10}\b/g,'[kimlik bilgisi kaldırıldı]']
+    [/(?:\+?90[\s().-]*)?(?:0[\s().-]*)?[2-5]\d{2}[\s().-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}\b/g,'[telefon kaldırıldı]'],
+    [/\b[1-9]\d{10}\b/g,'[kimlik bilgisi kaldırıldı]'],
+    [/(^|\s)@[a-z0-9_.]{3,}/gi,'$1[sosyal medya kullanıcı adı kaldırıldı]']
   ];
   for(const [pattern,replacement] of replacements){
     if(pattern.test(text)){
@@ -104,10 +105,19 @@ export function sanitizeTestimonial(input:string,privateTokens:Array<string|null
     }
   }
 
-  const institution=/\b[\p{L}'’-]+(?:\s+[\p{L}'’-]+){0,4}\s+(?:Lisesi|Ortaokulu|İlkokulu|Okulu|Koleji|Üniversitesi|Kursu|Dershanesi)\b/iu;
-  const addressHint=/\b(?:mahallesi|mah\.|sokak|sok\.|cadde|cad\.|apartmanı|apt\.)\b/iu;
-  const socialHandle=/(^|\s)@[a-z0-9_.]{3,}/i;
-  if(institution.test(text)||addressHint.test(text)||socialHandle.test(text))flagged=true;
+  const institution=/\b[\p{L}'’-]+(?:\s+[\p{L}'’-]+){0,4}\s+(?:Lisesi|Ortaokulu|İlkokulu|Okulu|Koleji|Üniversitesi|Kursu|Dershanesi)\b/giu;
+  if(institution.test(text)){
+    flagged=true;
+    institution.lastIndex=0;
+    text=text.replace(institution,'[kurum bilgisi kaldırıldı]');
+  }
+
+  const addressFragment=/\b(?:[\p{L}\d.'’/-]+\s+){0,5}(?:mahallesi|mah\.|sokak|sok\.|cadde|cad\.|apartmanı|apt\.)\s*(?:[\p{L}\d.'’/#-]+\s*){0,5}/giu;
+  if(addressFragment.test(text)){
+    flagged=true;
+    addressFragment.lastIndex=0;
+    text=text.replace(addressFragment,'[adres bilgisi kaldırıldı] ');
+  }
 
   text=text.replace(/\s+/g,' ').trim().slice(0,800);
   return {sanitized:text,piiFlagged:flagged};
