@@ -72,6 +72,7 @@ export function median(values:number[]){
 
 export function coachSupportsEducationLevel(levels:string[],gradeLevel?:string|null){
   if(!gradeLevel)return true;
+  if(!levels.length)return true;
   const normalized=normalizeEducationLevelLabel(gradeLevel)||gradeLevel;
   return levels.some(x=>(normalizeEducationLevelLabel(x)||x)===normalized);
 }
@@ -116,7 +117,8 @@ export function rankPartnerCoach(input:PartnerCoachRecord,student:{gradeLevel?:s
   const fitReasons:string[]=[];
   let fitRank=0;
 
-  if(levelMatch){fitRank+=50;fitReasons.push('Eğitim düzeyini aktif olarak takip ediyor.')}
+  if(levelMatch&&input.supportedEducationLevels.length){fitRank+=50;fitReasons.push('Eğitim düzeyini aktif olarak takip ediyor.')}
+  else if(levelMatch){fitRank+=15;fitReasons.push('Düzey kapsamı henüz profilinde doğrulanmadı; mevcut Partner Koç havuzunda değerlendirildi.')}
   if(specialty.matched.length){fitRank+=20;fitReasons.push('Uzmanlık eşleşmesi: '+specialty.matched.join(', ')+'.')}
   if(availableSlots>0){fitRank+=Math.min(10,availableSlots);fitReasons.push(availableSlots+' öğrenci kapasitesi açık.')}
   if(input.responseHours!=null&&input.responseHours<=input.responseTargetHours){fitRank+=10;fitReasons.push('Son 30 günlük takip yanıt medyanı hedef süre içinde.')}
