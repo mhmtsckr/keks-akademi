@@ -1538,3 +1538,71 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .homeFaqVisual .homeRealPhoto,
   .homePortalIllustration .homeRealPhoto{height:280px}
 }
+
+
+/* Explainable package recommendation engine */
+.packageRecommendationShell{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);
+  gap:18px;
+  padding:22px;
+  border:1px solid rgba(239,201,109,.22);
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 95% 0%,rgba(239,201,109,.12),transparent 32%),
+    radial-gradient(circle at 4% 100%,rgba(42,194,190,.10),transparent 30%),
+    linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.022));
+}
+.packageRecommendationIntro h3{margin:4px 0 9px;font-size:25px;line-height:1.18}
+.packageRecommendationIntro p{margin:0;color:#9fb0c2;line-height:1.6;font-size:14px}
+.packageRecommendationInputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-content:start}
+.packageRecommendationInputs label{display:grid;gap:7px;color:#dce5ee;font-size:12px;font-weight:800}
+.packageRecommendationInputs input,.packageRecommendationInputs select{
+  width:100%;
+  min-height:46px;
+  padding:10px 11px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.11);
+  background:#091f38;
+  color:#f4f7fa;
+  font:inherit;
+  outline:none;
+}
+.packageRecommendationInputs input:focus,.packageRecommendationInputs select:focus{
+  border-color:rgba(239,201,109,.58);
+  box-shadow:0 0 0 3px rgba(239,201,109,.08);
+}
+.packageRecommendationResult{
+  grid-column:1/-1;
+  display:grid;
+  gap:5px;
+  padding:17px 18px;
+  border-left:4px solid #efc96d;
+  border-radius:0 16px 16px 0;
+  background:rgba(239,201,109,.075);
+}
+.packageRecommendationResult>span{font-size:10px;font-weight:950;letter-spacing:.14em;color:#efc96d}
+.packageRecommendationResult>strong{font-size:25px;line-height:1.2;color:#fff}
+.packageRecommendationResult p{margin:2px 0 0;color:#d8e1e9;line-height:1.55}
+.packageRecommendationResult small{color:#8296aa;line-height:1.45}
+.studentTermCard.recommended{
+  border-color:rgba(239,201,109,.72);
+  background:
+    radial-gradient(circle at 100% 0%,rgba(239,201,109,.15),transparent 34%),
+    linear-gradient(180deg,rgba(239,201,109,.12),rgba(255,255,255,.035));
+  box-shadow:0 0 0 1px rgba(239,201,109,.15) inset,0 18px 38px rgba(0,0,0,.16);
+  transform:translateY(-3px);
+}
+.studentTermCard.recommended .studentTermBadge{
+  background:linear-gradient(135deg,#efb03a,#f4d77d);
+  box-shadow:0 8px 20px rgba(239,176,58,.18);
+}
+@media(max-width:900px){
+  .packageRecommendationShell{grid-template-columns:1fr}
+  .packageRecommendationResult{grid-column:auto}
+}
+@media(max-width:680px){
+  .packageRecommendationShell{padding:17px}
+  .packageRecommendationInputs{grid-template-columns:1fr}
+  .packageRecommendationResult>strong{font-size:22px}
+}
