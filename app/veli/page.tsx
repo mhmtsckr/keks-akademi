@@ -17,11 +17,6 @@ function trDay(v: Date) {
   }).format(v);
 }
 
-function deltaLabel(value: number, unit = 'puan') {
-  if (value === 0) return 'Önceki haftayla aynı';
-  return `${value > 0 ? '+' : ''}${value} ${unit} önceki haftaya göre`;
-}
-
 export default async function ParentPage() {
   const user = await currentUser();
 
@@ -30,7 +25,7 @@ export default async function ParentPage() {
       active="veli"
       eyebrow="VELİ GİRİŞİ"
       title="Öğrencinin gelişimini baskı kurmadan takip et."
-      description="Veli paneli sonuçları ve yanlışları değil; devamlılık, görev uygulama, çalışma ritmi ve koç rehberliğini gösterir."
+      description="Veli paneli ham sonuçları değil; bu hafta iyi gidenleri, dikkat alanlarını ve veliden beklenen doğru desteği gösterir."
     >
       <section className="portalLoginGrid">
         <div className="portalLoginIntro">
@@ -40,7 +35,7 @@ export default async function ParentPage() {
           <div className="portalLoginBullets">
             <span>Haftalık devamlılık</span>
             <span>Görev tamamlama</span>
-            <span>Çalışma süresi trendi</span>
+            <span>Plan uyumu ve tekrar disiplini</span>
             <span>Koçun veliye notu</span>
             <span>Bu hafta ne yapmalı / ne yapmamalı</span>
           </div>
@@ -89,57 +84,13 @@ export default async function ParentPage() {
           status: true,
           submission: { select: { submittedAt: true } }
         }
-      },
-      techniqueSessions: {
-        where: { createdAt: { gte: fourteenDaysAgo, lte: now } },
-        select: { createdAt: true, activeSeconds: true }
-      }
-    }
-  });,
+      }    }
+  }),
     buildStudentIndicators(user.parentProfile.studentId, now)
   ]);
 
   if (!student) return null;
 
-  const currentActions = student.coachingActions.filter(x => x.taskDate && x.taskDate >= sevenDaysAgo);
-  const previousActions = student.coachingActions.filter(x => x.taskDate && x.taskDate < sevenDaysAgo);
-
-  const completed = (rows: typeof currentActions) =>
-    rows.filter(x => x.submission || x.status === 'COMPLETED').length;
-
-  const completionRate = (rows: typeof currentActions) =>
-    rows.length ? Math.round((completed(rows) / rows.length) * 100) : 0;
-
-  const currentSessions = student.techniqueSessions.filter(x => x.createdAt >= sevenDaysAgo);
-  const previousSessions = student.techniqueSessions.filter(x => x.createdAt < sevenDaysAgo);
-
-  const focusMinutes = (rows: typeof currentSessions) =>
-    Math.round(rows.reduce((sum, x) => sum + (x.activeSeconds || 0), 0) / 60);
-
-  const currentFocus = focusMinutes(currentSessions);
-  const previousFocus = focusMinutes(previousSessions);
-  const focusDelta = currentFocus - previousFocus;
-
-  const activeDays = new Set<string>();
-  for (const action of currentActions) {
-    if (action.submission) activeDays.add(trDay(action.submission.submittedAt));
-  }
-  for (const session of currentSessions) {
-    if ((session.activeSeconds || 0) > 0) activeDays.add(trDay(session.createdAt));
-  }
-
-  const previousActiveDays = new Set<string>();
-  for (const action of previousActions) {
-    if (action.submission) previousActiveDays.add(trDay(action.submission.submittedAt));
-  }
-  for (const session of previousSessions) {
-    if ((session.activeSeconds || 0) > 0) previousActiveDays.add(trDay(session.createdAt));
-  }
-
-  const currentCompletion = completionRate(currentActions);
-  const previousCompletion = completionRate(previousActions);
-  const completionDelta = currentCompletion - previousCompletion;
-  const continuityDelta = activeDays.size - previousActiveDays.size;
   const latestCoachReport = student.reports[0] || null;
   const coachNote = latestCoachReport?.summary || latestCoachReport?.content || null;
   const indicator=(key:string)=>weeklyIndicators.indicators.find(x=>x.key===key)||null;
@@ -157,6 +108,7 @@ export default async function ParentPage() {
 
   const parentDo = parentBrief.support[0]?.detail || 'Mevcut çalışma ritmini destekleyin ve program sorumluluğunu öğrencide bırakın.';
   const parentAvoid = 'Tek tek yanlışları sorgulamayın, deneme sonucunu ceza veya ödül aracına çevirmeyin, başka öğrencilerle kıyaslamayın ve koç planına habersiz ek görev yüklemeyin.';
+  const continuityMeta=continuityIndicator?.value==null?'Süreklilik verisi birikiyor':'Çalışma sürekliliği %'+continuityIndicator.value;
 
   return <PortalShell
     signedIn
@@ -164,7 +116,7 @@ export default async function ParentPage() {
     eyebrow="VELİ PANELİ"
     title={student.fullName + ' · Haftalık Davranış Özeti'}
     description="Sonuçları değil; çalışma düzenini ve destek ihtiyacını görün."
-    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel && <span>{student.gradeLevel}</span>}<span>{activeDays.size}/7 aktif gün</span></>}
+    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel && <span>{student.gradeLevel}</span>}<span>{continuityMeta}</span></>}
     wide
   >
     <section className="section">
@@ -172,7 +124,7 @@ export default async function ParentPage() {
         {label:'VELİ PANELİ',description:'Gelişimi anlayın, koçun yönlendirmesini görün ve doğru desteği verin.',items:[
           {href:'#haftalik-ozet',title:'1. Bu Haftanın Veli Özeti',description:'İyi gidenler, dikkat alanları ve sizden beklenen destek',badge:'ÖNCELİKLİ'},
           {href:'#akademik-gelisim',title:'2. Akademik Gelişim',description:'Canlı gelişim raporu ve gelişim zaman çizelgesi'},
-          {href:'#calisma-davranisi',title:'3. Çalışma Davranışı',description:'Plan uygulama, odak ve süreklilik'},
+          {href:'#calisma-davranisi',title:'3. Çalışma Davranışı',description:'Plan uyumu, tekrar disiplini ve çalışma sürekliliği'},
           {href:'#koc-veli',title:'4. Koç–Veli İletişim Merkezi',description:'Koçun veliye açtığı değerlendirme ve yönlendirmeler'},
           {href:'#aylik-keks-gelisim-raporu',title:'5. KEKS Aylık Veli Raporu',description:'Gelişim, müdahale alanları ve sonraki hedefler',badge:'CANLI'},
           {href:'#miza-veli',title:'6. Veliye Özel MİZA',description:'Öğrenci mahremiyetini koruyan veli destek rehberi',badge:'YENİ'}
