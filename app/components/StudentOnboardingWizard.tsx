@@ -48,7 +48,7 @@ export function StudentOnboardingWizard({
   const [coachLoading,setCoachLoading]=useState(false);
   const profile=useMemo(()=>resolveEducationLevelProfile(gradeLevel,academicTrack),[gradeLevel,academicTrack]);
   const trackSensitive=['HIGH_11','HIGH_12','GRADUATE_YKS'].includes(profile?.key||'');
-  const subjects=useMemo(()=>subjectsForOnboarding(gradeLevel),[gradeLevel]);
+  const subjects=useMemo(()=>subjectsForOnboarding(gradeLevel,academicTrack),[gradeLevel,academicTrack]);
   const [dailyMinutes,setDailyMinutes]=useState(profile?.study.defaultDailyMinutes||90);
   const [weakSubjects,setWeakSubjects]=useState<string[]>([]);
   const [resources,setResources]=useState<Resource[]>([]);
@@ -145,6 +145,7 @@ export function StudentOnboardingWizard({
           action:'complete',
           goal:goal.trim(),
           gradeLevel,
+          academicTrack:academicTrack||null,
           dailyMinutes,
           weakSubjects,
           resources:noResources?[]:resources.map(x=>({...x,publisher:x.publisher||null})),
