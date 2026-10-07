@@ -6,7 +6,7 @@ import {db} from '@/lib/db';
 import {writeAudit} from '@/lib/audit';
 import {ADULT_EXAM_GROUPS} from '@/lib/agsExamOptions';
 import {EDUCATION_LEVEL_OPTIONS} from '@/lib/educationLevels';
-import {KEKS_PARTNER_SPECIALTIES,KEKS_PARTNER_STANDARD_VERSION} from '@/lib/partnerCoachNetwork';
+import {KEKS_PARTNER_OPERATION_STANDARDS,KEKS_PARTNER_SPECIALTIES,KEKS_PARTNER_STANDARD_VERSION} from '@/lib/partnerCoachNetwork';
 
 const allowedLevels=[...EDUCATION_LEVEL_OPTIONS,...ADULT_EXAM_GROUPS] as string[];
 const allowedSpecialties=[...KEKS_PARTNER_SPECIALTIES] as string[];
@@ -42,7 +42,8 @@ async function GET__handler(){
     ok:true,
     profile,
     options:{specialties:allowedSpecialties,educationLevels:allowedLevels},
-    standardVersion:KEKS_PARTNER_STANDARD_VERSION
+    standardVersion:KEKS_PARTNER_STANDARD_VERSION,
+    operationStandards:KEKS_PARTNER_OPERATION_STANDARDS
   });
 }
 
