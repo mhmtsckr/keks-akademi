@@ -161,12 +161,12 @@ export async function buildPartnerCoachDirectory(student:{gradeLevel?:string|nul
   const coachIds=coaches.map(x=>x.id);
   const [tasks,sessions]=await Promise.all([
     db.coachTask.findMany({
-      where:{coachId:{in:coachIds},createdAt:{gte:start,lte:now}},
+      where:{coachId:{in:coachIds},completedAt:{gte:start,lte:now}},
       select:{coachId:true,createdAt:true,completedAt:true}
     }),
     db.coachingSession.findMany({
-      where:{coachId:{in:coachIds},startsAt:{gte:start,lte:now},status:{not:'CANCELLED'}},
-      select:{coachId:true,startsAt:true,status:true,completedAt:true}
+      where:{coachId:{in:coachIds},endsAt:{gte:start,lte:now},status:{not:'CANCELLED'}},
+      select:{coachId:true,startsAt:true,endsAt:true,status:true,completedAt:true}
     })
   ]);
 
