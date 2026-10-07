@@ -1008,6 +1008,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
         title:focusTopic.subject+' · '+focusTopic.topic+' konu tamamlama',
         subject:focusTopic.subject,
         topic:focusTopic.topic,
+        examType:focusTopic.examType,
         targetValue:Math.min(35,capacity.recommendedFocusBlockMinutes||35),
         metricType:'MINUTES',
         estimatedMinutes:Math.min(35,capacity.recommendedFocusBlockMinutes||35),
@@ -1038,6 +1039,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
         title:questionTarget+' soru · '+focusTopic.subject+(focusTopic.topic?' · '+focusTopic.topic:''),
         subject:focusTopic.subject,
         topic:focusTopic.topic,
+        examType:focusTopic.examType,
         targetValue:questionTarget,
         metricType:'QUESTIONS',
         estimatedMinutes:estimatedTaskMinutes({metricType:'QUESTIONS',targetValue:questionTarget,subject:focusTopic.subject}),
@@ -1151,7 +1153,7 @@ async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningP
     .filter((x:any)=>x.source==='TOPIC'&&typeof x.subject==='string'&&typeof x.topic==='string')
     .map((x:any)=>({subject:x.subject as string,topic:x.topic as string}));
 
-  const [actions,reviews,topics,practice]=await Promise.all([
+  const [actions,reviews,topics,practice,mizaResults]=await Promise.all([
     actionIds.length?db.coachingAction.findMany({
       where:{studentId,id:{in:actionIds}},
       select:{id:true,status:true,submission:{select:{id:true}}}
@@ -1167,6 +1169,10 @@ async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningP
     db.practiceLog.findMany({
       where:{studentId,date:{gte:today,lt:tomorrow}},
       select:{subject:true,topic:true,total:true}
+    }),
+    db.dailyLog.findMany({
+      where:{studentId,date:{gte:today,lt:tomorrow},payload:{path:['type'],equals:'MIZA_TODAY_TASK_RESULT'}},
+      select:{payload:true}
     })
   ]);
 
@@ -1178,10 +1184,18 @@ async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningP
     const key=row.subject+'|'+(row.topic||'Genel/Karma');
     practiceTotals.set(key,(practiceTotals.get(key)||0)+row.total);
   }
+  const mizaCompletedTaskIds=new Set(
+    mizaResults.flatMap(row=>{
+      const payload=row.payload&&typeof row.payload==='object'&&!Array.isArray(row.payload)?row.payload as Record<string,unknown>:{};
+      return payload.completed===true&&typeof payload.taskId==='string'?[payload.taskId]:[];
+    })
+  );
 
   const plan=stored.plan.map((raw:any)=>{
     const item={...raw};
-    if(item.source==='ACTION'&&typeof item.actionId==='string'){
+    if(mizaCompletedTaskIds.has(String(item.id))){
+      item.completed=true;
+    }else if(item.source==='ACTION'&&typeof item.actionId==='string'){
       item.completed=completedActions.has(item.actionId);
     }else if(item.source==='REVIEW_BATCH'&&Array.isArray(item.reviewIds)){
       const remaining=item.reviewIds.filter((id:string)=>reviewStatus.get(id)!=='COMPLETED');
