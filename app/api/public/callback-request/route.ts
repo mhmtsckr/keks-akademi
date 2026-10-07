@@ -4,6 +4,8 @@ import {db} from '@/lib/db';
 import {HttpError,readJson,withApiErrors} from '@/lib/apiGuard';
 import {authHash,clientIp} from '@/lib/authAbuse';
 import {sendCallbackRequest} from '@/lib/mailer';
+import {upsertSalesLeadInquiry} from '@/lib/salesLead';
+import {detectStudentPlanFromWhatsAppMessage} from '@/lib/whatsappPlanReply';
 
 const callbackSchema=z.object({
   name:z.string().trim().min(2).max(80),
@@ -35,22 +37,39 @@ async function POST__handler(req:Request){
   if(ipCount>=5||phoneCount>=3)throw new HttpError(429,'Çok fazla arama talebi gönderildi. Lütfen daha sonra tekrar deneyin.');
 
   const audienceLabel=input.audience==='PARTNER_KOÇ'?'KEKS Partner Koç':input.audience==='VELİ'?'Veli':'Öğrenci';
-  const result=await sendCallbackRequest({
-    name:input.name,
+  const detectedPlan=detectStudentPlanFromWhatsAppMessage(input.education);
+  const lead=await upsertSalesLeadInquiry({
+    source:'CALLBACK',
     phone:input.phone,
-    audience:audienceLabel,
-    education:input.education,
+    name:input.name,
+    audience:input.audience,
+    educationLevel:detectedPlan?.plan.level||input.education,
+    inquiryPlanId:detectedPlan?.plan.id||null,
     preferredTime:input.preferredTime,
     note:input.note
   });
-  if('skipped' in result&&result.skipped)throw new HttpError(503,'Arama talebi şu anda iletilemedi. Lütfen WhatsApp üzerinden bize ulaşın.');
+
+  let mailDelivered=false;
+  try{
+    const result=await sendCallbackRequest({
+      name:input.name,
+      phone:input.phone,
+      audience:audienceLabel,
+      education:input.education,
+      preferredTime:input.preferredTime,
+      note:input.note
+    });
+    mailDelivered=!('skipped' in result&&result.skipped);
+  }catch{
+    mailDelivered=false;
+  }
 
   await Promise.all([
-    db.auditLog.create({data:{action:'PUBLIC_CALLBACK_REQUEST',entityType:'PublicLead',entityId:ipId,summary:'Abonelik sayfasından arama talebi alındı.',metadata:{audience:input.audience,preferredTime:input.preferredTime}}}),
+    db.auditLog.create({data:{action:'PUBLIC_CALLBACK_REQUEST',entityType:'SalesLead',entityId:lead.id,summary:'Abonelik sayfasından arama talebi CRM lead olarak kaydedildi.',metadata:{audience:input.audience,preferredTime:input.preferredTime,mailDelivered}}}),
     db.auditLog.create({data:{action:'PUBLIC_CALLBACK_REQUEST_PHONE',entityType:'PublicLead',entityId:phoneId,summary:'Telefon bazlı arama talebi kotası kaydedildi.'}})
   ]);
 
-  return NextResponse.json({ok:true});
+  return NextResponse.json({ok:true,leadId:lead.id,mailDelivered});
 }
 
 export const POST=withApiErrors(POST__handler);
