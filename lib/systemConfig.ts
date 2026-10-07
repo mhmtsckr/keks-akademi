@@ -11,7 +11,7 @@ export type ProductPricing={
   source:'DEFAULT'|'ADMIN';
 };
 
-export const FEATURE_KEYS=['SMART_COACH','ADAPTIVE_RECOMMENDATION','TODAY_PLAN','SMART_NOTIFICATIONS','MICRO_LEARNING','GAMIFICATION'] as const;
+export const FEATURE_KEYS=['SMART_COACH','MIZA_ORCHESTRATOR','ADAPTIVE_RECOMMENDATION','TODAY_PLAN','SMART_NOTIFICATIONS','MICRO_LEARNING','GAMIFICATION'] as const;
 export type FeatureMode='ALL'|'OFF'|'PILOT';
 export type FeatureKey=typeof FEATURE_KEYS[number];
 export type FeatureFlagConfig={
@@ -28,6 +28,11 @@ export const FEATURE_FLAG_DEFINITIONS:Record<FeatureKey,{label:string;descriptio
   SMART_COACH:{
     label:'Akıllı Koç ve Haftalık Plan',
     description:'Öğrencinin performans, tekrar ve konu verilerinden açıklanabilir haftalık plan üretir.',
+    defaultMode:'ALL'
+  },
+  MIZA_ORCHESTRATOR:{
+    label:'MİZA Öğrenme Orkestratörü',
+    description:'Bugünün Planı, koç görevleri, gecikmiş tekrarlar ve gerçek kapasiteyi tek uygulanabilir sıraya çevirir; çalışma sonucunu KEKS verisine geri yazar.',
     defaultMode:'ALL'
   },
   ADAPTIVE_RECOMMENDATION:{
