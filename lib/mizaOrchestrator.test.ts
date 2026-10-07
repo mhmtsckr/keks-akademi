@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {buildMizaTodayOrchestration,formatMizaTodayReply,isMizaTodayPlanIntent} from './mizaOrchestrator';
+import {buildMizaCoachHandoffReply,buildMizaTodayOrchestration,formatMizaTodayReply,isMizaCoachAuthorityIntent,isMizaTodayPlanIntent} from './mizaOrchestrator';
 
 describe('MİZA bugün niyeti',()=>{
   it('bugün ne çalışayım varyasyonlarını yakalar',()=>{
@@ -27,5 +27,20 @@ describe('MİZA günlük orkestrasyon',()=>{
     expect(x.tasks[1].resultMode).toBe('REVIEW_FLOW');
     expect(x.coachBoundary.authority).toBe('COACH_OVERRIDES_MIZA');
     expect(formatMizaTodayReply(x)).toContain('Toplam yaklaşık süre: 38 dk');
+  });
+});
+
+
+describe('MİZA koç yetkisi',()=>{
+  it('plan ve görev değişikliği isteyen mesajları koça devredilecek olarak işaretler',()=>{
+    expect(isMizaCoachAuthorityIntent('Koçumun verdiği görevi azaltır mısın?')).toBe(true);
+    expect(isMizaCoachAuthorityIntent('Bugünkü görevi yapmasam olur mu?')).toBe(true);
+    expect(isMizaCoachAuthorityIntent('Haftalık planımı revize et.')).toBe(true);
+    expect(isMizaCoachAuthorityIntent('Bugün ne çalışayım?')).toBe(false);
+  });
+
+  it('koç devrinde planın değiştirilmediğini açıkça söyler',()=>{
+    expect(buildMizaCoachHandoffReply({handoffCreated:true,hasCoach:true})).toContain('planı değiştirmedi');
+    expect(buildMizaCoachHandoffReply({handoffCreated:false,hasCoach:false})).toContain('MİZA bunu tek başına uygulamaz');
   });
 });
