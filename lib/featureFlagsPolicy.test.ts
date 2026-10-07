@@ -18,6 +18,7 @@ describe('feature flag rollout controls',()=>{
   it('keeps rollout keys in one central registry',()=>{
     expect(FEATURE_KEYS).toEqual([
       'SMART_COACH',
+      'MIZA_ORCHESTRATOR',
       'ADAPTIVE_RECOMMENDATION',
       'TODAY_PLAN',
       'SMART_NOTIFICATIONS',
@@ -37,10 +38,13 @@ describe('feature flag rollout controls',()=>{
     const studentPage=read('app/ogrenci/page.tsx');
     const todayApi=read('app/api/student/today/route.ts');
     const notificationsApi=read('app/api/student/notifications/route.ts');
+    const mizaApi=read('app/api/student/miza/today/route.ts');
 
+    expect(studentPage).toContain('featureFlags.MIZA_ORCHESTRATOR');
     expect(studentPage).toContain('featureFlags.TODAY_PLAN');
     expect(studentPage).toContain('featureFlags.SMART_NOTIFICATIONS');
     expect(todayApi).toContain("isFeatureEnabled('TODAY_PLAN'");
+    expect(mizaApi).toContain("isFeatureEnabled('MIZA_ORCHESTRATOR'");
     expect(notificationsApi).toContain("isFeatureEnabled('SMART_NOTIFICATIONS'");
   });
 });
