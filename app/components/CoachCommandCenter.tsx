@@ -10,9 +10,10 @@ type PriorityStudent={
   overdueActions:number;openAlerts:number;dueReviews:number;lastActivity:string|null;
   activePlans?:number;profileReady?:boolean;screeningReady?:boolean;preInterviewReady?:boolean;
   monthlyDevelopmentReady?:boolean;hasExamData?:boolean;
+  mizaTodaySummary?:{totalTasks?:number;completedTasks?:number;remainingTasks?:number;completionRate?:number;remainingEstimatedMinutes?:number;dueReviews?:number;coachTasks?:number}|null;
 };
 type AgendaItem={id:string;studentId:string;studentName:string;title:string;startsAt:string;endsAt:string;meetingUrl:string|null};
-type Task={id:string;title:string;description:string|null;priority:string;status:string;dueAt:string|null;student:{id:string;fullName:string}|null};
+type Task={id:string;title:string;description:string|null;priority:string;status:string;dueAt:string|null;sourceType?:string|null;student:{id:string;fullName:string}|null};
 
 export function CoachCommandCenter({students,agenda,initialTasks}:{students:PriorityStudent[];agenda:AgendaItem[];initialTasks:Task[]}){
   const [tasks,setTasks]=useState(initialTasks);
@@ -58,7 +59,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
         <div className="row"><button className={'btn '+(filter==='ALL'?'primary':'')} onClick={()=>setFilter('ALL')}>Tümü</button><button className={'btn '+(filter==='HIGH'?'primary':'')} onClick={()=>setFilter('HIGH')}>Acil</button><button className={'btn '+(filter==='MEDIUM'?'primary':'')} onClick={()=>setFilter('MEDIUM')}>İzlem</button></div></div>
         <div className="priorityQueue">{visible.slice(0,12).map(s=><a className="priorityStudent" href={'/koc/ogrenci/'+s.id} key={s.id}>
           <div className={'priorityDot '+s.priorityLevel.toLowerCase()}/>
-          <div className="priorityStudentMain"><strong>{s.fullName}</strong><span>{normalizeLegacyEducationLevel(s.gradeLevel)||'Grup yok'} · {s.studentCode}</span><small>{s.reasons.join(' · ')||'Aktif uyarı yok'}</small><small><strong>Önerilen koç aksiyonu:</strong> {s.suggestedAction}</small></div>
+          <div className="priorityStudentMain"><strong>{s.fullName}</strong><span>{normalizeLegacyEducationLevel(s.gradeLevel)||'Grup yok'} · {s.studentCode}</span><small>{s.reasons.join(' · ')||'Aktif uyarı yok'}</small>{s.mizaTodaySummary&&<small><strong>MİZA bugün:</strong> {s.mizaTodaySummary.completedTasks||0}/{s.mizaTodaySummary.totalTasks||0} görev · %{s.mizaTodaySummary.completionRate||0} · {s.mizaTodaySummary.remainingEstimatedMinutes||0} dk kalan{s.mizaTodaySummary.dueReviews?' · '+s.mizaTodaySummary.dueReviews+' tekrar':''}</small>}<small><strong>Önerilen koç aksiyonu:</strong> {s.suggestedAction}</small></div>
         </a>)}</div>
       </div>
 
@@ -76,8 +77,8 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
         <div className="moduleEyebrow">KOÇ TAKİP KUTUSU</div><h2>Bekleyen İşler</h2>
         {openTasks.length===0?<p className="muted">Açık koç görevi yok.</p>:openTasks.slice(0,12).map(t=><div className={'coachTaskRow '+(t.dueAt&&new Date(t.dueAt)<new Date()?'overdue':'')} key={t.id}>
           <button className="taskCheck" onClick={()=>complete(t.id)} aria-label="Görevi tamamla">✓</button>
-          <div><strong>{t.title}</strong><span>{t.student?.fullName||'Genel görev'}{t.dueAt?' · '+new Date(t.dueAt).toLocaleString('tr-TR'):''}</span></div>
-          <span className={'pill priority-'+t.priority.toLowerCase()}>{t.priority}</span>
+          <div><strong>{t.title}</strong><span>{t.student?.fullName||'Genel görev'}{t.dueAt?' · '+new Date(t.dueAt).toLocaleString('tr-TR'):''}</span>{t.sourceType==='MIZA_HANDOFF'&&<small className="muted">MİZA planı değiştirmedi; öğrenci talebi koç değerlendirmesi bekliyor.</small>}</div>
+          <div className="row">{t.sourceType==='MIZA_HANDOFF'&&<span className="pill">MİZA DEVİR</span>}<span className={'pill priority-'+t.priority.toLowerCase()}>{t.priority}</span></div>
         </div>)}
       </div>
   </div>;

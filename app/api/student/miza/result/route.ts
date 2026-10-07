@@ -6,6 +6,7 @@ import {HttpError,readJson,withApiErrors} from '@/lib/apiGuard';
 import {ensureTodayLearningPlan} from '@/lib/learningEngine';
 import {buildMizaTodayOrchestration} from '@/lib/mizaOrchestrator';
 import {isFeatureEnabled} from '@/lib/systemConfig';
+import {recordMizaDailySummary} from '@/lib/mizaLearningService';
 
 const schema=z.object({
   taskId:z.string().min(1).max(300),
@@ -92,6 +93,9 @@ async function POST__handler(req:Request){
     summary:'MİZA günlük görev sonucu kaydedildi; koç planı değiştirilmedi.',
     metadata:{taskId:task.id,source:task.source,metricType:task.metricType,targetValue:target,achievedValue:achieved,completed}
   }});
+
+  const refreshedToday=await ensureTodayLearningPlan(user.student.id);
+  await recordMizaDailySummary(user.student.id,buildMizaTodayOrchestration(refreshedToday));
 
   return NextResponse.json({ok:true,taskId:task.id,completed,achievedValue:achieved,logId:log.id});
 }
