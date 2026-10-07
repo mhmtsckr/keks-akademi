@@ -31,14 +31,14 @@ export default function SubscriptionPlansPage(){
     active="abonelik"
     eyebrow="KEKS AKADEMİ"
     title="Abonelik Planları"
-    description="Önce eğitim düzeyinizi veya hazırlandığınız sınavı seçin; ardından size özel Aylık, 3 Aylık, 6 Aylık ve Yıllık KEKS seçeneklerini karşılaştırın."
+    description="Eğitim düzeyinizi veya hazırlandığınız sınavı seçin; KEKS hedef süreniz ve takip ihtiyacınıza göre uygun abonelik süresini açıklayarak önersin."
     wide
   >
     <section className="section">
       <PortalSectionTitle
         eyebrow="ÖĞRENCİ"
         title="Eğitim düzeyini veya sınav türünü seç"
-        description="Seçiminize göre dört farklı süre seçeneği ve o gruba özel fiyatlar otomatik gösterilir."
+        description="Seçiminize göre fiyatlar otomatik gelir; hedefe kalan süre, takip ihtiyacı ve çalışma düzeninize göre hangi abonelik süresinin daha uygun olduğu ayrıca açıklanır."
       />
       <StudentPlanSelector/>
     </section>
