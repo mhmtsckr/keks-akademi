@@ -11,11 +11,13 @@ import { AdminErrorMonitor } from '@/app/components/AdminErrorMonitor';
 import { normalizeLegacyEducationLevel } from '@/lib/educationLevels';
 import { AdminPartnerCoachNetwork } from '@/app/components/AdminPartnerCoachNetwork';
 import { AdminTestimonials } from '@/app/components/AdminTestimonials';
+import { AdminSalesCRM } from '@/app/components/AdminSalesCRM';
 
-type Tab='overview'|'workflow'|'users'|'academic'|'payments'|'security';
+type Tab='overview'|'sales'|'workflow'|'users'|'academic'|'payments'|'security';
 
 const TAB_META:Record<Tab,{eyebrow:string;label:string;description:string}>={
   overview:{eyebrow:'SİSTEM DURUMU',label:'Genel Bakış',description:'Operasyon, kullanım ve ödeme göstergeleri'},
+  sales:{eyebrow:'SATIŞ & CRM',label:'Lead & Satış',description:'Talep hunisi, paket önerisi ve kazanılan satışlar'},
   workflow:{eyebrow:'ONAY AKIŞI',label:'Değerlendirme & Plan',description:'Eğilim raporu ve kişisel çalışma planı onay merkezi'},
   users:{eyebrow:'HESAP & ROL',label:'Kullanıcı Yönetimi',description:'Koç, öğrenci, veli ve yönetici hesapları'},
   academic:{eyebrow:'AKADEMİK İÇERİK',label:'İçerik & Soru Bankası',description:'Soru onayı, kalite ve mikro içerik yönetimi'},
@@ -241,7 +243,7 @@ export function AdminConsole(){
     <div className="adminPanelNavigator">
       <div className="adminPanelNavigatorHead">
         <div><div className="moduleEyebrow">YÖNETİM ALANLARI</div><h2>KEKS Yönetim Haritası</h2><p className="muted">İşlem türüne göre yönetim alanını seçin. Her bölüm kendi operasyonuna odaklanır.</p></div>
-        <span className="pill">6 ana alan</span>
+        <span className="pill">7 ana alan</span>
       </div>
       <div className="adminPanelNavGrid">
         {(Object.keys(TAB_META) as Tab[]).map(k=>{const meta=TAB_META[k];return <button key={k} className={'adminPanelNavItem '+(tab===k?'active':'')} onClick={()=>{setTab(k);setMsg('')}}>
@@ -290,6 +292,10 @@ export function AdminConsole(){
           </div>
         </div>
       </div>
+    </section>}
+
+    {tab==='sales'&&<section className="adminPanelSection">
+      <AdminSalesCRM/>
     </section>}
 
     {tab==='workflow'&&<section className="adminPanelSection">
