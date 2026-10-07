@@ -17,6 +17,7 @@ import { CoachCohortAnalytics } from '@/app/components/CoachCohortAnalytics';
 import { CoachQualityOperations } from '@/app/components/CoachQualityOperations';
 import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { PartnerCoachProfile } from '@/app/components/PartnerCoachProfile';
+import { RealUserReviewPrompt } from '@/app/components/RealUserReviewPrompt';
 
 export default async function CoachPage() {
   const user = await currentUser();
@@ -132,6 +133,8 @@ export default async function CoachPage() {
     wide
   >
     <section className="section"><KeksCoreLoop compact/></section>
+
+    {user.role==='COACH'&&<section className="section"><RealUserReviewPrompt/></section>}
 
     <section id="morning-brief" className="section section-anchor">
       <CoachMorningBrief/>
