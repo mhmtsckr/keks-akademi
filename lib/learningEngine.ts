@@ -1062,8 +1062,18 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
         :buildActionWhy({
             title:action.title,
             latestAccuracy:m?.latestTestAccuracy??m?.accuracy??null,
-            masteryStatus:m?.status??null
-          })
+            masteryStatus:m?.status??null,
+            masteryRiskReasons:m?.riskReasons??[]
+          }),
+      masteryStatus:m?.status??null,
+      masteryScore:m?.score??null,
+      masteryRiskReasons:m?.riskReasons??[],
+      forgettingRisk:Boolean(m?.forgettingRisk),
+      forgettingRiskScore:m?.forgettingRiskScore??null,
+      primaryErrorReasonLabel:m?.primaryErrorReasonLabel??null,
+      avgSecondsPerQuestion:m?.avgSecondsPerQuestion??null,
+      targetSecondsPerQuestion:m?.targetSecondsPerQuestion??null,
+      resourceEfficiencyStatus:m?.resourceEfficiencyStatus??null
     };
     items.push({...item,sequence:todayPlanSequenceRank(item)});
   }
