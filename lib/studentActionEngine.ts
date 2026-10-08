@@ -25,6 +25,15 @@ export type NextBestAction={
   badge:string;
   ctaLabel:string;
   executionTarget:'#miza-orkestrator';
+  masteryStatus:string|null;
+  masteryScore:number|null;
+  masteryRiskReasons:string[];
+  forgettingRisk:boolean;
+  forgettingRiskScore:number|null;
+  primaryErrorReasonLabel:string|null;
+  avgSecondsPerQuestion:number|null;
+  targetSecondsPerQuestion:number|null;
+  resourceEfficiencyStatus:string|null;
 };
 
 export function selectNextBestAction(plan:any[]):NextBestAction|null{
@@ -61,7 +70,16 @@ export function selectNextBestAction(plan:any[]):NextBestAction|null{
     priority,
     badge,
     ctaLabel,
-    executionTarget:'#miza-orkestrator'
+    executionTarget:'#miza-orkestrator',
+    masteryStatus:typeof item.masteryStatus==='string'?item.masteryStatus:null,
+    masteryScore:Number.isFinite(Number(item.masteryScore))?Number(item.masteryScore):null,
+    masteryRiskReasons:Array.isArray(item.masteryRiskReasons)?item.masteryRiskReasons.map(String).slice(0,3):[],
+    forgettingRisk:Boolean(item.forgettingRisk),
+    forgettingRiskScore:Number.isFinite(Number(item.forgettingRiskScore))?Number(item.forgettingRiskScore):null,
+    primaryErrorReasonLabel:typeof item.primaryErrorReasonLabel==='string'?item.primaryErrorReasonLabel:null,
+    avgSecondsPerQuestion:Number.isFinite(Number(item.avgSecondsPerQuestion))?Number(item.avgSecondsPerQuestion):null,
+    targetSecondsPerQuestion:Number.isFinite(Number(item.targetSecondsPerQuestion))?Number(item.targetSecondsPerQuestion):null,
+    resourceEfficiencyStatus:typeof item.resourceEfficiencyStatus==='string'?item.resourceEfficiencyStatus:null
   };
 }
 
