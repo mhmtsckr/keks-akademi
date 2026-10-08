@@ -30,6 +30,14 @@ function dt(value?:string|null){
   return new Date(value).toLocaleString('tr-TR');
 }
 
+function pct(v?:number|null){return v==null?'—':'%'+v;}
+const LIFECYCLE_LABELS:Record<string,string>={
+  LEAD:'Lead',CONTACT:'Görüşme',PACKAGE:'Paket önerildi',
+  UNVERIFIED_SALE:'Satış bildirimi · ödeme doğrulanmadı',
+  LOST_SALE:'Satış kaybedildi',PURCHASED:'Satın aldı',
+  FIRST_30_DAYS:'30 günlük kullanım',ACTIVE:'30 gün sonrası aktif',
+  RENEWAL_DUE:'Yenileme takibi',RENEWED:'Yeniledi',CHURNED:'Ayrıldı'
+};
 function money(kurus?:number|null){
   if(kurus==null)return '—';
   return new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(kurus/100);
@@ -74,8 +82,8 @@ export function AdminSalesCRM(){
     <div className="moduleHeaderRow">
       <div>
         <div className="moduleEyebrow">SATIŞ OPERASYONU</div>
-        <h2>Mini CRM · Lead Hunisi</h2>
-        <p className="muted">Sizi Arayalım ve gerçek WhatsApp paket taleplerini tek satış hunisinde yönetin. Eğitim düzeyi, önerilen paket ve kazanılan satış verisi ayrı tutulur.</p>
+        <h2>KEKS CRM · Müşteri Yaşam Döngüsü</h2>
+        <p className="muted">Lead → Görüşme → Paket önerildi → Doğrulanmış satın alma → İlk 30 gün → Yenileme → Ayrılma. Asıl değer yalnız kayıt değil, gözlenen öğrenci etkinliği, plan uygulaması ve koç görüşmesine katılımdır.</p>
       </div>
       <button className="btn" onClick={load}>Yenile</button>
     </div>
@@ -85,9 +93,24 @@ export function AdminSalesCRM(){
     {summary&&<div className="salesKpiGrid">
       <div className="card"><span className="moduleEyebrow">TOPLAM LEAD</span><strong>{summary.total}</strong><small>Aktif: {summary.active}</small></div>
       <div className="card"><span className="moduleEyebrow">YENİ</span><strong>{statusMap.NEW||0}</strong><small>İlk temas bekliyor</small></div>
-      <div className="card"><span className="moduleEyebrow">KAZANILDI</span><strong>{summary.won||0}</strong><small>Dönüşüm %{summary.conversionRate}</small></div>
-      <div className="card"><span className="moduleEyebrow">CRM CİROSU</span><strong>{money(summary.revenueKurus)}</strong><small>Yalnız kazanılmış leadler</small></div>
+      <div className="card"><span className="moduleEyebrow">BİLDİRİLEN SATIŞ</span><strong>{summary.won||0}</strong><small>Elle kaydedilen satış; ödeme doğrulaması değildir.</small></div>
+      <div className="card"><span className="moduleEyebrow">BİLDİRİLEN CİRO</span><strong>{money(summary.revenueKurus)}</strong><small>CRM beyanı; tahsil edilmiş ödeme toplamı değildir.</small></div>
     </div>}
+
+    {summary?.lifecycle&&<section className="card" style={{marginTop:14}}>
+      <div className="moduleEyebrow">30 GÜNLÜK KULLANIM VE YENİLEME</div>
+      <h3>Satın alma sonrası gerçek kullanım</h3>
+      <p className="muted">{summary.lifecycleScope}</p>
+      <div className="salesKpiGrid">
+        <div><strong>{summary.lifecycle.linkedPurchasers}</strong><small>Öğrenci hesabına bağlı, doğrulanmış satın alma</small></div>
+        <div><strong>{pct(summary.lifecycle.retainedDay30Pct)}</strong><small>30. günde üyeliği ve kaydedilmiş kullanımı olanlar · {summary.lifecycle.retainedDay30}/{summary.lifecycle.day30Eligible} olgunlaşmış müşteri</small></div>
+        <div><strong>{pct(summary.lifecycle.programAppliedPct)}</strong><small>İlk 30 günün son haftasında programının en az %60’ını uygulayanlar · {summary.lifecycle.programMeasured} ölçülebilir</small></div>
+        <div><strong>{pct(summary.lifecycle.attendedCoachPct)}</strong><small>İlk 30 günde en az bir tamamlanmış koç görüşmesi · {summary.lifecycle.sessionsMeasured} görüşme kaydı olan</small></div>
+        <div><strong>{summary.lifecycle.renewed}</strong><small>İkinci doğrulanmış abonelik ödemesi</small></div>
+        <div><strong>{summary.lifecycle.churned}</strong><small>Abonelik bitiminden 7 gün sonra yenilemeyen</small></div>
+      </div>
+      <p className="muted">30 günlük oranlar yalnız ilk ödemesinden itibaren 30 gün geçmiş ve öğrenciyle açıkça eşleştirilmiş müşteriler üzerinden hesaplanır. Veri yoksa oran gösterilmez. Kayıt eksikliği, öğrencinin gerçek hayatta çalışmadığını kanıtlamaz.</p>
+    </section>}
 
     {summary&&<div className="salesAnalyticsGrid">
       <div className="card">
@@ -151,6 +174,7 @@ function LeadCard({lead,onSaved}:{lead:Lead;onSaved:(message:string)=>Promise<vo
   const [soldTerm,setSoldTerm]=useState(lead.soldTerm||lead.recommendedTerm||'sixMonths');
   const [saleTl,setSaleTl]=useState(lead.saleAmountKurus!=null?String(lead.saleAmountKurus/100):'');
   const [lostReason,setLostReason]=useState(lead.lostReason||'');
+  const [studentCode,setStudentCode]=useState(lead.student?.studentCode||'');
   const [busy,setBusy]=useState(false);
 
   useEffect(()=>{
@@ -161,12 +185,16 @@ function LeadCard({lead,onSaved}:{lead:Lead;onSaved:(message:string)=>Promise<vo
     setSoldTerm(lead.soldTerm||lead.recommendedTerm||'sixMonths');
     setSaleTl(lead.saleAmountKurus!=null?String(lead.saleAmountKurus/100):'');
     setLostReason(lead.lostReason||'');
+    setStudentCode(lead.student?.studentCode||'');
   },[lead]);
 
   async function save(){
     setBusy(true);
     try{
       const payload:any={id:lead.id,status};
+      if(studentCode.trim()!==(lead.student?.studentCode||'')){
+        payload.studentCode=studentCode.trim()||null;
+      }
       if(status==='PACKAGE_RECOMMENDED'||status==='WON'){
         payload.recommendedPlanId=recommendedPlanId||null;
         payload.recommendedTerm=recommendedTerm||null;
@@ -207,7 +235,17 @@ function LeadCard({lead,onSaved}:{lead:Lead;onSaved:(message:string)=>Promise<vo
       {lead.lastMessage&&<p><strong>Son WhatsApp:</strong> {lead.lastMessage}</p>}
     </div>}
 
+    <div className="salesLeadContext">
+      <strong>Müşteri yaşam döngüsü: {LIFECYCLE_LABELS[lead.lifecycle?.stage]||'Veri bekleniyor'}</strong>
+      <p>{lead.lifecycle?.guidance||'Yaşam döngüsü bilgisi yüklenemedi.'}</p>
+      {lead.lifecycle?.firstPurchaseAt&&<p>İlk doğrulanmış satın alma: {dt(lead.lifecycle.firstPurchaseAt)} · 30 gün dolum: {dt(lead.lifecycle.day30At)}</p>}
+      {lead.lifecycle?.day30Matured&&<p>30. gün kayıtlı kullanım: {lead.lifecycle.activityAtDay30?'Var':'Kaydedilmemiş'} · Program uygulama: {pct(lead.lifecycle.programCompletionPct)} · Koç görüşmesine katılım: {pct(lead.lifecycle.sessionAttendancePct)}</p>}
+      {lead.lifecycle?.renewalDate&&<p>Mevcut abonelik bitişi: {dt(lead.lifecycle.renewalDate)}</p>}
+      {lead.lifecycle?.renewed&&<p>Yenileme: ikinci doğrulanmış ödeme mevcut.</p>}
+    </div>
     <div className="salesLeadEditor">
+      <label className="salesLeadWide"><span>Öğrenci koduyla eşleştir</span><input value={studentCode} maxLength={40} onChange={e=>setStudentCode(e.target.value)} placeholder="KEKS öğrenci kodu"/></label>
+      <p className="muted salesLeadWide">Öğrenci kodunu kontrol ederek eşleştirin. Telefon veya isim benzerliğine göre otomatik bağlama yapılmaz. Kodu temizleyip kaydetmek ilişkiyi kaldırır.</p>
       <label><span>Aşama</span><select value={status} onChange={e=>setStatus(e.target.value as SalesLeadStatus)}>{SALES_LEAD_STATUSES.map(s=><option key={s} value={s}>{SALES_LEAD_STATUS_LABELS[s]}</option>)}</select></label>
 
       {(status==='PACKAGE_RECOMMENDED'||status==='WON')&&<>

@@ -95,3 +95,21 @@ ALTER TABLE "SalesLead"
   ADD COLUMN IF NOT EXISTS "inquiryCount" INTEGER NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS "callbackRequestCount" INTEGER NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS "whatsappRequestCount" INTEGER NOT NULL DEFAULT 0;
+
+-- CRM lifecycle: nullable student association. Existing leads are not matched by phone.
+ALTER TABLE "SalesLead"
+  ADD COLUMN IF NOT EXISTS "studentId" TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "SalesLead_studentId_key" ON "SalesLead"("studentId");
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'SalesLead_studentId_fkey'
+  ) THEN
+    ALTER TABLE "SalesLead"
+      ADD CONSTRAINT "SalesLead_studentId_fkey"
+      FOREIGN KEY ("studentId") REFERENCES "Student"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

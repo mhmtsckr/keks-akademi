@@ -5,11 +5,14 @@ import {db} from '@/lib/db';
 import {HttpError,readJson,withApiErrors} from '@/lib/apiGuard';
 import {writeAudit} from '@/lib/audit';
 import {SALES_LEAD_STATUSES,salesLeadTimestampPatch} from '@/lib/salesLead';
+import {fetchCrmLifecycleBatch} from '@/lib/crmLifecycleData';
+import {summarizeCrmLifecycle} from '@/lib/crmLifecycle';
 
 const term=z.enum(['monthly','threeMonths','sixMonths','annual']);
 
 const patchSchema=z.object({
   id:z.string().min(1),
+  studentCode:z.string().trim().max(40).nullable().optional(),
   status:z.enum(['NEW','CALLED','SPOKEN','PACKAGE_RECOMMENDED','WON','LOST']).optional(),
   recommendedPlanId:z.string().max(100).nullable().optional(),
   recommendedTerm:term.nullable().optional(),
@@ -47,7 +50,8 @@ async function GET__handler(req:Request){
     wonPackageCounts,
     revenue
   ]=await Promise.all([
-    db.salesLead.findMany({where,orderBy:[{updatedAt:'desc'}],take:300}),
+    db.salesLead.findMany({where,orderBy:[{updatedAt:'desc'}],take:300,
+      include:{student:{select:{studentCode:true}}}}),
     db.salesLead.count(),
     db.salesLead.groupBy({by:['status'],_count:{_all:true}}),
     db.salesLead.groupBy({by:['educationLevel'],where:{educationLevel:{not:null}},_count:{_all:true},_sum:{inquiryCount:true}}),
@@ -61,14 +65,28 @@ async function GET__handler(req:Request){
     db.salesLead.aggregate({where:{status:'WON'},_sum:{saleAmountKurus:true}})
   ]);
 
+  // Cohort KPIs are calculated over ALL explicitly linked customers, not the first
+  // 300 visible leads or the current CRM search/filter results.
+  const customerLinks=await db.salesLead.findMany({
+    where:{studentId:{not:null}},
+    select:{id:true,status:true,studentId:true}
+  });
+  const linkedIds=new Set(customerLinks.map(x=>x.id));
+  const lifecycle=await fetchCrmLifecycleBatch([
+    ...customerLinks,
+    ...leads.filter(x=>!linkedIds.has(x.id))
+  ]);
+  const lifecycleSummary=summarizeCrmLifecycle(customerLinks.map(x=>lifecycle[x.id]));
   const won=statusCounts.find(x=>x.status==='WON')?._count._all||0;
   const lost=statusCounts.find(x=>x.status==='LOST')?._count._all||0;
   const active=Math.max(0,total-won-lost);
 
   return NextResponse.json({
     ok:true,
-    leads,
+    leads:leads.map(x=>({...x,lifecycle:lifecycle[x.id]})),
     summary:{
+      lifecycle:lifecycleSummary,
+      lifecycleScope:'Tüm açıkça eşleştirilmiş öğrenci hesapları baz alınır; CRM arama ve filtrelerinden bağımsızdır.',
       total,
       active,
       won,
@@ -92,6 +110,22 @@ async function PATCH__handler(req:Request){
   if(!before)throw new HttpError(404,'Lead bulunamadı.');
 
   const nextStatus=input.status??before.status;
+  let studentIdPatch: {studentId:string|null}|undefined;
+  if(input.studentCode!==undefined){
+    if(input.studentCode===null||input.studentCode===''){
+      studentIdPatch={studentId:null};
+    }else{
+      const student=await db.student.findUnique({
+        where:{studentCode:input.studentCode},select:{id:true}
+      });
+      if(!student)throw new HttpError(404,'Bu öğrenci koduyla eşleşen kayıt bulunamadı.');
+      const existing=await db.salesLead.findFirst({
+        where:{studentId:student.id,id:{not:input.id}},select:{id:true}
+      });
+      if(existing)throw new HttpError(409,'Öğrenci başka bir CRM talebiyle ilişkilendirilmiş.');
+      studentIdPatch={studentId:student.id};
+    }
+  }
   const recommendedPlanId=input.recommendedPlanId===undefined?before.recommendedPlanId:input.recommendedPlanId;
   const recommendedTerm=input.recommendedTerm===undefined?before.recommendedTerm:input.recommendedTerm;
   const soldPlanId=input.soldPlanId===undefined?before.soldPlanId:input.soldPlanId;
@@ -108,6 +142,7 @@ async function PATCH__handler(req:Request){
   const row=await db.salesLead.update({
     where:{id:input.id},
     data:{
+      ...(studentIdPatch||{}),
       ...(input.status?{status:input.status,...(input.status!==before.status?salesLeadTimestampPatch(input.status):{})}:{}),
       ...(input.recommendedPlanId!==undefined?{recommendedPlanId:input.recommendedPlanId}:{}),
       ...(input.recommendedTerm!==undefined?{recommendedTerm:input.recommendedTerm}:{}),
@@ -130,6 +165,7 @@ async function PATCH__handler(req:Request){
     metadata:{
       beforeStatus:before.status,
       afterStatus:row.status,
+      studentLinkChanged:studentIdPatch!==undefined&&before.studentId!==row.studentId,
       recommendedPlanId:row.recommendedPlanId,
       recommendedTerm:row.recommendedTerm,
       soldPlanId:row.soldPlanId,
