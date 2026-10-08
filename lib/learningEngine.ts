@@ -1127,6 +1127,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
     ||(weakest?{id:'mastery-focus',examType:lastExam?.examType||'GENEL',subject:weakest.subject,topic:weakest.topic,updatedAt:now}:null);
 
   if(focusTopic){
+    const matchingMastery=masteryMap.get(focusTopic.subject+'|'+focusTopic.topic)||weakest;
     const alreadyHasTopicAction=items.some(x=>x.source==='ACTION'&&!x.completed&&x.subject===focusTopic.subject&&(x.topic||'Genel/Karma')===focusTopic.topic);
     if(!alreadyHasTopicAction){
       const item={
@@ -1140,12 +1141,22 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
         metricType:'MINUTES',
         estimatedMinutes:Math.min(35,capacity.recommendedFocusBlockMinutes||35),
         completed:false,
-        why:'Tamamlanmamış konu ve geçmiş performans sinyalleri birlikte değerlendirildi.'
+        why:matchingMastery?.status==='RISKY'
+          ?'Bu konu Riskli durumda. '+(matchingMastery.riskReasons||[]).slice(0,2).join(' ')
+          :'Tamamlanmamış konu ve geçmiş performans sinyalleri birlikte değerlendirildi.',
+        masteryStatus:matchingMastery?.status??null,
+        masteryScore:matchingMastery?.score??null,
+        masteryRiskReasons:matchingMastery?.riskReasons??[],
+        forgettingRisk:Boolean(matchingMastery?.forgettingRisk),
+        forgettingRiskScore:matchingMastery?.forgettingRiskScore??null,
+        primaryErrorReasonLabel:matchingMastery?.primaryErrorReasonLabel??null,
+        avgSecondsPerQuestion:matchingMastery?.avgSecondsPerQuestion??null,
+        targetSecondsPerQuestion:matchingMastery?.targetSecondsPerQuestion??null,
+        resourceEfficiencyStatus:matchingMastery?.resourceEfficiencyStatus??null
       };
       items.push({...item,sequence:todayPlanSequenceRank(item)});
     }
 
-    const matchingMastery=masteryMap.get(focusTopic.subject+'|'+focusTopic.topic)||weakest;
     const questionTarget=scalePracticeQuestionsForEducationLevel(dailyPracticeQuestionTarget({
       questionCapacity:capacity.questionCapacity,
       accuracy:matchingMastery?.latestTestAccuracy??matchingMastery?.accuracy??null
@@ -1178,8 +1189,18 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
           recentAccuracies,
           dueReviewCount:matchingDueReviews.length,
           dueReviewSteps:matchingDueReviews.map(x=>[0,1,3,7,14,28][x.stepIndex]??0),
-          masteryStatus:matchingMastery?.status??null
-        })
+          masteryStatus:matchingMastery?.status??null,
+          masteryRiskReasons:matchingMastery?.riskReasons??[]
+        }),
+        masteryStatus:matchingMastery?.status??null,
+        masteryScore:matchingMastery?.score??null,
+        masteryRiskReasons:matchingMastery?.riskReasons??[],
+        forgettingRisk:Boolean(matchingMastery?.forgettingRisk),
+        forgettingRiskScore:matchingMastery?.forgettingRiskScore??null,
+        primaryErrorReasonLabel:matchingMastery?.primaryErrorReasonLabel??null,
+        avgSecondsPerQuestion:matchingMastery?.avgSecondsPerQuestion??null,
+        targetSecondsPerQuestion:matchingMastery?.targetSecondsPerQuestion??null,
+        resourceEfficiencyStatus:matchingMastery?.resourceEfficiencyStatus??null
       };
       items.push({...item,sequence:todayPlanSequenceRank(item)});
     }
