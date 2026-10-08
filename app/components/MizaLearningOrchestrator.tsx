@@ -19,6 +19,15 @@ type MizaTask={
   actionId:string|null;
   reviewIds:string[];
   resultMode:'ACTION_QUESTIONS'|'ACTION_PROGRESS'|'PRACTICE_QUESTIONS'|'TOPIC_COMPLETE'|'REVIEW_FLOW'|'SIMPLE_COMPLETE';
+  masteryStatus:string|null;
+  masteryScore:number|null;
+  masteryRiskReasons:string[];
+  forgettingRisk:boolean;
+  forgettingRiskScore:number|null;
+  primaryErrorReasonLabel:string|null;
+  avgSecondsPerQuestion:number|null;
+  targetSecondsPerQuestion:number|null;
+  resourceEfficiencyStatus:string|null;
 };
 
 type Orchestration={
@@ -152,6 +161,15 @@ export function MizaLearningOrchestrator(){
         <div className="moduleEyebrow">MİZA · ŞİMDİ UYGULA</div>
         <h3>{nextTask.title}</h3>
         <p className="muted">{nextTask.why||'KEKS verisine göre şu anda en yüksek öncelikli görev.'}</p>
+        {nextTask.masteryStatus==='RISKY'&&<div className="notice error" style={{marginBottom:10}}>
+          <strong>Riskli çünkü:</strong> {(nextTask.masteryRiskReasons||[]).slice(0,2).join(' ')||'Konuya ait öğrenme sinyalleri zayıf.'}
+          <div className="muted" style={{marginTop:6}}>
+            {nextTask.forgettingRiskScore!=null?'Unutma riski '+nextTask.forgettingRiskScore+'/100. ':''}
+            {nextTask.avgSecondsPerQuestion!=null?'Soru başına süre '+Math.round(nextTask.avgSecondsPerQuestion)+' sn. ':''}
+            {nextTask.primaryErrorReasonLabel?'Baskın yanlış nedeni: '+nextTask.primaryErrorReasonLabel+'. ':''}
+            {nextTask.resourceEfficiencyStatus?'Kaynak verimliliği: '+nextTask.resourceEfficiencyStatus+'.':''}
+          </div>
+        </div>}
         <div className="row" style={{flexWrap:'wrap'}}>
           <span className="pill">{taskTarget(nextTask)}</span>
           <span className="pill">~{nextTask.estimatedMinutes} dk</span>
