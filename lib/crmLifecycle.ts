@@ -126,7 +126,7 @@ export function calculateCrmLifecycle(input:{
   }
   return {
     stage,label:CRM_LIFECYCLE_LABELS[stage],firstPurchaseAt:first?.startedAt||null,
-    day30At,day30Matured:matured,subscriptionAtDay30:activeAt30,activityAtDay30,
+    day30At,day30Matured:matured,subscriptionAtDay30:activeAt30,activityAtDay30:activityAt30,
     retainedAtDay30,programCompletionPct,sessionAttendancePct,
     renewed,activeSubscriptionNow:activeNow,renewalDate,last7DaysActive,guidance
   };
