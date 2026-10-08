@@ -481,11 +481,12 @@ function masteryTimingScore(avg:number|null|undefined,target:number|null|undefin
   return 35;
 }
 
-function masteryResourceScore(status:KnowledgeMasteryInput['resourceEfficiencyStatus']){
-  if(status==='NORMAL')return 90;
-  if(status==='WATCH')return 65;
-  if(status==='REVIEW')return 40;
-  return null;
+function masteryResourceScore(status:KnowledgeMasteryInput['resourceEfficiencyStatus'],accuracy:number|null|undefined){
+  const base=status==='NORMAL'?90:status==='WATCH'?65:status==='REVIEW'?40:null;
+  if(base==null&&accuracy==null)return null;
+  if(base==null)return clamp(Number(accuracy),0,100);
+  if(accuracy==null)return base;
+  return Math.round(base*.6+clamp(Number(accuracy),0,100)*.4);
 }
 
 function masteryWrongReasonPenalty(reason:ErrorReasonKey|null|undefined,count:number){
@@ -512,7 +513,7 @@ export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
     100
   ));
   const timingScore=masteryTimingScore(input.avgSecondsPerQuestion,input.targetSecondsPerQuestion);
-  const resourceScore=masteryResourceScore(input.resourceEfficiencyStatus);
+  const resourceScore=masteryResourceScore(input.resourceEfficiencyStatus,input.resourceAccuracy);
   const wrongReasonPenalty=Math.round(masteryWrongReasonPenalty(input.dominantErrorReason,input.dominantErrorWrongCount||0));
   const overduePenalty=Math.min(25,input.overdueReviews*8);
 
@@ -538,6 +539,8 @@ export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
   }
   if(input.resourceEfficiencyStatus==='REVIEW'){
     riskReasons.push('Bu konuyu içeren kaynak çalışması ilerleme üretmediği için gözden geçirilmeli.');
+  }else if(input.resourceAccuracy!=null&&input.resourceAccuracy<55){
+    riskReasons.push('Kaynak doğruluğu %'+Math.round(input.resourceAccuracy)+'; çalışma ilerlemesi düşük.');
   }
   if((input.dominantErrorReason==='UNUTMA'||input.dominantErrorReason==='BILGI_EKSIKLIGI'||input.dominantErrorReason==='YONTEM_BILMEME')&&(input.dominantErrorWrongCount||0)>=2){
     riskReasons.push('Baskın yanlış nedeni: '+ERROR_REASON_LABELS[input.dominantErrorReason]+'.');
@@ -587,11 +590,25 @@ export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
       ?'MEDIUM'
       :'LOW';
 
+  const forgettingRiskScore=Math.round(clamp(
+    (100-recencyScore)*.35+
+    (reviewSuccess==null?20:(100-reviewSuccess))*.35+
+    Math.min(100,input.overdueReviews*30)*.30,
+    0,
+    100
+  ));
+  const riskLevel: 'LOW'|'MEDIUM'|'HIGH'=
+    status==='RISKY'&&forgettingRiskScore>=60?'HIGH':
+    status==='RISKY'||forgettingRiskScore>=35?'MEDIUM':'LOW';
+
   return {
     score,
     status,
     reason,
     riskReasons,
+    primaryRiskReason:riskReasons[0]||null,
+    riskLevel,
+    forgettingRiskScore,
     confidence,
     components:{
       latestTestScore:latestTestAccuracy==null?null:Math.round(latestTestAccuracy),
