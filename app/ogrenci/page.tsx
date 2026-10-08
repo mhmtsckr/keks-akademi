@@ -44,6 +44,7 @@ import { educationLevelKey } from '@/lib/educationLevelProfile';
 import { RealUserReviewPrompt } from '@/app/components/RealUserReviewPrompt';
 import { MizaLearningOrchestrator } from '@/app/components/MizaLearningOrchestrator';
 import { StudentActionHub } from '@/app/components/StudentActionHub';
+import { StudentMasteryOverview } from '@/app/components/StudentMasteryOverview';
 
 function pretty(v: unknown) {
   if (!v) return '';
@@ -191,6 +192,10 @@ export default async function StudentPage() {
       <MizaLearningOrchestrator/>
     </section>}
 
+    <section id="konu-hakimiyeti" className="section section-anchor">
+      <StudentMasteryOverview/>
+    </section>
+
     <section className="section">
       <details className="card">
         <summary>Bugünün ayrıntıları ve diğer öğrenci araçları</summary>
@@ -220,6 +225,7 @@ export default async function StudentPage() {
           {href:'#programlar',title:'Kişisel Planlar',description:'Yıllık, aylık, haftalık ve günlük plan'}
         ]},
         {label:'ÖĞRENME & TEKRAR',description:'Yanlışları kapat, bilgiyi kalıcı hâle getir.',items:[
+          {href:'#konu-hakimiyeti',title:'Konu Hâkimiyeti',description:'Yeni → Öğreniliyor → Pekiştiriliyor → Kalıcı → Riskli',badge:'AÇIKLANABİLİR'},
           {href:'#yanlis-soru-bankasi',title:'Yanlış Soru Bankası',description:'Fotoğraf/metin yükle ve tekrar görevine dönüştür',badge:'0–1–3–7–14–28'},
           {href:'#ogrenme-tekrar',title:'Çalışma Teknikleri',description:'Pomodoro, aktif hatırlama, Feynman ve diğer teknikler'}
         ]},

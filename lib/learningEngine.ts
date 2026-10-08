@@ -4,6 +4,7 @@ import { aggregateInterventionPatterns,buildImpactHeadline,classifyCoachDecision
 import { rankGoalContributionAreas,targetNetFromBenchmarks } from '@/lib/goalDistance';
 import { buildActionWhy,buildPracticeWhy,buildReviewWhy } from '@/lib/planExplanation';
 import {publicEducationContext,resolveEducationLevelProfile,scalePracticeQuestionsForEducationLevel,subjectMatchesEducationLevel} from '@/lib/educationLevelProfile';
+import {listResourceTracking} from '@/lib/resourceTracking';
 
 export type MasteryStatus='NEW'|'LEARNING'|'REINFORCING'|'DURABLE'|'RISKY';
 
@@ -453,6 +454,12 @@ export type KnowledgeMasteryInput={
   reviewCorrect:number;
   overdueReviews:number;
   daysSinceLastEvidence:number;
+  avgSecondsPerQuestion?:number|null;
+  targetSecondsPerQuestion?:number|null;
+  dominantErrorReason?:ErrorReasonKey|null;
+  dominantErrorWrongCount?:number;
+  resourceEfficiencyStatus?:'NEW'|'NORMAL'|'WATCH'|'REVIEW'|null;
+  resourceAccuracy?:number|null;
 };
 
 function masteryRecencyScore(days:number){
@@ -462,6 +469,32 @@ function masteryRecencyScore(days:number){
   if(days<=21)return 60;
   if(days<=35)return 40;
   return 20;
+}
+
+function masteryTimingScore(avg:number|null|undefined,target:number|null|undefined){
+  if(avg==null||target==null||avg<=0||target<=0)return null;
+  const ratio=avg/target;
+  if(ratio<=.9)return 100;
+  if(ratio<=1.05)return 90;
+  if(ratio<=1.2)return 75;
+  if(ratio<=1.4)return 55;
+  return 35;
+}
+
+function masteryResourceScore(status:KnowledgeMasteryInput['resourceEfficiencyStatus']){
+  if(status==='NORMAL')return 90;
+  if(status==='WATCH')return 65;
+  if(status==='REVIEW')return 40;
+  return null;
+}
+
+function masteryWrongReasonPenalty(reason:ErrorReasonKey|null|undefined,count:number){
+  if(!reason||count<=0)return 0;
+  if(reason==='UNUTMA'||reason==='BILGI_EKSIKLIGI'||reason==='YONTEM_BILMEME')return Math.min(12,4+count*2);
+  if(reason==='SURE')return Math.min(8,2+count*1.5);
+  if(reason==='ISLEM_HATASI'||reason==='SORU_KOKU')return Math.min(6,1+count);
+  if(reason==='DIKKAT')return Math.min(5,1+count*.75);
+  return 0;
 }
 
 export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
@@ -478,53 +511,74 @@ export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
     0,
     100
   ));
+  const timingScore=masteryTimingScore(input.avgSecondsPerQuestion,input.targetSecondsPerQuestion);
+  const resourceScore=masteryResourceScore(input.resourceEfficiencyStatus);
+  const wrongReasonPenalty=Math.round(masteryWrongReasonPenalty(input.dominantErrorReason,input.dominantErrorWrongCount||0));
   const overduePenalty=Math.min(25,input.overdueReviews*8);
-  const score=Math.round(clamp(
-    testScore*.45+
-    reviewScore*.30+
-    recencyScore*.15+
-    evidenceScore*.10-
-    overduePenalty,
-    0,
-    100
-  ));
+
+  const weighted=[
+    {value:testScore,weight:.30},
+    {value:reviewScore,weight:.25},
+    {value:recencyScore,weight:.12},
+    {value:evidenceScore,weight:.10},
+    {value:timingScore,weight:.13},
+    {value:resourceScore,weight:.10}
+  ].filter(x=>x.value!=null) as {value:number;weight:number}[];
+  const weightTotal=weighted.reduce((n,x)=>n+x.weight,0)||1;
+  const weightedBase=weighted.reduce((n,x)=>n+x.value*x.weight,0)/weightTotal;
+  const score=Math.round(clamp(weightedBase-overduePenalty-wrongReasonPenalty,0,100));
+
+  const riskReasons:string[]=[];
+  if(input.overdueReviews>=2)riskReasons.push(input.overdueReviews+' tekrar gecikmiş.');
+  if(input.daysSinceLastEvidence>28)riskReasons.push('Son güvenilir çalışma '+input.daysSinceLastEvidence+' gün önce.');
+  if(latestTestAccuracy!=null&&latestTestAccuracy<55)riskReasons.push('Son test doğruluğu %'+Math.round(latestTestAccuracy)+'.');
+  if(reviewSuccess!=null&&input.reviewTotal>=2&&reviewSuccess<55)riskReasons.push('Tekrar başarısı %'+Math.round(reviewSuccess)+'.');
+  if(timingScore!=null&&timingScore<=55&&input.avgSecondsPerQuestion!=null){
+    riskReasons.push('Soru başına süre yaklaşık '+Math.round(input.avgSecondsPerQuestion)+' sn; beklenen hızın belirgin üzerinde.');
+  }
+  if(input.resourceEfficiencyStatus==='REVIEW'){
+    riskReasons.push('Bu konuyu içeren kaynak çalışması ilerleme üretmediği için gözden geçirilmeli.');
+  }
+  if((input.dominantErrorReason==='UNUTMA'||input.dominantErrorReason==='BILGI_EKSIKLIGI'||input.dominantErrorReason==='YONTEM_BILMEME')&&(input.dominantErrorWrongCount||0)>=2){
+    riskReasons.push('Baskın yanlış nedeni: '+ERROR_REASON_LABELS[input.dominantErrorReason]+'.');
+  }
 
   let status:MasteryStatus='NEW';
-  let reason='Konu için henüz yeterli test ve tekrar kanıtı oluşmadı.';
+  let reason='Konu için henüz yeterli öğrenme kanıtı oluşmadı.';
 
   if(input.totalQuestions<5&&input.reviewTotal===0){
     status='NEW';
-  }else if(
+  }else if(riskReasons.length>0&&(
     input.overdueReviews>=2||
     input.daysSinceLastEvidence>28||
     (latestTestAccuracy!=null&&latestTestAccuracy<55)||
-    (reviewSuccess!=null&&input.reviewTotal>=2&&reviewSuccess<55)
-  ){
+    (reviewSuccess!=null&&input.reviewTotal>=2&&reviewSuccess<55)||
+    (riskReasons.length>=2&&score<65)
+  )){
     status='RISKY';
-    if(input.overdueReviews>=2)reason=input.overdueReviews+' gecikmiş tekrar bulunduğu için konu yeniden ele alınmalı.';
-    else if(input.daysSinceLastEvidence>28)reason='Son güvenilir kanıtın üzerinden '+input.daysSinceLastEvidence+' gün geçtiği için unutma riski yükseldi.';
-    else if(latestTestAccuracy!=null&&latestTestAccuracy<55)reason='Son test doğruluğu %'+Math.round(latestTestAccuracy)+' olduğu için konu riskli durumda.';
-    else reason='Tekrar başarısı düşük olduğu için konu riskli durumda.';
+    reason=riskReasons[0];
   }else if(
     input.totalQuestions<12||
     input.attempts<2||
     (latestTestAccuracy!=null&&latestTestAccuracy<65)
   ){
     status='LEARNING';
-    reason='Konu için temel öğrenme kanıtı var ancak test miktarı veya son test başarısı henüz yeterli değil.';
+    reason='Temel öğrenme başladı; yeterli test, tekrar ve hız kanıtı henüz oluşmadı.';
   }else if(
     latestTestAccuracy==null||
     latestTestAccuracy<85||
     input.reviewTotal<2||
     reviewSuccess==null||
     reviewSuccess<80||
-    input.daysSinceLastEvidence>14
+    input.daysSinceLastEvidence>14||
+    (timingScore!=null&&timingScore<75)||
+    input.resourceEfficiencyStatus==='WATCH'
   ){
     status='REINFORCING';
-    reason='Temel öğrenme oluşmuş; kalıcılık için son test, tekrar başarısı ve güncellik sinyallerinin birlikte güçlenmesi gerekiyor.';
+    reason='Konu öğrenilmiş görünüyor; kalıcılık için test, tekrar, hız ve kaynak verimliliği sinyallerinin birlikte güçlenmesi gerekiyor.';
   }else{
     status='DURABLE';
-    reason='Son test, tekrar başarısı ve güncellik sinyalleri birlikte güçlü olduğu için bilgi kalıcı kabul ediliyor.';
+    reason='Test, tekrar, hız, güncellik ve çalışma verimliliği sinyalleri birlikte güçlü.';
   }
 
   const confidence=input.totalQuestions>=30&&input.attempts>=3&&input.reviewTotal>=2
@@ -537,6 +591,7 @@ export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
     score,
     status,
     reason,
+    riskReasons,
     confidence,
     components:{
       latestTestScore:latestTestAccuracy==null?null:Math.round(latestTestAccuracy),
@@ -544,6 +599,9 @@ export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
       reviewSuccess:reviewSuccess==null?null:Math.round(reviewSuccess),
       recencyScore,
       evidenceScore,
+      timingScore,
+      resourceScore,
+      wrongReasonPenalty,
       overduePenalty
     }
   };
@@ -551,7 +609,7 @@ export function calculateKnowledgeMastery(input:KnowledgeMasteryInput){
 
 export async function buildTopicMastery(studentId:string,now=new Date()){
   const since=new Date(now.getTime()-120*86400000);
-  const [practice,reviews,topics]=await Promise.all([
+  const [practice,reviews,topics,analytics,resources]=await Promise.all([
     db.practiceLog.findMany({
       where:{studentId,date:{gte:since}},
       select:{subject:true,topic:true,total:true,correct:true,wrong:true,blank:true,errorReason:true,date:true},
@@ -565,13 +623,21 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
     db.topicProgress.findMany({
       where:{studentId},
       select:{subject:true,topic:true,completed:true,completedAt:true,updatedAt:true}
-    })
+    }),
+    db.examAnalyticsRecord.findMany({
+      where:{studentId,examDate:{gte:since}},
+      select:{subject:true,topic:true,correct:true,wrong:true,blank:true,avgSeconds:true,examDate:true}
+    }),
+    listResourceTracking(studentId)
   ]);
 
   type Bucket={
     subject:string;topic:string;total:number;correct:number;wrong:number;blank:number;
     attempts:number;lastAt:Date|null;lastTestAt:Date|null;latestTestAccuracy:number|null;
     reviewTotal:number;reviewCorrect:number;overdueReviews:number;
+    timedQuestions:number;weightedSeconds:number;
+    resourceEfficiencyStatus:'NEW'|'NORMAL'|'WATCH'|'REVIEW'|null;
+    resourceAccuracy:number|null;
     reasons:Record<string,number>;
   };
   const map=new Map<string,Bucket>();
@@ -582,7 +648,9 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
       x={
         subject,topic,total:0,correct:0,wrong:0,blank:0,attempts:0,
         lastAt:null,lastTestAt:null,latestTestAccuracy:null,
-        reviewTotal:0,reviewCorrect:0,overdueReviews:0,reasons:{}
+        reviewTotal:0,reviewCorrect:0,overdueReviews:0,
+        timedQuestions:0,weightedSeconds:0,
+        resourceEfficiencyStatus:null,resourceAccuracy:null,reasons:{}
       };
       map.set(key,x);
     }
@@ -604,7 +672,17 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
       x.latestTestAccuracy=row.total?row.correct/row.total*100:null;
     }
     const reason=normalizedReason(row.errorReason);
-    if(reason)x.reasons[reason]=(x.reasons[reason]||0)+1;
+    if(reason)x.reasons[reason]=(x.reasons[reason]||0)+Math.max(1,row.wrong);
+  }
+
+  for(const row of analytics){
+    const x=ensure(row.subject,row.topic||'Genel/Karma');
+    const total=row.correct+row.wrong+row.blank;
+    if(row.avgSeconds&&row.avgSeconds>0&&total>0){
+      x.timedQuestions+=total;
+      x.weightedSeconds+=row.avgSeconds*total;
+    }
+    if(!x.lastAt||row.examDate>x.lastAt)x.lastAt=row.examDate;
   }
 
   for(const row of reviews){
@@ -615,9 +693,30 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
     if(!x.lastAt||row.updatedAt>x.lastAt)x.lastAt=row.updatedAt;
   }
 
+  const resourceRank:Record<string,number>={NEW:0,NORMAL:1,WATCH:2,REVIEW:3};
+  for(const resource of resources){
+    for(const topic of resource.topics||[]){
+      const x=ensure(resource.subject,String(topic));
+      const status=(resource.efficiency?.status||'NEW') as 'NEW'|'NORMAL'|'WATCH'|'REVIEW';
+      if(!x.resourceEfficiencyStatus||resourceRank[status]>resourceRank[x.resourceEfficiencyStatus]){
+        x.resourceEfficiencyStatus=status;
+        x.resourceAccuracy=resource.accuracy;
+      }
+      if(resource.lastActivityAt){
+        const at=new Date(resource.lastActivityAt);
+        if(!x.lastAt||at>x.lastAt)x.lastAt=at;
+      }
+    }
+  }
+
   return [...map.values()].map(x=>{
     const aggregateAccuracy=x.total?x.correct/x.total*100:null;
     const daysSince=x.lastAt?Math.max(0,Math.floor((now.getTime()-x.lastAt.getTime())/86400000)):999;
+    const primaryReasonEntry=Object.entries(x.reasons).sort((a,b)=>b[1]-a[1])[0]||null;
+    const primaryReason=primaryReasonEntry?.[0]||null;
+    const primaryReasonWrongCount=primaryReasonEntry?.[1]||0;
+    const avgSecondsPerQuestion=x.timedQuestions?x.weightedSeconds/x.timedQuestions:null;
+    const targetSecondsPerQuestion=Math.round(minutesPerQuestion(x.subject)*60);
     const mastery=calculateKnowledgeMastery({
       totalQuestions:x.total,
       attempts:x.attempts,
@@ -626,24 +725,35 @@ export async function buildTopicMastery(studentId:string,now=new Date()){
       reviewTotal:x.reviewTotal,
       reviewCorrect:x.reviewCorrect,
       overdueReviews:x.overdueReviews,
-      daysSinceLastEvidence:daysSince
+      daysSinceLastEvidence:daysSince,
+      avgSecondsPerQuestion,
+      targetSecondsPerQuestion,
+      dominantErrorReason:primaryReason as ErrorReasonKey|null,
+      dominantErrorWrongCount:primaryReasonWrongCount,
+      resourceEfficiencyStatus:x.resourceEfficiencyStatus,
+      resourceAccuracy:x.resourceAccuracy
     });
-    const primaryReason=Object.entries(x.reasons).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
     return {
       subject:x.subject,
       topic:x.topic,
       status:mastery.status,
       score:mastery.score,
       statusReason:mastery.reason,
+      riskReasons:mastery.riskReasons,
       confidence:mastery.confidence,
       scoreBreakdown:mastery.components,
       latestTestAccuracy:x.latestTestAccuracy==null?null:Math.round(x.latestTestAccuracy),
       accuracy:aggregateAccuracy==null?null:Math.round(aggregateAccuracy),
       reviewAccuracy:mastery.components.reviewSuccess,
+      avgSecondsPerQuestion:avgSecondsPerQuestion==null?null:Math.round(avgSecondsPerQuestion),
+      targetSecondsPerQuestion,
+      resourceEfficiencyStatus:x.resourceEfficiencyStatus,
+      resourceAccuracy:x.resourceAccuracy,
       totalQuestions:x.total,
       attempts:x.attempts,
       daysSinceLastEvidence:daysSince,
       overdueReviews:x.overdueReviews,
+      forgettingRisk:daysSince>28||x.overdueReviews>=2||(mastery.components.reviewSuccess!=null&&mastery.components.reviewSuccess<55),
       primaryErrorReason:primaryReason,
       primaryErrorReasonLabel:primaryReason?ERROR_REASON_LABELS[primaryReason as ErrorReasonKey]||primaryReason:null
     };
