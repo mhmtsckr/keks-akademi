@@ -180,7 +180,7 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
     <div className="card">
       <div className="moduleEyebrow">BİLGİ HÂKİMİYETİ · NETTEN BAĞIMSIZ</div>
       <h2>Konu bazlı kalıcılık durumu</h2>
-      <p className="muted">Durum; yalnız çözülen soru sayısına göre değil, son test, tekrar başarısı, geçen süre ve kanıt miktarı birlikte değerlendirilerek oluşturulur.</p>
+      <p className="muted">Durum; son test, tekrar başarısı, soru başına süre, baskın yanlış nedeni, kaynak verimliliği ve unutma riski birlikte değerlendirilerek oluşturulur.</p>
       {mastery.length===0?<p className="muted">Henüz tanımlı konu veya yeterli öğrenme kanıtı yok.</p>:<div className="stack">
         {mastery.map((x:any)=><div className="card" key={x.subject+'|'+x.topic} style={{margin:0}}>
           <div className="moduleHeaderRow">
@@ -191,16 +191,22 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
                 {' · '}Tekrar: {x.reviewAccuracy==null?'veri yok':'%'+x.reviewAccuracy}
                 {' · '}Son kanıt: {x.daysSinceLastEvidence>=999?'yok':x.daysSinceLastEvidence+' gün önce'}
                 {' · '}{x.totalQuestions} soru / {x.attempts} oturum
+                {x.avgSecondsPerQuestion==null?'':' · '+x.avgSecondsPerQuestion+' sn/soru'}
               </p>
             </div>
             <span className="pill">{masteryLabel(x.status)} · {x.score}/100</span>
           </div>
           <div className="row" style={{flexWrap:'wrap',gap:8}}>
             <small className="muted">Veri güveni: {x.confidence}</small>
-            {x.scoreBreakdown&&<small className="muted">Güncellik {x.scoreBreakdown.recencyScore}/100 · Kanıt {x.scoreBreakdown.evidenceScore}/100{x.scoreBreakdown.overduePenalty?' · Gecikme cezası -'+x.scoreBreakdown.overduePenalty:''}</small>}
+            {x.scoreBreakdown&&<small className="muted">Güncellik {x.scoreBreakdown.recencyScore}/100 · Kanıt {x.scoreBreakdown.evidenceScore}/100{x.scoreBreakdown.timingScore==null?'':' · Hız '+x.scoreBreakdown.timingScore+'/100'}{x.scoreBreakdown.resourceScore==null?'':' · Kaynak '+x.scoreBreakdown.resourceScore+'/100'}{x.scoreBreakdown.wrongReasonPenalty?' · Yanlış nedeni -'+x.scoreBreakdown.wrongReasonPenalty:''}{x.scoreBreakdown.overduePenalty?' · Gecikme -'+x.scoreBreakdown.overduePenalty:''}</small>}
           </div>
           <p style={{marginTop:8,marginBottom:0}}><strong>Durum gerekçesi:</strong> {x.statusReason}</p>
-          {x.primaryErrorReasonLabel&&<small className="muted">Baskın yanlış nedeni: {x.primaryErrorReasonLabel}</small>}
+          {x.status==='RISKY'&&x.riskReasons?.length>0&&<div className="notice error" style={{marginTop:8}}><strong>Riskli çünkü:</strong> {x.riskReasons.slice(0,3).join(' ')}</div>}
+          <div className="row" style={{flexWrap:'wrap',gap:8,marginTop:6}}>
+            {x.primaryErrorReasonLabel&&<small className="muted">Baskın yanlış nedeni: {x.primaryErrorReasonLabel}</small>}
+            {x.resourceEfficiencyStatus&&<small className="muted">Kaynak verimliliği: {x.resourceEfficiencyStatus}</small>}
+            {x.forgettingRisk&&<small className="riskText">Unutma riski aktif</small>}
+          </div>
         </div>)}
       </div>}
       <div className="notice" style={{marginTop:10}}>Yeni → Öğreniliyor → Pekiştiriliyor → Kalıcı. Son test, tekrar veya zaman sinyali zayıflarsa konu Riskli durumuna dönebilir.</div>
