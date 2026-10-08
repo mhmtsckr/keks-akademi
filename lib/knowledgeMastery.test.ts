@@ -134,3 +134,85 @@ describe('knowledge mastery model',()=>{
     expect(ui).toContain('Durum gerekçesi:');
   });
 });
+
+
+describe('explainable mastery signals',()=>{
+  it('connects timing, wrong reason and source efficiency without relying on net',()=>{
+    const result=calculateKnowledgeMastery({
+      totalQuestions:28,
+      attempts:3,
+      aggregateAccuracy:72,
+      latestTestAccuracy:68,
+      reviewTotal:3,
+      reviewCorrect:2,
+      overdueReviews:0,
+      daysSinceLastEvidence:7,
+      avgSecondsPerQuestion:190,
+      targetSecondsPerQuestion:100,
+      dominantErrorReason:'YONTEM_BILMEME',
+      dominantErrorWrongCount:4,
+      resourceEfficiencyStatus:'REVIEW',
+      resourceAccuracy:58
+    });
+    expect(result.components.timingScore).toBeLessThanOrEqual(55);
+    expect(result.components.resourceScore).toBe(40);
+    expect(result.components.wrongReasonPenalty).toBeGreaterThan(0);
+    expect(result.riskReasons.some(x=>x.includes('Soru başına süre'))).toBe(true);
+    expect(result.riskReasons.some(x=>x.includes('Baskın yanlış nedeni'))).toBe(true);
+  });
+
+  it('explains Risky with concrete student-facing reasons',()=>{
+    const result=calculateKnowledgeMastery({
+      totalQuestions:32,
+      attempts:4,
+      aggregateAccuracy:82,
+      latestTestAccuracy:84,
+      reviewTotal:4,
+      reviewCorrect:2,
+      overdueReviews:2,
+      daysSinceLastEvidence:18,
+      avgSecondsPerQuestion:90,
+      targetSecondsPerQuestion:100,
+      dominantErrorReason:'UNUTMA',
+      dominantErrorWrongCount:3,
+      resourceEfficiencyStatus:'WATCH',
+      resourceAccuracy:67
+    });
+    expect(result.status).toBe('RISKY');
+    expect(result.riskReasons[0]).toContain('tekrar gecikmiş');
+    expect(result.riskReasons.join(' ')).toContain('Baskın yanlış nedeni: Unutma');
+  });
+
+  it('keeps a strong topic Durable when the combined signals are healthy',()=>{
+    const result=calculateKnowledgeMastery({
+      totalQuestions:42,
+      attempts:5,
+      aggregateAccuracy:91,
+      latestTestAccuracy:92,
+      reviewTotal:4,
+      reviewCorrect:4,
+      overdueReviews:0,
+      daysSinceLastEvidence:5,
+      avgSecondsPerQuestion:82,
+      targetSecondsPerQuestion:100,
+      dominantErrorReason:null,
+      dominantErrorWrongCount:0,
+      resourceEfficiencyStatus:'NORMAL',
+      resourceAccuracy:90
+    });
+    expect(result.status).toBe('DURABLE');
+    expect(result.score).toBeGreaterThanOrEqual(80);
+  });
+
+  it('shows the simple five-state model and Riskli because explanation to the student',()=>{
+    const ui=read('app/components/StudentMasteryOverview.tsx');
+    expect(ui).toContain("NEW:'Yeni'");
+    expect(ui).toContain("LEARNING:'Öğreniliyor'");
+    expect(ui).toContain("REINFORCING:'Pekiştiriliyor'");
+    expect(ui).toContain("DURABLE:'Kalıcı'");
+    expect(ui).toContain("RISKY:'Riskli'");
+    expect(ui).toContain('Riskli çünkü:');
+    expect(ui).toContain('soru başına süre');
+    expect(ui).toContain('kaynak verimliliği');
+  });
+});
