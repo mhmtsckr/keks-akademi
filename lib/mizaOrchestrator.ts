@@ -28,6 +28,15 @@ export type MizaTodayTask={
   actionId:string|null;
   reviewIds:string[];
   resultMode:MizaResultMode;
+  masteryStatus:string|null;
+  masteryScore:number|null;
+  masteryRiskReasons:string[];
+  forgettingRisk:boolean;
+  forgettingRiskScore:number|null;
+  primaryErrorReasonLabel:string|null;
+  avgSecondsPerQuestion:number|null;
+  targetSecondsPerQuestion:number|null;
+  resourceEfficiencyStatus:string|null;
 };
 
 
@@ -93,7 +102,16 @@ export function buildMizaTodayOrchestration(today:any,rebalance?:any){
     completed:Boolean(item.completed),
     actionId:typeof item.actionId==='string'?item.actionId:null,
     reviewIds:Array.isArray(item.reviewIds)?item.reviewIds.map(String):[],
-    resultMode:resultMode(item)
+    resultMode:resultMode(item),
+    masteryStatus:typeof item.masteryStatus==='string'?item.masteryStatus:null,
+    masteryScore:Number.isFinite(Number(item.masteryScore))?Number(item.masteryScore):null,
+    masteryRiskReasons:Array.isArray(item.masteryRiskReasons)?item.masteryRiskReasons.map(String).slice(0,3):[],
+    forgettingRisk:Boolean(item.forgettingRisk),
+    forgettingRiskScore:Number.isFinite(Number(item.forgettingRiskScore))?Number(item.forgettingRiskScore):null,
+    primaryErrorReasonLabel:typeof item.primaryErrorReasonLabel==='string'?item.primaryErrorReasonLabel:null,
+    avgSecondsPerQuestion:Number.isFinite(Number(item.avgSecondsPerQuestion))?Number(item.avgSecondsPerQuestion):null,
+    targetSecondsPerQuestion:Number.isFinite(Number(item.targetSecondsPerQuestion))?Number(item.targetSecondsPerQuestion):null,
+    resourceEfficiencyStatus:typeof item.resourceEfficiencyStatus==='string'?item.resourceEfficiencyStatus:null
   }));
 
   const remaining=tasks.filter(x=>!x.completed);

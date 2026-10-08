@@ -81,6 +81,7 @@ export function StudentMasteryOverview(){
             <small>Son test: {x.latestTestAccuracy==null?'veri yok':'%'+x.latestTestAccuracy} · Tekrar: {x.reviewAccuracy==null?'veri yok':'%'+x.reviewAccuracy}</small>
             <small>Soru başına süre: {x.avgSecondsPerQuestion==null?'veri yok':x.avgSecondsPerQuestion+' sn/soru'}{x.targetSecondsPerQuestion?' · referans '+x.targetSecondsPerQuestion+' sn':''}</small>
             <small>Kaynak verimliliği: {x.resourceEfficiencyStatus||'veri yok'} · Son kanıt: {x.daysSinceLastEvidence>=999?'yok':x.daysSinceLastEvidence+' gün önce'}</small>
+            <small>Unutma riski: {x.forgettingRiskScore==null?'veri yok':x.forgettingRiskScore+'/100'}{x.riskLevel?' · düzey '+x.riskLevel:''}</small>
             {x.primaryErrorReasonLabel&&<small>Baskın yanlış nedeni: {x.primaryErrorReasonLabel}</small>}
           </div>
         </details>

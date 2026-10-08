@@ -46,6 +46,16 @@ export function StudentActionHub(){
         {action&&<span className="pill">{action.badge}</span>}
       </div>
 
+      {action?.masteryStatus==='RISKY'&&<div className="notice error" style={{marginTop:10}}>
+        <strong>Riskli çünkü:</strong> {(action.masteryRiskReasons||[]).slice(0,2).join(' ')||'Konuya ait test, tekrar, hız veya unutma sinyalleri zayıf.'}
+        <div className="row" style={{flexWrap:'wrap',gap:8,marginTop:8}}>
+          {action.forgettingRiskScore!=null&&<span className="pill">Unutma riski {action.forgettingRiskScore}/100</span>}
+          {action.avgSecondsPerQuestion!=null&&<span className="pill">{Math.round(action.avgSecondsPerQuestion)} sn/soru{action.targetSecondsPerQuestion?' · hedef '+Math.round(action.targetSecondsPerQuestion)+' sn':''}</span>}
+          {action.primaryErrorReasonLabel&&<span className="pill">Yanlış nedeni: {action.primaryErrorReasonLabel}</span>}
+          {action.resourceEfficiencyStatus&&<span className="pill">Kaynak: {action.resourceEfficiencyStatus}</span>}
+        </div>
+      </div>}
+
       {action&&<div className="todayMissionStats">
         <div><b>{action.estimatedMinutes}</b><span>yaklaşık dk</span></div>
         <div><b>{metricText(action)}</b><span>hedef</span></div>

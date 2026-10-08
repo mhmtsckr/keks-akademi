@@ -155,7 +155,8 @@ describe('explainable mastery signals',()=>{
       resourceAccuracy:58
     });
     expect(result.components.timingScore).toBeLessThanOrEqual(55);
-    expect(result.components.resourceScore).toBe(40);
+    expect(result.components.resourceScore).toBeGreaterThan(40);
+    expect(result.components.resourceScore).toBeLessThan(58);
     expect(result.components.wrongReasonPenalty).toBeGreaterThan(0);
     expect(result.riskReasons.some(x=>x.includes('Soru başına süre'))).toBe(true);
     expect(result.riskReasons.some(x=>x.includes('Baskın yanlış nedeni'))).toBe(true);
@@ -181,6 +182,9 @@ describe('explainable mastery signals',()=>{
     expect(result.status).toBe('RISKY');
     expect(result.riskReasons[0]).toContain('tekrar gecikmiş');
     expect(result.riskReasons.join(' ')).toContain('Baskın yanlış nedeni: Unutma');
+    expect(result.forgettingRiskScore).toBeGreaterThanOrEqual(35);
+    expect(result.riskLevel).not.toBe('LOW');
+    expect(result.primaryRiskReason).toBe(result.riskReasons[0]);
   });
 
   it('keeps a strong topic Durable when the combined signals are healthy',()=>{
@@ -215,5 +219,36 @@ describe('explainable mastery signals',()=>{
     const lower=ui.toLocaleLowerCase('tr-TR');
     expect(lower).toContain('soru başına süre');
     expect(lower).toContain('kaynak verimliliği');
+    expect(lower).toContain('unutma riski');
+  });
+});
+
+
+describe('mastery -> daily action propagation',()=>{
+  it('carries Risky reasons from mastery into the daily plan and next action surfaces',()=>{
+    const engine=read('lib/learningEngine.ts');
+    expect(engine).toContain('masteryRiskReasons:matchingMastery?.riskReasons??[]');
+    expect(engine).toContain('forgettingRiskScore:matchingMastery?.forgettingRiskScore??null');
+    expect(engine).toContain('primaryErrorReasonLabel:matchingMastery?.primaryErrorReasonLabel??null');
+
+    const actionEngine=read('lib/studentActionEngine.ts');
+    expect(actionEngine).toContain('masteryRiskReasons:Array.isArray(item.masteryRiskReasons)');
+    expect(actionEngine).toContain('forgettingRiskScore');
+
+    const hub=read('app/components/StudentActionHub.tsx');
+    expect(hub).toContain('Riskli çünkü:');
+    expect(hub).toContain('Unutma riski');
+    expect(hub).toContain('Yanlış nedeni:');
+  });
+
+  it('carries the same Risky explanation into MİZA instead of generating a generic reason',()=>{
+    const orchestrator=read('lib/mizaOrchestrator.ts');
+    expect(orchestrator).toContain('masteryRiskReasons:Array.isArray(item.masteryRiskReasons)');
+    expect(orchestrator).toContain('forgettingRiskScore');
+
+    const ui=read('app/components/MizaLearningOrchestrator.tsx');
+    expect(ui).toContain('Riskli çünkü:');
+    expect(ui).toContain('Baskın yanlış nedeni:');
+    expect(ui).toContain('Kaynak verimliliği:');
   });
 });

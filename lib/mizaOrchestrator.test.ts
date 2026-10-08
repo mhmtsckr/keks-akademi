@@ -16,7 +16,7 @@ describe('MİZA günlük orkestrasyon',()=>{
       date:'2026-10-07',
       engineVersion:'TODAY_PLAN_V5',
       plan:[
-        {id:'action:1',order:1,source:'ACTION',title:'Matematik',targetValue:20,metricType:'QUESTIONS',estimatedMinutes:30,completed:false,actionId:'1'},
+        {id:'action:1',order:1,source:'ACTION',title:'Matematik',targetValue:20,metricType:'QUESTIONS',estimatedMinutes:30,completed:false,actionId:'1',masteryStatus:'RISKY',masteryScore:58,masteryRiskReasons:['2 tekrar gecikmiş.','Baskın yanlış nedeni: Unutma.'],forgettingRisk:true,forgettingRiskScore:72,primaryErrorReasonLabel:'Unutma',avgSecondsPerQuestion:145,targetSecondsPerQuestion:100,resourceEfficiencyStatus:'WATCH'},
         {id:'review-batch:1',order:2,source:'REVIEW_BATCH',title:'2 gecikmiş tekrar',targetValue:2,metricType:'REVIEWS',estimatedMinutes:8,completed:false,reviewIds:['r1','r2']}
       ]
     });
@@ -24,6 +24,10 @@ describe('MİZA günlük orkestrasyon',()=>{
     expect(x.dueReviews).toBe(2);
     expect(x.plannedMinutes).toBe(38);
     expect(x.tasks[0].resultMode).toBe('ACTION_QUESTIONS');
+    expect(x.tasks[0].masteryStatus).toBe('RISKY');
+    expect(x.tasks[0].masteryRiskReasons[0]).toContain('tekrar gecikmiş');
+    expect(x.tasks[0].forgettingRiskScore).toBe(72);
+    expect(x.tasks[0].primaryErrorReasonLabel).toBe('Unutma');
     expect(x.tasks[1].resultMode).toBe('REVIEW_FLOW');
     expect(x.coachBoundary.authority).toBe('COACH_OVERRIDES_MIZA');
     expect(formatMizaTodayReply(x)).toContain('Toplam yaklaşık süre: 38 dk');

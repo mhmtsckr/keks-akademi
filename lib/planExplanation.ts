@@ -1,3 +1,12 @@
+function cleanReasons(reasons?:string[]|null){
+  return (reasons||[]).map(x=>x.trim()).filter(Boolean).slice(0,2);
+}
+
+function riskyBecause(reasons?:string[]|null){
+  const items=cleanReasons(reasons);
+  return items.length?' Riskli çünkü '+items.join(' '):'';
+}
+
 export function buildPracticeWhy(input:{
   subject:string;
   topic:string;
@@ -6,6 +15,7 @@ export function buildPracticeWhy(input:{
   dueReviewCount:number;
   dueReviewSteps?:number[];
   masteryStatus?:string|null;
+  masteryRiskReasons?:string[];
 }) {
   const reasons:string[]=[];
 
@@ -15,7 +25,7 @@ export function buildPracticeWhy(input:{
   }else if(input.recentAccuracies[0]!=null && input.recentAccuracies[0]<55){
     reasons.push('son testte doğruluğun %'+Math.round(input.recentAccuracies[0])+' ile %55’in altında');
   }else if(input.masteryStatus==='RISKY'){
-    reasons.push('bu konu performans ve tekrar sinyallerine göre riskli durumda');
+    reasons.push('bu konu performans, tekrar, hız ve unutma sinyallerine göre riskli durumda');
   }else if(input.masteryStatus==='LEARNING'){
     reasons.push('bu konu hâlâ öğrenme aşamasında');
   }
@@ -31,7 +41,8 @@ export function buildPracticeWhy(input:{
     reasons.push('konu çalışmasının ardından öğrenme durumunu yeniden ölçmek gerekiyor');
   }
 
-  return 'Bugün '+input.subject+' '+input.questionTarget+' soru önerildi çünkü '+reasons.join(' ve ')+'.';
+  return 'Bugün '+input.subject+' '+input.questionTarget+' soru önerildi çünkü '+reasons.join(' ve ')+'.'
+    +(input.masteryStatus==='RISKY'?riskyBecause(input.masteryRiskReasons):'');
 }
 
 export function buildReviewWhy(input:{
@@ -50,12 +61,14 @@ export function buildActionWhy(input:{
   title:string;
   latestAccuracy?:number|null;
   masteryStatus?:string|null;
+  masteryRiskReasons?:string[];
 }) {
   if(input.latestAccuracy!=null&&input.latestAccuracy<55){
-    return 'Bu görev bugün öne alındı çünkü ilgili konuda son ölçülen doğruluk %'+Math.round(input.latestAccuracy)+' ve güçlendirme gerekiyor.';
+    return 'Bu görev bugün öne alındı çünkü ilgili konuda son ölçülen doğruluk %'+Math.round(input.latestAccuracy)+' ve güçlendirme gerekiyor.'
+      +(input.masteryStatus==='RISKY'?riskyBecause(input.masteryRiskReasons):'');
   }
   if(input.masteryStatus==='RISKY'){
-    return 'Bu görev bugün öne alındı çünkü ilgili konu riskli durumda ve tekrar/uygulama sinyalleri zayıf.';
+    return 'Bu görev bugün öne alındı çünkü ilgili konu riskli durumda.'+riskyBecause(input.masteryRiskReasons);
   }
   if(input.masteryStatus==='LEARNING'){
     return 'Bu görev bugün öne alındı çünkü konu öğrenme aşamasında ve düzenli uygulama gerekiyor.';
