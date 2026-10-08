@@ -85,6 +85,6 @@ export function StudentMasteryOverview(){
           </div>
         </details>
       </div>)}
-    </div>
+    </div>}
   </div>;
 }
