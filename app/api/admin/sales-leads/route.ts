@@ -65,8 +65,18 @@ async function GET__handler(req:Request){
     db.salesLead.aggregate({where:{status:'WON'},_sum:{saleAmountKurus:true}})
   ]);
 
-  const lifecycle=await fetchCrmLifecycleBatch(leads);
-  const lifecycleSummary=summarizeCrmLifecycle(Object.values(lifecycle));
+  // Cohort KPIs are calculated over ALL explicitly linked customers, not the first
+  // 300 visible leads or the current CRM search/filter results.
+  const customerLinks=await db.salesLead.findMany({
+    where:{studentId:{not:null}},
+    select:{id:true,status:true,studentId:true}
+  });
+  const linkedIds=new Set(customerLinks.map(x=>x.id));
+  const lifecycle=await fetchCrmLifecycleBatch([
+    ...customerLinks,
+    ...leads.filter(x=>!linkedIds.has(x.id))
+  ]);
+  const lifecycleSummary=summarizeCrmLifecycle(customerLinks.map(x=>lifecycle[x.id]));
   const won=statusCounts.find(x=>x.status==='WON')?._count._all||0;
   const lost=statusCounts.find(x=>x.status==='LOST')?._count._all||0;
   const active=Math.max(0,total-won-lost);
@@ -76,7 +86,7 @@ async function GET__handler(req:Request){
     leads:leads.map(x=>({...x,lifecycle:lifecycle[x.id]})),
     summary:{
       lifecycle:lifecycleSummary,
-      lifecycleScope:'Gösterilen '+leads.length+' lead ile sınırlı; filtreler ve 300 kayıt sınırı toplam kohort sonuçlarını etkiler.',
+      lifecycleScope:'Tüm açıkça eşleştirilmiş öğrenci hesapları baz alınır; CRM arama ve filtrelerinden bağımsızdır.',
       total,
       active,
       won,
