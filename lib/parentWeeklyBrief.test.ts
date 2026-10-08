@@ -68,4 +68,51 @@ describe('veli haftalık destek özeti',()=>{
     expect(brief.attention[0].title).toBe('Belirgin bir müdahale sinyali yok');
     expect(brief.good[0].detail).toContain('başarısızlık göstergesi değildir');
   });
+  it('önceki haftaya göre gelişmeyi ve tek cümlelik veli önerisini gösterir',()=>{
+    const brief=buildParentWeeklyBrief({
+      indicators:indicators(),
+      todayPlan:{total:7,completed:6}
+    });
+    expect(brief.change.status).toBe('UP');
+    expect(brief.change.text).toContain('Geçen haftaya göre');
+    expect(brief.keksRecommendation).toContain('sorumluluğunu öğrencide bırakın');
+    expect(brief.keksRecommendation.endsWith('.')).toBe(true);
+  });
+
+  it('karma gelişimde yükseliş ile düşüşü birlikte açıklar',()=>{
+    const brief=buildParentWeeklyBrief({
+      indicators:[
+        indicator('CONTINUITY','Çalışma Sürekliliği',80,65),
+        indicator('REVIEW_DISCIPLINE','Tekrar Disiplini',45,75),
+        indicator('KNOWLEDGE_MASTERY','Bilgi Hâkimiyeti',65,65),
+        indicator('QUESTION_ACCURACY','Soru Doğruluğu',72,72),
+        indicator('PLAN_ALIGNMENT','Plan Uyumu',72,72)
+      ],
+      todayPlan:{total:0,completed:0}
+    });
+    expect(brief.change.status).toBe('MIXED');
+    expect(brief.change.text).toContain('çalışma sürekliliği gelişirken');
+    expect(brief.change.text).toContain('tekrar disiplini geriledi');
+    expect(brief.keksRecommendation).toContain('tekrar için');
+  });
+
+  it('küçük farklılıkları anlamlı gelişim veya gerileme saymaz',()=>{
+    const brief=buildParentWeeklyBrief({
+      indicators:[
+        indicator('CONTINUITY','Çalışma Sürekliliği',70,68),
+        indicator('REVIEW_DISCIPLINE','Tekrar Disiplini',70,72)
+      ],
+      todayPlan:{total:0,completed:0}
+    });
+    expect(brief.change.status).toBe('STABLE');
+  });
+
+  it('karşılaştırılabilir veri yetersizse sahte haftalık değişim yazmaz',()=>{
+    const brief=buildParentWeeklyBrief({
+      indicators:[indicator('PLAN_ALIGNMENT','Plan Uyumu',null,null)],
+      todayPlan:{total:0,completed:0}
+    });
+    expect(brief.change.status).toBe('NO_DATA');
+    expect(brief.change.text).toContain('yeterli veri yok');
+  });
 });
