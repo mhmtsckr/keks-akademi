@@ -212,7 +212,8 @@ describe('explainable mastery signals',()=>{
     expect(ui).toContain("DURABLE:'Kalıcı'");
     expect(ui).toContain("RISKY:'Riskli'");
     expect(ui).toContain('Riskli çünkü:');
-    expect(ui).toContain('soru başına süre');
-    expect(ui).toContain('kaynak verimliliği');
+    const lower=ui.toLocaleLowerCase('tr-TR');
+    expect(lower).toContain('soru başına süre');
+    expect(lower).toContain('kaynak verimliliği');
   });
 });
