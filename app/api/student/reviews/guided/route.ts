@@ -5,7 +5,8 @@ import {requireRole} from '@/lib/auth';
 import {readJson,withApiErrors} from '@/lib/apiGuard';
 import {db} from '@/lib/db';
 import {areEquivalentShortAnswers} from '@/lib/mathAnswerEquivalence';
-import {findMicroLesson,microLessonById} from '@/lib/bankFreeMicroLessons';
+import {ALL_MICRO_LESSONS,findMicroLesson,microLessonById} from '@/lib/bankFreeMicroLessons';
+import {getMicroLessonReviewStatusMap} from '@/lib/microLessonReview';
 
 const schema=z.discriminatedUnion('action',[
   z.object({action:z.literal('start'),reviewId:z.string().min(1)}),
@@ -14,6 +15,16 @@ const schema=z.discriminatedUnion('action',[
 
 function record(value:unknown):Record<string,unknown>{
   return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
+}
+
+async function GET__handler(){
+  await requireRole(['STUDENT']);
+  const states=await getMicroLessonReviewStatusMap();
+  return NextResponse.json({ok:true,lessons:ALL_MICRO_LESSONS.map(x=>({
+    id:x.id,version:x.version,subject:x.subject,title:x.title,
+    skill:x.skill,contentStatus:states.get(x.id)?.status||'PILOT',
+    sourceUrl:x.sourceUrl||null
+  }))});
 }
 
 async function POST__handler(req:Request){
@@ -39,6 +50,7 @@ async function POST__handler(req:Request){
       ok:false,code:'NO_GUIDED_EXAMPLE',
       error:'Bu alt beceri için hazırlanmış çözümlü örnek henüz yok. Orijinal sorunun çözümünü uydurmak yerine koçundan konu örneği eklemesini iste.'
     },{status:404});
+    const publication=(await getMicroLessonReviewStatusMap()).get(lesson.id)?.status||'PILOT';
     const variantIndex=randomInt(lesson.exercises.length);
     const session=await db.dailyLog.create({data:{
       studentId,date:new Date(),payload:{
@@ -46,7 +58,7 @@ async function POST__handler(req:Request){
         originQuestionId:review.questionId,
         subject:review.question.subject,topic:review.question.topic,
         lessonId:lesson.id,lessonVersion:lesson.version,variantIndex,
-        contentStatus:lesson.contentStatus
+        contentStatus:publication
       }
     }});
     return NextResponse.json({
@@ -54,13 +66,16 @@ async function POST__handler(req:Request){
       lesson:{
         id:lesson.id,version:lesson.version,subject:lesson.subject,title:lesson.title,
         skill:lesson.skill,explanation:lesson.explanation,misconception:lesson.misconception,
-        worked:lesson.worked,contentStatus:lesson.contentStatus
+        worked:lesson.worked,contentStatus:publication
       },
       exercise:{
         prompt:lesson.exercises[variantIndex].prompt,
-        inputMode:'TEXT'
+        options:lesson.exercises[variantIndex].options||null,
+        inputMode:lesson.exercises[variantIndex].options?'CHOICE':'TEXT'
       },
-      note:'Çözümlü örnek özgün KEKS pilot içeriğidir; öğrencinin yüklediği sorunun birebir çözümü değildir.'
+      note:publication==='APPROVED'
+        ?'Özgün KEKS örneği yönetici içerik incelemesinden geçmiştir; yüklenen sorunun birebir çözümü değildir.'
+        :'Özgün KEKS pilot içeriğidir; uzman onayı verilmiş sayılmaz ve yüklenen sorunun birebir çözümü değildir.'
     });
   }
 
@@ -97,4 +112,5 @@ async function POST__handler(req:Request){
   return NextResponse.json({ok:true,...result});
 }
 
+export const GET=withApiErrors(GET__handler);
 export const POST=withApiErrors(POST__handler);

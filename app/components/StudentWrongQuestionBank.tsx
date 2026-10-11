@@ -33,6 +33,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [guidedAnswer,setGuidedAnswer]=useState('');
   const [guidedResult,setGuidedResult]=useState<any|null>(null);
   const [guidedBusy,setGuidedBusy]=useState(false);
+  const [lessonCatalog,setLessonCatalog]=useState<any[]>([]);
+  const [selectedSubject,setSelectedSubject]=useState('');
   const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
@@ -41,13 +43,15 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [openSet,setOpenSet]=useState<'weekly'|'monthly'|null>(null);
 
   async function load(){
-    const [wr,rr]=await Promise.all([
+    const [wr,rr,lr]=await Promise.all([
       fetch('/api/student/wrong-questions',{cache:'no-store'}),
-      fetch('/api/student/reviews',{cache:'no-store'})
+      fetch('/api/student/reviews',{cache:'no-store'}),
+      fetch('/api/student/reviews/guided',{cache:'no-store'})
     ]);
-    const [wj,rj]=await Promise.all([wr.json(),rr.json()]);
+    const [wj,rj,lj]=await Promise.all([wr.json(),rr.json(),lr.json()]);
     if(wr.ok){setItems(wj.items||[]);setSets(wj.sets||null);}
     if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
+    if(lr.ok)setLessonCatalog(lj.lessons||[]);
   }
   useEffect(()=>{load()},[]);
   useEffect(()=>{
@@ -63,7 +67,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     const j=await r.json();setBusy(false);
     if(!r.ok)return setMsg('Hata: '+(j.error||'Yanlış soru yüklenemedi.'));
     setMsg(j.message+' · Tekrar motoru 0–1–3–7–14–28 gün tabanlıdır; sonraki aralık performansına göre otomatik değişir.');
-    form.reset();
+    form.reset();setSelectedSubject('');
     await load();
   }
 
@@ -239,7 +243,9 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       {guided&&<div className="stack" style={{marginTop:14}}>
         <h3>{guided.lesson.title}</h3>
         <p className="muted">{guided.note}</p>
-        {guided.lesson.contentStatus==='PILOT'&&<small className="muted">KEKS özgün pilot içeriği; uzman kontrolüyle genişletilecektir.</small>}
+        <small className="muted">{guided.lesson.contentStatus==='APPROVED'
+          ?'Yönetici içerik incelemesinden geçti; bağımsız uzman onayı ayrıca doğrulanmalıdır.'
+          :'KEKS özgün pilot içeriği: yönetici veya uzman onayı henüz verilmedi.'}</small>
         <div className="card" style={{margin:0}}>
           <strong>Öğreneceğin beceri: {guided.lesson.skill}</strong>
           <p>{guided.lesson.explanation}</p>
@@ -253,9 +259,18 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <strong>Şimdi sen çöz · Yeni ve farklı soru</strong>
           <p>{guided.exercise.prompt}</p>
           <div className="reviewTextAnswer">
-            <input value={guidedAnswer} disabled={Boolean(guidedResult)}
-              onChange={e=>setGuidedAnswer(e.target.value)}
-              placeholder="Sonucu yaz (örn. 3/4, 0,75 veya 198)"/>
+            {guided.exercise.inputMode==='CHOICE'
+              ?<div className="stack" style={{gap:5}}>
+                {Object.entries(guided.exercise.options||{}).map(([letter,label])=><label key={letter} style={{display:'flex',gap:9,alignItems:'flex-start'}}>
+                  <input type="radio" name={'guided-'+guided.sessionId}
+                    checked={guidedAnswer===letter} disabled={Boolean(guidedResult)}
+                    onChange={()=>setGuidedAnswer(letter)}/>
+                  <span><strong>{letter})</strong> {String(label)}</span>
+                </label>)}
+              </div>
+              :<input value={guidedAnswer} disabled={Boolean(guidedResult)}
+                onChange={e=>setGuidedAnswer(e.target.value)}
+                placeholder="Sonucu yaz (örn. 3/4, 0,75 veya 198)"/>}
             {!guidedResult&&<button type="button" className="btn primary" disabled={guidedBusy||!guidedAnswer.trim()} onClick={finishGuided}>
               {guidedBusy?'Kontrol ediliyor…':'Alıştırmayı Kontrol Et'}
             </button>}
@@ -335,7 +350,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         </div>
         <div className="field">
           <label>Ders</label>
-          <input name="subject" list="wrong-question-subjects" required placeholder="Örn. Matematik"/>
+          <input name="subject" list="wrong-question-subjects" required placeholder="Örn. Matematik"
+            value={selectedSubject} onChange={e=>setSelectedSubject(e.target.value)}/>
           <datalist id="wrong-question-subjects">{SUBJECTS.map(x=><option value={x} key={x}/>)}</datalist>
         </div>
         <div className="field wrongQuestionWide">
@@ -349,11 +365,10 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         </div>
         <div className="field wrongQuestionWide">
           <label>Alt beceri / çözümlü örnek (isteğe bağlı)</label>
-          <select name="practiceSkillId" defaultValue="">
+          <select name="practiceSkillId" key={selectedSubject} defaultValue="">
             <option value="">Otomatik öneri — uygun örnek varsa</option>
-            <option value="math-percent-changes-v1">Matematik · Ardışık yüzde değişimleri</option>
-            <option value="math-fraction-ops-v1">Matematik · Kesirlerde işlemler</option>
-            <option value="math-exponent-rules-v1">Matematik · Üslü sayılarda işlemler</option>
+            {lessonCatalog.filter(x=>x.subject===selectedSubject).map(x=>
+              <option value={x.id} key={x.id}>{x.title} · {x.contentStatus==='APPROVED'?'İçerik onaylı':'Pilot'}</option>)}
           </select>
           <small className="muted">Özellikle sadece soru fotoğrafı yüklediğinde ilgili beceriyi sen seçmelisin. Bu seçenek fotoğraftan otomatik okuma veya özgün sorunun çözüldüğü iddiası değildir.</small>
         </div>
