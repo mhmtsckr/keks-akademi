@@ -9,6 +9,7 @@ type Lesson={
   exercises:{prompt:string;options?:Record<string,string>;answer:string;explanation:string}[];
   publication:{status:'APPROVED'|'PILOT';reviewedAt:string|null};
   contentDigest:string;
+  targetGrades?:readonly number[];targetExams?:readonly string[];topicTags?:readonly string[];
   sourceUrl?:string;
 };
 
@@ -105,6 +106,7 @@ export function AdminMicroLessonReviews(){
     <details className="card" key={x.id} style={{margin:0}}>
      <summary><strong>{x.subject} · {x.title}</strong> <span className="pill">{x.publication.status==='APPROVED'?'İçerik onaylı':'Pilot / bekliyor'}</span></summary>
      <p><strong>Beceri:</strong> {x.skill}</p>
+     <p className="muted"><strong>Uygun düzeyler:</strong> {(x.targetGrades||[]).map(g=>g+'. sınıf').join(', ')||'—'} · <strong>Sınavlar:</strong> {(x.targetExams||[]).join(', ')||'—'} · <strong>KEKS konu etiketleri:</strong> {(x.topicTags||[]).join(', ')||'Yok / doğrulama bekliyor'}</p>
      <p><strong>Açıklama:</strong> {x.explanation}</p>
      <p><strong>Kavram yanılgısı:</strong> {x.misconception}</p>
      <p><strong>Çözümlü örnek:</strong> {x.worked.prompt}</p>
