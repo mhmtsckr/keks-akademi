@@ -7,6 +7,7 @@ import { REVIEW_DAYS } from '@/lib/smartCoach';
 import { classifyWrongQuestion } from '@/lib/wrongQuestionClassifier';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
 import { buildPersonalQuestionSets } from '@/lib/personalLearning';
+import {MICRO_LESSONS} from '@/lib/bankFreeMicroLessons';
 
 const PRIVATE_PREFIX='STUDENT_WRONG:';
 const patchSchema=z.object({questionId:z.string().min(1),topic:z.string().min(2).max(120)});
@@ -55,8 +56,10 @@ async function POST__handler(req:Request){
   const correctAnswer=String(fd.get('correctAnswer')||'').trim().slice(0,1000);
   const originalStudentAnswer=String(fd.get('originalStudentAnswer')||'').trim().slice(0,1000);
   const explanation=String(fd.get('explanation')||'').trim().slice(0,3000);
+  const practiceSkillId=String(fd.get('practiceSkillId')||'').trim().slice(0,90);
   const bankReason=String(fd.get('bankReason')||'WRONG').toUpperCase()==='MARKED'?'MARKED':'WRONG';
   if(subject.length<2)return NextResponse.json({error:'Ders seçiniz.'},{status:400});
+  if(practiceSkillId&&!MICRO_LESSONS.some(x=>x.id===practiceSkillId&&x.subject===subject))return NextResponse.json({error:'Seçilen öğrenme becerisi dersle uyumlu değil.'},{status:400});
   if(correctAnswer.length<1)return NextResponse.json({error:'Doğru cevabı yazınız.'},{status:400});
 
   const rawFile=fd.get('image');
@@ -96,7 +99,8 @@ async function POST__handler(req:Request){
         originalStudentAnswer:originalStudentAnswer||null,
         classificationConfidence:classified.confidence,
         classificationMethod:classified.method,
-        bankReason
+        bankReason,
+        practiceSkillId:practiceSkillId||null
       },
       correctAnswer,
       explanation:explanation||null,
@@ -115,7 +119,7 @@ async function POST__handler(req:Request){
     ok:true,
     item:{
       id:result.q.id,examType,subject,topic:result.q.topic,prompt:result.q.prompt,
-      imageUrl:result.imageUrl,classificationConfidence:classified.confidence,
+      imageUrl:result.imageUrl,practiceSkillId:practiceSkillId||null,classificationConfidence:classified.confidence,
       classificationMethod:classified.method,bankReason,dueAt:result.review.dueAt,stepIndex:0
     },
     message:(bankReason==='MARKED'?'İşaretlenen':'Yanlış')+' soru '+subject+' · '+result.q.topic+' olarak kişisel soru bankasına eklendi ve 0. gün tekrar görevine bağlandı.',
@@ -131,7 +135,7 @@ async function PATCH__handler(req:Request){
     where:{id:input.questionId,sourceKind:sourceKind(user.student.id),reviewStatus:'STUDENT_PRIVATE'}
   });
   if(!q)return NextResponse.json({error:'Yanlış soru kaydı bulunamadı.'},{status:404});
-  const row=await db.questionBankItem.update({where:{id:q.id},data:{topic:input.topic,options:{...meta(q.options),classificationConfidence:1,classificationMethod:'MANUAL_CONFIRMED'}}});
+  const row=await db.questionBankItem.update({where:{id:q.id},data:{topic:input.topic,options:{...meta(q.options),classificationConfidence:1,classificationMethod:'MANUAL_CONFIRMED',practiceSkillId:null}}});
   return NextResponse.json({ok:true,topic:row.topic});
 }
 

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
+import {areEquivalentShortAnswers} from '@/lib/mathAnswerEquivalence';
 import { adaptiveReviewIntervalDays,reviewIntervalReason } from '@/lib/learningEngine';
 import {buildWrongQuestionSupport,REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
 
@@ -12,11 +13,6 @@ const schema=z.object({
   errorReason:z.enum(Object.keys(REMEDIATION_REASONS) as [keyof typeof REMEDIATION_REASONS,...(keyof typeof REMEDIATION_REASONS)[]]).optional()
 });
 
-function normalizeAnswer(v:string){
-  return v.toLocaleLowerCase('tr-TR')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/\s+/g,' ').trim();
-}
 function questionMeta(v:unknown){
   return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
 }
@@ -79,7 +75,7 @@ async function POST__handler(req:Request){
   if(item.status==='COMPLETED')return NextResponse.json({error:'Bu tekrar döngüsü zaten tamamlandı.'},{status:409});
   if(item.dueAt.getTime()>Date.now())return NextResponse.json({error:'Bu sorunun tekrar günü henüz gelmedi.'},{status:409});
   const correct=String(item.question.sourceKind).startsWith('STUDENT_WRONG:')
-    ? normalizeAnswer(input.answer)===normalizeAnswer(item.question.correctAnswer)
+    ? areEquivalentShortAnswers(input.answer,item.question.correctAnswer)
     : input.answer===item.question.correctAnswer;
   const previousCorrect=item.lastCorrect;
   const errorReason=correct?null:(input.errorReason||null);
@@ -126,7 +122,7 @@ async function POST__handler(req:Request){
   };
   const nextIntervalDays=completed?null:adaptiveReviewIntervalDays(adaptiveInput);
   const intervalReason=completed
-    ?'Aktif tekrar döngüsü başarıyla tamamlandı.'
+    ?'Bu sorunun tekrar döngüsü bitti; kazanımın kalıcılığı farklı sorularda ayrıca doğrulanmalıdır.'
     :reviewIntervalReason(adaptiveInput,Number(nextIntervalDays||0));
   if(!completed) due.setDate(due.getDate()+Number(nextIntervalDays||0));
   const row=await db.$transaction(async tx=>{

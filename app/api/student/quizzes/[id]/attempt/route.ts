@@ -5,12 +5,9 @@ import { db } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import { calcNet } from '@/lib/performance';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
+import {areEquivalentShortAnswers} from '@/lib/mathAnswerEquivalence';
 
 const schema=z.object({answers:z.record(z.string(),z.string().nullable())});
-
-function normalizeAnswer(v:string){
- return v.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
-}
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
  const user=await requireRole(['STUDENT']);
@@ -28,7 +25,7 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
    if(!ans) blank++;
    else {
      const isPrivate=String(q.sourceKind).startsWith('STUDENT_WRONG:');
-     const isCorrect=isPrivate?normalizeAnswer(ans)===normalizeAnswer(q.correctAnswer):ans===q.correctAnswer;
+     const isCorrect=isPrivate?areEquivalentShortAnswers(ans,q.correctAnswer):ans===q.correctAnswer;
      if(isCorrect)correct++; else { wrong++; wrongIds.push(q.id); }
    }
  }

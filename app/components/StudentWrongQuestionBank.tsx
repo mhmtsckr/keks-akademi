@@ -29,6 +29,10 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [practiceAnswers,setPracticeAnswers]=useState<Record<string,string>>({});
   const [practiceResult,setPracticeResult]=useState<any|null>(null);
   const [practiceBusy,setPracticeBusy]=useState(false);
+  const [guided,setGuided]=useState<any|null>(null);
+  const [guidedAnswer,setGuidedAnswer]=useState('');
+  const [guidedResult,setGuidedResult]=useState<any|null>(null);
+  const [guidedBusy,setGuidedBusy]=useState(false);
   const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
@@ -46,6 +50,9 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
   }
   useEffect(()=>{load()},[]);
+  useEffect(()=>{
+    if(guided)document.getElementById('keks-guided-remediation')?.scrollIntoView({behavior:'smooth',block:'start'});
+  },[guided]);
 
   async function submit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setBusy(true);setMsg('');
@@ -72,12 +79,44 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     setReviewAnswers(x=>({...x,[id]:''}));
     setSupport(j.correct?null:{...j.support,reviewId:id});
     setPractice(null);setPracticeResult(null);
+    setGuided(null);setGuidedResult(null);setGuidedAnswer('');
     const intervalText=j.completed?'':(' · Sonraki tekrar: '+j.nextIntervalDays+' gün sonra.');
     const streakText=j.correctStreak>=2?(' · Ardışık doğru: '+j.correctStreak):j.incorrectStreak>=2?(' · Ardışık yanlış: '+j.incorrectStreak):'';
     setMsg(j.correct
       ? (j.completed?'Doğru. Bu soru için aktif tekrar döngüsü tamamlandı.':'Doğru.'+intervalText+streakText+' · '+(j.intervalReason||'Kişisel unutma eğrisi güncellendi.'))
       : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
     await load();
+  }
+
+  async function startGuided(reviewId:string){
+    setGuidedBusy(true);setMsg('');
+    setGuided(null);setGuidedResult(null);setGuidedAnswer('');
+    try{
+      const r=await fetch('/api/student/reviews/guided',{
+        method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({action:'start',reviewId})
+      });
+      const j=await r.json();
+      if(!r.ok){setMsg('Bilgi: '+(j.error||'Bu konu için örnek henüz hazırlanmadı.'));return;}
+      setGuided(j);setGuidedResult(null);setGuidedAnswer('');
+      setPractice(null);
+    }catch{setMsg('Hata: Çözümlü örnek yüklenemedi.');}
+    finally{setGuidedBusy(false)}
+  }
+
+  async function finishGuided(){
+    if(!guided?.sessionId||!guidedAnswer.trim())return;
+    setGuidedBusy(true);setMsg('');
+    try{
+      const r=await fetch('/api/student/reviews/guided',{
+        method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({action:'submit',sessionId:guided.sessionId,answer:guidedAnswer.trim()})
+      });
+      const j=await r.json();
+      if(!r.ok){setMsg('Hata: '+(j.error||'Alıştırma kontrol edilemedi.'));return;}
+      setGuidedResult(j);
+    }catch{setMsg('Hata: Alıştırma sonucu kaydedilemedi.');}
+    finally{setGuidedBusy(false)}
   }
 
   async function startPractice(reviewId:string){
@@ -108,6 +147,18 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       await load();
     }catch{setMsg('Hata: Test sonucu kaydedilemedi.');}
     finally{setPracticeBusy(false)}
+  }
+
+  function openGuidedFromBank(q:any){
+    if(!q.review?.id)return;
+    setSupport({
+      reviewId:q.review.id,subject:q.subject,topic:q.topic,
+      topicConfirmationNeeded:(q.classificationConfidence||0)<0.65,
+      acquisition:null,reasonLabel:null,
+      instruction:'Konuyu ayrı hazırlanmış örnek üzerinde incele, ardından kendi soruna tekrar dön.',
+      explanation:q.explanation||null,steps:[]
+    });
+    void startGuided(q.review.id);
   }
 
   async function saveTopic(questionId:string,current:string){
@@ -164,7 +215,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       </div>}
     </div>
 
-    {support&&<div className="card" aria-live="polite">
+    {support&&<div id="keks-guided-remediation" className="card" aria-live="polite">
       <div className="moduleEyebrow">MİZA · YANLIŞTAN ÖĞRENME</div>
       <h2>{support.subject} · {support.topic}</h2>
       {support.topicConfirmationNeeded&&<div className="notice">Konu sınıflandırması düşük güvenli. Konuyu bankadan kontrol edip gerekirse düzelt.</div>}
@@ -173,15 +224,51 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         :<p className="muted">Bu kayıt henüz doğrulanmış bir kazanımla eşleşmedi. Gösterilen konu etiketi başlangıç rehberidir.</p>}
       <p><strong>{support.reasonLabel||'Önerilen çalışma'}:</strong> {support.instruction}</p>
       {support.explanation
-        ?<div className="notice"><strong>Kaydedilmiş çözüm:</strong> {support.explanation}</div>
-        :<div className="notice">Bu sorunun doğrulanmış açıklaması eklenmemiş. Konu anlatımı uydurmak yerine koçundan açıklama iste.</div>}
+        ?<div className="notice"><strong>Yüklenen çözüm notu (doğrulama gerektirebilir):</strong> {support.explanation}</div>
+        :<div className="notice">Yüklenen soruya ait doğrulanmış bir çözüm yok. İlgili beceri için ayrı hazırlanmış bir çözümlü örnek varsa aşağıdan çalışabilirsin.</div>}
       <ol>{(support.steps||[]).map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
       <div className="row" style={{flexWrap:'wrap',marginTop:12}}>
-        <button type="button" className="btn primary" disabled={practiceBusy} onClick={()=>startPractice(support.reviewId)}>
-          {practiceBusy?'Hazırlanıyor…':'Aynı Konudan Farklı Soru Çöz'}
+        <button type="button" className="btn primary" disabled={guidedBusy} onClick={()=>startGuided(support.reviewId)}>
+          {guidedBusy?'Hazırlanıyor…':'Çözümlü Örnek ve Mini Alıştırma'}
         </button>
-        <button type="button" className="btn" onClick={()=>{setSupport(null);setPractice(null)}}>Kapat</button>
+        <button type="button" className="btn" disabled={practiceBusy} onClick={()=>startPractice(support.reviewId)}>
+          {practiceBusy?'Hazırlanıyor…':'Soru Havuzundan Farklı Soru'}
+        </button>
+        <button type="button" className="btn" onClick={()=>{setSupport(null);setPractice(null);setGuided(null)}}>Kapat</button>
       </div>
+      {guided&&<div className="stack" style={{marginTop:14}}>
+        <h3>{guided.lesson.title}</h3>
+        <p className="muted">{guided.note}</p>
+        {guided.lesson.contentStatus==='PILOT'&&<small className="muted">KEKS özgün pilot içeriği; uzman kontrolüyle genişletilecektir.</small>}
+        <div className="card" style={{margin:0}}>
+          <strong>Öğreneceğin beceri: {guided.lesson.skill}</strong>
+          <p>{guided.lesson.explanation}</p>
+          <p><strong>Sık yapılan kavram hatası:</strong> {guided.lesson.misconception}</p>
+          <strong>Adım adım çözümlü örnek</strong>
+          <p>{guided.lesson.worked.prompt}</p>
+          <ol>{guided.lesson.worked.steps.map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
+          <p><strong>Örnek cevabı:</strong> {guided.lesson.worked.answer}</p>
+        </div>
+        <div className="card" style={{margin:0}}>
+          <strong>Şimdi sen çöz · Yeni ve farklı soru</strong>
+          <p>{guided.exercise.prompt}</p>
+          <div className="reviewTextAnswer">
+            <input value={guidedAnswer} disabled={Boolean(guidedResult)}
+              onChange={e=>setGuidedAnswer(e.target.value)}
+              placeholder="Sonucu yaz (örn. 3/4, 0,75 veya 198)"/>
+            {!guidedResult&&<button type="button" className="btn primary" disabled={guidedBusy||!guidedAnswer.trim()} onClick={finishGuided}>
+              {guidedBusy?'Kontrol ediliyor…':'Alıştırmayı Kontrol Et'}
+            </button>}
+          </div>
+          {guidedResult&&<div className="notice" aria-live="polite">
+            <strong>{guidedResult.correct?'Doğru!':'Yeniden deneyimle.'}</strong>
+            <p>Beklenen cevap: {guidedResult.correctAnswer}</p>
+            <p>{guidedResult.explanation}</p>
+            <p>{guidedResult.guidance}</p>
+            <small>Bu alıştırma, takvimindeki yanlış soru tekrarını otomatik tamamlamaz.</small>
+          </div>}
+        </div>
+      </div>}
       {practice&&<div className="stack" style={{marginTop:14}}>
         <h3>{practice.quiz.title}</h3>
         {(practice.questions||[]).map((q:any,i:number)=><article key={q.id} className="card" style={{margin:0}}>
@@ -260,6 +347,16 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <input name="image" type="file" accept="image/jpeg,image/png,image/webp"/>
           <small className="muted">JPG, PNG veya WebP · en fazla 5 MB</small>
         </div>
+        <div className="field wrongQuestionWide">
+          <label>Alt beceri / çözümlü örnek (isteğe bağlı)</label>
+          <select name="practiceSkillId" defaultValue="">
+            <option value="">Otomatik öneri — uygun örnek varsa</option>
+            <option value="math-percent-changes-v1">Matematik · Ardışık yüzde değişimleri</option>
+            <option value="math-fraction-ops-v1">Matematik · Kesirlerde işlemler</option>
+            <option value="math-exponent-rules-v1">Matematik · Üslü sayılarda işlemler</option>
+          </select>
+          <small className="muted">Özellikle sadece soru fotoğrafı yüklediğinde ilgili beceriyi sen seçmelisin. Bu seçenek fotoğraftan otomatik okuma veya özgün sorunun çözüldüğü iddiası değildir.</small>
+        </div>
         <div className="field">
           <label>Senin verdiğin yanlış cevap</label>
           <input name="originalStudentAnswer" placeholder="İsteğe bağlı"/>
@@ -295,7 +392,12 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
               <input value={editing[q.id]??q.topic} onChange={e=>setEditing(x=>({...x,[q.id]:e.target.value}))}/>
               <button className="btn" type="button" onClick={()=>saveTopic(q.id,q.topic)}>Konuyu Güncelle</button>
             </div>
-            {q.review&&<small className="muted">Tekrar aşaması: {q.review.stepIndex} · Sonraki görev: {new Date(q.review.dueAt).toLocaleDateString('tr-TR')} · {q.review.status}</small>}
+            {q.review&&<>
+              <small className="muted">Tekrar aşaması: {q.review.stepIndex} · Sonraki görev: {new Date(q.review.dueAt).toLocaleDateString('tr-TR')} · {q.review.status}</small>
+              <div style={{marginTop:10}}>
+                <button className="btn" type="button" disabled={guidedBusy} onClick={()=>openGuidedFromBank(q)}>Bu Konuda Çözümlü Örnek Çalış</button>
+              </div>
+            </>}
           </div>
         </article>)}
       </div>}

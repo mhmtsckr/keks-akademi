@@ -56,17 +56,26 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   });
   const remediationMap=new Map<string,{
     subject:string;topic:string;wrongCount:number;totalReviews:number;
+    guidedAttempts:number;guidedCorrect:number;
     lastWrongAt:string;reasonCounts:Record<string,number>;
   }>();
   for(const log of recentLogs){
     const p=(log.payload&&typeof log.payload==='object'&&!Array.isArray(log.payload))
       ?log.payload as Record<string,unknown>:{};
-    if(p.type!=='REVIEW_RESULT'||typeof p.subject!=='string'||typeof p.topic!=='string')continue;
+    if(!['REVIEW_RESULT','GUIDED_PRACTICE_RESULT'].includes(String(p.type))
+      ||typeof p.subject!=='string'||typeof p.topic!=='string')continue;
     const key=p.subject+'|'+p.topic;
     const row=remediationMap.get(key)||{
       subject:p.subject,topic:p.topic,wrongCount:0,totalReviews:0,
+      guidedAttempts:0,guidedCorrect:0,
       lastWrongAt:'',reasonCounts:{} as Record<string,number>
     };
+    if(p.type==='GUIDED_PRACTICE_RESULT'){
+      row.guidedAttempts++;
+      if(p.correct===true)row.guidedCorrect++;
+      remediationMap.set(key,row);
+      continue;
+    }
     row.totalReviews++;
     if(p.correct===false){
       row.wrongCount++;
