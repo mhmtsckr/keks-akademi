@@ -2,7 +2,7 @@ import {EXPANDED_MICRO_LESSONS} from './expandedMicroLessons';
 import type {MicroLesson} from './bankFreeMicroLessons';
 function norm(s:string){
   return s.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[‐‑–—]/g,'-').replace(/\s+/g,' ').trim();
+    .replace(/[‐‑–—]/g,'-').replace(/ı/g,'i').replace(/\s+/g,' ').trim();
 }
 const entry=(id:string)=>EXPANDED_MICRO_LESSONS.find(x=>x.id===id)||null;
 
