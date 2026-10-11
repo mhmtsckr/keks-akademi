@@ -138,6 +138,7 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
               <span className="pill">{x.wrongCount}/{x.totalReviews} yanlış tekrar</span>
             </div>
             <p><strong>Bildirilmiş neden:</strong> {x.primaryReason}</p>
+            <p className="muted"><strong>Özgün mini alıştırmalar:</strong> {x.guidedAttempts||0} deneme · {x.guidedCorrect||0} doğru. Bunlar kalıcı öğrenme kanıtı sayılmaz.</p>
             <p className="muted"><strong>Koç müdahalesi:</strong> {x.recommendedAction}</p>
           </div>)}
         </div>}
