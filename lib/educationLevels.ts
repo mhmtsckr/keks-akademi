@@ -3,7 +3,7 @@ export const EDUCATION_LEVELS={
   PRIMARY_4:'İlkokul 4 | Proje Ortaokuluna Hazırlık',
   MIDDLE_56:'Ortaokul 5-6 | Maarif Model',
   MIDDLE_7:'Ortaokul 7 | Maarif Model',
-  MIDDLE_8:'Ortaokul 8 | Maarif Model',
+  MIDDLE_8:'Ortaokul 8 | LGS (Önceki MEB Programı)',
   HIGH_910:'Lise 9-10 | Maarif Model (1.Aşama)',
   HIGH_11:'Lise 11 | Maarif Model (Alan)',
   HIGH_12:'Lise 12 | YKS',
