@@ -87,6 +87,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
   async function startGuided(reviewId:string){
     setGuidedBusy(true);setMsg('');
+    setGuided(null);setGuidedResult(null);setGuidedAnswer('');
     try{
       const r=await fetch('/api/student/reviews/guided',{
         method:'POST',headers:{'content-type':'application/json'},
@@ -143,6 +144,18 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       await load();
     }catch{setMsg('Hata: Test sonucu kaydedilemedi.');}
     finally{setPracticeBusy(false)}
+  }
+
+  function openGuidedFromBank(q:any){
+    if(!q.review?.id)return;
+    setSupport({
+      reviewId:q.review.id,subject:q.subject,topic:q.topic,
+      topicConfirmationNeeded:(q.classificationConfidence||0)<0.65,
+      acquisition:null,reasonLabel:null,
+      instruction:'Konuyu ayrı hazırlanmış örnek üzerinde incele, ardından kendi soruna tekrar dön.',
+      explanation:q.explanation||null,steps:[]
+    });
+    void startGuided(q.review.id);
   }
 
   async function saveTopic(questionId:string,current:string){
@@ -376,7 +389,12 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
               <input value={editing[q.id]??q.topic} onChange={e=>setEditing(x=>({...x,[q.id]:e.target.value}))}/>
               <button className="btn" type="button" onClick={()=>saveTopic(q.id,q.topic)}>Konuyu Güncelle</button>
             </div>
-            {q.review&&<small className="muted">Tekrar aşaması: {q.review.stepIndex} · Sonraki görev: {new Date(q.review.dueAt).toLocaleDateString('tr-TR')} · {q.review.status}</small>}
+            {q.review&&<>
+              <small className="muted">Tekrar aşaması: {q.review.stepIndex} · Sonraki görev: {new Date(q.review.dueAt).toLocaleDateString('tr-TR')} · {q.review.status}</small>
+              <div style={{marginTop:10}}>
+                <button className="btn" type="button" disabled={guidedBusy} onClick={()=>openGuidedFromBank(q)}>Bu Konuda Çözümlü Örnek Çalış</button>
+              </div>
+            </>}
           </div>
         </article>)}
       </div>}
