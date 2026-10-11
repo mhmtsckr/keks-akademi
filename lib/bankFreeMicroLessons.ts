@@ -79,9 +79,15 @@ function normalize(value:string){
   return value.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 }
 
-export function findMicroLesson(input:{subject:string;topic:string;prompt?:string|null}):MicroLesson|null{
+export function findMicroLesson(input:{
+  subject:string;topic:string;prompt?:string|null;selectedLessonId?:string|null
+}):MicroLesson|null{
   const subject=normalize(input.subject);
   if(!subject.includes('matematik'))return null;
+  // Student-chosen skill enables image-only questions without pretending to read the photo.
+  if(input.selectedLessonId){
+    return MICRO_LESSONS.find(x=>x.id===input.selectedLessonId&&normalize(x.subject)===subject)||null;
+  }
   const topic=normalize(input.topic);
   const prompt=normalize(input.prompt||'');
   // A broad "Problemler" label is insufficient unless the question text gives evidence.
