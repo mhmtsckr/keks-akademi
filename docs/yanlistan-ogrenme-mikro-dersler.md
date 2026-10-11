@@ -40,3 +40,27 @@ Her yeni mikro ders için:
 - Tüm dersler/kazanımlar için çözümlü örnek yok; desteklenmeyen durumlarda güvenli mesaj verilir.
 - Henüz öğretmen onay akışına sahip bir admin içerik editörü yok. Genişlemede onaylı ders şablonu CMS + kaynak revizyon geçmişi kurulmalı.
 - Kontrol edilmiş özgün örnek, öğrencinin yüklediği sorunun çözüm anahtarı yerine geçmez.
+
+## Matematik dışındaki genişletme — 11 Ekim 2026
+
+**Üretilen özgün içerikler:** 9 yeni mikro ders, 36 çoktan seçmeli pekiştirme alıştırması. Matematikteki 3 mikro dersle toplam 12 ders ve 48 alıştırma. Yeni alanlar: Türkçe (paragraf ana düşünce; neden–amaç sonuç), Türk Dili ve Edebiyatı (benzetme–kişileştirme), Tarih (Millî Mücadele kronolojisi), Coğrafya (enlem–boylam), Fizik (temel/türetilmiş büyüklükler), Kimya (element–bileşik–karışım), Biyoloji (organeller), Eğitim Bilimleri (geçerlik–güvenirlik).
+
+**Eğitimsel dayanak için referanslar:** [MEB 7. sınıf Fen Bilimleri — Maddenin Doğasına Yolculuk](https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/432); [TBMM açık erişim — Millî egemenlik belgeleri](https://acikerisim.tbmm.gov.tr/items/af4f5817-2914-4daf-9b57-24135495d396/full). Örnekler orijinaldir; resmî dokümanlardan soru veya metin kopyalanmamıştır. Derslerin tümü için resmî kazanım kodu eşleştirmesi yapılmış **değildir**.
+
+### Onaylama protokolü
+- Yeni içerikler varsayılan **PILOT** statüsünde yayımlanır; otomatik test geçmeleri kendiliğinden öğretmen onayı vermez.
+- Yönetici → İçerik & Soru Bankası → Çözümlü Örnek Kataloğu Onay Merkezi panelinde her dersin kapsamı, örnek çözümü, dört sorusu, seçenekleri ve cevap anahtarları görüntülenir.
+- Yönetici içerik ve anahtarı incelediğini açıkça belirtir ve en az 12 karakterlik inceleme gerekçesiyle `APPROVE` işlemi yapar.
+- Onay `AuditLog` tablosunda yönetici kimliği, zaman, ders kimliği, içerik sürümü ve SHA-256 içerik özetiyle saklanır. İçerik değişirse onay geçersiz olur. `REVOKE` ile geri alınabilir.
+- **APPROVED** etiketi *yönetici içerik kontrolü* anlamına gelir. Bağımsız alan öğretmeni kontrolünün kanıtı olarak kullanılamaz; uzman imzası/kanıt sistemi ileride ayrıca eklenmelidir.
+- Öğrenci yalnızca ders adlarını ve becerileri gören güvenli kataloğa erişir; test alıştırmalarının cevap anahtarları gönderilmez, sonuç sunucuda kontrol edilir.
+- Fotoğraftan konu çıkardığı iddia edilmez; dersi ve beceriyi öğrenci seçebilir. Geniş konu adları tek başına otomatik beceri kanıtı sayılmaz.
+- Mikro alıştırma `DailyLog` verisi oluşturur ama SRS aşamasını ve kalıcılık durumunu tek başına değiştirmez.
+
+### Yeni dosyalar
+- `lib/expandedMicroLessons.ts` — yeni içerikler (özgün).
+- `lib/expandedMicroLessonMatch.ts` — muhafazakâr alt beceri eşleştirmeleri.
+- `lib/microLessonReview.ts` — SHA-256 sürüm bağımlı onay çözümleme.
+- `app/api/admin/micro-lessons/route.ts` — yetkili inceleme/onay/geri alma.
+- `app/components/AdminMicroLessonReviews.tsx` — yönetici onay arayüzü.
+- `app/api/student/reviews/guided/route.ts` — dinamik pilot/onay etiketleri, çoktan seçmeli güvenli alıştırmalar.
