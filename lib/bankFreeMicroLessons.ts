@@ -25,15 +25,15 @@ export const MICRO_LESSONS:readonly MicroLesson[]=[
     explanation:'Ardışık yüzde değişimlerinde her işlem o andaki tutara uygulanır. %20 artış için 1,20; %20 indirim için 0,80 çarpanı kullanılır.',
     misconception:'Aynı oranda zam ve indirim birbirini sıfırlamaz. Çünkü indirim, artıştan sonraki yeni tutara uygulanır.',
     worked:{
-      prompt:'100 TL olan ürün önce %20 zamlanıyor, ardından %20 indiriliyor. Son fiyat kaç TL?',
-      steps:['100 × 1,20 = 120 TL','120 × 0,80 = 96 TL','Son fiyat 96 TL; başlangıca göre %4 azalma vardır.'],
-      answer:'96 TL'
+      prompt:'100 birim olan ürün önce %20 zamlanıyor, ardından %20 indiriliyor. Son değer kaç birim?',
+      steps:['100 × 1,20 = 120 birim','120 × 0,80 = 96 birim','Son fiyat 96 birim; başlangıca göre %4 azalma vardır.'],
+      answer:'96 birim'
     },
     exercises:[
-      {prompt:'200 TL önce %10 zamlanıyor, sonra %10 indiriliyor. Son fiyat kaç TL?',answer:'198',explanation:'200 × 1,10 = 220; 220 × 0,90 = 198 TL.',verify:{base:200,firstMultiplier:1.1,secondMultiplier:0.9}},
-      {prompt:'150 TL önce %20 zamlanıyor, sonra %10 indiriliyor. Son fiyat kaç TL?',answer:'162',explanation:'150 × 1,20 = 180; 180 × 0,90 = 162 TL.',verify:{base:150,firstMultiplier:1.2,secondMultiplier:0.9}},
-      {prompt:'80 TL önce %25 indiriliyor, ardından %20 zamlanıyor. Son fiyat kaç TL?',answer:'72',explanation:'80 × 0,75 = 60; 60 × 1,20 = 72 TL.',verify:{base:80,firstMultiplier:0.75,secondMultiplier:1.2}},
-      {prompt:'240 TL önce %25 zamlanıyor, sonra %20 indiriliyor. Son fiyat kaç TL?',answer:'240',explanation:'240 × 1,25 = 300; 300 × 0,80 = 240 TL.',verify:{base:240,firstMultiplier:1.25,secondMultiplier:0.8}}
+      {prompt:'200 birim önce %10 zamlanıyor, sonra %10 indiriliyor. Son değer kaç birim?',answer:'198',explanation:'200 × 1,10 = 220; 220 × 0,90 = 198 birim.',verify:{base:200,firstMultiplier:1.1,secondMultiplier:0.9}},
+      {prompt:'150 birim önce %20 zamlanıyor, sonra %10 indiriliyor. Son değer kaç birim?',answer:'162',explanation:'150 × 1,20 = 180; 180 × 0,90 = 162 birim.',verify:{base:150,firstMultiplier:1.2,secondMultiplier:0.9}},
+      {prompt:'80 birim önce %25 indiriliyor, ardından %20 zamlanıyor. Son değer kaç birim?',answer:'72',explanation:'80 × 0,75 = 60; 60 × 1,20 = 72 birim.',verify:{base:80,firstMultiplier:0.75,secondMultiplier:1.2}},
+      {prompt:'240 birim önce %25 zamlanıyor, sonra %20 indiriliyor. Son değer kaç birim?',answer:'240',explanation:'240 × 1,25 = 300; 300 × 0,80 = 240 birim.',verify:{base:240,firstMultiplier:1.25,secondMultiplier:0.8}}
     ],
     contentStatus:'PILOT'
   },
