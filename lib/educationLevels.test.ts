@@ -9,7 +9,7 @@ describe('KEKS eğitim düzeyi standardı',()=>{
       'İlkokul 4 | Proje Ortaokuluna Hazırlık',
       'Ortaokul 5-6 | Maarif Model',
       'Ortaokul 7 | Maarif Model',
-      'Ortaokul 8 | Maarif Model',
+      'Ortaokul 8 | LGS (Önceki MEB Programı)',
       'Lise 9-10 | Maarif Model (1.Aşama)',
       'Lise 11 | Maarif Model (Alan)',
       'Lise 12 | YKS',
@@ -39,7 +39,7 @@ describe('KEKS eğitim düzeyi standardı',()=>{
     expect(normalizeLegacyEducationLevel('İlkokul 3-4')).toContain('İlkokul 1-2-3');
     expect(normalizeLegacyEducationLevel('İlkokul 3-4')).toContain('İlkokul 4 | Proje Ortaokuluna Hazırlık');
     expect(normalizeLegacyEducationLevel('Ortaokul 7-8 / LGS')).toContain('Ortaokul 7 | Maarif Model');
-    expect(normalizeLegacyEducationLevel('Ortaokul 7-8 / LGS')).toContain('Ortaokul 8 | Maarif Model');
+    expect(normalizeLegacyEducationLevel('Ortaokul 7-8 / LGS')).toContain('Ortaokul 8 | LGS (Önceki MEB Programı)');
     expect(normalizeLegacyEducationLevel('Lise 11-12 / YKS')).toContain('Lise 11 | Maarif Model (Alan)');
     expect(normalizeLegacyEducationLevel('Lise 11-12 / YKS')).toContain('Lise 12 | YKS');
   });

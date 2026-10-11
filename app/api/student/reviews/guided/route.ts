@@ -7,6 +7,7 @@ import {db} from '@/lib/db';
 import {areEquivalentShortAnswers} from '@/lib/mathAnswerEquivalence';
 import {ALL_MICRO_LESSONS,findMicroLesson,microLessonById} from '@/lib/bankFreeMicroLessons';
 import {getMicroLessonReviewStatusMap} from '@/lib/microLessonReview';
+import {resolveLearningCurriculumContext,lessonAllowedForContext} from '@/lib/curriculumPolicy2026';
 
 const schema=z.discriminatedUnion('action',[
   z.object({action:z.literal('start'),reviewId:z.string().min(1)}),
@@ -17,14 +18,25 @@ function record(value:unknown):Record<string,unknown>{
   return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
 }
 
-async function GET__handler(){
-  await requireRole(['STUDENT']);
+async function GET__handler(req:Request){
+  const user=await requireRole(['STUDENT']);
+  if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  const url=new URL(req.url);
+  const rawGrade=url.searchParams.get('grade');
+  const selectedGrade=rawGrade&&/^\\d{1,2}$/.test(rawGrade)?Number(rawGrade):null;
+  const examType=url.searchParams.get('examType')||user.student.gradeLevel;
+  const context=resolveLearningCurriculumContext({
+    gradeLevel:user.student.gradeLevel,selectedGrade,examType
+  });
   const states=await getMicroLessonReviewStatusMap();
-  return NextResponse.json({ok:true,lessons:ALL_MICRO_LESSONS.map(x=>({
-    id:x.id,version:x.version,subject:x.subject,title:x.title,
-    skill:x.skill,contentStatus:states.get(x.id)?.status||'PILOT',
-    sourceUrl:x.sourceUrl||null
-  }))});
+  return NextResponse.json({
+    ok:true,academicYear:context.academicYear,curriculumContext:context,
+    lessons:ALL_MICRO_LESSONS.filter(x=>lessonAllowedForContext(x,context)).map(x=>({
+      id:x.id,version:x.version,subject:x.subject,title:x.title,
+      skill:x.skill,topicTags:x.topicTags||[],contentStatus:states.get(x.id)?.status||'PILOT',
+      sourceUrl:x.sourceUrl||null
+    }))
+  });
 }
 
 async function POST__handler(req:Request){
@@ -40,12 +52,22 @@ async function POST__handler(req:Request){
     if(!review)return NextResponse.json({error:'Tekrar görevi bulunamadı.'},{status:404});
     // Only relate a curated example to an uploaded question when its skill can be
     // identified confidently. Image-only/ambiguous questions must not be guessed.
+    const options=record(review.question.options);
+    const savedGrade=typeof options.educationGrade==='number'?options.educationGrade:null;
+    const context=resolveLearningCurriculumContext({
+      gradeLevel:user.student.gradeLevel,selectedGrade:savedGrade,examType:review.question.examType
+    });
     const lesson=findMicroLesson({
       subject:review.question.subject,
       topic:review.question.topic,
       prompt:review.question.prompt,
-      selectedLessonId:typeof record(review.question.options).practiceSkillId==='string'?String(record(review.question.options).practiceSkillId):null
+      selectedLessonId:typeof options.practiceSkillId==='string'?String(options.practiceSkillId):null
     });
+    if(lesson&&!lessonAllowedForContext(lesson,context))
+      return NextResponse.json({
+        error:'Bu çözümlü örnek öğrencinin doğrulanmış sınıfına veya sınavına uygun değil. Sınıf bilgisini kontrol et.',
+        code:'LEVEL_MISMATCH',curriculumContext:context
+      },{status:409});
     if(!lesson)return NextResponse.json({
       ok:false,code:'NO_GUIDED_EXAMPLE',
       error:'Bu alt beceri için hazırlanmış çözümlü örnek henüz yok. Orijinal sorunun çözümünü uydurmak yerine koçundan konu örneği eklemesini iste.'
@@ -58,7 +80,8 @@ async function POST__handler(req:Request){
         originQuestionId:review.questionId,
         subject:review.question.subject,topic:review.question.topic,
         lessonId:lesson.id,lessonVersion:lesson.version,variantIndex,
-        contentStatus:publication
+        contentStatus:publication,
+        educationGrade:context.grade,framework:context.framework,academicYear:context.academicYear
       }
     }});
     return NextResponse.json({
@@ -66,7 +89,9 @@ async function POST__handler(req:Request){
       lesson:{
         id:lesson.id,version:lesson.version,subject:lesson.subject,title:lesson.title,
         skill:lesson.skill,explanation:lesson.explanation,misconception:lesson.misconception,
-        worked:lesson.worked,contentStatus:publication
+        worked:lesson.worked,contentStatus:publication,
+        curriculumContext:{grade:context.grade,framework:context.framework,academicYear:context.academicYear},
+        outcomeVerified:false
       },
       exercise:{
         prompt:lesson.exercises[variantIndex].prompt,

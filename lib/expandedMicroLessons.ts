@@ -7,7 +7,7 @@ import type {MicroLesson} from './bankFreeMicroLessons';
  */
 export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
   {
-    id:'tur-paragraph-main-idea-v1',version:1,subject:'Türkçe',title:'Paragrafta ana düşünce',
+    id:'tur-paragraph-main-idea-v1',version:1,targetGrades:[4,5,6,7,8,9,10,11,12],targetExams:["TYT","YKS","DGS","ALES","AGS","KPSS"],subject:'Türkçe',title:'Paragrafta ana düşünce',
     skill:'Metnin bütününden desteklenen temel mesajı belirleme',
     explanation:'Ana düşünce metnin tamamının okura ilettiği temel yargıdır. Bir örnek veya ayrıntı, ana düşünceyle aynı şey değildir.',
     misconception:'Paragrafta ilk cümlede geçen konu sözcüğünü ana düşünce sanmak; destekleyen ayrıntıyla ana düşünceyi karıştırmak.',
@@ -25,7 +25,7 @@ export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'tur-cause-purpose-v1',version:1,subject:'Türkçe',title:'Neden–sonuç ve amaç–sonuç',
+    id:'tur-cause-purpose-v1',version:1,targetGrades:[5,6,7,8,9,10,11,12],targetExams:["TYT","YKS","DGS","ALES","AGS","KPSS"],subject:'Türkçe',title:'Neden–sonuç ve amaç–sonuç',
     skill:'Gerçekleşen neden ile hedeflenen amacı birbirinden ayırma',
     explanation:'Neden–sonuçta eylemin gerçekleşme sebebi belirtilir. Amaç–sonuçta ise eylemin ulaşmak istediği hedef açıklanır. “Niçin?” sorusunun yanıtı her iki yapıda da bulunabilir; hedef/gerçekleşmiş sebep ayrımına bak.',
     misconception:'“İçin” sözcüğü bulunan her cümleyi amaç–sonuç kabul etmek; gerçek nedeni ve hedefi ayırmamak.',
@@ -43,7 +43,7 @@ export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'lit-figures-of-speech-v1',version:1,subject:'Türk Dili ve Edebiyatı',title:'Benzetme ve kişileştirme',
+    id:'lit-figures-of-speech-v1',version:1,targetGrades:[9,10,11,12],targetExams:["AYT","YKS","ÖABT"],subject:'Türk Dili ve Edebiyatı',title:'Benzetme ve kişileştirme',
     skill:'Söz sanatlarında benzetme ile insana özgü nitelik aktarmayı ayırt etme',
     explanation:'Benzetmede bir varlık, bir yönden başka varlığa benzetilir. Kişileştirmede insan dışı bir varlığa insana özgü davranış veya özellik yüklenir.',
     misconception:'İnsan dışındaki her varlığın geçtiği cümleyi kişileştirme saymak; karşılaştırmayı benzetmenin kesin kanıtı görmek.',
@@ -61,7 +61,7 @@ export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'hist-national-struggle-order-v1',version:1,subject:'Tarih',title:'Millî Mücadele kronolojisi',
+    id:'hist-national-struggle-order-v1',version:1,targetGrades:[8,9,10,11,12],targetExams:["TYT","AYT","YKS","KPSS","AGS"],subject:'Tarih',title:'Millî Mücadele kronolojisi',
     skill:'Millî Mücadele döneminin temel olaylarını sıralama',
     explanation:'Bu olayların tarihlerini ayrı ayrı bilmek, kronolojik sıralamayı kolaylaştırır: Samsun’a çıkış (19 Mayıs 1919), Amasya Genelgesi (22 Haziran 1919), Erzurum Kongresi (23 Temmuz–7 Ağustos 1919), Sivas Kongresi (4–11 Eylül 1919), TBMM’nin açılışı (23 Nisan 1920).',
     misconception:'Erzurum ve Sivas kongrelerinin tarih sırasını ters çevirmek veya TBMM açılışını 1919 olaylarından önce düşünmek.',
@@ -80,7 +80,7 @@ export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'geo-latitude-longitude-v1',version:1,subject:'Coğrafya',title:'Enlem ve boylamın yorumlanması',
+    id:'geo-latitude-longitude-v1',version:1,targetGrades:[6,7,8,9,10,11,12],targetExams:["TYT","AYT","YKS","KPSS","AGS"],subject:'Coğrafya',title:'Enlem ve boylamın yorumlanması',
     skill:'Enlem–boylam kavramlarını ve yönlerini ayırma',
     explanation:'Enlem, Ekvator’a göre kuzey veya güney yönünde açısal konumdur. Boylam, başlangıç meridyenine göre doğu veya batı yönünde açısal konumdur.',
     misconception:'Paralelleri meridyenlerle, kuzey–güney bilgisini doğu–batı bilgisiyle karıştırmak.',
@@ -98,7 +98,7 @@ export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'physics-quantities-v1',version:1,subject:'Fizik',title:'Temel ve türetilmiş büyüklükler',
+    id:'physics-quantities-v1',version:1,targetGrades:[9,10,11,12],targetExams:["TYT","AYT","YKS"],subject:'Fizik',title:'Temel ve türetilmiş büyüklükler',
     skill:'SI sisteminde temel ve türetilmiş fiziksel büyüklükleri ayırt etme',
     explanation:'Uluslararası Birim Sisteminde uzunluk, kütle, zaman, elektrik akımı, termodinamik sıcaklık, madde miktarı ve ışık şiddeti temel büyüklüklerdir. Alan, sürat ve kuvvet bunlardan türetilir.',
     misconception:'“Hız” gibi sık kullanılan büyüklüklerin de SI temel büyüklüğü olduğunu sanmak.',
@@ -116,7 +116,7 @@ export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'chem-element-compound-mixture-v1',version:1,subject:'Kimya',title:'Element, bileşik ve karışım',
+    id:'chem-element-compound-mixture-v1',version:1,targetGrades:[9,10,11,12],targetExams:["TYT","AYT","YKS"],subject:'Kimya',title:'Element, bileşik ve karışım',
     skill:'Saf madde türlerini ve karışımları örneklerden ayırt etme',
     explanation:'Element tek tür atomdan oluşan saf maddedir. Bileşik farklı element atomlarının kimyasal bağlarla belirli oranlarda birleştiği saf maddedir. Karışımda maddeler kimyasal bağla yeni bir saf madde oluşturmak zorunda değildir.',
     misconception:'Tuzlu suyu bileşik sanmak veya suyun (H₂O) tek tür atom içerdiğini düşünmek.',
@@ -135,7 +135,7 @@ export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'bio-organel-functions-v1',version:1,subject:'Biyoloji',title:'Hücre organellerinin görevleri',
+    id:'bio-organel-functions-v1',version:1,targetGrades:[9,10,11,12],targetExams:["TYT","AYT","YKS"],subject:'Biyoloji',title:'Hücre organellerinin görevleri',
     skill:'Ökaryot hücre organelleri ile temel işlevleri eşleştirme',
     explanation:'Ribozom protein sentezinde, mitokondri hücresel solunumun büyük bölümünde, kloroplast fotosentezde görev alır. Çekirdek ökaryot hücrenin DNA’sının büyük bölümünü bulundurur.',
     misconception:'Kloroplastın bütün hücrelerde bulunduğunu veya ribozomun yalnız hayvan hücrelerinde olduğunu düşünmek.',
@@ -153,7 +153,7 @@ export const EXPANDED_MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'edu-validity-reliability-v1',version:1,subject:'Eğitim Bilimleri',title:'Ölçmede geçerlik ve güvenirlik',
+    id:'edu-validity-reliability-v1',version:1,targetGrades:[],targetExams:["AGS","ÖABT","KPSS"],subject:'Eğitim Bilimleri',title:'Ölçmede geçerlik ve güvenirlik',
     skill:'Ölçme aracının neyi ölçtüğünü ve tutarlılığını ayırt etme',
     explanation:'Geçerlik, elde edilen ölçme sonuçlarının amaçlanan kullanımını destekleme derecesiyle; güvenirlik ise ölçme sonuçlarının tutarlılığıyla ilgilidir. Güvenilir bir ölçüm yanlış özelliği ölçüyorsa amaç bakımından geçerli olmayabilir.',
     misconception:'Bir test her uygulandığında aynı sonucu verdiği için mutlaka doğru beceriyi ölçtüğünü varsaymak.',

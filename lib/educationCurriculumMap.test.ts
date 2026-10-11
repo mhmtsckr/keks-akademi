@@ -11,7 +11,9 @@ describe('eğitim düzeyine bağlı müfredat haritası',()=>{
     const sevenMath=seven?.subjects.find(x=>x.name==='Matematik');
     const eightMath=eight?.subjects.find(x=>x.name==='Matematik');
     expect(sevenMath?.units.some(x=>x.name.includes('Sayılar ve Nicelikler (2)'))).toBe(true);
-    expect(eightMath?.units.some(x=>x.name==='2. Tema: Cebirsel Düşünme ve Değişimler')).toBe(true);
+    expect(eight?.framework).toBe('EXAM');
+    expect(eight?.sourceLabel).toContain('Önceki MEB');
+    expect(eightMath?.units.some(x=>x.name.includes('LGS hazırlık konu dizini'))).toBe(true);
   });
 
   it('7. sınıf oran-orantı problem kurma yolunu kazanıma kadar çözer',()=>{
@@ -33,17 +35,15 @@ describe('eğitim düzeyine bağlı müfredat haritası',()=>{
     }));
   });
 
-  it('8. sınıf doğrusal fonksiyon kazanımlarını 7. sınıf oran haritasından ayırır',()=>{
+  it('8. sınıfın henüz yürürlükte olmayan TYMM kazanım kodunu resmîymiş gibi kullanmaz',()=>{
     const curriculum=getEducationCurriculum(EDUCATION_LEVELS.MIDDLE_8);
     const path=findCurriculumPath({
       curriculum,
       subject:'Matematik',
-      topic:'Doğrusal Fonksiyonlar',
-      subTopic:'Doğrusal İlişkiden Doğrusal Fonksiyonlara',
-      acquisition:'MAT.8.2.2',
-      questionType:'Modelleme'
+      topic:'Doğrusal Denklemler',
+      questionType:'Muhakeme'
     });
-    expect(path?.acquisitionId).toBe('MAT.8.2.2');
-    expect(path?.questionType).toBe('Modelleme');
+    expect(path?.acquisitionId).toMatch(/^KEKS\.LGS8\./);
+    expect(path?.questionType).toBe('Muhakeme');
   });
 });

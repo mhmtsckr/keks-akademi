@@ -4,6 +4,7 @@
  * This catalog is not a substitute for pedagogical/teacher review or a full question bank.
  */
 import {EXPANDED_MICRO_LESSONS} from './expandedMicroLessons';
+import {GRADE_SEED_LESSONS} from './gradeSeedMicroLessons';
 import {findExpandedMicroLesson} from './expandedMicroLessonMatch';
 
 export type GuidedExercise={
@@ -21,11 +22,14 @@ export type MicroLesson={
   exercises:readonly GuidedExercise[];
   contentStatus:'PILOT';
   sourceUrl?:string;
+  targetGrades?:readonly number[];
+  targetExams?:readonly string[];
+  topicTags?:readonly string[];
 };
 
 export const MICRO_LESSONS:readonly MicroLesson[]=[
   {
-    id:'math-percent-changes-v1',version:1,subject:'Matematik',title:'Ardışık yüzde değişimleri',
+    id:'math-percent-changes-v1',version:1,targetGrades:[7,8,9,10,11,12],targetExams:["TYT","AYT","YKS"],subject:'Matematik',title:'Ardışık yüzde değişimleri',
     skill:'Bir artış ve indirimden sonraki son tutarı hesaplama',
     explanation:'Ardışık yüzde değişimlerinde her işlem o andaki tutara uygulanır. %20 artış için 1,20; %20 indirim için 0,80 çarpanı kullanılır.',
     misconception:'Aynı oranda zam ve indirim birbirini sıfırlamaz. Çünkü indirim, artıştan sonraki yeni tutara uygulanır.',
@@ -43,7 +47,7 @@ export const MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'math-fraction-ops-v1',version:1,subject:'Matematik',title:'Kesirlerde toplama ve çıkarma',
+    id:'math-fraction-ops-v1',version:1,targetGrades:[5,6,7,8,9,10,11,12],targetExams:["TYT","AYT","YKS","DGS"],subject:'Matematik',title:'Kesirlerde toplama ve çıkarma',
     skill:'Payda eşitleyerek rasyonel sayılarla işlem yapma',
     explanation:'Kesirler toplanırken veya çıkarılırken paydalar eşitlenir; ardından yalnız paylar üzerinde işlem yapılır.',
     misconception:'Paylar ile paydalar ayrı ayrı toplanmaz. 1/2 + 1/3, 2/5 değil 5/6 eder.',
@@ -61,7 +65,7 @@ export const MICRO_LESSONS:readonly MicroLesson[]=[
     contentStatus:'PILOT'
   },
   {
-    id:'math-exponent-rules-v1',version:1,subject:'Matematik',title:'Üslü sayılarda aynı taban',
+    id:'math-exponent-rules-v1',version:1,targetGrades:[7,8,9,10,11,12],targetExams:["TYT","AYT","YKS"],subject:'Matematik',title:'Üslü sayılarda aynı taban',
     skill:'Aynı tabanlı üslü ifadelerde çarpma ve bölme',
     explanation:'Aynı tabanlı kuvvetler çarpılırken üsler toplanır; bölünürken üsler çıkarılır.',
     misconception:'Üsleri toplarken tabanlar çarpılmaz: 2³ × 2² = 2⁵, 4⁵ değil.',
@@ -84,7 +88,7 @@ function normalize(value:string){
   return value.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 }
 
-export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS];
+export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS,...GRADE_SEED_LESSONS];
 
 export function findMicroLesson(input:{
   subject:string;topic:string;prompt?:string|null;selectedLessonId?:string|null

@@ -9,11 +9,13 @@ type Lesson={
   exercises:{prompt:string;options?:Record<string,string>;answer:string;explanation:string}[];
   publication:{status:'APPROVED'|'PILOT';reviewedAt:string|null};
   contentDigest:string;
+  targetGrades?:readonly number[];targetExams?:readonly string[];topicTags?:readonly string[];
   sourceUrl?:string;
 };
 
 export function AdminMicroLessonReviews(){
  const [lessons,setLessons]=useState<Lesson[]>([]);
+ const [coverage,setCoverage]=useState<any|null>(null);
  const [note,setNote]=useState<Record<string,string>>({});
  const [checked,setChecked]=useState<Record<string,boolean>>({});
  const [busy,setBusy]=useState('');
@@ -21,8 +23,12 @@ export function AdminMicroLessonReviews(){
  const [filter,setFilter]=useState<'ALL'|'PILOT'|'APPROVED'>('PILOT');
  async function load(){
   try{
-   const r=await fetch('/api/admin/micro-lessons',{cache:'no-store'});
-   const j=await r.json();
+   const [r,c]=await Promise.all([
+     fetch('/api/admin/micro-lessons',{cache:'no-store'}),
+     fetch('/api/admin/micro-lessons/coverage',{cache:'no-store'})
+   ]);
+   const [j,cj]=await Promise.all([r.json(),c.json()]);
+   if(c.ok&&cj.ok)setCoverage(cj.coverage||null);
    if(!r.ok)throw Error(j.error||'İçerik listesi alınamadı.');
    setLessons(j.lessons||[]);
   }catch(e){setMessage('Hata: '+(e instanceof Error?e.message:'Mikro dersler yüklenemedi.'));}
@@ -57,6 +63,35 @@ export function AdminMicroLessonReviews(){
    </div>
    <span className="pill">{lessons.filter(x=>x.publication.status==='APPROVED').length}/{lessons.length} onaylı</span>
   </div>
+  {coverage&&<div className="card" style={{marginBottom:16}}>
+    <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
+    <h4>Üretim ve eksik kazanım takibi</h4>
+    <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
+    <div className="stack" style={{gap:8}}>
+      {(coverage.gradeRows||[]).map((g:any)=><details key={g.grade}>
+        <summary><strong>{g.grade}. sınıf</strong> · {g.framework==='TYMM'?'2026–2027 Maarif Modeli':'Önceki MEB programı'} · {g.subjectsWithLessons}/{g.totalSubjects} derste başlangıç içeriği</summary>
+        <div className="stack" style={{margin:8}}>
+          {(g.subjects||[]).map((subject:any)=><div key={subject.subject} className="muted">
+            <strong>{subject.subject}:</strong> {subject.pilotLessons} mikro ders ·
+            {subject.indexedTopics===null
+              ?' Resmî konu dizini aktarılmadı; kapsam oranı hesaplanamaz.'
+              :' '+subject.matchedIndexTopics+'/'+subject.indexedTopics+' KEKS iç dizin başlığı eşleşti.'}
+            {subject.missingTopicNames?.length>0&&
+              <div><small>Öncelikli açık başlıklar: {subject.missingTopicNames.slice(0,6).join(' · ')}</small></div>}
+          </div>)}
+        </div>
+      </details>)}
+      {(coverage.examRows||[]).map((ex:any)=><details key={ex.examType}>
+        <summary><strong>{ex.examType}</strong> · ÖSYM/ilgili sınav · {ex.totalPilotLessons} konu adayı</summary>
+        <div className="stack" style={{margin:8}}>
+          {(ex.subjects||[]).map((subject:any)=><div key={subject.subject} className="muted">
+            <strong>{subject.subject}:</strong> {subject.pilotLessons} mikro ders · {subject.matchedIndexTopics}/{subject.indexedTopics} KEKS iç dizin başlığı
+            {subject.missingTopicNames?.length>0&&<div><small>Açık başlıklar: {subject.missingTopicNames.slice(0,6).join(' · ')}</small></div>}
+          </div>)}
+        </div>
+      </details>)}
+    </div>
+  </div>}
   <div className="notice">Bu ekrandaki işlem <strong>yönetici içerik onayıdır</strong>. Bağımsız alan uzmanı/öğretmen tarafından onaylandığı anlamına gelmez. Alan uzmanı kontrolü yapılmadıysa uzman onayı iddiasında bulunmayın.</div>
   <div className="row" style={{marginTop:12,flexWrap:'wrap'}}>
    <label htmlFor="micro-lesson-filter">Filtre:</label>
@@ -71,6 +106,7 @@ export function AdminMicroLessonReviews(){
     <details className="card" key={x.id} style={{margin:0}}>
      <summary><strong>{x.subject} · {x.title}</strong> <span className="pill">{x.publication.status==='APPROVED'?'İçerik onaylı':'Pilot / bekliyor'}</span></summary>
      <p><strong>Beceri:</strong> {x.skill}</p>
+     <p className="muted"><strong>Uygun düzeyler:</strong> {(x.targetGrades||[]).map(g=>g+'. sınıf').join(', ')||'—'} · <strong>Sınavlar:</strong> {(x.targetExams||[]).join(', ')||'—'} · <strong>KEKS konu etiketleri:</strong> {(x.topicTags||[]).join(', ')||'Yok / doğrulama bekliyor'}</p>
      <p><strong>Açıklama:</strong> {x.explanation}</p>
      <p><strong>Kavram yanılgısı:</strong> {x.misconception}</p>
      <p><strong>Çözümlü örnek:</strong> {x.worked.prompt}</p>
