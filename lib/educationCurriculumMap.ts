@@ -1,4 +1,5 @@
 import {educationLevelKey,type EducationLevelKey,resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
+import {EXAM_CATALOG} from '@/lib/examCatalog';
 
 export type CurriculumAcquisition={
   id:string;
@@ -249,10 +250,35 @@ const MIDDLE_8_MATH:CurriculumSubject={
   ]
 };
 
+// MIDDLE_8_MATH is retained as a historical/provisional model draft, NOT the
+// current 2026-27 8th grade official curriculum. Do not surface it as TYMM.
+void MIDDLE_8_MATH;
 const DETAILED:Partial<Record<EducationLevelKey,CurriculumSubject[]>>={
-  MIDDLE_7:[MIDDLE_7_MATH],
-  MIDDLE_8:[MIDDLE_8_MATH]
+  MIDDLE_7:[MIDDLE_7_MATH]
 };
+
+function lgsLegacySubject(subject:string):CurriculumSubject|null{
+  const key=subject==='T.C. İnkılap Tarihi ve Atatürkçülük'
+    ?'T.C. İnkılap Tarihi'
+    :subject==='Din Kültürü ve Ahlak Bilgisi'?'Din Kültürü':subject;
+  const topics=(EXAM_CATALOG.LGS as Record<string,string[]>)[key];
+  if(!topics)return null;
+  return {
+    name:subject,
+    units:[{
+      name:'8. Sınıf · LGS hazırlık konu dizini (KEKS, resmî kazanım doğrulaması bekliyor)',
+      topics:topics.map((topic,index)=>({
+        name:topic,
+        subTopics:[{
+          name:'Konu genel becerileri',
+          acquisitions:[q('KEKS.LGS8.'+key+'.'+(index+1),
+            topic+' için beceri ve kazanım doğrulaması bekliyor.',
+            ['Beceri temelli soru','Yorumlama','Muhakeme'])]
+        }]
+      }))
+    }]
+  };
+}
 
 function fallbackUnit(subject:string,level:EducationLevelKey):CurriculumUnit{
   return {
@@ -286,13 +312,17 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   if(!key||!profile)return null;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=>byName.get(subject)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=>byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,
     examType:curriculumExamTypeForLevel(key)||profile.examMode,
-    framework:key==='MIDDLE_7'||key==='MIDDLE_8'?'TYMM':'EXAM',
-    sourceLabel:key==='MIDDLE_7'||key==='MIDDLE_8'?'Türkiye Yüzyılı Maarif Modeli':'KEKS eğitim düzeyi / sınav haritası',
+    framework:['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)?'TYMM':'EXAM',
+    sourceLabel:key==='MIDDLE_8'
+      ?'2026–2027: Önceki MEB programı · KEKS LGS konu dizini (resmî kazanım doğrulanmadı)'
+      :['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)
+        ?'2026–2027 Türkiye Yüzyılı Maarif Modeli (mevcut KEKS kazanım kapsaması sınırlıdır)'
+        :'KEKS önceki MEB / sınav konu haritası (resmî kazanım eşleştirmesi doğrulanmalıdır)',
     subjects
   };
 }
