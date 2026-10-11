@@ -45,9 +45,11 @@ export function buildWrongQuestionSupport(input:{
   const curriculum=getEducationCurriculum(input.gradeLevel,input.academicTrack);
   const subject=curriculum?.subjects.find(s=>normalized(s.name)===normalized(input.subject));
   // A fallback to the first curriculum topic would falsely attribute an official acquisition.
-  const matched=subject?.units.flatMap(unit=>unit.topics.flatMap(topic=>topic.subTopics.flatMap(sub=>
+  const matches=subject?.units.flatMap(unit=>unit.topics.flatMap(topic=>topic.subTopics.flatMap(sub=>
     sub.acquisitions.map(acquisition=>({unit:unit.name,topic:topic.name,subTopic:sub.name,acquisition}))
-  ))).find(x=>normalized(x.topic)===normalized(input.topic)||normalized(x.subTopic)===normalized(input.topic));
+  ))).filter(x=>normalized(x.topic)===normalized(input.topic)||normalized(x.subTopic)===normalized(input.topic))||[];
+  // Multiple outcomes under a broad topic cannot be disambiguated by the topic label alone.
+  const matched=matches.length===1?matches[0]:null;
   const reason=input.errorReason&&isRemediationReason(input.errorReason)?REMEDIATION_REASONS[input.errorReason]:null;
   const suppliedExplanation=input.explanation?.trim()||null;
   return {
@@ -59,7 +61,8 @@ export function buildWrongQuestionSupport(input:{
     reasonLabel:reason?.label||null,
     instruction:reason?.instruction||'Önce konunun temel kuralını hatırla; yanlış yaptığın adımı bul ve farklı bir örnekle kontrol et.',
     explanation:suppliedExplanation,
-    hasVerifiedExplanation:Boolean(suppliedExplanation),
+    hasVerifiedExplanation:false,
+    explanationStatus:suppliedExplanation?'USER_PROVIDED_UNVERIFIED':'MISSING',
     steps:[
       'Konu ve varsa eşleştirilmiş kazanımı kontrol et.',
       suppliedExplanation?'Kaydedilmiş kısa çözümü incele ve nedenini kendi cümlelerinle anlat.':'Çözüm açıklaması yoksa öğretmen veya koçundan açıklama iste.',
