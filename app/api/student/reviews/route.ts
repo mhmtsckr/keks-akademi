@@ -5,8 +5,12 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { REVIEW_DAYS } from '@/lib/smartCoach';
 import { adaptiveReviewIntervalDays,reviewIntervalReason } from '@/lib/learningEngine';
+import {buildWrongQuestionSupport,REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
 
-const schema=z.object({id:z.string(),answer:z.string().min(1).max(2000),microSessionId:z.string().optional()});
+const schema=z.object({
+  id:z.string(),answer:z.string().min(1).max(2000),microSessionId:z.string().optional(),
+  errorReason:z.enum(Object.keys(REMEDIATION_REASONS) as [keyof typeof REMEDIATION_REASONS,...(keyof typeof REMEDIATION_REASONS)[]]).optional()
+});
 
 function normalizeAnswer(v:string){
   return v.toLocaleLowerCase('tr-TR')
@@ -36,6 +40,11 @@ async function GET__handler(){
       dueAt:x.dueAt,
       status:new Date(x.dueAt).getTime()<=now?'DUE':'PENDING',
       lastCorrect:x.lastCorrect,
+      support:buildWrongQuestionSupport({
+        subject:x.question.subject,topic:x.question.topic,
+        gradeLevel:user.student.gradeLevel,academicTrack:user.student.academicTrack,
+        classificationConfidence:Number(questionMeta(x.question.options).classificationConfidence||0)||null
+      }),
       question:{
         id:x.question.id,
         examType:x.question.examType,
@@ -72,6 +81,14 @@ async function POST__handler(req:Request){
     ? normalizeAnswer(input.answer)===normalizeAnswer(item.question.correctAnswer)
     : input.answer===item.question.correctAnswer;
   const previousCorrect=item.lastCorrect;
+  const errorReason=correct?null:(input.errorReason||null);
+  const support=buildWrongQuestionSupport({
+    subject:item.question.subject,topic:item.question.topic,examType:item.question.examType,
+    gradeLevel:user.student.gradeLevel,academicTrack:user.student.academicTrack,
+    explanation:item.question.explanation,
+    classificationConfidence:Number(questionMeta(item.question.options).classificationConfidence||0)||null,
+    errorReason
+  });
   const recentLogs=await db.dailyLog.findMany({
     where:{studentId:user.student.id,date:{gte:new Date(Date.now()-120*86400000)}},
     orderBy:{date:'desc'},take:250,select:{date:true,payload:true}
@@ -113,7 +130,7 @@ async function POST__handler(req:Request){
   if(!completed) due.setDate(due.getDate()+Number(nextIntervalDays||0));
   const row=await db.$transaction(async tx=>{
     if(microSession){
-      const result={correct,correctAnswer:item.question.correctAnswer,explanation:item.question.explanation,completed,nextIntervalDays,intervalReason,nextDueAt:completed?null:due.toISOString()};
+      const result={correct,correctAnswer:item.question.correctAnswer,explanation:item.question.explanation,support,completed,nextIntervalDays,intervalReason,nextDueAt:completed?null:due.toISOString()};
       const claimed=await tx.dailyLog.updateMany({where:{id:microSession.id,studentId:user.student!.id,payload:{path:['type'],equals:'MICRO_STARTED'}},data:{date:new Date(),payload:{...microMeta,type:'MICRO_RESULT',durationSeconds:Math.min(300,Math.max(1,Math.round((Date.now()-microSession.createdAt.getTime())/1000))),correct:correct?1:0,wrong:correct?0:1,blank:0,total:1,reviewResult:result}}});
       if(!claimed.count)throw new HttpError(409,'Bu tekrar zaten kaydedildi.');
     }
@@ -134,6 +151,8 @@ async function POST__handler(req:Request){
         subject:item.question.subject,
         topic:item.question.topic,
         correct,
+        errorReason,
+        remediationSuggested:!correct,
         correctStreak,
         incorrectStreak,
         recentAccuracy,
@@ -152,6 +171,7 @@ async function POST__handler(req:Request){
     correct,
     correctAnswer:item.question.correctAnswer,
     explanation:item.question.explanation,
+    support,
     completed,
     currentStage:correct?Math.min(step,REVIEW_DAYS.length-1):0,
     nextIntervalDays,
