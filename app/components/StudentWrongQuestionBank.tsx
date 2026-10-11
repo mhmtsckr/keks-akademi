@@ -50,6 +50,9 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
   }
   useEffect(()=>{load()},[]);
+  useEffect(()=>{
+    if(guided)document.getElementById('keks-guided-remediation')?.scrollIntoView({behavior:'smooth',block:'start'});
+  },[guided]);
 
   async function submit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setBusy(true);setMsg('');
@@ -212,7 +215,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       </div>}
     </div>
 
-    {support&&<div className="card" aria-live="polite">
+    {support&&<div id="keks-guided-remediation" className="card" aria-live="polite">
       <div className="moduleEyebrow">MİZA · YANLIŞTAN ÖĞRENME</div>
       <h2>{support.subject} · {support.topic}</h2>
       {support.topicConfirmationNeeded&&<div className="notice">Konu sınıflandırması düşük güvenli. Konuyu bankadan kontrol edip gerekirse düzelt.</div>}
