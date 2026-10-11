@@ -24,6 +24,7 @@ function questionMeta(v:unknown){
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
+  const student=user.student;
   const items=await db.reviewQueueItem.findMany({
     where:{studentId:user.student.id,status:{in:['DUE','PENDING']}},
     include:{question:true},
@@ -42,7 +43,7 @@ async function GET__handler(){
       lastCorrect:x.lastCorrect,
       support:buildWrongQuestionSupport({
         subject:x.question.subject,topic:x.question.topic,
-        gradeLevel:user.student.gradeLevel,academicTrack:user.student.academicTrack,
+        gradeLevel:student.gradeLevel,academicTrack:student.academicTrack,
         classificationConfidence:Number(questionMeta(x.question.options).classificationConfidence||0)||null
       }),
       question:{
