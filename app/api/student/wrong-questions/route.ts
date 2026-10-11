@@ -8,6 +8,7 @@ import { classifyWrongQuestion } from '@/lib/wrongQuestionClassifier';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
 import { buildPersonalQuestionSets } from '@/lib/personalLearning';
 import {ALL_MICRO_LESSONS} from '@/lib/bankFreeMicroLessons';
+import {resolveLearningCurriculumContext,lessonAllowedForContext} from '@/lib/curriculumPolicy2026';
 
 const PRIVATE_PREFIX='STUDENT_WRONG:';
 const patchSchema=z.object({questionId:z.string().min(1),topic:z.string().min(2).max(120)});
@@ -40,6 +41,7 @@ async function GET__handler(){
       classificationConfidence:Number(m.classificationConfidence||0),
       classificationMethod:String(m.classificationMethod||''),
       bankReason:String(m.bankReason||'WRONG'),
+      educationGrade:typeof m.educationGrade==='number'?m.educationGrade:null,
       review:q.reviewQueue[0]||null
     };
   })});
@@ -57,9 +59,24 @@ async function POST__handler(req:Request){
   const originalStudentAnswer=String(fd.get('originalStudentAnswer')||'').trim().slice(0,1000);
   const explanation=String(fd.get('explanation')||'').trim().slice(0,3000);
   const practiceSkillId=String(fd.get('practiceSkillId')||'').trim().slice(0,90);
+  const gradeRaw=String(fd.get('educationGrade')||'').trim();
+  if(gradeRaw&&!/^(?:[1-9]|1[0-2])$/.test(gradeRaw))
+    return NextResponse.json({error:'Sınıf değeri geçersiz.'},{status:400});
+  const educationGrade=gradeRaw?Number(gradeRaw):null;
+  const context=resolveLearningCurriculumContext({
+    gradeLevel:user.student.gradeLevel,selectedGrade:educationGrade,examType
+  });
   const bankReason=String(fd.get('bankReason')||'WRONG').toUpperCase()==='MARKED'?'MARKED':'WRONG';
   if(subject.length<2)return NextResponse.json({error:'Ders seçiniz.'},{status:400});
-  if(practiceSkillId&&!ALL_MICRO_LESSONS.some(x=>x.id===practiceSkillId&&x.subject===subject))return NextResponse.json({error:'Seçilen öğrenme becerisi dersle uyumlu değil.'},{status:400});
+  if(educationGrade!==null&&context.grade!==educationGrade)
+    return NextResponse.json({error:'Seçilen sınıf öğrenci eğitim düzeyiyle uyuşmuyor.'},{status:400});
+  const selectedLesson=ALL_MICRO_LESSONS.find(x=>x.id===practiceSkillId&&x.subject===subject);
+  if(practiceSkillId&&!selectedLesson)
+    return NextResponse.json({error:'Seçilen öğrenme becerisi dersle uyumlu değil.'},{status:400});
+  if(selectedLesson&&!lessonAllowedForContext(selectedLesson,context))
+    return NextResponse.json({
+      error:'Seçilen mikro ders bu sınıf veya sınav için uygun değil. Önce öğrencinin gerçek sınıfını belirleyin.'
+    },{status:400});
   if(correctAnswer.length<1)return NextResponse.json({error:'Doğru cevabı yazınız.'},{status:400});
 
   const rawFile=fd.get('image');
@@ -100,7 +117,10 @@ async function POST__handler(req:Request){
         classificationConfidence:classified.confidence,
         classificationMethod:classified.method,
         bankReason,
-        practiceSkillId:practiceSkillId||null
+        practiceSkillId:practiceSkillId||null,
+        educationGrade:context.grade,
+        academicYear:context.academicYear,
+        curriculumFramework:context.framework
       },
       correctAnswer,
       explanation:explanation||null,
@@ -119,7 +139,9 @@ async function POST__handler(req:Request){
     ok:true,
     item:{
       id:result.q.id,examType,subject,topic:result.q.topic,prompt:result.q.prompt,
-      imageUrl:result.imageUrl,practiceSkillId:practiceSkillId||null,classificationConfidence:classified.confidence,
+      imageUrl:result.imageUrl,practiceSkillId:practiceSkillId||null,
+      educationGrade:context.grade,curriculumFramework:context.framework,
+      classificationConfidence:classified.confidence,
       classificationMethod:classified.method,bankReason,dueAt:result.review.dueAt,stepIndex:0
     },
     message:(bankReason==='MARKED'?'İşaretlenen':'Yanlış')+' soru '+subject+' · '+result.q.topic+' olarak kişisel soru bankasına eklendi ve 0. gün tekrar görevine bağlandı.',
