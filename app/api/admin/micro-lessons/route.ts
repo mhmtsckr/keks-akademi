@@ -9,6 +9,7 @@ import {getMicroLessonReviewStatusMap,lessonReviewDigest} from '@/lib/microLesso
 const patchSchema=z.object({
   id:z.string().min(3).max(120),
   version:z.number().int().positive(),
+  contentDigest:z.string().regex(/^[a-f0-9]{64}$/),
   decision:z.enum(['APPROVE','REVOKE']),
   note:z.string().trim().min(12).max(1200),
   confirmedReviewed:z.literal(true)
@@ -30,6 +31,7 @@ async function PATCH__handler(req:Request){
  const lesson=microLessonById(input.id,input.version);
  if(!lesson)return NextResponse.json({error:'Bu sürüm için mikro ders bulunamadı.'},{status:404});
  const digest=lessonReviewDigest(lesson);
+ if(input.contentDigest!==digest)return NextResponse.json({error:'İçerik son görüntülemeden sonra değişti. Yenileyip bu sürümü yeniden inceleyin.'},{status:409});
  const current=(await getMicroLessonReviewStatusMap()).get(lesson.id);
  if(input.decision==='REVOKE'&&current?.status!=='APPROVED')
    return NextResponse.json({error:'Bu ders zaten pilot durumunda.'},{status:409});
