@@ -42,11 +42,11 @@ export function microLessonCoverageSnapshot(){
    const mapped=curriculum?.subjects.find(x=>x.name===subject);
    const topics=mapped?.units.flatMap(x=>x.topics.map(t=>t.name))
       .filter(t=>!t.includes('Düzey Geneli')&&!t.includes('Genel Kazanım Alanı'))||[];
-   const matched=topics.filter(t=>candidates.some(l=>topicMatchesInternalIndex(t,l.topicTags)));
+   const matched=topics.filter((t:string)=>candidates.some(l=>topicMatchesInternalIndex(t,l.topicTags)));
    return {
     subject,indexedTopics:topics.length||null,matchedIndexTopics:matched.length,
     pilotLessons:candidates.length,
-    missingTopicNames:topics.filter(t=>!matched.includes(t)).slice(0,60),
+    missingTopicNames:topics.filter((t:string)=>!matched.includes(t)).slice(0,60),
     topicIndexSource:topics.length?'KEKS_INTERNAL' as const:'UNVERIFIED' as const
    };
   });
