@@ -36,7 +36,7 @@ export function AdminMicroLessonReviews(){
    try{
     const r=await fetch('/api/admin/micro-lessons',{
      method:'PATCH',headers:{'content-type':'application/json'},
-     body:JSON.stringify({id:lesson.id,version:lesson.version,decision,note:text,confirmedReviewed:true})
+     body:JSON.stringify({id:lesson.id,version:lesson.version,contentDigest:lesson.contentDigest,decision,note:text,confirmedReviewed:true})
     });
     const j=await r.json();
     if(!r.ok)throw Error(j.error||'İnceleme kaydedilemedi.');
