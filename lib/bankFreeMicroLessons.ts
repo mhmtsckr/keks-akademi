@@ -97,8 +97,11 @@ export function findMicroLesson(input:{
     if(topic.includes('islem')||topic.includes('kesir')||/\d+\s*\/\s*\d+|topla|cikar|payda|kesir/.test(prompt))
       return MICRO_LESSONS[1];
   }
-  if(topic.includes('uslu')||(topic.includes('uslu ve koklu')&&/(?:us|kuvvet)/.test(prompt)))
-    return MICRO_LESSONS[2];
+  if(topic.includes('uslu')){
+    // A shared "Üslü ve Köklü Sayılar" tag alone does not prove this is an exponent question.
+    if(!topic.includes('koklu')||/(?:us|kuvvet|uzeri|\^|\u00b2|\u00b3)/.test(prompt))
+      return MICRO_LESSONS[2];
+  }
   return null;
 }
 
