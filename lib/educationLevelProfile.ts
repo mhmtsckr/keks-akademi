@@ -84,7 +84,7 @@ const BASE_PROFILES:Record<EducationLevelKey,EducationLevelProfile>={
   MIDDLE_8:{
     key:'MIDDLE_8',
     label:EDUCATION_LEVELS.MIDDLE_8,
-    curriculumScope:'Ortaokul 8 · Türkiye Yüzyılı Maarif Modeli ve LGS hazırlığı',
+    curriculumScope:'Ortaokul 8 · 2026–2027 önceki MEB programı ve LGS hazırlığı',
     examMode:'LGS',
     subjects:['Türkçe','Matematik','Fen Bilimleri','T.C. İnkılap Tarihi ve Atatürkçülük','Din Kültürü ve Ahlak Bilgisi','İngilizce'],
     questionTypes:['LGS yeni nesil','Kazanım temelli','Muhakeme','Grafik/tablo','Çok adımlı problem','Süreli branş denemesi'],
