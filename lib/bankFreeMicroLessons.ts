@@ -3,8 +3,12 @@
  * Worked examples are individually authored, NOT derived from an uploaded question.
  * This catalog is not a substitute for pedagogical/teacher review or a full question bank.
  */
+import {EXPANDED_MICRO_LESSONS} from './expandedMicroLessons';
+import {findExpandedMicroLesson} from './expandedMicroLessonMatch';
+
 export type GuidedExercise={
   prompt:string;
+  options?:Readonly<Record<string,string>>;
   answer:string;
   explanation:string;
   // Used to test mathematical consistency of the hand-authored examples.
@@ -16,6 +20,7 @@ export type MicroLesson={
   worked:{prompt:string;steps:string[];answer:string};
   exercises:readonly GuidedExercise[];
   contentStatus:'PILOT';
+  sourceUrl?:string;
 };
 
 export const MICRO_LESSONS:readonly MicroLesson[]=[
@@ -79,15 +84,18 @@ function normalize(value:string){
   return value.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 }
 
+export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS];
+
 export function findMicroLesson(input:{
   subject:string;topic:string;prompt?:string|null;selectedLessonId?:string|null
 }):MicroLesson|null{
   const subject=normalize(input.subject);
-  if(!subject.includes('matematik'))return null;
-  // Student-chosen skill enables image-only questions without pretending to read the photo.
+  // Explicit choice is the only supported matching strategy for an image-only upload.
   if(input.selectedLessonId){
-    return MICRO_LESSONS.find(x=>x.id===input.selectedLessonId&&normalize(x.subject)===subject)||null;
+    return ALL_MICRO_LESSONS.find(x=>x.id===input.selectedLessonId&&normalize(x.subject)===subject)||null;
   }
+  if(!subject.includes('matematik'))
+    return findExpandedMicroLesson(input);
   const topic=normalize(input.topic);
   const prompt=normalize(input.prompt||'');
   // A broad "Problemler" label is insufficient unless the question text gives evidence.
@@ -106,5 +114,5 @@ export function findMicroLesson(input:{
 }
 
 export function microLessonById(id:string,version:number):MicroLesson|null{
-  return MICRO_LESSONS.find(x=>x.id===id&&x.version===version)||null;
+  return ALL_MICRO_LESSONS.find(x=>x.id===id&&x.version===version)||null;
 }
