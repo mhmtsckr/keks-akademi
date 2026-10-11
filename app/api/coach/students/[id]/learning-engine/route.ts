@@ -17,6 +17,7 @@ import {
 import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 import { listResourceTracking } from '@/lib/resourceTracking';
 import { buildStudentIndicators } from '@/lib/studentIndicators';
+import {REMEDIATION_REASONS,isRemediationReason} from '@/lib/wrongQuestionRemediation';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -49,6 +50,41 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     buildStudentIndicators(id)
   ]);
 
+  const recentLogs=await db.dailyLog.findMany({
+    where:{studentId:id,date:{gte:new Date(Date.now()-30*86400000)}},
+    select:{date:true,payload:true},orderBy:{date:'desc'},take:500
+  });
+  const remediationMap=new Map<string,{
+    subject:string;topic:string;wrongCount:number;totalReviews:number;
+    lastWrongAt:string;reasonCounts:Record<string,number>;
+  }>();
+  for(const log of recentLogs){
+    const p=(log.payload&&typeof log.payload==='object'&&!Array.isArray(log.payload))
+      ?log.payload as Record<string,unknown>:{};
+    if(p.type!=='REVIEW_RESULT'||typeof p.subject!=='string'||typeof p.topic!=='string')continue;
+    const key=p.subject+'|'+p.topic;
+    const row=remediationMap.get(key)||{
+      subject:p.subject,topic:p.topic,wrongCount:0,totalReviews:0,
+      lastWrongAt:'',reasonCounts:{} as Record<string,number>
+    };
+    row.totalReviews++;
+    if(p.correct===false){
+      row.wrongCount++;
+      if(!row.lastWrongAt)row.lastWrongAt=log.date.toISOString();
+      if(isRemediationReason(p.errorReason))row.reasonCounts[p.errorReason]=(row.reasonCounts[p.errorReason]||0)+1;
+    }
+    remediationMap.set(key,row);
+  }
+  const remediationPriorities=[...remediationMap.values()]
+    .filter(x=>x.wrongCount>0)
+    .sort((a,b)=>b.wrongCount-a.wrongCount||b.lastWrongAt.localeCompare(a.lastWrongAt))
+    .slice(0,5).map(x=>{
+      const strongest=Object.entries(x.reasonCounts).sort((a,b)=>b[1]-a[1])[0];
+      const reason=strongest?REMEDIATION_REASONS[strongest[0] as keyof typeof REMEDIATION_REASONS]:null;
+      return {...x,primaryReason:reason?.label||'Henüz sınıflandırılmadı',
+        recommendedAction:reason?.instruction||'Öğrencinin çözüm adımlarını kontrol et, konuyu kısa çalıştır ve yeni soru ile ölç.'};
+    });
+
   const resourceSummary={
     total:resources.length,
     review:resources.filter((x:any)=>x.efficiency?.status==='REVIEW'),
@@ -57,7 +93,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     resources
   };
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,resourceTracking:resourceSummary});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,resourceTracking:resourceSummary});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){

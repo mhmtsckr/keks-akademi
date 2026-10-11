@@ -120,6 +120,29 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       </div>}
     </div>
 
+    <div className="card">
+      <div className="moduleHeaderRow">
+        <div>
+          <div className="moduleEyebrow">YANLIŞTAN ÖĞRENME · KOÇ AKSİYONLARI</div>
+          <h2>Tekrar başarısızlığı olan konular</h2>
+          <p className="muted">Son 30 günün tekrar cevapları kullanılır. Hata nedeni öğrencinin beyanıdır; kesin tanı değildir.</p>
+        </div>
+        <span className="pill">{data.remediationPriorities?.length||0} öncelik</span>
+      </div>
+      {!data.remediationPriorities?.length
+        ?<p className="muted">Son 30 günde kaydedilmiş yanlış tekrar yanıtı yok.</p>
+        :<div className="stack">
+          {data.remediationPriorities.map((x:any)=><div className="card" key={x.subject+'|'+x.topic} style={{margin:0}}>
+            <div className="moduleHeaderRow">
+              <strong>{x.subject} · {x.topic}</strong>
+              <span className="pill">{x.wrongCount}/{x.totalReviews} yanlış tekrar</span>
+            </div>
+            <p><strong>Bildirilmiş neden:</strong> {x.primaryReason}</p>
+            <p className="muted"><strong>Koç müdahalesi:</strong> {x.recommendedAction}</p>
+          </div>)}
+        </div>}
+    </div>
+
     {goal&&<div className="card">
       <div className="moduleEyebrow">HEDEFE KALAN MESAFE</div>
       <h2>{goal.target}</h2>

@@ -131,7 +131,7 @@ async function PATCH__handler(req:Request){
     where:{id:input.questionId,sourceKind:sourceKind(user.student.id),reviewStatus:'STUDENT_PRIVATE'}
   });
   if(!q)return NextResponse.json({error:'Yanlış soru kaydı bulunamadı.'},{status:404});
-  const row=await db.questionBankItem.update({where:{id:q.id},data:{topic:input.topic}});
+  const row=await db.questionBankItem.update({where:{id:q.id},data:{topic:input.topic,options:{...meta(q.options),classificationConfidence:1,classificationMethod:'MANUAL_CONFIRMED'}}});
   return NextResponse.json({ok:true,topic:row.topic});
 }
 
