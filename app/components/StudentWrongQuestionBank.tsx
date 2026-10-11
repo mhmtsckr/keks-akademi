@@ -45,10 +45,13 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [openSet,setOpenSet]=useState<'weekly'|'monthly'|null>(null);
 
   async function load(){
+    const params=new URLSearchParams();
+    if(gradeSelection)params.set('grade',gradeSelection);
+    if(defaultExam)params.set('examType',defaultExam);
     const [wr,rr,lr]=await Promise.all([
       fetch('/api/student/wrong-questions',{cache:'no-store'}),
       fetch('/api/student/reviews',{cache:'no-store'}),
-      fetch('/api/student/reviews/guided',{cache:'no-store'})
+      fetch('/api/student/reviews/guided?'+params.toString(),{cache:'no-store'})
     ]);
     const [wj,rj,lj]=await Promise.all([wr.json(),rr.json(),lr.json()]);
     if(wr.ok){setItems(wj.items||[]);setSets(wj.sets||null);}
