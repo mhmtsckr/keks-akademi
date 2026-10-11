@@ -35,6 +35,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [guidedBusy,setGuidedBusy]=useState(false);
   const [lessonCatalog,setLessonCatalog]=useState<any[]>([]);
   const [selectedSubject,setSelectedSubject]=useState('');
+  const [gradeSelection,setGradeSelection]=useState('');
+  const [curriculumContext,setCurriculumContext]=useState<any|null>(null);
   const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
@@ -51,9 +53,22 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     const [wj,rj,lj]=await Promise.all([wr.json(),rr.json(),lr.json()]);
     if(wr.ok){setItems(wj.items||[]);setSets(wj.sets||null);}
     if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
-    if(lr.ok)setLessonCatalog(lj.lessons||[]);
+    if(lr.ok){setLessonCatalog(lj.lessons||[]);setCurriculumContext(lj.curriculumContext||null);}
   }
-  useEffect(()=>{load()},[]);
+  useEffect(()=>{void load()},[]);
+  useEffect(()=>{
+    let alive=true;
+    const params=new URLSearchParams();
+    if(gradeSelection)params.set('grade',gradeSelection);
+    if(defaultExam)params.set('examType',defaultExam);
+    fetch('/api/student/reviews/guided?'+params.toString(),{cache:'no-store'})
+      .then(r=>r.json()).then(j=>{
+        if(!alive||!j.ok)return;
+        setLessonCatalog(j.lessons||[]);
+        setCurriculumContext(j.curriculumContext||null);
+      }).catch(()=>{});
+    return ()=>{alive=false};
+  },[gradeSelection,defaultExam]);
   useEffect(()=>{
     if(guided)document.getElementById('keks-guided-remediation')?.scrollIntoView({behavior:'smooth',block:'start'});
   },[guided]);
@@ -348,6 +363,16 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <label>Kayıt nedeni</label>
           <select name="bankReason"><option value="WRONG">Yanlış yaptım</option><option value="MARKED">Sonra tekrar etmek için işaretledim</option></select>
         </div>
+        {curriculumContext?.canSelectGrade&&<div className="field wrongQuestionWide">
+          <label>Gerçek sınıf (gerekli)</label>
+          <select name="educationGrade" value={gradeSelection} required
+            onChange={e=>setGradeSelection(e.target.value)}>
+            <option value="">Sınıfını seç</option>
+            {(curriculumContext.availableGrades||[]).map((grade:number)=>
+              <option key={grade} value={grade}>{grade}. sınıf</option>)}
+          </select>
+          <small className="muted">Aynı eğitim düzeyi birden fazla sınıfı içeriyor. Doğru öğrenme programını seçebilmemiz için gerçek sınıf gerekir.</small>
+        </div>}
         <div className="field">
           <label>Ders</label>
           <input name="subject" list="wrong-question-subjects" required placeholder="Örn. Matematik"
@@ -370,7 +395,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
             {lessonCatalog.filter(x=>x.subject===selectedSubject).map(x=>
               <option value={x.id} key={x.id}>{x.title} · {x.contentStatus==='APPROVED'?'İçerik onaylı':'Pilot'}</option>)}
           </select>
-          <small className="muted">Özellikle sadece soru fotoğrafı yüklediğinde ilgili beceriyi sen seçmelisin. Bu seçenek fotoğraftan otomatik okuma veya özgün sorunun çözüldüğü iddiası değildir.</small>
+          <small className="muted">2026–2027 {curriculumContext?.framework==='TYMM'?'TYMM':'MEB/ÖSYM'} yaklaşımı · {curriculumContext?.grade?curriculumContext.grade+'. sınıf':curriculumContext?.framework==='OSYM'?'Sınav grubu':'Sınıf seçimi bekleniyor'}. Bu eşleştirme resmî kazanım onayı değildir. Görsel sorularda beceriyi sen seçmelisin.</small>
         </div>
         <div className="field">
           <label>Senin verdiğin yanlış cevap</label>
