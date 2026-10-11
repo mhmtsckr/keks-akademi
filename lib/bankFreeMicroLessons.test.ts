@@ -11,6 +11,7 @@ describe('soru bankası olmadan çözümlü mikro örnekler',()=>{
   it('geniş etiketleri ve fotoğrafı kanıt olarak görüp rastgele anlatım eşleştirmez',()=>{
     expect(findMicroLesson({subject:'Matematik',topic:'Problemler',prompt:'Yaş problemi'})).toBeNull();
     expect(findMicroLesson({subject:'Matematik',topic:'Rasyonel Sayılar',prompt:'Görsel yanlış soru'})).toBeNull();
+    expect(findMicroLesson({subject:'Matematik',topic:'Üslü ve Köklü Sayılar',prompt:'Karekök 9 kaçtır?'})).toBeNull();
     expect(findMicroLesson({subject:'Tarih',topic:'Problemler',prompt:'Yüzde'})).toBeNull();
   });
   it('öğrencinin seçtiği beceriyle fotoğraflı soru için güvenli örnek bulur',()=>{
