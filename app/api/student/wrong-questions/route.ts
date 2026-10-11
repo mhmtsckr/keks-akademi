@@ -7,7 +7,7 @@ import { REVIEW_DAYS } from '@/lib/smartCoach';
 import { classifyWrongQuestion } from '@/lib/wrongQuestionClassifier';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
 import { buildPersonalQuestionSets } from '@/lib/personalLearning';
-import {MICRO_LESSONS} from '@/lib/bankFreeMicroLessons';
+import {ALL_MICRO_LESSONS} from '@/lib/bankFreeMicroLessons';
 
 const PRIVATE_PREFIX='STUDENT_WRONG:';
 const patchSchema=z.object({questionId:z.string().min(1),topic:z.string().min(2).max(120)});
@@ -59,7 +59,7 @@ async function POST__handler(req:Request){
   const practiceSkillId=String(fd.get('practiceSkillId')||'').trim().slice(0,90);
   const bankReason=String(fd.get('bankReason')||'WRONG').toUpperCase()==='MARKED'?'MARKED':'WRONG';
   if(subject.length<2)return NextResponse.json({error:'Ders seçiniz.'},{status:400});
-  if(practiceSkillId&&!MICRO_LESSONS.some(x=>x.id===practiceSkillId&&x.subject===subject))return NextResponse.json({error:'Seçilen öğrenme becerisi dersle uyumlu değil.'},{status:400});
+  if(practiceSkillId&&!ALL_MICRO_LESSONS.some(x=>x.id===practiceSkillId&&x.subject===subject))return NextResponse.json({error:'Seçilen öğrenme becerisi dersle uyumlu değil.'},{status:400});
   if(correctAnswer.length<1)return NextResponse.json({error:'Doğru cevabı yazınız.'},{status:400});
 
   const rawFile=fd.get('image');
