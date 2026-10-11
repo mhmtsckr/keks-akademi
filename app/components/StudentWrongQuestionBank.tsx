@@ -255,7 +255,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <div className="reviewTextAnswer">
             <input value={guidedAnswer} disabled={Boolean(guidedResult)}
               onChange={e=>setGuidedAnswer(e.target.value)}
-              placeholder="Sonucu yaz (örn. 3/4, 0,75 veya 198 TL)"/>
+              placeholder="Sonucu yaz (örn. 3/4, 0,75 veya 198)"/>
             {!guidedResult&&<button type="button" className="btn primary" disabled={guidedBusy||!guidedAnswer.trim()} onClick={finishGuided}>
               {guidedBusy?'Kontrol ediliyor…':'Alıştırmayı Kontrol Et'}
             </button>}
