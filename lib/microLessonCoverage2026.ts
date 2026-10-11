@@ -61,10 +61,10 @@ export function microLessonCoverageSnapshot(){
   const ctx=resolveLearningCurriculumContext({gradeLevel:'Yetişkin',examType});
   const rows:CoverageSubject[]=Object.entries(subjects).map(([subject,topics])=>{
     const candidates=ALL_MICRO_LESSONS.filter(l=>lessonAllowedForContext(l,ctx)&&lessonSubjectAvailable(l.subject,subject));
-    const matched=topics.filter(t=>candidates.some(l=>topicMatchesInternalIndex(t,l.topicTags)));
+    const matched=topics.filter((t:string)=>candidates.some(l=>topicMatchesInternalIndex(t,l.topicTags)));
     return {
       subject,indexedTopics:topics.length,matchedIndexTopics:matched.length,pilotLessons:candidates.length,
-      missingTopicNames:topics.filter(t=>!matched.includes(t)).slice(0,60),
+      missingTopicNames:topics.filter((t:string)=>!matched.includes(t)).slice(0,60),
       topicIndexSource:'KEKS_INTERNAL' as const
     };
   });
