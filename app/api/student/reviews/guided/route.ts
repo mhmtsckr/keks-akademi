@@ -32,7 +32,8 @@ async function POST__handler(req:Request){
     const lesson=findMicroLesson({
       subject:review.question.subject,
       topic:review.question.topic,
-      prompt:review.question.prompt
+      prompt:review.question.prompt,
+      selectedLessonId:typeof record(review.question.options).practiceSkillId==='string'?String(record(review.question.options).practiceSkillId):null
     });
     if(!lesson)return NextResponse.json({
       ok:false,code:'NO_GUIDED_EXAMPLE',
