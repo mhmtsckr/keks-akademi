@@ -261,7 +261,7 @@ function lgsLegacySubject(subject:string):CurriculumSubject|null{
   const key=subject==='T.C. İnkılap Tarihi ve Atatürkçülük'
     ?'T.C. İnkılap Tarihi'
     :subject==='Din Kültürü ve Ahlak Bilgisi'?'Din Kültürü':subject;
-  const topics=(EXAM_CATALOG.LGS as Record<string,string[]>)[key];
+  const topics=(EXAM_CATALOG.LGS as unknown as Record<string,readonly string[]>)[key];
   if(!topics)return null;
   return {
     name:subject,
