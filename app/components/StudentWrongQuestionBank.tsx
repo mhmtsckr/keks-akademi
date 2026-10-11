@@ -331,6 +331,16 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <input name="image" type="file" accept="image/jpeg,image/png,image/webp"/>
           <small className="muted">JPG, PNG veya WebP · en fazla 5 MB</small>
         </div>
+        <div className="field wrongQuestionWide">
+          <label>Alt beceri / çözümlü örnek (isteğe bağlı)</label>
+          <select name="practiceSkillId" defaultValue="">
+            <option value="">Otomatik öneri — uygun örnek varsa</option>
+            <option value="math-percent-changes-v1">Matematik · Ardışık yüzde değişimleri</option>
+            <option value="math-fraction-ops-v1">Matematik · Kesirlerde işlemler</option>
+            <option value="math-exponent-rules-v1">Matematik · Üslü sayılarda işlemler</option>
+          </select>
+          <small className="muted">Özellikle sadece soru fotoğrafı yüklediğinde ilgili beceriyi sen seçmelisin. Bu seçenek fotoğraftan otomatik okuma veya özgün sorunun çözüldüğü iddiası değildir.</small>
+        </div>
         <div className="field">
           <label>Senin verdiğin yanlış cevap</label>
           <input name="originalStudentAnswer" placeholder="İsteğe bağlı"/>
