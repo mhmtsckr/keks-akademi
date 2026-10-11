@@ -12,6 +12,7 @@ import { normalizeLegacyEducationLevel } from '@/lib/educationLevels';
 import { AdminPartnerCoachNetwork } from '@/app/components/AdminPartnerCoachNetwork';
 import { AdminTestimonials } from '@/app/components/AdminTestimonials';
 import { AdminSalesCRM } from '@/app/components/AdminSalesCRM';
+import { AdminMicroLessonReviews } from '@/app/components/AdminMicroLessonReviews';
 
 type Tab='overview'|'sales'|'workflow'|'users'|'academic'|'payments'|'security';
 
@@ -348,6 +349,7 @@ export function AdminConsole(){
     </section>}
 
     {tab==='academic'&&<section className="adminPanelSection">
+      <AdminMicroLessonReviews/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">AKADEMİK KALİTE</div><h2>Soru Bankası Onay Merkezi</h2><p className="muted">Yeni veya incelenmesi gereken soruları yayınlanmadan önce kontrol et.</p></div><div className="row"><select value={questionStatus} onChange={e=>setQuestionStatus(e.target.value)}><option value="PENDING">Bekleyen</option><option value="APPROVED">Onaylı</option><option value="REJECTED">Reddedilen</option><option value="ALL">Tümü</option></select></div></div>
       <div className="adminQuestionStats">{questionCounts.map((x:any)=><span className="pill" key={x.reviewStatus}>{x.reviewStatus}: {x._count._all}</span>)}</div>
       <AdminGameCMS/>
