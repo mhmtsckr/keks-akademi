@@ -4,6 +4,7 @@
  * This catalog is not a substitute for pedagogical/teacher review or a full question bank.
  */
 import {EXPANDED_MICRO_LESSONS} from './expandedMicroLessons';
+import {GRADE_SEED_LESSONS} from './gradeSeedMicroLessons';
 import {findExpandedMicroLesson} from './expandedMicroLessonMatch';
 
 export type GuidedExercise={
@@ -87,7 +88,7 @@ function normalize(value:string){
   return value.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 }
 
-export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS];
+export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS,...GRADE_SEED_LESSONS];
 
 export function findMicroLesson(input:{
   subject:string;topic:string;prompt?:string|null;selectedLessonId?:string|null
