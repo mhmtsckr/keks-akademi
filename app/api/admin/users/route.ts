@@ -121,6 +121,11 @@ async function PATCH__handler(req:Request){
     });
   }
 
+  if(input.role==='EDITOR'&&before.role!=='EDITOR'){
+    const managedStudents=await db.coachProfile.findUnique({where:{userId:input.userId},select:{_count:{select:{students:true}}}});
+    if(managedStudents&&managedStudents._count.students>0)
+      return NextResponse.json({error:'Aktif öğrencisi bulunan koç editör rolüne dönüştürülemez.'},{status:409});
+  }
   const updated=await db.user.update({where:{id:input.userId},data:{
     ...(input.status?{status:input.status}:{}),
     ...(input.role?{role:input.role}:{}),
