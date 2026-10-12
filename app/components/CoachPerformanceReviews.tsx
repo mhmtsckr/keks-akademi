@@ -1,5 +1,6 @@
 'use client';
 import {FormEvent,useEffect,useState} from 'react';
+import {CoachRubricActionCenter} from './CoachRubricActionCenter';
 
 type Criteria={id:string;label:string;levels:Record<string,string>};
 type Submission={
@@ -95,6 +96,7 @@ export function CoachPerformanceReviews({studentId}:{studentId:string}){
     </form>
    </article>)}
   </div>
+  <CoachRubricActionCenter studentId={studentId} reviewVersion={reviewed.map(r=>r.id).join('|')}/>
   {reviewed.length>0&&<details className="card" style={{marginTop:12}}>
    <summary><strong>Değerlendirilen görevler ({reviewed.length})</strong></summary>
    <div className="stack">
