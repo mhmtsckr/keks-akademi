@@ -129,7 +129,7 @@ export function transferVariantFor(taskId:string){
 export function transferDueAt(reviewedAt:Date){return new Date(reviewedAt.getTime()+TRANSFER_DELAY_DAYS*86400000);}
 export type RubricSnapshot={total:number;max:number;criterionScores:readonly {id:string;score:number}[]};
 export function compareTransferRubrics(before:RubricSnapshot,after:RubricSnapshot){
- if(before.max!==8||after.max!==8)throw new Error('Rubrik ölçekleri uyuşmuyor.');
+ if(!readableRubric(before)||!readableRubric(after))throw new Error('Rubrik puanları tutarsız veya eksik.');
  const old=new Map(before.criterionScores.map(x=>[x.id,x.score]));
  if(old.size!==4||after.criterionScores.length!==4||after.criterionScores.some(x=>!old.has(x.id)))throw new Error('Farklı rubrik ölçütleri karşılaştırılamaz.');
  const criteria=after.criterionScores.map(x=>({id:x.id,before:old.get(x.id)!,after:x.score,delta:x.score-old.get(x.id)!}));
@@ -142,13 +142,19 @@ export function compareTransferRubrics(before:RubricSnapshot,after:RubricSnapsho
 export function readableRubric(v:unknown):RubricSnapshot|null{
  if(!v||typeof v!=='object'||Array.isArray(v))return null;
  const x=v as Record<string,unknown>;
- if(!Number.isInteger(x.total)||x.max!==8||!Array.isArray(x.criterionScores))return null;
- if(x.criterionScores.length!==4||!x.criterionScores.every((c:unknown)=>{
-   if(!c||typeof c!=='object')return false;
+ if(!Number.isInteger(x.total)||Number(x.total)<0||Number(x.total)>8||x.max!==8
+    ||!Array.isArray(x.criterionScores)||x.criterionScores.length!==4)return null;
+ const criteria=x.criterionScores as unknown[];
+ if(!criteria.every(c=>{
+   if(!c||typeof c!=='object'||Array.isArray(c))return false;
    const y=c as Record<string,unknown>;
-   return typeof y.id==='string'&&Number.isInteger(y.score)&&Number(y.score)>=0&&Number(y.score)<=2;
+   return typeof y.id==='string'&&y.id.length>0&&Number.isInteger(y.score)
+     &&Number(y.score)>=0&&Number(y.score)<=2;
  }))return null;
- return {total:Number(x.total),max:8,criterionScores:x.criterionScores as {id:string;score:number}[]};
+ const scores=criteria as {id:string;score:number}[];
+ if(new Set(scores.map(c=>c.id)).size!==4)return null;
+ if(scores.reduce((sum,c)=>sum+c.score,0)!==Number(x.total))return null;
+ return {total:Number(x.total),max:8,criterionScores:scores};
 }
 
 export type TransferEvidenceRow={id:string;createdAt:Date;payload:unknown};
@@ -160,9 +166,14 @@ export function transferEligibility(taskId:string,logs:readonly TransferEvidence
   ['TYMM_TRANSFER_SUBMISSION','TYMM_TRANSFER_REVIEWED'].includes(String(record(row.payload).type)));
  const baseline=logs.find(row=>{
   const p=record(row.payload),review=record(p.review);
+  const scored=readableRubric(review);
+  const task=performanceTaskById(taskId);
+  const expected=task?.criteria.map(c=>c.id)||[];
   return p.type==='TYMM_PERFORMANCE_REVIEWED'&&p.taskId===taskId&&
-   readableRubric(review)!==null&&typeof review.reviewedAt==='string'&&
-   Number.isFinite(Date.parse(review.reviewedAt));
+   p.taskVersion===task?.version&&scored!==null&&
+   expected.length===4&&expected.every(id=>scored.criterionScores.some(c=>c.id===id))&&
+   typeof review.reviewedAt==='string'&&Number.isFinite(Date.parse(review.reviewedAt))&&
+   Date.parse(review.reviewedAt)>=row.createdAt.getTime();
  });
  if(!baseline)return {status:'AWAITING_BASELINE' as const,dueAt:null,baselineId:null,transferId:exists?.id||null};
  const dueAt=transferDueAt(new Date(String(record(record(baseline.payload).review).reviewedAt)));
