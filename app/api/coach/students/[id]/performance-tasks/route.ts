@@ -39,8 +39,6 @@ async function GET__handler(_req:Request,{params}:ApiContext){
   const p=obj(log.payload),type=String(p.type||'');
   if(!['TYMM_PERFORMANCE_SUBMISSION','TYMM_PERFORMANCE_REVIEWED','TYMM_TRANSFER_SUBMISSION','TYMM_TRANSFER_REVIEWED'].includes(type))return [];
   const task=performanceTaskById(String(p.taskId||''),Number(p.taskVersion));
- const isTransfer=p.type==='TYMM_TRANSFER_SUBMISSION';
- const variant=isTransfer?transferVariantFor(String(p.taskId||'')):null;
   if(!task||task.grade!==p.grade)return [];
   const transfer=type.startsWith('TYMM_TRANSFER_');
   const variant=transfer?transferVariantFor(task.id):null;
@@ -79,6 +77,8 @@ async function POST__handler(req:Request,{params}:ApiContext){
  if(!['TYMM_PERFORMANCE_SUBMISSION','TYMM_TRANSFER_SUBMISSION'].includes(String(p.type)))
   return NextResponse.json({error:'Bu kayıt performans görevi değildir.'},{status:409});
  const task=performanceTaskById(String(p.taskId||''),Number(p.taskVersion));
+ const isTransfer=p.type==='TYMM_TRANSFER_SUBMISSION';
+ const variant=isTransfer?transferVariantFor(String(p.taskId||'')):null;
  if(!task||p.grade!==task.grade||isTransfer&&(!variant||p.transferVariantId!==variant.id||p.transferVersion!==variant.version))
   return NextResponse.json({error:'İçerik sürümü, görev çeşidi veya sınıf uyuşmuyor.'},{status:409});
  let comparisonInput=null;
