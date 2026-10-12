@@ -94,7 +94,11 @@ function fromDraft(q:any):Content{
   };
 }
 async function GET__handler(req:Request){
-  const admin=await requireRole(['ADMIN']);
+  const admin=await requireRole(['ADMIN','EDITOR']);
+  if(admin.role==='EDITOR'){
+    const assigned=await db.editorialReviewer.count({where:{userId:admin.id}});
+    if(!assigned)throw new HttpError(403,'Bu hesaba editör yetkisi atanmadı.');
+  }
   const params=new URL(req.url).searchParams;
   const status=params.get('status')||'PENDING';
   const page=Math.max(0,Math.min(1000,Number(params.get('page'))||0));
@@ -121,6 +125,7 @@ async function GET__handler(req:Request){
       email:staffById.get(x.userId)?.email||'',
       active:staffById.get(x.userId)?.status==='ACTIVE'})),
     myStages:reviewers.filter(x=>x.userId===admin.id).map(x=>x.stage),
+    isAdmin:admin.role==='ADMIN',
     page
   });
 }
@@ -142,7 +147,7 @@ async function POST__handler(req:Request){
   }
   const user=await db.user.findUnique({where:{email:input.email.toLowerCase()},
     select:{id:true,name:true,email:true,role:true,status:true}});
-  if(!user||user.role!=='ADMIN'||user.status!=='ACTIVE')
+  if(!user||user.role!=='EDITOR'||user.status!=='ACTIVE')
     throw new HttpError(400,'Editör için aktif yetkili yönetici hesabı gerekli.');
   if(input.operation==='ASSIGN'){
     await db.editorialReviewer.upsert({
@@ -162,7 +167,7 @@ async function POST__handler(req:Request){
   return NextResponse.json({ok:true,user:{id:user.id,name:user.name},stage:input.stage});
 }
 async function PATCH__handler(req:Request){
-  const admin=await requireRole(['ADMIN']);
+  const admin=await requireRole(['ADMIN','EDITOR']);
   const input=await readJson(req,patchSchema);
   const q=await db.editorialQuestionDraft.findUnique({
     where:{id:input.id},include:{reviews:{orderBy:{createdAt:'asc'}}}
@@ -174,6 +179,7 @@ async function PATCH__handler(req:Request){
     throw new HttpError(409,'Soru, incelemeden sonra değişti. Ekranı yenileyin.');
 
   if(input.operation==='REVIEW'){
+    if(admin.role!=='EDITOR')throw new HttpError(403,'İnceleme yalnız atanmış editör hesaplarınca yapılır.');
     const allowed=await db.editorialReviewer.findUnique({
       where:{userId_stage:{userId:admin.id,stage:input.stage}}
     });
@@ -200,6 +206,10 @@ async function PATCH__handler(req:Request){
   }
 
   if(input.operation==='REVISE'){
+    if(admin.role==='EDITOR'){
+      const authorized=await db.editorialReviewer.count({where:{userId:admin.id}});
+      if(!authorized)throw new HttpError(403,'Düzeltme için editör ataması gerekli.');
+    }
     const newHash=digest(input.data);
     if(newHash===q.contentHash)
       throw new HttpError(400,'İçerik değişmedi. Gerekirse editör notu ekleyin.');
@@ -223,6 +233,7 @@ async function PATCH__handler(req:Request){
     return NextResponse.json({ok:true,nextRevision:q.revision+1,previousApprovalsInvalidated:true});
   }
 
+  if(admin.role!=='ADMIN')throw new HttpError(403,'Son yayımlama yalnız yöneticiye aittir.');
   const published=await db.$transaction(async tx=>{
     const fresh=await tx.editorialQuestionDraft.findUnique({where:{id:input.id}});
     if(!fresh||fresh.revision!==input.revision||fresh.contentHash!==input.contentHash||fresh.status==='PUBLISHED')
@@ -236,7 +247,7 @@ async function PATCH__handler(req:Request){
       where:{OR:signed.map(([stage,data])=>({stage,userId:data.reviewerUserId}))}
     });
     const signerAccounts=await tx.user.findMany({
-      where:{id:{in:signed.map(([,data])=>data.reviewerUserId)},role:'ADMIN',status:'ACTIVE'},
+      where:{id:{in:signed.map(([,data])=>data.reviewerUserId)},role:'EDITOR',status:'ACTIVE'},
       select:{id:true}
     });
     if(activeReviewers.length!==EDITORIAL_STAGES.length||signerAccounts.length!==EDITORIAL_STAGES.length)
