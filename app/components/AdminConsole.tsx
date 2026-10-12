@@ -315,7 +315,7 @@ export function AdminConsole(){
       </div>
       <div className="card adminFilterBar">
         <div className="field"><label>Ara</label><input value={userQ} onChange={e=>setUserQ(e.target.value)} placeholder="Ad veya e-posta"/></div>
-        <div className="field"><label>Rol</label><select value={userRole} onChange={e=>setUserRole(e.target.value)}><option value="ALL">Tümü</option><option value="COACH">Koç</option><option value="STUDENT">Öğrenci</option><option value="PARENT">Veli</option><option value="ADMIN">Yönetici</option></select></div>
+        <div className="field"><label>Rol</label><select value={userRole} onChange={e=>setUserRole(e.target.value)}><option value="ALL">Tümü</option><option value="COACH">Koç</option><option value="EDITOR">Editör</option><option value="STUDENT">Öğrenci</option><option value="PARENT">Veli</option><option value="ADMIN">Yönetici</option></select></div>
         <button className="btn primary" onClick={loadUsers}>Filtrele</button>
       </div>
       <div className="card adminTableCard">
