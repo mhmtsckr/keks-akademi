@@ -8,7 +8,7 @@ const baselineReview=(at:string)=>({
  ]
 });
 function row(type:string,id:string,taskId:string,at:string,review?:unknown){
- return {id,createdAt:new Date(at),payload:{type,taskId,review}};
+ return {id,createdAt:new Date(at),payload:{type,taskId,taskVersion:1,review}};
 }
 describe('Bağımsız gecikmeli TYMM performans ölçümü',()=>{
  it('altı görev için özgün ikinci bağlam ve aynı dört rubrik boyutunu korur',()=>{
@@ -64,6 +64,17 @@ describe('Bağımsız gecikmeli TYMM performans ölçümü',()=>{
   const first=baselineReview('2026-10-02T12:00:00Z');
   expect(readableRubric({})).toBeNull();
   expect(readableRubric({total:8,max:8,criterionScores:[]})).toBeNull();
+  expect(readableRubric({total:8,max:8,criterionScores:first.criterionScores})).toBeNull(); // 1+1+2+1=5, not 8
+  expect(readableRubric({total:5,max:8,criterionScores:[
+    {id:'geometry',score:1},{id:'geometry',score:1},{id:'phases',score:2},{id:'reasoning',score:1}
+  ]})).toBeNull();
+  const bad=row('TYMM_PERFORMANCE_REVIEWED','baseBad','perf-g5-moon-model-v1',
+    '2026-10-01T10:00:00Z',baselineReview('2026-09-30T10:00:00Z'));
+  expect(transferEligibility('perf-g5-moon-model-v1',[bad],new Date('2026-10-12')).status).toBe('AWAITING_BASELINE');
+  const wrongVersion=row('TYMM_PERFORMANCE_REVIEWED','baseWrong','perf-g5-moon-model-v1',
+    '2026-10-01T10:00:00Z',baselineReview('2026-10-02T10:00:00Z'));
+  wrongVersion.payload.taskVersion=999;
+  expect(transferEligibility('perf-g5-moon-model-v1',[wrongVersion],new Date('2026-10-12')).status).toBe('AWAITING_BASELINE');
   expect(()=>compareTransferRubrics(first,{total:4,max:10,criterionScores:first.criterionScores})).toThrow();
   expect(()=>compareTransferRubrics(first,{total:4,max:8,criterionScores:[
    {id:'alien',score:1},{id:'light',score:1},{id:'phases',score:1},{id:'reasoning',score:1}
