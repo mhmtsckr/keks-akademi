@@ -116,6 +116,16 @@ export function AdminConsole(){
     setMsg(j.message||'Kullanıcı durumu güncellendi.');await loadUsers();await loadOverview();
   }
 
+  async function toggleEditorRole(user:any){
+    if(user.role!=='COACH'&&user.role!=='EDITOR')return;
+    const next=user.role==='COACH'?'EDITOR':'COACH';
+    if(!window.confirm(user.name+' hesabının rolü '+next+' olarak değişsin mi? Aktif oturumu iptal edilecektir.'))return;
+    const r=await fetch('/api/admin/users',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({userId:user.id,role:next})});
+    const j=await r.json();
+    if(!r.ok){setMsg('Rol değişimi başarısız: '+(j.error||'Bilinmeyen hata'));return}
+    setMsg('Editör rolü güncellendi; yeniden giriş gerekecek.');await loadUsers();
+  }
+
   async function revokeUserSessions(user:any){
     const ok=window.confirm(user.name+' kullanıcısının tüm cihazlardaki aktif oturumları kapatılsın mı?');
     if(!ok)return;
@@ -341,6 +351,7 @@ export function AdminConsole(){
               <button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button>
               <button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button>
               <button className="btn" onClick={()=>revokeUserSessions(u)}>Oturumları Kapat</button>
+              {(u.role==='COACH'||u.role==='EDITOR')&&<button className="btn" onClick={()=>toggleEditorRole(u)}>{u.role==='COACH'?'Editör Yap':'Editör Yetkisini Kaldır'}</button>}
               <button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al</button>
             </>}
           </div></td>
