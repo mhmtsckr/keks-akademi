@@ -68,7 +68,26 @@ export function AdminMicroLessonReviews(){
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
     <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
-    {coverage.verifiedThemeSources&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+    {(coverage.verifiedMiddlePrograms||[]).map((record:any)=><details key={record.grade+'-'+record.subject}
+      className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>Resmî MEB · {record.grade}. sınıf {record.subject}</strong> ·
+        {' '+record.totalThemes} başlık · {record.linkedPilotLessons} pilot beceri ·
+        {' '+record.outcomesWithVerifiedCodes} doğrulanmış kod
+      </summary>
+      <p className="muted">{record.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+        {(record.themes||[]).map((theme:any)=><div key={theme.id}>
+          <strong>{theme.title}</strong> · {theme.linkedPilotLessons} mikro ders
+          <p className="muted">
+            {theme.outcomeCode?'Doğrulanmış kod: '+theme.outcomeCode:
+              theme.verification==='THEME_SCOPE'?'Tema becerisi doğrulandı, kod incelemede':
+              'Program dizini doğrulandı, beceri eşleştirmesi henüz yapılmadı'}
+          </p>
+          <a href={theme.sourceUrl} target="_blank" rel="noopener noreferrer">MEB program kaynağı</a>
+        </div>)}
+      </div>
+    </details>)}
+        {coverage.verifiedThemeSources&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>Resmî kaynak eşleştirmesi: 7. sınıf Türkçe</strong> · {coverage.verifiedThemeSources.totalThemes} MEB teması · {coverage.verifiedThemeSources.linkedPilotLessons} pilot örnek · {coverage.verifiedThemeSources.outcomesWithVerifiedCodes} doğrulanmış çıktı kodu</summary>
       <p className="muted">{coverage.verifiedThemeSources.disclaimer}</p>
       <div className="stack" style={{gap:8}}>
