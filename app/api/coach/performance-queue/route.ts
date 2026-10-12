@@ -7,12 +7,14 @@ import {buildCoachPerformanceQueue} from '@/lib/tymmCoachQueue';
 async function GET__handler(){
  const user=await requireRole(['COACH','ADMIN']);
  if(!user.coachProfile)return NextResponse.json({error:'Koç profili bulunamadı.'},{status:403});
+ const profile=await db.coachProfile.findUnique({where:{id:user.coachProfile.id},select:{responseTargetHours:true}});
+ const targetHours=Math.min(168,Math.max(1,profile?.responseTargetHours||24));
  // Ownership is enforced at the database level before reading evidence.
  const students=await db.student.findMany({
    where:{coachId:user.coachProfile.id},
    select:{id:true,fullName:true,gradeLevel:true}
  });
- if(!students.length)return NextResponse.json({ok:true,items:[],summary:{waiting:0,overdue:0},partial:false});
+ if(!students.length)return NextResponse.json({ok:true,items:[],summary:{waiting:0,overdue:0},targetHours:24,partial:false});
  // Do not retrieve answers or ratings for students outside this coach's assignment.
  const entries=await db.dailyLog.findMany({
    where:{
@@ -27,11 +29,11 @@ async function GET__handler(){
    take:501
  });
  const partial=entries.length>500;
- const items=buildCoachPerformanceQueue(students,entries.slice(0,500),new Date());
+ const items=buildCoachPerformanceQueue(students,entries.slice(0,500),new Date(),targetHours);
  return NextResponse.json({
   ok:true,items:items.slice(0,50),
   summary:{waiting:items.length,overdue:items.filter(x=>x.priority==='OVERDUE').length},
-  partial,limitedTo:partial?500:null,
+  partial,limitedTo:partial?500:null,targetHours,
   note:partial?'Kuyruk 500 kayıtla sınırlandırılmıştır, toplam sayı kısmi olabilir.':'Öğrencilerin yalnız sizinle eşleşen performans gönderimleri gösterilir. Metin yanıtları bu listede yer almaz.'
  });
 }
