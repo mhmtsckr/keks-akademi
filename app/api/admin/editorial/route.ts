@@ -230,6 +230,17 @@ async function PATCH__handler(req:Request){
     const reviews=await tx.editorialReview.findMany({where:{questionId:input.id},orderBy:{createdAt:'asc'}});
     const gate=evaluateEditorialGate(fresh,reviews);
     if(!gate.ready)throw new HttpError(409,'Yayın kapısı kapalı: '+gate.missing.join(', '));
+    // A formerly authorized or suspended signer is NOT an admissible active approver.
+    const signed=Object.entries(gate.approvals);
+    const activeReviewers=await tx.editorialReviewer.findMany({
+      where:{OR:signed.map(([stage,data])=>({stage,userId:data.reviewerUserId}))}
+    });
+    const signerAccounts=await tx.user.findMany({
+      where:{id:{in:signed.map(([,data])=>data.reviewerUserId)},role:'ADMIN',status:'ACTIVE'},
+      select:{id:true}
+    });
+    if(activeReviewers.length!==EDITORIAL_STAGES.length||signerAccounts.length!==EDITORIAL_STAGES.length)
+      throw new HttpError(409,'Editörün yetkisi veya aktif hesabı değişti; yeniden inceleme gerekli.');
     const locked=await tx.editorialQuestionDraft.updateMany({
       where:{id:input.id,status:{notIn:['PUBLISHED','PUBLISHING']},revision:input.revision},
       data:{status:'PUBLISHING'}
