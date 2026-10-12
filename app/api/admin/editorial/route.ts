@@ -14,11 +14,11 @@ const stageSchema=z.enum(EDITORIAL_STAGES);
 const optionSchema=z.array(z.string().trim().min(1).max(800)).length(5)
  .refine(a=>new Set(a.map(v=>v.toLocaleLowerCase('tr-TR'))).size===5,'Seçenekler farklı olmalı.');
 const sourceSchema=z.object({
-  doi:z.string().max(180).optional(),
-  pmcid:z.string().max(100).optional(),
-  url:z.string().url().max(500).optional(),
-  title:z.string().max(400).optional(),
-  sourceId:z.string().max(100).optional()
+  doi:z.string().max(180).nullable().optional(),
+  pmcid:z.string().max(100).nullable().optional(),
+  url:z.string().url().max(500).nullable().optional(),
+  title:z.string().max(400).nullable().optional(),
+  sourceId:z.string().max(100).nullable().optional()
 });
 const bodySchema=z.object({
   examType:z.string().trim().min(2).max(40).default('TYT'),
@@ -205,7 +205,7 @@ async function PATCH__handler(req:Request){
       throw new HttpError(400,'İçerik değişmedi. Gerekirse editör notu ekleyin.');
     await db.$transaction(async tx=>{
       const updated=await tx.editorialQuestionDraft.updateMany({
-        where:{id:q.id,revision:q.revision,status:{not:'PUBLISHED'}},
+        where:{id:q.id,revision:q.revision,status:{notIn:['PUBLISHED','PUBLISHING']}},
         data:{...input.data,revision:{increment:1},contentHash:newHash,status:'PENDING'}
       });
       if(updated.count!==1)throw new HttpError(409,'Sürüm değişti, tekrar deneyin.');
