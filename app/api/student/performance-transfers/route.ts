@@ -23,12 +23,14 @@ async function GET__handler(req:Request){
  const context=resolveLearningCurriculumContext({
   gradeLevel:user.student.gradeLevel,selectedGrade:raw?Number(raw):null
  });
- const logs=await db.dailyLog.findMany({
-  where:{studentId:user.student.id,payload:{path:['type'],string_contains:'TYMM_'}},
-  orderBy:{createdAt:'desc'},take:400,select:{id:true,createdAt:true,payload:true}
- });
+ const gradeTasks=context.framework==='TYMM'&&context.grade
+  ?TYMM_PERFORMANCE_TASKS.filter(t=>t.grade===context.grade):[];
+ const logs=gradeTasks.length?await db.dailyLog.findMany({
+  where:{studentId:user.student.id,OR:gradeTasks.map(task=>({payload:{path:['taskId'],equals:task.id}}))},
+  orderBy:{createdAt:'desc'},select:{id:true,createdAt:true,payload:true}
+ }):[];
  const rows=context.framework==='TYMM'&&context.grade
-  ?TYMM_PERFORMANCE_TASKS.filter(t=>t.grade===context.grade).map(task=>{
+  ?gradeTasks.map(task=>{
     const state=transferEligibility(task.id,logs,new Date());
     const variant=state.status==='AVAILABLE'?transferVariantFor(task.id):null;
     return {baselineTaskId:task.id,title:task.title,subject:task.subject,
@@ -63,9 +65,10 @@ async function POST__handler(req:Request){
  const created=await db.$transaction(async tx=>{
    // Serialize requests for the same student and baseline task; prevent double submissions.
    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${studentId}),hashtext(${task.id})) IS NULL AS acquired`;
+   // Query the actual task; an unrelated student's long activity log must not hide an old transfer.
    const logs=await tx.dailyLog.findMany({
-    where:{studentId,payload:{path:['type'],string_contains:'TYMM_'}},
-    orderBy:{createdAt:'desc'},take:400,select:{id:true,createdAt:true,payload:true}
+    where:{studentId,payload:{path:['taskId'],equals:task.id}},
+    orderBy:{createdAt:'desc'},select:{id:true,createdAt:true,payload:true}
    });
    const state=transferEligibility(task.id,logs,new Date());
    if(state.status!=='AVAILABLE'||!state.baselineId){
