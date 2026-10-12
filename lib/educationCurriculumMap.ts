@@ -1,6 +1,8 @@
 import {educationLevelKey,type EducationLevelKey,resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
 import {EXAM_CATALOG} from '@/lib/examCatalog';
 import {VERIFIED_GRADE7_TURKISH_THEMES} from '@/lib/verifiedGrade7TurkishThemes';
+import {grade56ThemesFor} from '@/lib/verifiedGrade56Themes';
+import {resolveLearningCurriculumContext} from '@/lib/curriculumPolicy2026';
 
 export type CurriculumAcquisition={
   id:string;
@@ -301,6 +303,29 @@ function lgsLegacySubject(subject:string):CurriculumSubject|null{
   };
 }
 
+function grade56OfficialIndex(grade:number,subject:string):CurriculumSubject|null{
+  if(![5,6].includes(grade)||!['Türkçe','Fen Bilimleri'].includes(subject))return null;
+  return {
+    name:subject,units:grade56ThemesFor(grade,subject).map(theme=>({
+      name:theme.ordinal+'. '+(theme.type==='TEMA'?'Tema: ':'Ünite: ')+theme.title,
+      sourceUrl:theme.sourceUrl,
+      topics:[{
+        name:theme.title,
+        subTopics:[{
+          name:theme.skill||'Beceri/çıktı eşleştirmesi henüz doğrulanmadı',
+          acquisitions:[q(
+            theme.outcomeCode||theme.id,
+            theme.skill
+              ?theme.skill+(theme.outcomeCode?' (resmî çıktı kodu doğrulandı; KEKS soru uygunluğu kontrol bekliyor)':' (tema becerisi doğrulandı; çıktı kodu kontrol bekliyor)')
+              :'Bu program başlığının resmî öğrenme çıktıları ayrıca eşleştirilmelidir.',
+            theme.skill?['Çoktan seçmeli','Gerekçelendirme','Süreç değerlendirme']:['Onaylı soru türü henüz girilmedi']
+          )]
+        }]
+      }]
+    }))
+  };
+}
+
 function fallbackUnit(subject:string,level:EducationLevelKey):CurriculumUnit{
   return {
     name:'Düzey Müfredat Haritası',
@@ -331,9 +356,10 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   const key=educationLevelKey(gradeLevel);
   const profile=resolveEducationLevelProfile(gradeLevel,academicTrack);
   if(!key||!profile)return null;
+  const exactGrade=resolveLearningCurriculumContext({gradeLevel}).grade;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=>byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=>(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,
