@@ -1192,3 +1192,21 @@ model EditorialRevision {
 
   @@unique([questionId, revision])
 }
+
+/**
+ * TYT KEKS Paragraf printed test book's individual QR solution data.
+ * Each QR resolves only its corresponding answer/explanation.
+ * These editorial drafts are not part of the approved student question bank.
+ */
+model ParagrafBookSolution {
+  id             String   @id
+  externalId     String   @unique
+  topic          String
+  testNo         Int
+  questionNo     Int
+  correctAnswer  String
+  explanation    String   @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([topic, testNo])
+}
