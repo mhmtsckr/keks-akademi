@@ -1,6 +1,7 @@
 import type {MicroLesson} from './bankFreeMicroLessons';
 import {findVerifiedThemeById} from './verifiedGrade7TurkishThemes';
 import {findGrade56Theme} from './verifiedGrade56Themes';
+import {findAdditionalTymmOutcome} from './verifiedAdditionalTymmOutcomes';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -11,7 +12,16 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
- const theme=lesson.sourceThemeId?findVerifiedThemeById(lesson.sourceThemeId):null;
+ const official=lesson.sourceThemeId?findAdditionalTymmOutcome(lesson.sourceThemeId):null;
+ if(official&&official.subject===lesson.subject
+   &&lesson.targetGrades?.includes(official.grade)&&lesson.sourceUrl===official.url){
+   return {
+     themeVerified:true,outcomeCodeVerified:true,theme:official.theme,
+     outcomeCode:official.code,sourceUrl:official.url,checkedOn:official.checkedOn,
+     interpretation:'Öğrenme çıktısının kodu ve kapsamı MEB resmî programından doğrulandı; KEKS özgün sorusunun kazanımı eksiksiz ölçtüğü veya alan uzmanı tarafından onaylandığı iddia edilemez.'
+   };
+ }
+  const theme=lesson.sourceThemeId?findVerifiedThemeById(lesson.sourceThemeId):null;
  const middle=lesson.sourceThemeId?findGrade56Theme(lesson.sourceThemeId):null;
  if(middle&&middle.skill&&middle.subject===lesson.subject&&
     lesson.targetGrades?.includes(middle.grade)&&middle.sourceUrl===lesson.sourceUrl){
