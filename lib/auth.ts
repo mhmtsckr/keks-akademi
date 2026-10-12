@@ -167,7 +167,7 @@ export async function currentUser(){
   }
 }
 
-export async function requireRole(roles:Array<'ADMIN'|'COACH'|'STUDENT'|'PARENT'>){
+export async function requireRole(roles:Array<'ADMIN'|'EDITOR'|'COACH'|'STUDENT'|'PARENT'>){
   const user=await currentUser();
   if(!user)throw new AuthError(401,'Oturum açmanız gerekiyor.');
   if(!roles.includes(user.role))throw new AuthError(403,'Bu işlem için yetkiniz yok.');
