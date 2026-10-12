@@ -346,6 +346,120 @@ export const TYMM_PERFORMANCE_TASKS:readonly PerformanceTask[]=[
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/biyoloji-dersi/unite/13",
     "contentStatus": "PILOT"
+  },
+  {
+    "id": "perf-g10-geo-map-geometry-v1",
+    "grade": 10,
+    "subject": "Coğrafya",
+    "outcomeCode": "COĞ.10.2.2",
+    "version": 1,
+    "kind": "MODEL",
+    "title": "Kurgusal mahalle için tematik harita tasarla",
+    "instruction": "Gerçek ev adresi paylaşmadan hayalî bir mahallede üç sağlık noktası, iki yürüyüş güzergâhı ve bir park sınırı bulunan tematik harita planla. Hangi öğeyi nokta, çizgi ve alanla göstereceğini gerekçelendir.",
+    "steps": [
+      "Haritanın amacını, gösterilecek nesneleri ve kullanılacak ölçeği belirle.",
+      "Nokta, çizgi ve alan geometrilerini hangi coğrafi öğeye ayırdığını açıkla.",
+      "Lejant, yön oku ve veri kaynağı bilgilerini nasıl sunacağını yaz."
+    ],
+    "evidencePrompt": "Harita öğeleri, geometri türleri, lejant, ölçek, veri kaynağı ve özel adres paylaşmama planını metinle tarif et.",
+    "safety": "Gerçek ev/öğrenci adreslerini, kişi konumlarını veya özel koordinatları paylaşma. Hayalî bir alan ve örnek veri kullan.",
+    "criteria": [
+      {
+        "id": "purpose",
+        "label": "Harita amacı ve kullanıcı ihtiyacını belirleme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya kanıtsız",
+          "1": "Kısmen doğru veya gerekçesi eksik",
+          "2": "Doğru, açık ve gerekçeli kanıt"
+        }
+      },
+      {
+        "id": "geometry",
+        "label": "Nokta, çizgi ve alan verilerini uygun kullanma",
+        "levels": {
+          "0": "Yanlış, belirsiz veya kanıtsız",
+          "1": "Kısmen doğru veya gerekçesi eksik",
+          "2": "Doğru, açık ve gerekçeli kanıt"
+        }
+      },
+      {
+        "id": "cartography",
+        "label": "Ölçek, yön, lejant ve veri kaynağı belirtme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya kanıtsız",
+          "1": "Kısmen doğru veya gerekçesi eksik",
+          "2": "Doğru, açık ve gerekçeli kanıt"
+        }
+      },
+      {
+        "id": "privacy",
+        "label": "Kişisel konumu ifşa etmeden ve kaynakları belirterek harita tasarlama",
+        "levels": {
+          "0": "Yanlış, belirsiz veya kanıtsız",
+          "1": "Kısmen doğru veya gerekçesi eksik",
+          "2": "Doğru, açık ve gerekçeli kanıt"
+        }
+      }
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/cografya-dersi/unite/58",
+    "contentStatus": "PILOT"
+  },
+  {
+    "id": "perf-g10-geo-disaster-evidence-v1",
+    "grade": 10,
+    "subject": "Coğrafya",
+    "outcomeCode": "COĞ.10.6.1",
+    "version": 1,
+    "kind": "OPEN_RESPONSE",
+    "title": "Kurgusal sel riski için önlem planını değerlendir",
+    "instruction": "Varsayımsal bir mahallede şiddetli yağışla taşkın riski bulunuyor. Yerel risk haritası, erken uyarı ve tahliye eğitimi üzerinden hangi önlemlerin işe yaradığını gösterecek kanıtları yaz. Somut acil durum yönlendirmesi verme.",
+    "steps": [
+      "Tehlike, maruziyet ve kırılganlık değişkenlerini sınıflandır.",
+      "Önlemin çalıştığını gösterecek ölçülebilir verileri belirle.",
+      "Veri güvenilirliği, erişilebilirlik ve riskleri göz önünde tutarak gerekçeli öneri sun."
+    ],
+    "evidencePrompt": "Kurgusal risk haritası, kontrol edilecek kaynaklar, gösterge tablosu ve önlem değerlendirme ölçütlerini yaz.",
+    "safety": "Gerçek afet anında okul/AFAD gibi yetkili kurumların güncel yönlendirmelerine uy; burada yalnız kurgusal eğitim vakasını analiz et.",
+    "criteria": [
+      {
+        "id": "risk",
+        "label": "Tehlike, maruziyet ve kırılganlık analizini açıklama",
+        "levels": {
+          "0": "Yanlış, belirsiz veya kanıtsız",
+          "1": "Kısmen doğru veya gerekçesi eksik",
+          "2": "Doğru, açık ve gerekçeli kanıt"
+        }
+      },
+      {
+        "id": "evidence",
+        "label": "Kaynaklı ve ölçülebilir risk azaltma kanıtı belirleme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya kanıtsız",
+          "1": "Kısmen doğru veya gerekçesi eksik",
+          "2": "Doğru, açık ve gerekçeli kanıt"
+        }
+      },
+      {
+        "id": "plan",
+        "label": "Uygulanabilir ve kapsayıcı değerlendirme planı yazma",
+        "levels": {
+          "0": "Yanlış, belirsiz veya kanıtsız",
+          "1": "Kısmen doğru veya gerekçesi eksik",
+          "2": "Doğru, açık ve gerekçeli kanıt"
+        }
+      },
+      {
+        "id": "uncertainty",
+        "label": "Yerel belirsizlik ve yetkili kaynak gereğini belirtme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya kanıtsız",
+          "1": "Kısmen doğru veya gerekçesi eksik",
+          "2": "Doğru, açık ve gerekçeli kanıt"
+        }
+      }
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/cografya-dersi/unite/94",
+    "contentStatus": "PILOT"
   }
 ];
 export function performanceTaskById(id:string,version?:number){return TYMM_PERFORMANCE_TASKS.find(x=>x.id===id&&(version===undefined||x.version===version))||null;}
