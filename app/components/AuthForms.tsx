@@ -22,7 +22,7 @@ function PasswordRules({password}:{password:string}){
   </div>;
 }
 
-function PasswordResetForm({role,onClose}:{role:'STUDENT'|'COACH';onClose:()=>void}){
+function PasswordResetForm({role,onClose}:{role:'STUDENT'|'COACH'|'EDITOR';onClose:()=>void}){
   const [stage,setStage]=useState<'request'|'confirm'>('request');
   const [challenge,setChallenge]=useState('');
   const [msg,setMsg]=useState('');
@@ -41,7 +41,7 @@ function PasswordResetForm({role,onClose}:{role:'STUDENT'|'COACH';onClose:()=>vo
           role,
           email:fd.get('email'),
           studentCode:role==='STUDENT'?fd.get('studentCode'):undefined,
-          fullName:role==='COACH'?fd.get('fullName'):undefined
+          fullName:role!=='STUDENT'?fd.get('fullName'):undefined
         })
       });
       const j=await r.json();
@@ -193,7 +193,7 @@ export function AccountLoginForm({redirect='/koc',requiredRole}:{redirect?:strin
   const [forgotOpen,setForgotOpen]=useState(false);
   const [twoFactorChallenge,setTwoFactorChallenge]=useState('');
   const [busy,setBusy]=useState(false);
-  if(forgotOpen)return <PasswordResetForm role="COACH" onClose={()=>setForgotOpen(false)}/>;
+  if(forgotOpen)return <PasswordResetForm role={requiredRole==='EDITOR'?'EDITOR':'COACH'} onClose={()=>setForgotOpen(false)}/>;
   if(twoFactorChallenge)return <AdminTwoFactorForm challenge={twoFactorChallenge} onCancel={()=>{setTwoFactorChallenge('');setMsg('')}}/>;
 
   async function submit(e:FormEvent<HTMLFormElement>) {
