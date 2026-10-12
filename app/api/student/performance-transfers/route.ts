@@ -81,7 +81,7 @@ async function POST__handler(req:Request){
     studentId,date:new Date(),payload:{
      type:'TYMM_TRANSFER_SUBMISSION',taskId:task.id,taskVersion:task.version,
      transferVariantId:variant.id,transferVersion:variant.version,
-     baselineSubmissionId:original.id,baselineReviewedAt:firstReview.reviewedAt,
+     baselineSubmissionId:original.id,baselineReviewedAt:String(firstReview.reviewedAt),
      grade:task.grade,subject:task.subject,outcomeCode:task.outcomeCode,
      response:input.response,observations:input.observations,
      firstScores,independentSelfReport:true,
