@@ -190,3 +190,11 @@ CREATE TABLE IF NOT EXISTS "EditorialRevision" (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "EditorialRevision_questionId_revision_key"
   ON "EditorialRevision"("questionId","revision");
+
+-- Oturum açma P2022 düzeltmesi: Prisma currentUser() ParentProfile ilişkisini
+-- okurken aşağıdaki sütunları bekler. Eski production şemasında yoklardı.
+-- Veri silmeden ve mevcut erişim izinlerini genişletmeden eklenir.
+ALTER TABLE "ParentProfile"
+  ADD COLUMN IF NOT EXISTS "consentRecordedAt" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "consentRecordedByUserId" TEXT,
+  ADD COLUMN IF NOT EXISTS "allowReports" BOOLEAN NOT NULL DEFAULT false;
