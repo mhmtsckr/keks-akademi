@@ -114,6 +114,9 @@ BEGIN
   END IF;
 END $$;
 
+-- Özel EDITOR rolü; editörler ADMIN yetkisi alamaz.
+ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'EDITOR';
+
 -- KEKS bilimsel makale temelli soru bankası: kapalı editöryal aşama.
 -- Yalnızca ayrı editör imzaları ve telif doğrulaması sonrası soru yayımlanabilir.
 CREATE TABLE IF NOT EXISTS "EditorialQuestionDraft" (
