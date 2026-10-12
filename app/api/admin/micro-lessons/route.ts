@@ -5,6 +5,7 @@ import {readJson,withApiErrors} from '@/lib/apiGuard';
 import {db} from '@/lib/db';
 import {ALL_MICRO_LESSONS,microLessonById} from '@/lib/bankFreeMicroLessons';
 import {getMicroLessonReviewStatusMap,lessonReviewDigest} from '@/lib/microLessonReview';
+import {lessonSourceEvidence} from '@/lib/microLessonSourceEvidence';
 
 const patchSchema=z.object({
   id:z.string().min(3).max(120),
@@ -19,7 +20,7 @@ async function GET__handler(){
  await requireRole(['ADMIN']);
  const states=await getMicroLessonReviewStatusMap();
  return NextResponse.json({ok:true,lessons:ALL_MICRO_LESSONS.map(lesson=>({
-   ...lesson,publication:states.get(lesson.id)||{status:'PILOT'},
+   ...lesson,sourceEvidence:lessonSourceEvidence(lesson),publication:states.get(lesson.id)||{status:'PILOT'},
    contentDigest:lessonReviewDigest(lesson),
    exerciseCount:lesson.exercises.length
  }))});
