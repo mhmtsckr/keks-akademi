@@ -5,6 +5,7 @@
  */
 import {EXPANDED_MICRO_LESSONS} from './expandedMicroLessons';
 import {GRADE_SEED_LESSONS} from './gradeSeedMicroLessons';
+import {GRADE7_TURKISH_THEME_LESSONS} from './grade7TurkishThemeLessons';
 import {findExpandedMicroLesson} from './expandedMicroLessonMatch';
 
 export type GuidedExercise={
@@ -25,6 +26,7 @@ export type MicroLesson={
   targetGrades?:readonly number[];
   targetExams?:readonly string[];
   topicTags?:readonly string[];
+  sourceThemeId?:string;
 };
 
 export const MICRO_LESSONS:readonly MicroLesson[]=[
@@ -88,7 +90,7 @@ function normalize(value:string){
   return value.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 }
 
-export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS,...GRADE_SEED_LESSONS];
+export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS,...GRADE_SEED_LESSONS,...GRADE7_TURKISH_THEME_LESSONS];
 
 export function findMicroLesson(input:{
   subject:string;topic:string;prompt?:string|null;selectedLessonId?:string|null

@@ -7,6 +7,7 @@ import {EXAM_CATALOG} from './examCatalog';
 import {resolveEducationLevelProfile} from './educationLevelProfile';
 import {getEducationCurriculum} from './educationCurriculumMap';
 import {CURRENT_YEAR_GRADE_POLICY,lessonAllowedForContext,resolveLearningCurriculumContext} from './curriculumPolicy2026';
+import {VERIFIED_GRADE7_TURKISH_THEMES} from './verifiedGrade7TurkishThemes';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -71,8 +72,23 @@ export function microLessonCoverageSnapshot(){
   return {examType,topicIndexSource:'KEKS_INTERNAL' as const,
    totalPilotLessons:rows.reduce((n,x)=>n+x.pilotLessons,0),subjects:rows};
  });
+ const verifiedThemeRows=VERIFIED_GRADE7_TURKISH_THEMES.map(theme=>({
+   id:theme.id,theme:theme.themeName,skill:theme.skill,
+   outcomeCode:theme.outcomeCode,verification:theme.verification,
+   sourceUrl:theme.sourceUrl,
+   linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>
+      l.sourceThemeId===theme.id&&l.targetGrades?.includes(7)&&l.subject==='Türkçe').length
+ }));
  return {
   academicYear:'2026-2027',status:'EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT',
+  verifiedThemeSources:{
+    grade:7,subject:'Türkçe',source:'MEB TYMM resmî tema sayfaları',
+    totalThemes:verifiedThemeRows.length,
+    outcomesWithVerifiedCodes:verifiedThemeRows.filter(x=>x.verification==='KOD_DOGRULANDI').length,
+    linkedPilotLessons:verifiedThemeRows.reduce((sum,x)=>sum+x.linkedPilotLessons,0),
+    themes:verifiedThemeRows,
+    disclaimer:'Resmî tema/kod kaynağı doğrulaması, bağımsız soru ve pedagojik uygunluk onayı değildir.'
+  },
   totalLessons:ALL_MICRO_LESSONS.length,
   totalExercises:ALL_MICRO_LESSONS.reduce((sum,x)=>sum+x.exercises.length,0),
   gradeRows,examRows,
