@@ -68,6 +68,17 @@ export function AdminMicroLessonReviews(){
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
     <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
+    {coverage.verifiedThemeSources&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>Resmî kaynak eşleştirmesi: 7. sınıf Türkçe</strong> · {coverage.verifiedThemeSources.totalThemes} MEB teması · {coverage.verifiedThemeSources.linkedPilotLessons} pilot örnek · {coverage.verifiedThemeSources.outcomesWithVerifiedCodes} doğrulanmış çıktı kodu</summary>
+      <p className="muted">{coverage.verifiedThemeSources.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+        {(coverage.verifiedThemeSources.themes||[]).map((item:any)=><div key={item.id}>
+          <strong>{item.theme}</strong> · {item.linkedPilotLessons} pilot mikro ders
+          <p className="muted">{item.skill} · {item.outcomeCode?'Resmî kod: '+item.outcomeCode:'Resmî öğrenme çıktısı kodu doğrulama bekliyor'}</p>
+          <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">MEB tema sayfası</a>
+        </div>)}
+      </div>
+    </details>}
     <div className="stack" style={{gap:8}}>
       {(coverage.gradeRows||[]).map((g:any)=><details key={g.grade}>
         <summary><strong>{g.grade}. sınıf</strong> · {g.framework==='TYMM'?'2026–2027 Maarif Modeli':'Önceki MEB programı'} · {g.subjectsWithLessons}/{g.totalSubjects} derste başlangıç içeriği</summary>
