@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { FormEvent,useEffect,useState } from 'react';
+import {StudentPerformanceTasks} from './StudentPerformanceTasks';
 
 const ERROR_REASONS=[
   ['','Henüz belirleyemedim'],
@@ -200,6 +201,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const dueReviews=reviews.filter((x:any)=>new Date(x.dueAt)<=new Date());
 
   return <div className="wrongQuestionBank">
+    <StudentPerformanceTasks/>
     {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
 
     <div className="card wrongQuestionDueCard">

@@ -1,0 +1,106 @@
+'use client';
+import {FormEvent,useEffect,useState} from 'react';
+
+type Criteria={id:string;label:string;levels:Record<string,string>};
+type Submission={
+ id:string;submittedAt:string;status:string;
+ task:{id:string;title:string;grade:number;subject:string;outcomeCode:string;
+ sourceUrl:string;instruction:string;criteria:Criteria[];maxScore:number};
+ response:string;observations:string;
+ review?:{total?:number;max?:number;feedback?:string;reviewedAt?:string;nextAction?:string;criterionScores?:{id:string;score:number}[]}|null
+};
+export function CoachPerformanceReviews({studentId}:{studentId:string}){
+ const [items,setItems]=useState<Submission[]>([]);
+ const [message,setMessage]=useState('');
+ const [busy,setBusy]=useState('');
+ const [loaded,setLoaded]=useState(false);
+
+ async function load(){
+  try{
+   const r=await fetch('/api/coach/students/'+studentId+'/performance-tasks',{cache:'no-store'});
+   const j=await r.json();
+   if(!r.ok)throw new Error(j.error||'Performans görevleri alınamadı.');
+   setItems(j.submissions||[]);setLoaded(true);
+  }catch(e){setMessage('Hata: '+(e instanceof Error?e.message:'Performans görevleri alınamadı.'));setLoaded(true);}
+ }
+ useEffect(()=>{void load();},[studentId]);
+
+ async function grade(event:FormEvent<HTMLFormElement>,submission:Submission){
+  event.preventDefault();setBusy(submission.id);setMessage('');
+  const form=new FormData(event.currentTarget);
+  const scores:Record<string,number>={};
+  for(const c of submission.task.criteria){
+   const value=String(form.get('rubric-'+c.id)||'');
+   if(!['0','1','2'].includes(value)){setBusy('');setMessage('Dört rubrik ölçütünün tamamını puanla.');return;}
+   scores[c.id]=Number(value);
+  }
+  try{
+   const r=await fetch('/api/coach/students/'+studentId+'/performance-tasks',{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({
+     submissionId:submission.id,scores,
+     feedback:String(form.get('feedback')||'').trim(),
+     nextAction:String(form.get('nextAction')||'RETRY_WITH_FEEDBACK')
+    })
+   });
+   const j=await r.json();
+   if(!r.ok)throw new Error(j.error||'Değerlendirme kaydedilemedi.');
+   setMessage(j.message);await load();
+  }catch(e){setMessage('Hata: '+(e instanceof Error?e.message:'Değerlendirme kaydedilemedi.'));}
+  finally{setBusy('');}
+ }
+ const pending=items.filter(x=>x.status==='WAITING_FOR_COACH');
+ const reviewed=items.filter(x=>x.status==='REVIEWED');
+ return <div className="card">
+  <div className="moduleHeaderRow">
+   <div><div className="moduleEyebrow">KEKS · ÖĞRETMEN DESTEKLİ BECERİ DEĞERLENDİRMESİ</div>
+    <h2>TYMM açık uçlu ve performans görevleri</h2>
+    <p className="muted">Öğrencinin yazılı/model/deney planını dört ölçütlü rubrikle değerlendirin. Bu kayıt insan koç puanıdır; otomatik bilgi hâkimiyetini değiştirmez.</p>
+   </div>
+   <span className="pill">{pending.length} inceleme bekliyor</span>
+  </div>
+  {message&&<div className={'notice '+(message.startsWith('Hata:')?'error':'')}>{message}</div>}
+  {!loaded?<p className="muted">Performans çalışmaları yükleniyor…</p>:items.length===0?<p className="muted">Henüz teslim edilmiş performans görevi yok.</p>:null}
+  <div className="stack">
+   {pending.slice(0,12).map(item=><article className="card" key={item.id}>
+    <strong>{item.task.grade}. sınıf · {item.task.subject} · {item.task.title}</strong>
+    <p className="muted">MEB çıktısı: {item.task.outcomeCode} · <a target="_blank" rel="noopener noreferrer" href={item.task.sourceUrl}>Resmî kaynak</a> · Gönderim: {new Date(item.submittedAt).toLocaleDateString('tr-TR')}</p>
+    <p><strong>Görev:</strong> {item.task.instruction}</p>
+    <div className="notice"><strong>Öğrencinin yazılı açıklaması:</strong> <p style={{whiteSpace:'pre-wrap'}}>{item.response}</p></div>
+    <div className="notice"><strong>Kanıt / model / gözlem planı:</strong> <p style={{whiteSpace:'pre-wrap'}}>{item.observations}</p></div>
+    <form className="stack" onSubmit={e=>void grade(e,item)}>
+     {item.task.criteria.map(c=><label className="field" key={c.id}>
+      <span>{c.label}</span>
+      <select name={'rubric-'+c.id} defaultValue="" required>
+       <option value="" disabled>Ölçüt puanını seç</option>
+       {['0','1','2'].map(k=><option key={k} value={k}>{k}/2 — {c.levels[k]}</option>)}
+      </select>
+     </label>)}
+     <label className="field"><span>Gerekçeli ve geliştirici koç geribildirimi (en az 30 karakter)</span>
+      <textarea name="feedback" minLength={30} maxLength={1800} required rows={4} placeholder="Hangi ölçüt iyi? Neler geliştirilmeli? Sonraki görevde öğrenci ne yapmalı?"/>
+     </label>
+     <label className="field"><span>Önerilen sonraki adım</span>
+      <select name="nextAction" defaultValue="RETRY_WITH_FEEDBACK">
+       <option value="RETRY_WITH_FEEDBACK">Geri bildirime göre yeniden deneme</option>
+       <option value="DIFFERENT_CONTEXT">Farklı bağlamda bağımsız görev</option>
+       <option value="DISCUSS_WITH_COACH">Koç görüşmesinde örnek üzerinden tartışma</option>
+      </select>
+     </label>
+     <button className="btn primary" disabled={busy===item.id}>
+      {busy===item.id?'Rubrik kaydediliyor…':'Dört Ölçütlü Değerlendirmeyi Kaydet'}
+     </button>
+    </form>
+   </article>)}
+  </div>
+  {reviewed.length>0&&<details className="card" style={{marginTop:12}}>
+   <summary><strong>Değerlendirilen görevler ({reviewed.length})</strong></summary>
+   <div className="stack">
+    {reviewed.slice(0,25).map(item=><div className="notice" key={item.id}>
+     <strong>{item.task.grade}. sınıf · {item.task.title}</strong> · {item.review?.total}/{item.review?.max} puan
+     <p>{item.review?.feedback}</p>
+     <small className="muted">Değerlendirme, önceki kaydı değiştirmeden korunur. Tek görev kalıcı öğrenme kanıtı değildir.</small>
+    </div>)}
+   </div>
+  </details>}
+ </div>;
+}

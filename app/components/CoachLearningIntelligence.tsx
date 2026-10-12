@@ -1,6 +1,7 @@
 'use client';
 
 import {FormEvent,useEffect,useState} from 'react';
+import {CoachPerformanceReviews} from './CoachPerformanceReviews';
 
 function masteryLabel(v:string){
   return v==='NEW'?'Yeni'
@@ -54,6 +55,7 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
   const weeklyIndicators=data.indicators?.indicators||[];
 
   return <div className="stack">
+    <CoachPerformanceReviews studentId={studentId}/>
     {msg&&<div className="notice error">{msg}</div>}
     <div className="card">
       <div className="moduleHeaderRow">
