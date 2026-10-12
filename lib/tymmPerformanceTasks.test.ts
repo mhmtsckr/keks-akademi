@@ -4,7 +4,7 @@ import {resolveLearningCurriculumContext} from './curriculumPolicy2026';
 
 describe('MEB TYMM insan rubrikli performans görevleri',()=>{
  it('altı görev üç gerçek türde ve doğru sınıf/kaynağa bağlıdır',()=>{
-  expect(TYMM_PERFORMANCE_TASKS).toHaveLength(6);
+  expect(TYMM_PERFORMANCE_TASKS).toHaveLength(8);
   expect(new Set(TYMM_PERFORMANCE_TASKS.map(x=>x.id)).size).toBe(6);
   expect(new Set(TYMM_PERFORMANCE_TASKS.map(x=>x.kind))).toEqual(new Set(['MODEL','OPEN_RESPONSE','EXPERIMENT_DESIGN']));
   for(const task of TYMM_PERFORMANCE_TASKS){
