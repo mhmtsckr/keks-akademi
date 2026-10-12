@@ -3,6 +3,7 @@ import {findVerifiedThemeById} from './verifiedGrade7TurkishThemes';
 import {findGrade56Theme} from './verifiedGrade56Themes';
 import {findAdditionalTymmOutcome} from './verifiedAdditionalTymmOutcomes';
 import {findVerifiedGeographyOutcome} from './verifiedGrade10GeographyOutcomes';
+import {findVerifiedLiteratureTheme} from './verifiedGrade911LiteratureThemes';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -13,7 +14,15 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
- const geo=lesson.sourceThemeId?findVerifiedGeographyOutcome(lesson.sourceThemeId):null;
+ const literature=lesson.sourceThemeId?findVerifiedLiteratureTheme(lesson.sourceThemeId):null;
+ if(literature&&literature.verification==='OUTCOME_CODE'&&literature.subject===lesson.subject
+  &&lesson.targetGrades?.includes(literature.grade)&&literature.sourceUrl===lesson.sourceUrl)
+   return {
+    themeVerified:true,outcomeCodeVerified:true,theme:literature.theme,
+    outcomeCode:literature.outcomeCode,sourceUrl:literature.sourceUrl,checkedOn:literature.checkedOn,
+    interpretation:'MEB 2026–2027 Türk Dili ve Edebiyatı tema ve öğrenme çıktısı kodu doğrulandı. Bu mikro alıştırma tek başına okuma/yazma/konuşma performansını eksiksiz ölçmez; öğretmen ve MEB onayı değildir.'
+   };
+  const geo=lesson.sourceThemeId?findVerifiedGeographyOutcome(lesson.sourceThemeId):null;
  if(geo&&geo.subject===lesson.subject&&lesson.targetGrades?.includes(geo.grade)&&lesson.sourceUrl===geo.url)
    return {
      themeVerified:true,outcomeCodeVerified:true,theme:geo.theme,outcomeCode:geo.code,
