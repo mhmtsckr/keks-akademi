@@ -1118,3 +1118,76 @@ model SalesLead {
   @@index([source, createdAt])
   @@index([soldPlanId, soldTerm])
 }
+
+/**
+ * KEKS yayımlanmamış soru içerikleri: gerçek editör kararları olmadan
+ * QuestionBankItem'a aktarılmaz. Taslak metinler public git'e konmaz.
+ */
+model EditorialQuestionDraft {
+  id                  String   @id @default(cuid())
+  externalId          String   @unique
+  examType            String   @default("TYT")
+  subject             String   @default("Türkçe")
+  topic               String
+  skill               String?
+  difficulty          String?
+  passage             String
+  stem                String
+  options             Json
+  correctAnswer       String
+  explanation         String
+  sourceRefs          Json     @default("[]")
+  qualityFlags        Json     @default("[]")
+  contentHash         String
+  revision            Int      @default(1)
+  status              String   @default("PENDING")
+  publishedQuestionId String?  @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  reviews             EditorialReview[]
+  revisions           EditorialRevision[]
+
+  @@index([status, updatedAt])
+  @@index([topic, status])
+}
+
+model EditorialReviewer {
+  id              String   @id @default(cuid())
+  userId          String
+  stage           String
+  grantedByUserId String
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, stage])
+  @@index([stage])
+}
+
+model EditorialReview {
+  id             String   @id @default(cuid())
+  questionId     String
+  question       EditorialQuestionDraft @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  reviewerUserId String
+  stage          String
+  decision       String
+  note           String
+  revision       Int
+  contentHash    String
+  rightsVerified Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([questionId, revision, createdAt])
+  @@index([reviewerUserId, createdAt])
+}
+
+model EditorialRevision {
+  id             String   @id @default(cuid())
+  questionId     String
+  question       EditorialQuestionDraft @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  revision       Int
+  actorUserId    String
+  reason         String
+  snapshot       Json
+  createdAt      DateTime @default(now())
+
+  @@unique([questionId, revision])
+}
