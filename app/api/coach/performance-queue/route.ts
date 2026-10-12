@@ -14,7 +14,7 @@ async function GET__handler(){
    where:{coachId:user.coachProfile.id},
    select:{id:true,fullName:true,gradeLevel:true}
  });
- if(!students.length)return NextResponse.json({ok:true,items:[],summary:{waiting:0,overdue:0},targetHours:24,partial:false});
+ if(!students.length)return NextResponse.json({ok:true,items:[],summary:{waiting:0,overdue:0},targetHours,partial:false});
  // Do not retrieve answers or ratings for students outside this coach's assignment.
  const entries=await db.dailyLog.findMany({
    where:{
