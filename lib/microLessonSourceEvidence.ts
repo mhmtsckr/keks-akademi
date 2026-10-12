@@ -2,6 +2,7 @@ import type {MicroLesson} from './bankFreeMicroLessons';
 import {findVerifiedThemeById} from './verifiedGrade7TurkishThemes';
 import {findGrade56Theme} from './verifiedGrade56Themes';
 import {findAdditionalTymmOutcome} from './verifiedAdditionalTymmOutcomes';
+import {findVerifiedGeographyOutcome} from './verifiedGrade10GeographyOutcomes';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -12,6 +13,13 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const geo=lesson.sourceThemeId?findVerifiedGeographyOutcome(lesson.sourceThemeId):null;
+ if(geo&&geo.subject===lesson.subject&&lesson.targetGrades?.includes(geo.grade)&&lesson.sourceUrl===geo.url)
+   return {
+     themeVerified:true,outcomeCodeVerified:true,theme:geo.theme,outcomeCode:geo.code,
+     sourceUrl:geo.url,checkedOn:geo.checkedOn,
+     interpretation:'MEB TYMM 10. sınıf Coğrafya öğrenme çıktısı kaynağı doğrulandı. KEKS tarafından hazırlanan özgün soruların branş uzmanı veya MEB tarafından onaylandığı anlamına gelmez.'
+   };
  const official=lesson.sourceThemeId?findAdditionalTymmOutcome(lesson.sourceThemeId):null;
  if(official&&official.subject===lesson.subject
    &&lesson.targetGrades?.includes(official.grade)&&lesson.sourceUrl===official.url){

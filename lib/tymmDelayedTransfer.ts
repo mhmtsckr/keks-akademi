@@ -116,6 +116,44 @@ export const TYMM_TRANSFER_VARIANTS:readonly TransferVariant[]=[
       "Günlük gözlem/ölçüm planı",
       "Fototropizma ve nastiyi ayırma"
     ]
+  },
+  {
+    "baselineTaskId": "perf-g10-geo-map-geometry-v1",
+    "id": "perf-g10-geo-map-geometry-transfer-v1",
+    "version": 1,
+    "title": "Kurgusal afet erişim noktalarını haritada planla",
+    "instruction": "İlk sağlık noktası/park haritasından farklı olarak, tamamen hayalî bir kasabada üç güvenli bilgilendirme noktası, iki yürüyüş erişim hattı ve bir kamusal meydan sınırı tasarla. Nokta–çizgi–alan seçimini ve lejantını gerekçelendir; gerçek adres kullanma.",
+    "evidencePrompt": "Kurgusal harita amacı, nokta-çizgi-alan dağılımı, ölçek/yön/lejant ve kişisel konumdan kaçınma ilkelerini yaz.",
+    "steps": [
+      "Yeni kurgusal haritanın amacını tanımla.",
+      "Her nesneyi uygun geometriyle göster.",
+      "Kaynak, ölçek, yön ve mahremiyet denetimini açıkla."
+    ],
+    "criterionLabels": [
+      "Yeni harita amacı ve kullanıcı ihtiyacını belirleme",
+      "Yeni nesneleri nokta, çizgi ve alanla doğru temsil etme",
+      "Ölçek, yön, lejant ve kaynak gösterimi",
+      "Kişisel adres paylaşmadan kurgusal verilerle çalışma"
+    ]
+  },
+  {
+    "baselineTaskId": "perf-g10-geo-disaster-evidence-v1",
+    "id": "perf-g10-geo-disaster-evidence-transfer-v1",
+    "version": 1,
+    "title": "Kurgusal heyelan riskini azaltma önerisini kanıtla",
+    "instruction": "İlk taşkın örneğinden bağımsız olarak bir kurgusal yamaç yerleşimindeki heyelan riski için hangi verilerin toplanacağını ve bir önlem paketinin başarısının nasıl değerlendirileceğini açıkla. Gerçek yer seçimi veya acil durum tavsiyesi verme.",
+    "evidencePrompt": "Tehlike, maruziyet, kırılganlık, ölçülebilir gösterge ve belirsizlikleri yeni heyelan senaryosuna göre yaz.",
+    "steps": [
+      "Kurgusal heyelan vakasının risk bileşenlerini ayır.",
+      "Önleme ilişkin kaynaklı gözlem göstergelerini seç.",
+      "Yerel uzman verisi eksikliğini ve değerlendirme sınırını belirt."
+    ],
+    "criterionLabels": [
+      "Heyelan tehlikesi ve kırılganlığı somutlaştırma",
+      "Ölçülebilir, doğrulanabilir kanıt seçme",
+      "Yerel varsayıma uygun müdahale değerlendirmesi",
+      "Belirsizlik ve yetkili kaynak gereğini belirtme"
+    ]
   }
 ];
 export function transferVariantFor(taskId:string){

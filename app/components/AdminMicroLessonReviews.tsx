@@ -68,7 +68,22 @@ export function AdminMicroLessonReviews(){
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
     <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
-    {coverage.verifiedAdditionalOutcomes&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+    {coverage.verifiedGeography&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>MEB TYMM · 10. sınıf Coğrafya</strong> ·
+       {' '+coverage.verifiedGeography.distinctThemes} tema ·
+       {' '+coverage.verifiedGeography.totalOfficialOutcomes} resmî çıktı ·
+       {' '+coverage.verifiedGeography.linkedPilotLessons} pilot mikro ders
+      </summary>
+      <p className="muted">{coverage.verifiedGeography.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+       {(coverage.verifiedGeography.outcomes||[]).map((x:any)=><div key={x.code}>
+        <strong>{x.code} · {x.theme}</strong>
+        <p className="muted">{x.skill} · {x.linkedPilotLessons} özgün mikro ders</p>
+        <a href={x.sourceUrl} target="_blank" rel="noopener noreferrer">Resmî MEB öğrenme çıktısı</a>
+       </div>)}
+      </div>
+    </details>}
+        {coverage.verifiedAdditionalOutcomes&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>Yeni resmî öğrenme çıktıları · 5, 6, 9, 10 ve 11. sınıflar</strong> ·
         {' '+coverage.verifiedAdditionalOutcomes.totalOfficialOutcomes} çıktı kodu ·
         {' '+coverage.verifiedAdditionalOutcomes.linkedPilotLessons} pilot mikro ders

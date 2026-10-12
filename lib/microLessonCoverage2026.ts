@@ -10,6 +10,7 @@ import {CURRENT_YEAR_GRADE_POLICY,lessonAllowedForContext,resolveLearningCurricu
 import {VERIFIED_GRADE7_TURKISH_THEMES} from './verifiedGrade7TurkishThemes';
 import {VERIFIED_GRADE56_THEMES} from './verifiedGrade56Themes';
 import {VERIFIED_ADDITIONAL_TYMM_OUTCOMES} from './verifiedAdditionalTymmOutcomes';
+import {VERIFIED_GRADE10_GEOGRAPHY} from './verifiedGrade10GeographyOutcomes';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -81,6 +82,10 @@ export function microLessonCoverageSnapshot(){
   return {examType,topicIndexSource:'KEKS_INTERNAL' as const,
    totalPilotLessons:rows.reduce((n,x)=>n+x.pilotLessons,0),subjects:rows};
  });
+ const geographyOutcomes=VERIFIED_GRADE10_GEOGRAPHY.map(outcome=>({
+   code:outcome.code,theme:outcome.theme,sourceUrl:outcome.url,skill:outcome.skill,
+   linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code&&l.subject==='Coğrafya'&&l.targetGrades?.includes(10)).length
+ }));
  const verifiedAdditionalOutcomeRows=VERIFIED_ADDITIONAL_TYMM_OUTCOMES.map(outcome=>({
    grade:outcome.grade,subject:outcome.subject,theme:outcome.theme,
    code:outcome.code,skill:outcome.skill,sourceUrl:outcome.url,
@@ -114,6 +119,13 @@ export function microLessonCoverageSnapshot(){
  }));
  return {
   academicYear:'2026-2027',status:'EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT',
+  verifiedGeography:{
+    grade:10,subject:'Coğrafya',totalOfficialOutcomes:geographyOutcomes.length,
+    distinctThemes:new Set(geographyOutcomes.map(x=>x.theme)).size,
+    linkedPilotLessons:geographyOutcomes.reduce((n,x)=>n+x.linkedPilotLessons,0),
+    outcomes:geographyOutcomes,
+    disclaimer:'MEB öğrenme çıktısı doğrulaması, bu konudaki bütün kazanımların eksiksiz kapsandığı veya özgün KEKS sorularının resmî olarak onaylandığı anlamına gelmez.'
+  },
   verifiedAdditionalOutcomes:{
     totalOfficialOutcomes:verifiedAdditionalOutcomeRows.length,
     linkedPilotLessons:verifiedAdditionalOutcomeRows.reduce((n,x)=>n+x.linkedPilotLessons,0),
