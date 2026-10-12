@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { FormEvent,useEffect,useState } from 'react';
 import {StudentPerformanceTasks} from './StudentPerformanceTasks';
+import {WrongQuestionRecoveryPanel} from './WrongQuestionRecoveryPanel';
 
 const ERROR_REASONS=[
   ['','Henüz belirleyemedim'],
@@ -44,6 +45,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [editing,setEditing]=useState<Record<string,string>>({});
   const [sets,setSets]=useState<any>(null);
   const [openSet,setOpenSet]=useState<'weekly'|'monthly'|null>(null);
+  const [recoveryRefreshToken,setRecoveryRefreshToken]=useState(0);
 
   async function load(){
     const params=new URLSearchParams();
@@ -109,6 +111,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       ? (j.completed?'Doğru. Bu soru için aktif tekrar döngüsü tamamlandı.':'Doğru.'+intervalText+streakText+' · '+(j.intervalReason||'Kişisel unutma eğrisi güncellendi.'))
       : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
     await load();
+    setRecoveryRefreshToken(x=>x+1);
   }
 
   async function startGuided(reviewId:string){
@@ -138,6 +141,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Alıştırma kontrol edilemedi.'));return;}
       setGuidedResult(j);
+      setRecoveryRefreshToken(x=>x+1);
     }catch{setMsg('Hata: Alıştırma sonucu kaydedilemedi.');}
     finally{setGuidedBusy(false)}
   }
@@ -417,6 +421,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         <button className="btn primary wrongQuestionWide" disabled={busy}>{busy?'Sınıflandırılıyor…':'Yanlış Soruyu Kaydet ve Tekrara Ekle'}</button>
       </form>
     </div>
+
+    <WrongQuestionRecoveryPanel items={items} onStartGuided={openGuidedFromBank} refreshToken={recoveryRefreshToken}/>
 
     <div className="card">
       <div className="moduleHeaderRow">
