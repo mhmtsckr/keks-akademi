@@ -71,7 +71,8 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     "topicTags": [
       "Oyun metninde anahtar ifadeler"
     ],
-    "sourceThemeId": "TYMM.TR.5.T1"
+    "sourceThemeId": "TYMM.TR.5.T1",
+    "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/54"
   },
   {
     "id": "grade5-tr-traditions-classify-v1",
@@ -143,7 +144,8 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     "topicTags": [
       "Geleneklerle ilgili metinde sınıflandırma"
     ],
-    "sourceThemeId": "TYMM.TR.5.T4"
+    "sourceThemeId": "TYMM.TR.5.T4",
+    "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/74"
   },
   {
     "id": "grade6-tr-keywords-v1",
@@ -215,7 +217,8 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     "topicTags": [
       "Metinde anahtar kelimeler"
     ],
-    "sourceThemeId": "TYMM.TR.6.T1"
+    "sourceThemeId": "TYMM.TR.6.T1",
+    "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/104"
   },
   {
     "id": "grade6-tr-exemplification-v1",
@@ -287,7 +290,8 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     "topicTags": [
       "Metinde örneklendirme ve karşılaştırma"
     ],
-    "sourceThemeId": "TYMM.TR.6.T3"
+    "sourceThemeId": "TYMM.TR.6.T3",
+    "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/124"
   },
   {
     "id": "grade5-science-moon-model-v1",
@@ -359,7 +363,8 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     "topicTags": [
       "Ay evrelerini modelle açıklama"
     ],
-    "sourceThemeId": "TYMM.FB.5.U1"
+    "sourceThemeId": "TYMM.FB.5.U1",
+    "sourceUrl": "https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/367"
   },
   {
     "id": "grade5-science-force-dynamometer-v1",
@@ -431,7 +436,8 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     "topicTags": [
       "Kuvveti dinamometreyle ölçme"
     ],
-    "sourceThemeId": "TYMM.FB.5.U2"
+    "sourceThemeId": "TYMM.FB.5.U2",
+    "sourceUrl": "https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/368"
   },
   {
     "id": "grade6-science-planets-classify-v1",
@@ -503,7 +509,8 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     "topicTags": [
       "Gezegenleri sınıflandırma"
     ],
-    "sourceThemeId": "TYMM.FB.6.U1"
+    "sourceThemeId": "TYMM.FB.6.U1",
+    "sourceUrl": "https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/409"
   },
   {
     "id": "grade6-science-conductivity-test-v1",
@@ -575,6 +582,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     "topicTags": [
       "İletken ve yalıtkan maddeleri deneyle karşılaştırma"
     ],
-    "sourceThemeId": "TYMM.FB.6.U6"
+    "sourceThemeId": "TYMM.FB.6.U6",
+    "sourceUrl": "https://tymm.meb.gov.tr/fen-bilimleri-dersi/unite/414"
   }
 ];
