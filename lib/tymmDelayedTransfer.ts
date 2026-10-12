@@ -150,3 +150,26 @@ export function readableRubric(v:unknown):RubricSnapshot|null{
  }))return null;
  return {total:Number(x.total),max:8,criterionScores:x.criterionScores as {id:string;score:number}[]};
 }
+
+export type TransferEvidenceRow={id:string;createdAt:Date;payload:unknown};
+function record(v:unknown):Record<string,unknown>{
+ return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
+}
+export function transferEligibility(taskId:string,logs:readonly TransferEvidenceRow[],now:Date){
+ const exists=logs.find(row=>record(row.payload).taskId===taskId&&
+  ['TYMM_TRANSFER_SUBMISSION','TYMM_TRANSFER_REVIEWED'].includes(String(record(row.payload).type)));
+ const baseline=logs.find(row=>{
+  const p=record(row.payload),review=record(p.review);
+  return p.type==='TYMM_PERFORMANCE_REVIEWED'&&p.taskId===taskId&&
+   readableRubric(review)!==null&&typeof review.reviewedAt==='string'&&
+   Number.isFinite(Date.parse(review.reviewedAt));
+ });
+ if(!baseline)return {status:'AWAITING_BASELINE' as const,dueAt:null,baselineId:null,transferId:exists?.id||null};
+ const dueAt=transferDueAt(new Date(String(record(record(baseline.payload).review).reviewedAt)));
+ if(exists)return {
+  status:record(exists.payload).type==='TYMM_TRANSFER_REVIEWED'?'REVIEWED' as const:'WAITING_FOR_COACH' as const,
+  dueAt:dueAt.toISOString(),baselineId:baseline.id,transferId:exists.id
+ };
+ return {status:now.getTime()>=dueAt.getTime()?'AVAILABLE' as const:'LOCKED' as const,
+  dueAt:dueAt.toISOString(),baselineId:baseline.id,transferId:null};
+}
