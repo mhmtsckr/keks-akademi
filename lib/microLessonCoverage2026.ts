@@ -8,6 +8,7 @@ import {resolveEducationLevelProfile} from './educationLevelProfile';
 import {getEducationCurriculum} from './educationCurriculumMap';
 import {CURRENT_YEAR_GRADE_POLICY,lessonAllowedForContext,resolveLearningCurriculumContext} from './curriculumPolicy2026';
 import {VERIFIED_GRADE7_TURKISH_THEMES} from './verifiedGrade7TurkishThemes';
+import {VERIFIED_GRADE56_THEMES} from './verifiedGrade56Themes';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -43,7 +44,11 @@ export function microLessonCoverageSnapshot(){
    const mapped=curriculum?.subjects.find(x=>x.name===subject);
    const topics=mapped?.units.flatMap(x=>x.topics.map(t=>t.name))
       .filter(t=>!t.includes('Düzey Geneli')&&!t.includes('Genel Kazanım Alanı'))||[];
-   const matched=topics.filter((t:string)=>candidates.some(l=>topicMatchesInternalIndex(t,l.topicTags)));
+   const matched=topics.filter((t:string)=>candidates.some(l=>
+      topicMatchesInternalIndex(t,l.topicTags)
+      ||VERIFIED_GRADE56_THEMES.some(theme=>
+        theme.grade===grade&&theme.subject===subject&&theme.title===t&&theme.id===l.sourceThemeId)
+   ));
    return {
     subject,indexedTopics:topics.length||null,matchedIndexTopics:matched.length,
     pilotLessons:candidates.length,
@@ -72,7 +77,25 @@ export function microLessonCoverageSnapshot(){
   return {examType,topicIndexSource:'KEKS_INTERNAL' as const,
    totalPilotLessons:rows.reduce((n,x)=>n+x.pilotLessons,0),subjects:rows};
  });
- const verifiedThemeRows=VERIFIED_GRADE7_TURKISH_THEMES.map(theme=>({
+ const verifiedMiddlePrograms=[5,6].flatMap(grade=>
+   ['Türkçe','Fen Bilimleri'].map(subject=>{
+     const entries=VERIFIED_GRADE56_THEMES.filter(theme=>theme.grade===grade&&theme.subject===subject);
+     const themes=entries.map(theme=>({
+       id:theme.id,title:theme.title,sourceUrl:theme.sourceUrl,
+       verification:theme.verification,outcomeCode:theme.outcomeCode,
+       linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===theme.id
+         &&l.subject===subject&&l.targetGrades?.includes(grade)).length
+     }));
+     return {
+       grade,subject,totalThemes:themes.length,
+       linkedPilotLessons:themes.reduce((n,x)=>n+x.linkedPilotLessons,0),
+       outcomesWithVerifiedCodes:themes.filter(x=>x.verification==='OUTCOME_CODE').length,
+       themes,
+       disclaimer:'Bu kayıt resmî MEB program başlıkları ve doğrulanmış beceri/kod kanıtıdır. Bir pilot ders temanın tüm öğrenme çıktılarını kapsamaz.'
+     };
+   })
+ );
+  const verifiedThemeRows=VERIFIED_GRADE7_TURKISH_THEMES.map(theme=>({
    id:theme.id,theme:theme.themeName,skill:theme.skill,
    outcomeCode:theme.outcomeCode,verification:theme.verification,
    sourceUrl:theme.sourceUrl,
@@ -81,6 +104,7 @@ export function microLessonCoverageSnapshot(){
  }));
  return {
   academicYear:'2026-2027',status:'EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT',
+  verifiedMiddlePrograms,
   verifiedThemeSources:{
     grade:7,subject:'Türkçe',source:'MEB TYMM resmî tema sayfaları',
     totalThemes:verifiedThemeRows.length,
