@@ -1,5 +1,6 @@
 import {educationLevelKey,type EducationLevelKey,resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
 import {EXAM_CATALOG} from '@/lib/examCatalog';
+import {VERIFIED_GRADE7_TURKISH_THEMES} from '@/lib/verifiedGrade7TurkishThemes';
 
 export type CurriculumAcquisition={
   id:string;
@@ -253,8 +254,28 @@ const MIDDLE_8_MATH:CurriculumSubject={
 // MIDDLE_8_MATH is retained as a historical/provisional model draft, NOT the
 // current 2026-27 8th grade official curriculum. Do not surface it as TYMM.
 void MIDDLE_8_MATH;
+const VERIFIED_GRADE7_TURKISH_SUBJECT:CurriculumSubject={
+  name:'Türkçe',
+  units:VERIFIED_GRADE7_TURKISH_THEMES.map(theme=>({
+    name:theme.theme,
+    sourceUrl:theme.sourceUrl,
+    topics:[{
+      name:theme.themeName,
+      subTopics:[{
+        name:theme.skill,
+        acquisitions:[q(
+          theme.outcomeCode||theme.id,
+          theme.outcomeCode
+            ?theme.skill+' (MEB kodu resmî kaynakta doğrulandı; KEKS soru uyumu onay bekliyor)'
+            :theme.skill+' (tema düzeyinde doğrulandı; kesin resmî kazanım kodu belirlenmedi)',
+          ['Çoktan seçmeli','Açık uçlu','Metin çözümleme','Gerekçelendirme']
+        )]
+      }]
+    }]
+  }))
+};
 const DETAILED:Partial<Record<EducationLevelKey,CurriculumSubject[]>>={
-  MIDDLE_7:[MIDDLE_7_MATH]
+  MIDDLE_7:[MIDDLE_7_MATH,VERIFIED_GRADE7_TURKISH_SUBJECT]
 };
 
 function lgsLegacySubject(subject:string):CurriculumSubject|null{
