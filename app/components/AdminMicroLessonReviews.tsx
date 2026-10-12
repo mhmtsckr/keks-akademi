@@ -11,6 +11,7 @@ type Lesson={
   contentDigest:string;
   targetGrades?:readonly number[];targetExams?:readonly string[];topicTags?:readonly string[];
   sourceUrl?:string;
+  sourceEvidence?:{themeVerified:boolean;outcomeCodeVerified:boolean;theme:string|null;outcomeCode:string|null;sourceUrl:string|null;checkedOn:string|null;interpretation:string};
 };
 
 export function AdminMicroLessonReviews(){
@@ -106,6 +107,7 @@ export function AdminMicroLessonReviews(){
     <details className="card" key={x.id} style={{margin:0}}>
      <summary><strong>{x.subject} · {x.title}</strong> <span className="pill">{x.publication.status==='APPROVED'?'İçerik onaylı':'Pilot / bekliyor'}</span></summary>
      <p><strong>Beceri:</strong> {x.skill}</p>
+     {x.sourceEvidence&&<p className="muted"><strong>Resmî müfredat kanıtı:</strong> {x.sourceEvidence.themeVerified?'Tema bağlantısı doğrulandı':'Kesin tema eşleştirmesi doğrulanmadı'} · {x.sourceEvidence.outcomeCodeVerified?'Öğrenme çıktısı kodu doğrulandı: '+x.sourceEvidence.outcomeCode:'Kazanım kodu kontrol bekliyor'} · {x.sourceEvidence.interpretation}</p>}
      <p className="muted"><strong>Uygun düzeyler:</strong> {(x.targetGrades||[]).map(g=>g+'. sınıf').join(', ')||'—'} · <strong>Sınavlar:</strong> {(x.targetExams||[]).join(', ')||'—'} · <strong>KEKS konu etiketleri:</strong> {(x.topicTags||[]).join(', ')||'Yok / doğrulama bekliyor'}</p>
      <p><strong>Açıklama:</strong> {x.explanation}</p>
      <p><strong>Kavram yanılgısı:</strong> {x.misconception}</p>
