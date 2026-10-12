@@ -11,6 +11,7 @@ const names=['A','B','C','D','E'];
 const initialNote='';
 
 export function AdminEditorialReview(){
+  const [isAdmin,setIsAdmin]=useState(false);
   const [items,setItems]=useState<any[]>([]);
   const [counts,setCounts]=useState<{status:string;count:number}[]>([]);
   const [reviewers,setReviewers]=useState<any[]>([]);
@@ -38,7 +39,7 @@ export function AdminEditorialReview(){
     const j=await r.json();
     if(!r.ok){setMessage(j.error||'Editör kaydı yüklenemedi.');return}
     setItems(j.items||[]);setCounts(j.counts||[]);
-    setReviewers(j.reviewers||[]);setMyStages(j.myStages||[]);
+    setReviewers(j.reviewers||[]);setMyStages(j.myStages||[]);setIsAdmin(Boolean(j.isAdmin));
   }
   useEffect(()=>{void load()},[page,status]);
   useEffect(()=>{
@@ -127,7 +128,7 @@ export function AdminEditorialReview(){
       </div>
     </section>
 
-    <section className="card" style={{padding:22}}>
+    {isAdmin&&<section className="card" style={{padding:22}}>
       <h3>1 · Taslakları gizli havuza al</h3>
       <p>Yalnızca yönetici hesabıyla yüklenir. JSON içeriği GitHub'a gönderilmez; veritabanında onaysız saklanır.
          25'lik gruplarla güvenli ve tekrarlanabilir içe aktarma kullanılır.</p>
@@ -139,11 +140,11 @@ export function AdminEditorialReview(){
         </button>
       </div>
       {importProgress&&<p role="status">İlerleme: {importProgress}</p>}
-    </section>
+    </section>}
 
-    <section className="card" style={{padding:22}}>
+    {isAdmin&&<section className="card" style={{padding:22}}>
       <h3>2 · Gerçek editörleri yetkilendir</h3>
-      <p>Üç farklı <b>aktif yönetici hesabı</b> gereklidir. Her karar oturum açmış gerçek kullanıcı ID'si,
+      <p>Üç farklı <b>aktif EDITOR hesabı</b> gereklidir. Kullanıcı Yönetimi'nden gerçek editörün hesabına EDITOR rolü verin. Her karar oturum açmış gerçek kullanıcı ID'si,
       tarih ve gerekçeyle kaydedilir. Hesabı olmayan editöre onay verilemez.</p>
       <div style={{display:'flex',flexWrap:'wrap',gap:10}}>
         <input type="email" placeholder="Yetkili editörün kayıtlı e-postası" aria-label="Editör e-posta"
@@ -165,7 +166,7 @@ export function AdminEditorialReview(){
           {r.active?'':' · HESAP AKTİF DEĞİL'}
         </p>)}
       </div>
-    </section>
+    </section>}
 
     <section className="card" style={{padding:22}}>
       <h3>3 · Soruyu incele ve düzelt</h3>
@@ -218,7 +219,7 @@ export function AdminEditorialReview(){
                 onClick={()=>void saveRevision()}>Düzeltilmiş yeni sürümü kaydet</button>
             </>}
           </div>
-          <div style={{marginTop:18,borderTop:'1px solid #e4e4e4',paddingTop:14}}>
+          {!isAdmin&&<div style={{marginTop:18,borderTop:'1px solid #e4e4e4',paddingTop:14}}>
             <h4>Editöryal onay / ret</h4>
             <p>Bu kullanıcıya tanımlanan aşamalar: {myStages.join(', ')||'Henüz atama yok'}</p>
             <select aria-label="İnceleme aşaması" value={stage} onChange={e=>setStage(e.target.value)}>
@@ -239,12 +240,14 @@ export function AdminEditorialReview(){
             <button disabled={busy||selected.status==='PUBLISHED'||!myStages.includes(stage)||
               note.trim().length<20||!reviewed||(stage==='SOURCE_RIGHTS'&&decision==='APPROVE'&&!rights)}
               onClick={()=>void submitReview()}>Kararı imzala ve kaydet</button>
+          </div>}
+          <div style={{marginTop:14}}>
             <h4>Yayın kapısı</h4>
             {selected.gate?.missing?.length?<ul>{selected.gate.missing.map((x:string)=><li key={x}>{x}</li>)}</ul>:
               <p>Üç ayrı editör imzası ve kaynak/telif doğrulaması tamamlandı.</p>}
-            <button disabled={busy||!selected.gate?.ready} onClick={()=>void publish()}>
+            {isAdmin&&<button disabled={busy||!selected.gate?.ready} onClick={()=>void publish()}>
               Tüm kapıları geçen soruyu öğrenci bankasında yayımla
-            </button>
+            </button>}
             <p className="muted">Eski sürümlerde verilen imzalar geçersizdir.
               Yayınlama yalnızca tek soru için ve sunucuda tekrar kontrol edilerek yapılır.</p>
           </div>
