@@ -3,11 +3,13 @@ import {FormEvent,useEffect,useState} from 'react';
 
 type Criteria={id:string;label:string;levels:Record<string,string>};
 type Submission={
- id:string;submittedAt:string;status:string;
+ id:string;submittedAt:string;status:string;phase?:'BASELINE'|'TRANSFER';
  task:{id:string;title:string;grade:number;subject:string;outcomeCode:string;
  sourceUrl:string;instruction:string;criteria:Criteria[];maxScore:number};
  response:string;observations:string;
- review?:{total?:number;max?:number;feedback?:string;reviewedAt?:string;nextAction?:string;criterionScores?:{id:string;score:number}[]}|null
+ review?:{total?:number;max?:number;feedback?:string;reviewedAt?:string;nextAction?:string;criterionScores?:{id:string;score:number}[];
+  comparison?:{baselineTotal:number;transferTotal:number;max:number;delta:number;
+   interpretation:string;disclaimer:string;criteria:{id:string;before:number;after:number;delta:number}[]}|null}|null
 };
 export function CoachPerformanceReviews({studentId}:{studentId:string}){
  const [items,setItems]=useState<Submission[]>([]);
@@ -63,9 +65,10 @@ export function CoachPerformanceReviews({studentId}:{studentId:string}){
   {!loaded?<p className="muted">Performans çalışmaları yükleniyor…</p>:items.length===0?<p className="muted">Henüz teslim edilmiş performans görevi yok.</p>:null}
   <div className="stack">
    {pending.slice(0,12).map(item=><article className="card" key={item.id}>
-    <strong>{item.task.grade}. sınıf · {item.task.subject} · {item.task.title}</strong>
+    <strong>{item.phase==='TRANSFER'?'7 gün sonra bağımsız ölçüm · ':'İlk görev · '}{item.task.grade}. sınıf · {item.task.subject} · {item.task.title}</strong>
     <p className="muted">MEB çıktısı: {item.task.outcomeCode} · <a target="_blank" rel="noopener noreferrer" href={item.task.sourceUrl}>Resmî kaynak</a> · Gönderim: {new Date(item.submittedAt).toLocaleDateString('tr-TR')}</p>
     <p><strong>Görev:</strong> {item.task.instruction}</p>
+    {item.phase==='TRANSFER'&&<div className="notice"><strong>Koç değerlendirmesi:</strong> Önce yeni bağımsız yanıtı kendi kanıtlarına göre puanlayın. İlk rubrikle karşılaştırma kaydetme sonrası otomatik gösterilir; bu, otomatik “Kalıcı” öğrenme kararı değildir.</div>}
     <div className="notice"><strong>Öğrencinin yazılı açıklaması:</strong> <p style={{whiteSpace:'pre-wrap'}}>{item.response}</p></div>
     <div className="notice"><strong>Kanıt / model / gözlem planı:</strong> <p style={{whiteSpace:'pre-wrap'}}>{item.observations}</p></div>
     <form className="stack" onSubmit={e=>void grade(e,item)}>
@@ -96,8 +99,16 @@ export function CoachPerformanceReviews({studentId}:{studentId:string}){
    <summary><strong>Değerlendirilen görevler ({reviewed.length})</strong></summary>
    <div className="stack">
     {reviewed.slice(0,25).map(item=><div className="notice" key={item.id}>
-     <strong>{item.task.grade}. sınıf · {item.task.title}</strong> · {item.review?.total}/{item.review?.max} puan
+     <strong>{item.phase==='TRANSFER'?'Bağımsız ikinci görev':'İlk görev'}</strong> · {item.task.grade}. sınıf · {item.task.title} · {item.review?.total}/{item.review?.max} puan
      <p>{item.review?.feedback}</p>
+     {item.phase==='TRANSFER'&&item.review?.comparison&&<div className="notice">
+       <strong>Rubrik karşılaştırması:</strong> İlk {item.review.comparison.baselineTotal}/8 → 7 gün sonra {item.review.comparison.transferTotal}/8
+       {' '}({item.review.comparison.delta>0?'+':''}{item.review.comparison.delta} puan)
+       <p>{item.review.comparison.interpretation}. {item.review.comparison.disclaimer}</p>
+       <ul>{item.review.comparison.criteria.map(c=><li key={c.id}>
+         {item.task.criteria.find(k=>k.id===c.id)?.label||c.id}: {c.before}/2 → {c.after}/2
+       </li>)}</ul>
+     </div>}
      <small className="muted">Değerlendirme, önceki kaydı değiştirmeden korunur. Tek görev kalıcı öğrenme kanıtı değildir.</small>
     </div>)}
    </div>
