@@ -69,6 +69,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
       5
     ],
     "topicTags": [
+      "Oyun Dünyası",
       "Oyun metninde anahtar ifadeler"
     ],
     "sourceThemeId": "TYMM.TR.5.T1",
@@ -142,6 +143,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
       5
     ],
     "topicTags": [
+      "Geleneklerimiz",
       "Geleneklerle ilgili metinde sınıflandırma"
     ],
     "sourceThemeId": "TYMM.TR.5.T4",
@@ -215,6 +217,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
       6
     ],
     "topicTags": [
+      "Dilimizin Zenginliği",
       "Metinde anahtar kelimeler"
     ],
     "sourceThemeId": "TYMM.TR.6.T1",
@@ -288,6 +291,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
       6
     ],
     "topicTags": [
+      "Farklı Dünyalar",
       "Metinde örneklendirme ve karşılaştırma"
     ],
     "sourceThemeId": "TYMM.TR.6.T3",
@@ -361,6 +365,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
       5
     ],
     "topicTags": [
+      "Gökyüzündeki Komşularımız ve Biz",
       "Ay evrelerini modelle açıklama"
     ],
     "sourceThemeId": "TYMM.FB.5.U1",
@@ -434,6 +439,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
       5
     ],
     "topicTags": [
+      "Kuvveti Tanıyalım",
       "Kuvveti dinamometreyle ölçme"
     ],
     "sourceThemeId": "TYMM.FB.5.U2",
@@ -507,6 +513,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
       6
     ],
     "topicTags": [
+      "Güneş Sistemi ve Tutulmalar",
       "Gezegenleri sınıflandırma"
     ],
     "sourceThemeId": "TYMM.FB.6.U1",
@@ -580,6 +587,7 @@ export const GRADE56_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
       6
     ],
     "topicTags": [
+      "Elektriğin İletimi ve Direnç",
       "İletken ve yalıtkan maddeleri deneyle karşılaştırma"
     ],
     "sourceThemeId": "TYMM.FB.6.U6",
