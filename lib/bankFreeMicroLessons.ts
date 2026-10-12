@@ -7,6 +7,7 @@ import {EXPANDED_MICRO_LESSONS} from './expandedMicroLessons';
 import {GRADE_SEED_LESSONS} from './gradeSeedMicroLessons';
 import {GRADE7_TURKISH_THEME_LESSONS} from './grade7TurkishThemeLessons';
 import {GRADE56_TYMM_PILOT_LESSONS} from './grade56TymmPilotLessons';
+import {ADDITIONAL_TYMM_PILOT_LESSONS} from './additionalTymmPilotLessons';
 import {findExpandedMicroLesson} from './expandedMicroLessonMatch';
 
 export type GuidedExercise={
@@ -91,7 +92,7 @@ function normalize(value:string){
   return value.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 }
 
-export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS,...GRADE_SEED_LESSONS,...GRADE7_TURKISH_THEME_LESSONS,...GRADE56_TYMM_PILOT_LESSONS];
+export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS,...GRADE_SEED_LESSONS,...GRADE7_TURKISH_THEME_LESSONS,...GRADE56_TYMM_PILOT_LESSONS,...ADDITIONAL_TYMM_PILOT_LESSONS];
 
 export function findMicroLesson(input:{
   subject:string;topic:string;prompt?:string|null;selectedLessonId?:string|null
@@ -103,7 +104,7 @@ export function findMicroLesson(input:{
   }
   // Match only an explicit, narrow skill tag; never infer grade from a general "Türkçe" topic.
   const preciseTopic=normalize(input.topic);
-  const matched=GRADE56_TYMM_PILOT_LESSONS.filter(x=>
+  const matched=[...GRADE56_TYMM_PILOT_LESSONS,...ADDITIONAL_TYMM_PILOT_LESSONS].filter(x=>
     normalize(x.subject)===subject&&x.topicTags?.some(tag=>normalize(tag)===preciseTopic));
   if(matched.length===1)return matched[0];
   if(!subject.includes('matematik'))
