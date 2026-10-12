@@ -74,8 +74,8 @@ describe('2026–27 5 ve 6. sınıf resmî Türkçe/Fen dizini',()=>{
   });
   it('kapsama raporu tam öğrenme kanıtı gibi davranmaz',()=>{
     const c=microLessonCoverageSnapshot();
-    expect(c.totalLessons).toBe(38);
-    expect(c.totalExercises).toBe(152);
+    expect(c.totalLessons).toBe(46);
+    expect(c.totalExercises).toBe(184);
     expect(c.verifiedMiddlePrograms).toHaveLength(4);
     expect(c.verifiedMiddlePrograms.reduce((n,x)=>n+x.totalThemes,0)).toBe(26);
     expect(c.verifiedMiddlePrograms.reduce((n,x)=>n+x.linkedPilotLessons,0)).toBe(8);
