@@ -6,7 +6,7 @@ type QueueItem={
  grade:number;subject:string;title:string;phase:'BASELINE'|'TRANSFER';
  submittedAt:string;hoursWaiting:number;priority:'OVERDUE'|'WAITING';
 };
-type Payload={ok:boolean;items:QueueItem[];summary:{waiting:number;overdue:number};partial:boolean;note?:string};
+type Payload={ok:boolean;items:QueueItem[];summary:{waiting:number;overdue:number};partial:boolean;targetHours?:number;note?:string};
 
 export function CoachPerformanceQueue(){
  const [data,setData]=useState<Payload|null>(null);
@@ -38,7 +38,7 @@ export function CoachPerformanceQueue(){
   {data&&<>
    <div className="row" style={{gap:12,flexWrap:'wrap'}}>
     <span className="pill">{data.summary.waiting} bekleyen</span>
-    {data.summary.overdue>0&&<span className="pill">24 saati aşan: {data.summary.overdue}</span>}
+    {data.summary.overdue>0&&<span className="pill">Hedef süreyi aşan ({data.targetHours||24} sa): {data.summary.overdue}</span>}
    </div>
    {data.partial&&<p className="notice">Kayıt çokluğu nedeniyle yalnız son 500 teslim incelendi. Gösterilen toplam kısmi olabilir.</p>}
    {data.items.length===0?<p className="muted">İnceleme bekleyen performans görevi bulunmadı.</p>
@@ -49,7 +49,7 @@ export function CoachPerformanceQueue(){
         <p className="muted">{x.phase==='TRANSFER'?'7 gün sonrası bağımsız görev':'İlk performans görevi'} · {x.title}</p>
         <small className="muted">
          {new Date(x.submittedAt).toLocaleString('tr-TR')} · {x.hoursWaiting} saat bekliyor
-         {x.priority==='OVERDUE'?' · KEKS 24 saatlik inceleme hedefi aşıldı':''}
+         {x.priority==='OVERDUE'?' · Koçun hedef yanıt süresi aşıldı':''}
         </small>
        </div>
        <a className="btn" href={'/koc/ogrenci/'+encodeURIComponent(x.studentId)}>
