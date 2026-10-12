@@ -1,0 +1,162 @@
+/** 2026–2027 MEB TYMM 9,10,11th grade Turkish Literature themes. Source verification != curricular completeness or MEB question approval. */
+export type VerifiedLiteratureTheme={id:string;grade:number;subject:'Türk Dili ve Edebiyatı';academicYear:'2026-2027';theme:string;sourceUrl:string;outcomeCode:string|null;skill:string|null;verification:'THEME_TITLE'|'OUTCOME_CODE';checkedOn:string;note:string};
+export const VERIFIED_GRADE9_11_TDE_THEMES:readonly VerifiedLiteratureTheme[]=[
+  {
+    "id": "TYMM.TDE.9.T1",
+    "grade": 9,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Sözün İnceliği",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/76",
+    "outcomeCode": "TDE2.2",
+    "skill": "Şiirde imge ve çağrışımın metinde anlam kurma rolünü açıklama",
+    "verification": "OUTCOME_CODE",
+    "checkedOn": "2026-10-12",
+    "note": "MEB tema sayfasındaki öğrenme çıktısı kodu kontrol edildi; KEKS'in tek mikro sorusu çıktının tamamını ölçmez."
+  },
+  {
+    "id": "TYMM.TDE.9.T2",
+    "grade": 9,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Anlam Arayışı",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/101",
+    "outcomeCode": "TDE2.2",
+    "skill": "Hikâyede ana düşünce ve örtük iletinin metin kanıtıyla yorumlanması",
+    "verification": "OUTCOME_CODE",
+    "checkedOn": "2026-10-12",
+    "note": "MEB tema sayfasındaki öğrenme çıktısı kodu kontrol edildi; KEKS'in tek mikro sorusu çıktının tamamını ölçmez."
+  },
+  {
+    "id": "TYMM.TDE.9.T3",
+    "grade": 9,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Anlamın Yapı Taşları",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/106",
+    "outcomeCode": null,
+    "skill": null,
+    "verification": "THEME_TITLE",
+    "checkedOn": "2026-10-12",
+    "note": "Resmî tema başlığı doğrulandı; çıktıları henüz birebir eşleştirilmedi."
+  },
+  {
+    "id": "TYMM.TDE.9.T4",
+    "grade": 9,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Dilin Zenginliği",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/112",
+    "outcomeCode": null,
+    "skill": null,
+    "verification": "THEME_TITLE",
+    "checkedOn": "2026-10-12",
+    "note": "Resmî tema başlığı doğrulandı; çıktıları henüz birebir eşleştirilmedi."
+  },
+  {
+    "id": "TYMM.TDE.10.T1",
+    "grade": 10,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Sözün Ezgisi",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/242",
+    "outcomeCode": "TDE2.3",
+    "skill": "Şiirde ses ve ritim unsurlarının anlam üzerindeki etkisini çözümleme",
+    "verification": "OUTCOME_CODE",
+    "checkedOn": "2026-10-12",
+    "note": "MEB tema sayfasındaki öğrenme çıktısı kodu kontrol edildi; KEKS'in tek mikro sorusu çıktının tamamını ölçmez."
+  },
+  {
+    "id": "TYMM.TDE.10.T2",
+    "grade": 10,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Kelimelerin Ritmi",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/247",
+    "outcomeCode": "TDE4.2",
+    "skill": "Bilgilendirici metindeki bilgiden yararlanarak edebî yazı içeriği oluşturma",
+    "verification": "OUTCOME_CODE",
+    "checkedOn": "2026-10-12",
+    "note": "MEB tema sayfasındaki öğrenme çıktısı kodu kontrol edildi; KEKS'in tek mikro sorusu çıktının tamamını ölçmez."
+  },
+  {
+    "id": "TYMM.TDE.10.T3",
+    "grade": 10,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Dünden Bugüne",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/256",
+    "outcomeCode": null,
+    "skill": null,
+    "verification": "THEME_TITLE",
+    "checkedOn": "2026-10-12",
+    "note": "Resmî tema başlığı doğrulandı; çıktıları henüz birebir eşleştirilmedi."
+  },
+  {
+    "id": "TYMM.TDE.10.T4",
+    "grade": 10,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Nesillerin Mirası",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/261",
+    "outcomeCode": null,
+    "skill": null,
+    "verification": "THEME_TITLE",
+    "checkedOn": "2026-10-12",
+    "note": "Resmî tema başlığı doğrulandı; çıktıları henüz birebir eşleştirilmedi."
+  },
+  {
+    "id": "TYMM.TDE.11.T1",
+    "grade": 11,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Bir Diyeceğim Var!",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/267",
+    "outcomeCode": "TDE3.2",
+    "skill": "İletişim engellerinin neden ve çözümünü konuşma içeriğinde gerekçelendirme",
+    "verification": "OUTCOME_CODE",
+    "checkedOn": "2026-10-12",
+    "note": "MEB tema sayfasındaki öğrenme çıktısı kodu kontrol edildi; KEKS'in tek mikro sorusu çıktının tamamını ölçmez."
+  },
+  {
+    "id": "TYMM.TDE.11.T2",
+    "grade": 11,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Kültür Yolculuğu",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/276",
+    "outcomeCode": "TDE4.2",
+    "skill": "Kültürel unsurlara ilişkin gözlemleri yazıda benzerlik ve farklılıklarıyla açıklama",
+    "verification": "OUTCOME_CODE",
+    "checkedOn": "2026-10-12",
+    "note": "MEB tema sayfasındaki öğrenme çıktısı kodu kontrol edildi; KEKS'in tek mikro sorusu çıktının tamamını ölçmez."
+  },
+  {
+    "id": "TYMM.TDE.11.T3",
+    "grade": 11,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Yaşamın İzinde",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/322",
+    "outcomeCode": null,
+    "skill": null,
+    "verification": "THEME_TITLE",
+    "checkedOn": "2026-10-12",
+    "note": "Resmî tema başlığı doğrulandı; çıktıları henüz birebir eşleştirilmedi."
+  },
+  {
+    "id": "TYMM.TDE.11.T4",
+    "grade": 11,
+    "subject": "Türk Dili ve Edebiyatı",
+    "academicYear": "2026-2027",
+    "theme": "Hayatın Aynası",
+    "sourceUrl": "https://tymm.meb.gov.tr/turk-dili-ve-edebiyati-dersi/unite/332",
+    "outcomeCode": null,
+    "skill": null,
+    "verification": "THEME_TITLE",
+    "checkedOn": "2026-10-12",
+    "note": "Resmî tema başlığı doğrulandı; çıktıları henüz birebir eşleştirilmedi."
+  }
+];
+export function literatureThemesForGrade(grade:number){return VERIFIED_GRADE9_11_TDE_THEMES.filter(x=>x.grade===grade);}
+export function findVerifiedLiteratureTheme(id:string){return VERIFIED_GRADE9_11_TDE_THEMES.find(x=>x.id===id)||null;}
