@@ -68,7 +68,22 @@ export function AdminMicroLessonReviews(){
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
     <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
-    {(coverage.verifiedMiddlePrograms||[]).map((record:any)=><details key={record.grade+'-'+record.subject}
+    {coverage.verifiedAdditionalOutcomes&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>Yeni resmî öğrenme çıktıları · 5, 6, 9, 10 ve 11. sınıflar</strong> ·
+        {' '+coverage.verifiedAdditionalOutcomes.totalOfficialOutcomes} çıktı kodu ·
+        {' '+coverage.verifiedAdditionalOutcomes.linkedPilotLessons} pilot mikro ders
+      </summary>
+      <p className="muted">{coverage.verifiedAdditionalOutcomes.note}</p>
+      <div className="stack" style={{gap:9}}>
+        {(coverage.verifiedAdditionalOutcomes.outcomes||[]).map((item:any)=><div key={item.code}>
+          <strong>{item.grade}. sınıf {item.subject}</strong> · {item.code}
+          <p className="muted">{item.theme} · {item.skill} · {item.linkedPilotLessons} pilot örnek</p>
+          <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">MEB öğrenme çıktısı kaynağı</a>
+        </div>)}
+      </div>
+      <small className="muted">Kazanım kodu doğrulaması MEB veya bağımsız alan uzmanı tarafından KEKS sorularının onaylandığı anlamına gelmez.</small>
+    </details>}
+        {(coverage.verifiedMiddlePrograms||[]).map((record:any)=><details key={record.grade+'-'+record.subject}
       className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>Resmî MEB · {record.grade}. sınıf {record.subject}</strong> ·
         {' '+record.totalThemes} başlık · {record.linkedPilotLessons} pilot beceri ·
