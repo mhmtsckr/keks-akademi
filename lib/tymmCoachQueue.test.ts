@@ -32,5 +32,9 @@ describe('Koç performans kuyruğu erişimi ve operasyon metrikleri',()=>{
   const at=log('b5','student-a','TYMM_PERFORMANCE_SUBMISSION','perf-g5-moon-model-v1','2026-10-11T15:00:00Z',5);
   const found=buildCoachPerformanceQueue(students,[before,at],now);
   expect(found.map(x=>x.priority)).toEqual(['OVERDUE','WAITING']);
+  const stricter=buildCoachPerformanceQueue(students,[before,at],now,12);
+  expect(stricter.every(x=>x.priority==='OVERDUE')).toBe(true);
+  const relaxed=buildCoachPerformanceQueue(students,[before,at],now,36);
+  expect(relaxed.every(x=>x.priority==='WAITING')).toBe(true);
  });
 });
