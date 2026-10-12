@@ -71,6 +71,32 @@ describe('currentUser', () => {
     expect(dbMock.user.findUnique).not.toHaveBeenCalled();
   });
 
+  it('yönetici oturumunu eksik profil sütunlarına erişmeden doğrular (P2022 regresyonu)', async () => {
+    cerez(await token({ sub: 'kullanici-1' }));
+    dbMock.user.findUnique.mockImplementation(async (query: {include?:unknown}) => {
+      if(query.include){
+        throw Object.assign(new Error('İlişkili tabloda eksik sütun.'),{code:'P2022'});
+      }
+      return yonetici;
+    });
+    await expect(currentUser()).resolves.toMatchObject(yonetici);
+    expect(dbMock.user.findUnique).toHaveBeenCalledTimes(1);
+    expect(dbMock.user.findUnique).toHaveBeenCalledWith({where:{id:'kullanici-1'}});
+  });
+
+  it('yönetici oturumunun güncel olmayan sürüm bilgisini reddeder', async () => {
+    const oldStamp=new Date('2025-12-01T00:00:00.000Z').getTime().toString(36);
+    const signed=await new SignJWT({ss:oldStamp,sid:'test-sid'})
+      .setProtectedHeader({alg:'HS256'})
+      .setSubject('kullanici-1')
+      .setExpirationTime('1h')
+      .sign(anahtar());
+    cerez(signed);
+    dbMock.user.findUnique.mockResolvedValue(yonetici);
+    await expect(currentUser()).resolves.toBeNull();
+    expect(dbMock.user.findUnique).toHaveBeenCalledTimes(1);
+  });
+
   it('geçerli tokende kullanıcıyı ilişkileriyle birlikte okur', async () => {
     cerez(await token({ sub: 'kullanici-1' }));
     dbMock.user.findUnique.mockResolvedValue(ogrenci);
@@ -111,7 +137,7 @@ describe('requireRole', () => {
   it('rol uyuşuyorsa kullanıcıyı döner', async () => {
     cerez(await token());
     dbMock.user.findUnique.mockResolvedValue(yonetici);
-    await expect(requireRole(['ADMIN'])).resolves.toEqual(yonetici);
+    await expect(requireRole(['ADMIN'])).resolves.toMatchObject(yonetici);
   });
 
   it('izin verilen rollerden herhangi biri yeterlidir', async () => {
@@ -137,7 +163,7 @@ describe('createSession / destroySession', () => {
     // Yazılan token kendi doğrulamamızdan geçmeli
     cerez(deger);
     dbMock.user.findUnique.mockResolvedValue(yonetici);
-    await expect(currentUser()).resolves.toEqual(yonetici);
+    await expect(currentUser()).resolves.toMatchObject(yonetici);
     expect(dbMock.user.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'kullanici-1' } }),
     );
