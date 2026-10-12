@@ -187,7 +187,7 @@ export function StudentLoginForm() {
   </form>;
 }
 
-export function AccountLoginForm({redirect='/koc',requiredRole}:{redirect?:string;requiredRole?:'ADMIN'|'COACH'}) {
+export function AccountLoginForm({redirect='/koc',requiredRole}:{redirect?:string;requiredRole?:'ADMIN'|'COACH'|'EDITOR'}) {
   const [msg,setMsg]=useState('');
   const [remember,setRemember]=useState(false);
   const [forgotOpen,setForgotOpen]=useState(false);
@@ -223,10 +223,11 @@ export function AccountLoginForm({redirect='/koc',requiredRole}:{redirect?:strin
         await fetch('/api/auth/logout',{method:'POST',credentials:'include',cache:'no-store'}).catch(()=>undefined);
         return setMsg(requiredRole==='ADMIN'
           ?'Hata: Bu hesap yönetici hesabı değil.'
-          :'Hata: Bu hesap KEKS Partner Koç hesabı değil.');
+          :requiredRole==='EDITOR'?'Hata: Bu hesap editör hesabı değil.':'Hata: Bu hesap KEKS Partner Koç hesabı değil.');
       }
 
       const target=session.role==='ADMIN'?'/yonetici'
+        :session.role==='EDITOR'?redirect
         :session.role==='COACH'?redirect
         :session.role==='STUDENT'?'/ogrenci':'/veli';
       location.replace(target);
