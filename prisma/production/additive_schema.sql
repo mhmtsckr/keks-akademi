@@ -198,3 +198,18 @@ ALTER TABLE "ParentProfile"
   ADD COLUMN IF NOT EXISTS "consentRecordedAt" TIMESTAMP(3),
   ADD COLUMN IF NOT EXISTS "consentRecordedByUserId" TEXT,
   ADD COLUMN IF NOT EXISTS "allowReports" BOOLEAN NOT NULL DEFAULT false;
+
+-- KEKS Paragraf basım provasının her QR koduna özel salt okunur çözüm verisi.
+-- Sadece çözümler tutulur; öğrenci sınav bankası ve editör imzaları etkilenmez.
+CREATE TABLE IF NOT EXISTS "ParagrafBookSolution" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "externalId" TEXT NOT NULL UNIQUE,
+  "topic" TEXT NOT NULL,
+  "testNo" INTEGER NOT NULL,
+  "questionNo" INTEGER NOT NULL,
+  "correctAnswer" TEXT NOT NULL,
+  "explanation" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS "ParagrafBookSolution_topic_testNo_idx"
+ ON "ParagrafBookSolution"("topic","testNo");
