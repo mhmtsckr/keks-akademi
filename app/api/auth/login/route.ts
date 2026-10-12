@@ -11,7 +11,7 @@ const schema = z.object({
   email:z.string().email(),
   password:z.string().min(1),
   remember:z.boolean().optional().default(false),
-  expectedRole:z.enum(['ADMIN','COACH']).optional()
+  expectedRole:z.enum(['ADMIN','COACH','EDITOR']).optional()
 });
 
 function safeEqual(a: string, b: string) {
@@ -65,7 +65,7 @@ async function POST__handler(req: Request) {
     return NextResponse.json({
       error:input.expectedRole==='ADMIN'
         ?'Bu hesap yönetici hesabı değil. Yönetici hesabınızla giriş yapın.'
-        :'Bu hesap KEKS Partner Koç hesabı değil.'
+        :input.expectedRole==='EDITOR'?'Bu hesap editör hesabı değil.':'Bu hesap KEKS Partner Koç hesabı değil.'
     },{status:403,headers:{'Cache-Control':'no-store'}});
   }
 

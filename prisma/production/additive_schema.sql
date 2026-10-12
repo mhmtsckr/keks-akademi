@@ -113,3 +113,80 @@ BEGIN
       ON DELETE SET NULL ON UPDATE CASCADE;
   END IF;
 END $$;
+
+-- Özel EDITOR rolü; editörler ADMIN yetkisi alamaz.
+ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'EDITOR';
+
+-- KEKS bilimsel makale temelli soru bankası: kapalı editöryal aşama.
+-- Yalnızca ayrı editör imzaları ve telif doğrulaması sonrası soru yayımlanabilir.
+CREATE TABLE IF NOT EXISTS "EditorialQuestionDraft" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "externalId" TEXT NOT NULL UNIQUE,
+  "examType" TEXT NOT NULL DEFAULT 'TYT',
+  "subject" TEXT NOT NULL DEFAULT 'Türkçe',
+  "topic" TEXT NOT NULL,
+  "skill" TEXT,
+  "difficulty" TEXT,
+  "passage" TEXT NOT NULL,
+  "stem" TEXT NOT NULL,
+  "options" JSONB NOT NULL,
+  "correctAnswer" TEXT NOT NULL,
+  "explanation" TEXT NOT NULL,
+  "sourceRefs" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "qualityFlags" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "contentHash" TEXT NOT NULL,
+  "revision" INTEGER NOT NULL DEFAULT 1,
+  "status" TEXT NOT NULL DEFAULT 'PENDING',
+  "publishedQuestionId" TEXT UNIQUE,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS "EditorialQuestionDraft_status_updatedAt_idx"
+  ON "EditorialQuestionDraft"("status","updatedAt");
+CREATE INDEX IF NOT EXISTS "EditorialQuestionDraft_topic_status_idx"
+  ON "EditorialQuestionDraft"("topic","status");
+
+CREATE TABLE IF NOT EXISTS "EditorialReviewer" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  "stage" TEXT NOT NULL,
+  "grantedByUserId" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "EditorialReviewer_userId_stage_key"
+  ON "EditorialReviewer"("userId","stage");
+CREATE INDEX IF NOT EXISTS "EditorialReviewer_stage_idx"
+  ON "EditorialReviewer"("stage");
+
+CREATE TABLE IF NOT EXISTS "EditorialReview" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "questionId" TEXT NOT NULL,
+  "reviewerUserId" TEXT NOT NULL,
+  "stage" TEXT NOT NULL,
+  "decision" TEXT NOT NULL,
+  "note" TEXT NOT NULL,
+  "revision" INTEGER NOT NULL,
+  "contentHash" TEXT NOT NULL,
+  "rightsVerified" BOOLEAN NOT NULL DEFAULT false,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "EditorialReview_questionId_fkey"
+    FOREIGN KEY ("questionId") REFERENCES "EditorialQuestionDraft"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "EditorialReview_questionId_revision_createdAt_idx"
+  ON "EditorialReview"("questionId","revision","createdAt");
+CREATE INDEX IF NOT EXISTS "EditorialReview_reviewerUserId_createdAt_idx"
+  ON "EditorialReview"("reviewerUserId","createdAt");
+
+CREATE TABLE IF NOT EXISTS "EditorialRevision" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "questionId" TEXT NOT NULL,
+  "revision" INTEGER NOT NULL,
+  "actorUserId" TEXT NOT NULL,
+  "reason" TEXT NOT NULL,
+  "snapshot" JSONB NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "EditorialRevision_questionId_fkey"
+    FOREIGN KEY ("questionId") REFERENCES "EditorialQuestionDraft"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "EditorialRevision_questionId_revision_key"
+  ON "EditorialRevision"("questionId","revision");

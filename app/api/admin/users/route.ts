@@ -10,7 +10,7 @@ import { requiresEmailVerification,isEmailVerified } from '@/lib/emailVerificati
 const patchSchema=z.object({
   userId:z.string(),
   status:z.enum(['PENDING','ACTIVE','SUSPENDED']).optional(),
-  role:z.enum(['ADMIN','COACH','STUDENT','PARENT']).optional(),
+  role:z.enum(['ADMIN','EDITOR','COACH','STUDENT','PARENT']).optional(),
   revokeSessions:z.boolean().optional()
 });
 
@@ -21,7 +21,7 @@ async function GET__handler(req:Request){
   const role=searchParams.get('role') as any;
   const q=(searchParams.get('q')||'').trim();
   const where:any={};
-  if(role&&['ADMIN','COACH','STUDENT','PARENT'].includes(role))where.role=role;
+  if(role&&['ADMIN','EDITOR','COACH','STUDENT','PARENT'].includes(role))where.role=role;
   if(q)where.OR=[{name:{contains:q,mode:'insensitive'}},{email:{contains:q,mode:'insensitive'}}];
   const users=await db.user.findMany({
     where,orderBy:{createdAt:'desc'},take:200,
@@ -121,6 +121,11 @@ async function PATCH__handler(req:Request){
     });
   }
 
+  if(input.role==='EDITOR'&&before.role!=='EDITOR'){
+    const managedStudents=await db.coachProfile.findUnique({where:{userId:input.userId},select:{_count:{select:{students:true}}}});
+    if(managedStudents&&managedStudents._count.students>0)
+      return NextResponse.json({error:'Aktif öğrencisi bulunan koç editör rolüne dönüştürülemez.'},{status:409});
+  }
   const updated=await db.user.update({where:{id:input.userId},data:{
     ...(input.status?{status:input.status}:{}),
     ...(input.role?{role:input.role}:{}),

@@ -9,7 +9,7 @@ import { writeAudit } from '@/lib/audit';
 
 const schema=z.object({
   email:z.string().email(),
-  role:z.enum(['STUDENT','COACH']),
+  role:z.enum(['STUDENT','COACH','EDITOR']),
   studentCode:z.string().trim().min(2).max(32).optional(),
   fullName:z.string().trim().min(2).max(120).optional()
 });

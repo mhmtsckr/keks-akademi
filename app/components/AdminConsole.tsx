@@ -116,6 +116,16 @@ export function AdminConsole(){
     setMsg(j.message||'Kullanıcı durumu güncellendi.');await loadUsers();await loadOverview();
   }
 
+  async function toggleEditorRole(user:any){
+    if(user.role!=='COACH'&&user.role!=='EDITOR')return;
+    const next=user.role==='COACH'?'EDITOR':'COACH';
+    if(!window.confirm(user.name+' hesabının rolü '+next+' olarak değişsin mi? Aktif oturumu iptal edilecektir.'))return;
+    const r=await fetch('/api/admin/users',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({userId:user.id,role:next})});
+    const j=await r.json();
+    if(!r.ok){setMsg('Rol değişimi başarısız: '+(j.error||'Bilinmeyen hata'));return}
+    setMsg('Editör rolü güncellendi; yeniden giriş gerekecek.');await loadUsers();
+  }
+
   async function revokeUserSessions(user:any){
     const ok=window.confirm(user.name+' kullanıcısının tüm cihazlardaki aktif oturumları kapatılsın mı?');
     if(!ok)return;
@@ -315,7 +325,7 @@ export function AdminConsole(){
       </div>
       <div className="card adminFilterBar">
         <div className="field"><label>Ara</label><input value={userQ} onChange={e=>setUserQ(e.target.value)} placeholder="Ad veya e-posta"/></div>
-        <div className="field"><label>Rol</label><select value={userRole} onChange={e=>setUserRole(e.target.value)}><option value="ALL">Tümü</option><option value="COACH">Koç</option><option value="STUDENT">Öğrenci</option><option value="PARENT">Veli</option><option value="ADMIN">Yönetici</option></select></div>
+        <div className="field"><label>Rol</label><select value={userRole} onChange={e=>setUserRole(e.target.value)}><option value="ALL">Tümü</option><option value="COACH">Koç</option><option value="EDITOR">Editör</option><option value="STUDENT">Öğrenci</option><option value="PARENT">Veli</option><option value="ADMIN">Yönetici</option></select></div>
         <button className="btn primary" onClick={loadUsers}>Filtrele</button>
       </div>
       <div className="card adminTableCard">
@@ -341,6 +351,7 @@ export function AdminConsole(){
               <button className="btn" onClick={()=>updateUser(u.id,'ACTIVE')}>Aktif</button>
               <button className="btn" onClick={()=>updateUser(u.id,'PENDING')}>Beklet</button>
               <button className="btn" onClick={()=>revokeUserSessions(u)}>Oturumları Kapat</button>
+              {(u.role==='COACH'||u.role==='EDITOR')&&<button className="btn" onClick={()=>toggleEditorRole(u)}>{u.role==='COACH'?'Editör Yap':'Editör Yetkisini Kaldır'}</button>}
               <button className="btn danger" onClick={()=>updateUser(u.id,'SUSPENDED')}>Askıya Al</button>
             </>}
           </div></td>
@@ -349,6 +360,11 @@ export function AdminConsole(){
     </section>}
 
     {tab==='academic'&&<section className="adminPanelSection">
+      <div className="card" style={{padding:20,marginBottom:16}}>
+        <h2>6000 Soru İçin Bağımsız Editöryal İnceleme</h2>
+        <p>Taslak soruları ayrı havuza yükleyin; üç farklı editörün kaynak, Türkçe ve ölçme-değerlendirme onayı tamamlanmadan yayımlamayın.</p>
+        <a href="/yonetici/editorial" className="btn primary">Editör Onay Merkezini Aç →</a>
+      </div>
       <AdminMicroLessonReviews/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">AKADEMİK KALİTE</div><h2>Soru Bankası Onay Merkezi</h2><p className="muted">Yeni veya incelenmesi gereken soruları yayınlanmadan önce kontrol et.</p></div><div className="row"><select value={questionStatus} onChange={e=>setQuestionStatus(e.target.value)}><option value="PENDING">Bekleyen</option><option value="APPROVED">Onaylı</option><option value="REJECTED">Reddedilen</option><option value="ALL">Tümü</option></select></div></div>
       <div className="adminQuestionStats">{questionCounts.map((x:any)=><span className="pill" key={x.reviewStatus}>{x.reviewStatus}: {x._count._all}</span>)}</div>
