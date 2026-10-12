@@ -1,6 +1,7 @@
 'use client';
 
 import {FormEvent,useEffect,useState} from 'react';
+import {StudentDelayedTransfer} from './StudentDelayedTransfer';
 
 type Criterion={id:string;label:string;levels:Record<'0'|'1'|'2',string>};
 type Task={id:string;grade:number;subject:string;outcomeCode:string;title:string;
@@ -110,6 +111,7 @@ export function StudentPerformanceTasks(){
     </form>}
    </article>)}
   </div>
+  <StudentDelayedTransfer grade={context?.grade}/>
   {history.length>0&&<details className="card" style={{marginTop:10}}>
    <summary><strong>Performans görevlerim ve koç geribildirimi ({history.length})</strong></summary>
    <div className="stack" style={{marginTop:12}}>
