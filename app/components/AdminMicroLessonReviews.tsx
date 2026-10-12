@@ -68,7 +68,18 @@ export function AdminMicroLessonReviews(){
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
     <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
-    {coverage.verifiedGeography&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+    {(coverage.verifiedLiteraturePrograms||[]).map((g:any)=><details key={'tde-'+g.grade} className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>MEB TYMM · {g.grade}. sınıf Türk Dili ve Edebiyatı</strong> · {' '+g.totalOfficialThemes} tema · {' '+g.verifiedOutcomeContexts} tema bağlamında doğrulanmış kod · {' '+g.linkedPilotLessons} özgün mikro ders</summary>
+      <p className="muted">{g.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+       {(g.themes||[]).map((t:any)=><div key={t.id}>
+        <strong>{t.theme}</strong> · {t.linkedPilotLessons} pilot mikro ders
+        <p className="muted">{t.outcomeCode?'Kod: '+t.outcomeCode+' · '+t.skill:'Sadece tema başlığı doğrulandı; kazanım eşleştirmesi bekliyor'}</p>
+        <a href={t.sourceUrl} target="_blank" rel="noopener noreferrer">MEB resmî tema ve öğrenme çıktıları</a>
+       </div>)}
+      </div>
+    </details>)}
+        {coverage.verifiedGeography&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>MEB TYMM · 10. sınıf Coğrafya</strong> ·
        {' '+coverage.verifiedGeography.distinctThemes} tema ·
        {' '+coverage.verifiedGeography.totalOfficialOutcomes} resmî çıktı ·

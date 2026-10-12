@@ -5,6 +5,7 @@ import {grade56ThemesFor} from '@/lib/verifiedGrade56Themes';
 import {resolveLearningCurriculumContext} from '@/lib/curriculumPolicy2026';
 import {VERIFIED_ADDITIONAL_TYMM_OUTCOMES} from '@/lib/verifiedAdditionalTymmOutcomes';
 import {VERIFIED_GRADE10_GEOGRAPHY} from '@/lib/verifiedGrade10GeographyOutcomes';
+import {literatureThemesForGrade} from '@/lib/verifiedGrade911LiteratureThemes';
 
 export type CurriculumAcquisition={
   id:string;
@@ -339,6 +340,34 @@ function grade56OfficialIndex(grade:number,subject:string):CurriculumSubject|nul
   };
 }
 
+function grade911TdeOfficialIndex(grade:number,subject:string):CurriculumSubject|null{
+ if(subject!=='Türk Dili ve Edebiyatı'||![9,10,11].includes(grade))return null;
+ const entries=literatureThemesForGrade(grade);
+ if(entries.length!==4)return null;
+ return {
+  name:subject,
+  units:entries.map((theme,i)=>({
+    name:(i+1)+'. Tema: '+theme.theme,
+    sourceUrl:theme.sourceUrl,
+    topics:[{
+      name:theme.theme,
+      subTopics:[{
+        name:theme.skill||'Bire bir öğrenme çıktısı eşleştirmesi henüz yapılmadı',
+        acquisitions:[q(
+          theme.outcomeCode?theme.id:theme.id+'.INDEX_ONLY',
+          theme.outcomeCode
+            ?theme.skill+' (resmî MEB '+theme.outcomeCode+' kodu, tema bağlamına bağlı; içerik onayı bekliyor)'
+            :'Resmî tema başlığı doğrulandı. Bu kayıtta öğrenme çıktısı kodu ve soru kanıtı henüz bulunmuyor.',
+          theme.outcomeCode
+            ?['Özgün kısa alıştırma','Metin tahlili','Açık uçlu açıklama','Yazma/konuşma performansı']
+            :['Doğrulanmış soru türü henüz yok']
+        )]
+      }]
+    }]
+  }))
+ };
+}
+
 function grade911OfficialIndex(grade:number,subject:string):CurriculumSubject|null{
   if(![9,10,11].includes(grade))return null;
   const known=[...VERIFIED_ADDITIONAL_TYMM_OUTCOMES,...VERIFIED_GRADE10_GEOGRAPHY].filter(x=>x.grade===grade&&x.subject===subject);
@@ -398,7 +427,7 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   const exactGrade=resolveLearningCurriculumContext({gradeLevel}).grade;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=>(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=>(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,
