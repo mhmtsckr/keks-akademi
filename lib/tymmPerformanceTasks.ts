@@ -1,6 +1,7 @@
 /** Original KEKS TYMM performance tasks. These are assessment pilots, NOT automatic mastery. */
 import {findAdditionalTymmOutcome} from './verifiedAdditionalTymmOutcomes';
 import {VERIFIED_GRADE56_THEMES} from './verifiedGrade56Themes';
+import {findVerifiedGeographyOutcome} from './verifiedGrade10GeographyOutcomes';
 export type PerformanceTaskKind='OPEN_RESPONSE'|'EXPERIMENT_DESIGN'|'MODEL';
 export type RubricCriterion={id:string;label:string;levels:Readonly<Record<0|1|2,string>>};
 export type PerformanceTask={id:string;grade:number;subject:string;outcomeCode:string;version:number;kind:PerformanceTaskKind;title:string;instruction:string;steps:readonly string[];evidencePrompt:string;safety:string;criteria:readonly RubricCriterion[];sourceUrl:string;contentStatus:'PILOT'};
@@ -465,7 +466,10 @@ export const TYMM_PERFORMANCE_TASKS:readonly PerformanceTask[]=[
 export function performanceTaskById(id:string,version?:number){return TYMM_PERFORMANCE_TASKS.find(x=>x.id===id&&(version===undefined||x.version===version))||null;}
 export function performanceTasksForGrade(grade:number){return TYMM_PERFORMANCE_TASKS.filter(x=>x.grade===grade);}
 export function performanceTaskEvidence(task:PerformanceTask){
- const fromAdditional=findAdditionalTymmOutcome(task.outcomeCode);
+ const fromGeo=findVerifiedGeographyOutcome(task.outcomeCode);
+ if(fromGeo&&fromGeo.grade===task.grade&&fromGeo.subject===task.subject&&fromGeo.url===task.sourceUrl)
+  return {outcomeCodeVerified:true,sourceUrl:fromGeo.url};
+  const fromAdditional=findAdditionalTymmOutcome(task.outcomeCode);
  if(fromAdditional&&fromAdditional.grade===task.grade&&fromAdditional.subject===task.subject&&fromAdditional.url===task.sourceUrl)return {outcomeCodeVerified:true,sourceUrl:fromAdditional.url};
  const fromMiddle=VERIFIED_GRADE56_THEMES.find(x=>x.outcomeCode===task.outcomeCode&&x.grade===task.grade&&x.subject===task.subject&&x.sourceUrl===task.sourceUrl&&x.verification==='OUTCOME_CODE');
  return {outcomeCodeVerified:Boolean(fromMiddle),sourceUrl:fromMiddle?.sourceUrl||null};
