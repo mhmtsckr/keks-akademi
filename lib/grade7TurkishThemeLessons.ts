@@ -1,6 +1,7 @@
 /** Original KEKS texts; official link validates theme and listed capability, not question approval. */
 import type {MicroLesson} from './bankFreeMicroLessons';
-export const GRADE7_TURKISH_THEME_LESSONS:readonly MicroLesson[]=[
+export const GRADE7_TURKISH_THEME_LESSONS:readonly MicroLesson[]=
+[
   {
     "id": "grade7-tr-surface-meaning-v1",
     "version": 1,
@@ -68,6 +69,7 @@ export const GRADE7_TURKISH_THEME_LESSONS:readonly MicroLesson[]=[
       7
     ],
     "topicTags": [
+      "Hayat Boyu Gelişim",
       "Metinde açıkça verilen bilgi"
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/287",
@@ -141,6 +143,7 @@ export const GRADE7_TURKISH_THEME_LESSONS:readonly MicroLesson[]=[
       7
     ],
     "topicTags": [
+      "Bir Hilal Uğruna",
       "İkna mesajında kanıtı sorgulama"
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/290",
@@ -214,6 +217,7 @@ export const GRADE7_TURKISH_THEME_LESSONS:readonly MicroLesson[]=[
       7
     ],
     "topicTags": [
+      "İletişim ve Sosyal İlişkiler",
       "Düşünceyi geliştirme yolları"
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/291",
@@ -287,6 +291,7 @@ export const GRADE7_TURKISH_THEME_LESSONS:readonly MicroLesson[]=[
       7
     ],
     "topicTags": [
+      "Türk Sanatı",
       "Metnin içindeki unsurları karşılaştırma"
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/293",
@@ -360,6 +365,7 @@ export const GRADE7_TURKISH_THEME_LESSONS:readonly MicroLesson[]=[
       7
     ],
     "topicTags": [
+      "Okuma Kültürü",
       "Anahtar kelimelerle konuyu belirleme"
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/309",
@@ -433,6 +439,7 @@ export const GRADE7_TURKISH_THEME_LESSONS:readonly MicroLesson[]=[
       7
     ],
     "topicTags": [
+      "Hak ve Sorumluluklar",
       "Dijital haberde kaynağı değerlendirme"
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/ortaokul-turkce-dersi/unite/312",
