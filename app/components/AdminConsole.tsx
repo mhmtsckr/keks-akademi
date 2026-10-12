@@ -349,6 +349,11 @@ export function AdminConsole(){
     </section>}
 
     {tab==='academic'&&<section className="adminPanelSection">
+      <div className="card" style={{padding:20,marginBottom:16}}>
+        <h2>6000 Soru İçin Bağımsız Editöryal İnceleme</h2>
+        <p>Taslak soruları ayrı havuza yükleyin; üç farklı editörün kaynak, Türkçe ve ölçme-değerlendirme onayı tamamlanmadan yayımlamayın.</p>
+        <a href="/yonetici/editorial" className="btn primary">Editör Onay Merkezini Aç →</a>
+      </div>
       <AdminMicroLessonReviews/>
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">AKADEMİK KALİTE</div><h2>Soru Bankası Onay Merkezi</h2><p className="muted">Yeni veya incelenmesi gereken soruları yayınlanmadan önce kontrol et.</p></div><div className="row"><select value={questionStatus} onChange={e=>setQuestionStatus(e.target.value)}><option value="PENDING">Bekleyen</option><option value="APPROVED">Onaylı</option><option value="REJECTED">Reddedilen</option><option value="ALL">Tümü</option></select></div></div>
       <div className="adminQuestionStats">{questionCounts.map((x:any)=><span className="pill" key={x.reviewStatus}>{x.reviewStatus}: {x._count._all}</span>)}</div>
