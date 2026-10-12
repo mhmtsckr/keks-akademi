@@ -5,7 +5,7 @@ import {db} from '@/lib/db';
 import {readJson,withApiErrors,HttpError} from '@/lib/apiGuard';
 import {resolveLearningCurriculumContext} from '@/lib/curriculumPolicy2026';
 import {TYMM_PERFORMANCE_TASKS,performanceTaskById,performanceTaskEvidence} from '@/lib/tymmPerformanceTasks';
-import {transferVariantFor,transferDueAt,readableRubric} from '@/lib/tymmDelayedTransfer';
+import {transferVariantFor,transferEligibility,readableRubric} from '@/lib/tymmDelayedTransfer';
 
 const inputSchema=z.object({
  baselineTaskId:z.string().min(6).max(150),
@@ -15,27 +15,6 @@ const inputSchema=z.object({
  confirmedIndependentWork:z.literal(true)
 }).strict();
 function obj(x:unknown):Record<string,unknown>{return x&&typeof x==='object'&&!Array.isArray(x)?x as Record<string,unknown>:{}}
-type EvidenceRow={id:string;createdAt:Date;payload:unknown};
-function stateFor(taskId:string,logs:EvidenceRow[],now:Date){
- const lastTransfer=logs.find(x=>obj(x.payload).taskId===taskId
-  &&['TYMM_TRANSFER_SUBMISSION','TYMM_TRANSFER_REVIEWED'].includes(String(obj(x.payload).type)));
- const baseline=logs.find(row=>{
-  const p=obj(row.payload),review=obj(p.review);
-  return p.type==='TYMM_PERFORMANCE_REVIEWED'&&p.taskId===taskId&&
-   readableRubric(review)!==null&&typeof review.reviewedAt==='string'&&
-   Number.isFinite(Date.parse(review.reviewedAt));
- });
- if(!baseline)return {status:'AWAITING_BASELINE' as const,dueAt:null,baselineId:null,transferId:lastTransfer?.id||null};
- const review=obj(obj(baseline.payload).review);
- const dueAt=transferDueAt(new Date(String(review.reviewedAt)));
- if(lastTransfer){
-  return {status:obj(lastTransfer.payload).type==='TYMM_TRANSFER_REVIEWED'?'REVIEWED' as const:'WAITING_FOR_COACH' as const,
-   dueAt:dueAt.toISOString(),baselineId:baseline.id,transferId:lastTransfer.id};
- }
- return {status:now>=dueAt?'AVAILABLE' as const:'LOCKED' as const,
-   dueAt:dueAt.toISOString(),baselineId:baseline.id,transferId:null};
-}
-
 async function GET__handler(req:Request){
  const user=await requireRole(['STUDENT']);
  if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:403});
@@ -50,7 +29,7 @@ async function GET__handler(req:Request){
  });
  const rows=context.framework==='TYMM'&&context.grade
   ?TYMM_PERFORMANCE_TASKS.filter(t=>t.grade===context.grade).map(task=>{
-    const state=stateFor(task.id,logs,new Date());
+    const state=transferEligibility(task.id,logs,new Date());
     const variant=state.status==='AVAILABLE'?transferVariantFor(task.id):null;
     return {baselineTaskId:task.id,title:task.title,subject:task.subject,
       grade:task.grade,outcomeCode:task.outcomeCode,status:state.status,
@@ -88,7 +67,7 @@ async function POST__handler(req:Request){
     where:{studentId,payload:{path:['type'],string_contains:'TYMM_'}},
     orderBy:{createdAt:'desc'},take:400,select:{id:true,createdAt:true,payload:true}
    });
-   const state=stateFor(task.id,logs,new Date());
+   const state=transferEligibility(task.id,logs,new Date());
    if(state.status!=='AVAILABLE'||!state.baselineId){
      throw new HttpError(409,'Bu görev henüz açılmadı, ilk koç incelemesi eksik veya bağımsız görev zaten teslim edildi.');
    }
