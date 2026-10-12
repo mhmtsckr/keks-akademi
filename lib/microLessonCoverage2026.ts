@@ -11,6 +11,7 @@ import {VERIFIED_GRADE7_TURKISH_THEMES} from './verifiedGrade7TurkishThemes';
 import {VERIFIED_GRADE56_THEMES} from './verifiedGrade56Themes';
 import {VERIFIED_ADDITIONAL_TYMM_OUTCOMES} from './verifiedAdditionalTymmOutcomes';
 import {VERIFIED_GRADE10_GEOGRAPHY} from './verifiedGrade10GeographyOutcomes';
+import {VERIFIED_GRADE9_11_TDE_THEMES} from './verifiedGrade911LiteratureThemes';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -53,6 +54,8 @@ export function microLessonCoverageSnapshot(){
       ||VERIFIED_ADDITIONAL_TYMM_OUTCOMES.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&
         outcome.code===l.sourceThemeId&&outcome.theme.replace(/^\\d+\\. (Tema|Ünite): /,'')===t)
+      ||VERIFIED_GRADE9_11_TDE_THEMES.some(theme=>
+        theme.grade===grade&&theme.subject===subject&&theme.theme===t&&theme.id===l.sourceThemeId)
    ));
    return {
     subject,indexedTopics:topics.length||null,matchedIndexTopics:matched.length,
@@ -82,7 +85,20 @@ export function microLessonCoverageSnapshot(){
   return {examType,topicIndexSource:'KEKS_INTERNAL' as const,
    totalPilotLessons:rows.reduce((n,x)=>n+x.pilotLessons,0),subjects:rows};
  });
- const geographyOutcomes=VERIFIED_GRADE10_GEOGRAPHY.map(outcome=>({
+ const literatureProgramRows=[9,10,11].map(grade=>{
+   const themes=VERIFIED_GRADE9_11_TDE_THEMES.filter(x=>x.grade===grade).map(x=>({
+     id:x.id,theme:x.theme,sourceUrl:x.sourceUrl,outcomeCode:x.outcomeCode,
+     verification:x.verification,skill:x.skill,
+     linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===x.id
+       &&l.targetGrades?.includes(grade)&&l.subject===x.subject).length
+   }));
+   return {grade,subject:'Türk Dili ve Edebiyatı',
+     totalOfficialThemes:themes.length,
+     verifiedOutcomeContexts:themes.filter(x=>x.verification==='OUTCOME_CODE').length,
+     linkedPilotLessons:themes.reduce((n,x)=>n+x.linkedPilotLessons,0),
+     themes,disclaimer:'TDE kodları birden fazla temada yeniden kullanılabilir; resmî çıktı bu kayıtta tema ve sınıfla birlikte tanımlanır. Pilot soru tüm dil becerisini ölçmez.'};
+ });
+  const geographyOutcomes=VERIFIED_GRADE10_GEOGRAPHY.map(outcome=>({
    code:outcome.code,theme:outcome.theme,sourceUrl:outcome.url,skill:outcome.skill,
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code&&l.subject==='Coğrafya'&&l.targetGrades?.includes(10)).length
  }));
@@ -119,7 +135,8 @@ export function microLessonCoverageSnapshot(){
  }));
  return {
   academicYear:'2026-2027',status:'EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT',
-  verifiedGeography:{
+  verifiedLiteraturePrograms:literatureProgramRows,
+    verifiedGeography:{
     grade:10,subject:'Coğrafya',totalOfficialOutcomes:geographyOutcomes.length,
     distinctThemes:new Set(geographyOutcomes.map(x=>x.theme)).size,
     linkedPilotLessons:geographyOutcomes.reduce((n,x)=>n+x.linkedPilotLessons,0),
