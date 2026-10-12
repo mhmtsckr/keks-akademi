@@ -148,21 +148,54 @@ export async function revokeAllSessions(userId:string){
 export async function currentUser(){
   const claims=await readSessionClaims();
   if(!claims)return null;
+
   try{
-    const user=await db.user.findUnique({where:{id:claims.userId},include:{coachProfile:true,student:true,parentProfile:true}});
-    const testMode=process.env.NODE_ENV==='test';
-    if(!user)return null;
-    if(testMode){
-      if(user.status&&user.status!=='ACTIVE')return null;
-      if(claims.stamp&&user.updatedAt&&claims.stamp!==sessionStamp(user.updatedAt))return null;
-    }else{
-      if(user.status!=='ACTIVE')return null;
-      if(claims.stamp!==sessionStamp(user.updatedAt))return null;
+    // First verify the signed session against the account's current status
+    // and version without eagerly selecting every linked profile column.
+    // A production database with an older Student/Coach/Parent schema must
+    // not prevent an ADMIN or EDITOR from authenticating.
+    const account=await db.user.findUnique({where:{id:claims.userId}});
+    if(!account)return null;
+
+    const validSession=(user:{status?:string;updatedAt?:Date})=>{
+      const testMode=process.env.NODE_ENV==='test';
+      if(testMode){
+        if(user.status&&user.status!=='ACTIVE')return false;
+        if(claims.stamp&&user.updatedAt&&claims.stamp!==sessionStamp(user.updatedAt))return false;
+      }else{
+        if(user.status!=='ACTIVE')return false;
+        if(!user.updatedAt||claims.stamp!==sessionStamp(user.updatedAt))return false;
+      }
+      return true;
+    };
+    if(!validSession(account))return null;
+
+    // These privileged roles have no student/coach/parent profile dependencies.
+    // Keep the exact relation keys in the return shape for downstream callers.
+    if(account.role==='ADMIN'||account.role==='EDITOR'){
+      return {...account,coachProfile:null,student:null,parentProfile:null};
     }
-    return user;
+
+    // Load full profiles only when needed by their actual portal.
+    const withProfile=await db.user.findUnique({
+      where:{id:claims.userId},
+      include:{coachProfile:true,student:true,parentProfile:true}
+    });
+    // Revalidate in case a user's role/status or session stamp changed
+    // between the two database queries.
+    if(!withProfile||!validSession(withProfile)||withProfile.role!==account.role)return null;
+    return withProfile;
   }catch(error){
-    const err=error as {name?:string;code?:string};
-    console.error('AUTH_CURRENT_USER_LOOKUP_FAILED',{name:err?.name||'Error',code:err?.code||'UNKNOWN'});
+    const err=error as {name?:string;code?:string;meta?:{modelName?:string;column?:string}};
+    // Prisma P2022 metadata contains schema identifiers, never passwords or JWTs.
+    console.error('AUTH_CURRENT_USER_LOOKUP_FAILED',{
+      name:err?.name||'Error',
+      code:err?.code||'UNKNOWN',
+      ...(err?.code==='P2022'?{
+        model:err.meta?.modelName||'unknown',
+        column:err.meta?.column||'unknown'
+      }:{})
+    });
     return null;
   }
 }
