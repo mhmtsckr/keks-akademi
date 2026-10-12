@@ -83,7 +83,7 @@ async function POST__handler(req:Request){
  const studentId=user.student.id;
  const created=await db.$transaction(async tx=>{
    // Serialize requests for the same student and baseline task; prevent double submissions.
-   await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${studentId}),hashtext(${task.id}))`;
+   await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${studentId}),hashtext(${task.id})) IS NULL AS acquired`;
    const logs=await tx.dailyLog.findMany({
     where:{studentId,payload:{path:['type'],string_contains:'TYMM_'}},
     orderBy:{createdAt:'desc'},take:400,select:{id:true,createdAt:true,payload:true}
