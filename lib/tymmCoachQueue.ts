@@ -10,7 +10,7 @@ function record(x:unknown):Record<string,unknown>{
  return x&&typeof x==='object'&&!Array.isArray(x)?x as Record<string,unknown>:{};
 }
 export function buildCoachPerformanceQueue(
- students:readonly CoachQueueStudent[],logs:readonly CoachQueueLog[],now:Date
+ students:readonly CoachQueueStudent[],logs:readonly CoachQueueLog[],now:Date,targetHours=24
 ):CoachQueueItem[]{
  const allowed=new Map(students.map(s=>[s.id,s]));
  return logs.flatMap(log=>{
@@ -30,7 +30,7 @@ export function buildCoachPerformanceQueue(
    grade:task.grade,subject:task.subject,outcomeCode:task.outcomeCode,
    phase:isTransfer?'TRANSFER' as const:'BASELINE' as const,
    submittedAt:log.createdAt.toISOString(),hoursWaiting,
-   priority:hoursWaiting>=24?'OVERDUE' as const:'WAITING' as const
+   priority:hoursWaiting>=targetHours?'OVERDUE' as const:'WAITING' as const
   }];
  }).sort((a,b)=>(a.priority===b.priority?b.hoursWaiting-a.hoursWaiting:a.priority==='OVERDUE'?-1:1));
 }
