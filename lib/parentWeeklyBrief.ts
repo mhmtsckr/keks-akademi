@@ -15,6 +15,8 @@ export type ParentWeeklyBrief={
   good:ParentWeeklyBriefItem[];
   attention:ParentWeeklyBriefItem[];
   support:ParentWeeklyBriefItem[];
+  change:{status:'UP'|'DOWN'|'MIXED'|'STABLE'|'NO_DATA';text:string};
+  keksRecommendation:string;
   privacyNote:string;
 };
 
@@ -36,6 +38,31 @@ function unique(items:ParentWeeklyBriefItem[]){
     if(seen.has(item.title))return false;
     seen.add(item.title);return true;
   });
+}
+
+function summarizeWeeklyChange(indicators:StudentIndicator[]):ParentWeeklyBrief['change']{
+  // Compare matching days across weeks; never infer a change from missing or unreliable measurements.
+  const comparable=indicators.filter(x=>x.value!=null&&x.previous!=null&&x.delta!=null&&x.confidence!=='YETERSİZ');
+  if(comparable.length===0)return {
+    status:'NO_DATA',
+    text:'Önceki haftayla güvenilir karşılaştırma için henüz yeterli veri yok.'
+  };
+  const byMagnitude=[...comparable].sort((a,b)=>Math.abs(b.delta||0)-Math.abs(a.delta||0));
+  const improved=byMagnitude.find(x=>(x.delta||0)>=5);
+  const declined=byMagnitude.find(x=>(x.delta||0)<=-5);
+  if(improved&&declined)return {
+    status:'MIXED',
+    text:'Geçen haftaya göre '+improved.label.toLocaleLowerCase('tr-TR')+' gelişirken '+declined.label.toLocaleLowerCase('tr-TR')+' geriledi.'
+  };
+  if(improved)return {
+    status:'UP',
+    text:'Geçen haftaya göre en belirgin gelişme '+improved.label.toLocaleLowerCase('tr-TR')+' alanında.'
+  };
+  if(declined)return {
+    status:'DOWN',
+    text:'Geçen haftaya göre en çok dikkat isteyen değişim '+declined.label.toLocaleLowerCase('tr-TR')+' alanında.'
+  };
+  return {status:'STABLE',text:'Ölçülebilen alanlarda geçen haftaya göre belirgin bir değişiklik yok.'};
 }
 
 export function buildParentWeeklyBrief(input:{
@@ -193,8 +220,21 @@ export function buildParentWeeklyBrief(input:{
     detail:'Başka öğrencilerle karşılaştırmayın; deneme veya görev sonucunu ceza ya da ödül aracına çevirmeyin.'
   });
 
+  const keksRecommendation=
+    plan?.value!=null&&plan.value<65
+      ?'Bu hafta ek görev vermek yerine öğrencinin ilk çalışma adımını kolaylaştırın ve programı koçla birlikte gözden geçirin.'
+    :review?.value!=null&&review.value<60
+      ?'Bu hafta yeni hedef eklemek yerine öğrencinin tekrar için ayırdığı zamanı korumasına yardımcı olun.'
+    :continuity?.value!=null&&continuity.value<60
+      ?'Bu hafta öğrencinin her gün benzer bir saatte çalışmaya başlaması için sakin ve uygun bir ortam sağlayın.'
+    :plan?.value!=null&&plan.value>=85
+      ?'Bu hafta çalışma sorumluluğunu öğrencide bırakın ve sık hatırlatma yerine gösterdiği çabayı fark edin.'
+    :'Bu hafta öğrencinin mevcut çalışma planını destekleyin ve koçun önerisi olmadan ek yük oluşturmayın.';
+
   return {
     reassurance,
+    change:summarizeWeeklyChange(input.indicators),
+    keksRecommendation,
     good:unique(good).slice(0,3),
     attention:unique(attention).slice(0,3),
     support:unique(support).slice(0,3),
