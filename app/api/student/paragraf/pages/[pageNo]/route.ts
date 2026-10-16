@@ -5,6 +5,7 @@ import {db} from '@/lib/db';
 import {HttpError, readJson, withApiErrors} from '@/lib/apiGuard';
 import {gradeParagrafPage,paragrafPageLegacyId,parseParagrafPageNo} from '@/lib/paragrafPage';
 import {paragrafPrintedPageAnswerKey,PRINT_EDITION} from '@/lib/paragrafPrintAnswerKey';
+import {printedParagrafWrongRows} from '@/lib/paragrafPrintReview';
 
 const answer=z.enum(['A','B','C','D','E']).nullable();
 const inputSchema=z.object({answers:z.record(z.string(),answer)}).strict();
@@ -57,16 +58,35 @@ async function POST__handler(req:Request,{params}:Context){
   try{graded=gradeParagrafPage(page.questionNos,questions,answers);}
   catch(e){throw new HttpError(400,(e as Error).message);}
   const now=new Date();
+  const wrongRows=printedParagrafWrongRows(questions,graded.items);
   const attempt={
     kind:'PARAGRAF_PAGE_ATTEMPT',edition:PRINT_EDITION,
     pageCode:page.code,testNo:page.testNo,pageInTest:page.pageInTest,
-    submittedAt:now.toISOString(),...graded
+    submittedAt:now.toISOString(),...graded,reviewLinked:wrongRows.length
   };
   try{
     const result=await db.$transaction(async tx=>{
       const existing=await tx.dailyLog.findUnique({where:{legacyId},select:{payload:true}});
       if(existing)return {alreadySubmitted:true,attempt:savedPayload(existing)};
       await tx.dailyLog.create({data:{studentId,legacyId,date:now,payload:attempt}});
+      // Create the paper-reference question and due-now review atomically with
+      // the single immutable page attempt. No fabricated full question text.
+      for(const q of wrongRows){
+        const row=await tx.questionBankItem.upsert({
+          where:{id:q.id},create:{...q},update:{}
+        });
+        if(row.sourceKind!==q.sourceKind||
+           row.correctAnswer!==q.correctAnswer||
+           row.topic!==q.topic) {
+          throw new HttpError(409,'Bu basılı sorunun tekrar kaydı başka sürümle çakışıyor.');
+        }
+        await tx.reviewQueueItem.upsert({
+          where:{studentId_questionId:{studentId,questionId:q.id}},
+          create:{studentId,questionId:q.id,stepIndex:0,dueAt:now,
+            status:'DUE',lastCorrect:false},
+          update:{}
+        });
+      }
       await tx.practiceLog.create({data:{
         studentId,examType:'TYT',subject:'Türkçe',
         topic:'Paragraf · Test '+page.testNo,correct:graded.correct,wrong:graded.wrong,
@@ -79,7 +99,7 @@ async function POST__handler(req:Request,{params}:Context){
           'Basılı KEKS Paragraf çalışması, sayfa '+page.code+'.',
           'Yanlış konular: '+(graded.wrongTopics.join(', ')||'Yok')+'.',
           'Öğrencinin seçtiği yanıtlar ve soru bazlı geri bildirim kendi oturumunda saklanmıştır. Bu baskı 50 testlik ayrı cevap anahtarından puanlanmıştır.',
-          'Tekrar önerisi: 0, 1, 3, 7, 14 ve 28. günler. Otomatik tekrar kuyruğu henüz oluşturulmadı.'
+          'Yanlış işaretlenen '+wrongRows.length+' soru basılı kaynak referansıyla 0. gün tekrar kuyruğuna eklendi. Sonraki aralıklar öğrencinin tekrar başarısına göre değişir.'
         ].join('\n'),
         createdByUserId:user.id,visibleToStudent:true,visibleToParent:false
       }});
