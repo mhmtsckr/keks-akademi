@@ -32,7 +32,7 @@ export function gradeParagrafPage(
   if (questions.length !== expected.length ||
       new Set(questions.map(q=>q.questionNo)).size !== expected.length ||
       questions.some(q=>!expected.includes(String(q.questionNo)))) {
-    throw new Error('Bu sayfanın onaylı cevap anahtarı eksik.');
+    throw new Error('Bu baskı sayfasının cevap anahtarı eksik.');
   }
   if (Object.keys(answers).length !== expected.length ||
       Object.keys(answers).some(k=>!expected.includes(k)) ||
