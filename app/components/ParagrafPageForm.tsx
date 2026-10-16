@@ -7,7 +7,7 @@ type Question={id:string;questionNo:number;topic:string};
 type GradeItem={id:string;questionNo:number;topic:string;answer:Choice;
   correctAnswer:string;status:'CORRECT'|'WRONG'|'BLANK'};
 type Attempt={pageCode:string;testNo:number;pageInTest:number;
-  submittedAt:string;correct:number;wrong:number;blank:number;net:number;
+  submittedAt:string;correct:number;wrong:number;blank:number;net:number;reviewLinked?:number;
   items:GradeItem[];wrongTopics:string[];reviewRecommendation:
   {days:number[];note:string}|null};
 type PageData={ok:boolean;page:{code:string;testNo:number;pageInTest:number};
@@ -70,7 +70,8 @@ export function ParagrafPageForm({pageNo}:{pageNo:string}){
           {attempt.reviewRecommendation&&<div style={{marginTop:18,padding:15,background:'#f0f5ef',borderRadius:10}}>
             <strong>Geliştirilmesi gereken beceriler: </strong>
             {attempt.wrongTopics.join(', ')}.
-            <p>Önerilen tekrar günleri: {attempt.reviewRecommendation.days.join('–')}. Bu, henüz otomatik tekrar görevi değildir.</p>
+            <p>{attempt.reviewLinked??attempt.wrong} yanlış soru tekrar kuyruğuna bağlandı. Aralıklar {attempt.reviewRecommendation.days.join('–')} gün temelinde kişisel performansa göre uyarlanır.</p>
+            <p><a href="/paragraf/tekrar">Bugünkü paragraf tekrarlarımı aç →</a></p>
           </div>}
           {Number(pageNo)<400&&<p><a href={'/paragraf/sayfa/'+nextCode}>Sonraki basılı sayfaya geç →</a></p>}
         </section>
