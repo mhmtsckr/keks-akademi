@@ -58,5 +58,5 @@ export function gradeParagrafPage(
   const wrongTopics=[...new Set(items.filter(x=>x.status==='WRONG').map(x=>x.topic))];
   return {correct,wrong,blank,net,items,wrongTopics,
     reviewRecommendation:wrong?{days:[...PARAGRAF_REVIEW_DAYS],
-      note:'Yanlış sorular için 0–1–3–7–14–28 gün tekrar önerisi; tekrar kuyruğuna henüz otomatik eklenmez.'}:null};
+      note:'Yanlış sorular 0. gün tekrar kuyruğuna eklenir; aralıklar 0–1–3–7–14–28 gün temelinde performansa göre uyarlanır.'}:null};
 }
