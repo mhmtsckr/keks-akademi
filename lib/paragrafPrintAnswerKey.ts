@@ -1,9 +1,9 @@
 /**
- * Immutable answer-key snapshot extracted from the KEKS 50-test / 1,500-question
+ * Private answer-key verifier for the KEKS 50-test / 1,500-question
  * A3 print-proof QR verification CSV (2026-10-16), NOT the legacy 6,000-row
  * ParagrafBookSolution table. Editorial approval is still pending.
  *
- * Server-side use only. Never import this module in client-side components.
+ * The packed answer letters reside in an encrypted server-only environment variable.
  */
 export const PRINT_EDITION = 'KEKS_TYT_PARAGRAF_A3_V1';
 export const PRINT_ANSWERS_SHA256 = '6fd9cc8ca3da9824862f289ed97ea2c1aa2a327eb2627a46cfb122ad6aba89e4';
@@ -12,18 +12,15 @@ const TOPICS = ['Ana düşünce','Örtük anlam','Ulaşılamayan yargı',
  'Kavramsal ayrım','Başlık belirleme','Kapsam ve koşul',
  'Düşünceyi temellendirme','Çıkarım','Eleştirel tutum','Yazarın amacı'] as const;
 
-const ANSWER_ROWS = `
-CBACDECEDADECDEECBDBBBBACDAEAA CECAACBDDAECBBADBBBADEEDDEACEC CCEADAEEBBBBBDECDECAACAEABCDDD AACECBEDBDEDABBDBAEDACCCCBEAED ADDDABCCACBCEDBDAAEACBCBEDEEEB
-CACEAACBDADBEDBEDBCEBEBEACDADC DDBEBEBBACADDAEDBEEECCACCBADCA DBBEDDDDBECCCABACAABAEDEACBCEE BCEEBCCEEADDCDEEBCCDDAAABBDABA BEEECBCBADDBDDDCBCAEABEADCACEA
-ABDDAAACCBECBDEDECBBEECCEADBDA DEDCEACCDCCEBADDEABEBDABBACBAE BBACADADACAECBDDECCCEEBBBEEADD EBCCAEBDDAECAAADCCBDDEECDBEBBA EDBACBAEBBACCBEADEDADEDBCEADCC
-EACCEBBDAEBDBDABEEDDEACADCBCCA CAABBACBCEDEDECBCDADAEDAEBBDCE EEEACACDCAADBAEEBCEBBDBCACBDDD EBCDADCBCDEEBDCAEDDACACBAEBBEA CECEBABCDBDCBBEDAECEDADEAADCBA
-AEBBDCCBECACBEDABDCECEAADBDEAD CDABCEEAAACDDDBDEBBBAABDEECCEC BACEBAAEDDBEDBEBBCDACCEDCAEADC CEDEAAAEBCCEDEDACCCBDDBBABBEDA CCEABEDBDCADABDCDBEEEECBAABDCA
-CABDEEDCEDABBBEECDACCABCDEADAB AEEADDBADAEBBCCBCCBDDCADCABEEE CDCEBDAEDDBEAEABACACABEBCCEDDB CADBEAEDADCABBEDCEBECBAADBEDCC EEBBDAEBDADCBAEBCECBACCADDDCAE
-BEADCDEBEADBCBAABCDBCCECEDAADE DDECACEBBCEAEBECDBCDAEAAABCBDD DBAACAACEBCCBEBDBDDEAEEBCDAECD DAEBEEECCABBDBCDEAEBADCBCDCADA CEDAABDCEEACDCCBDEEBAABEBBADDC
-BDABEBBAECBADECDCBCCDCADEAADEE DBDDCCEEDBBAADDEBCCBBAECEAAEAC EABEBECBDCBAACEDDCBCADCDDAEEBA ADAADDEBAACBBBEBCECEBDDACECDCE BACADACBEDEAACEBDCEDEEBCBDDBCA
-ADEDCEDCDDEEBBCABABDECCACABEAB ADDDCCBDBABDAECABCEBBAECEDACEE CABAAEDCAECEADCCDEBBDDBDABECEB ACBBDCABCBADCBEACEDAEADDEBCEED AEEBDEACBAADCDBACECCABECEBDDDB
-CDECBAEAAABEBADBBECEDCDDDECBAC DCDEEAACBCADADACBEEBEBBBDAECCD DADADBDCABCCEBBDEEDCCBCAAAEEEB CDCBCBDEBDADAABBEAECECDBCAEDAE BEAABBADEDCCCDACBCDBBAEAEEDDEC
-`.trim().split(/\s+/);
+import {createHash} from 'node:crypto';
+
+/** Read from encrypted Vercel environment; refuse incomplete or altered keys. */
+function readAnswerRows():string[] {
+  const packed=process.env.KEKS_PARAGRAF_A3_ANSWERS||'';
+  if(!/^[A-E]{1500}$/.test(packed))return [];
+  if(createHash('sha256').update(packed).digest('hex')!==PRINT_ANSWERS_SHA256)return [];
+  return packed.match(/.{30}/g)||[];
+}
 
 const TOPIC_ROWS = `
 010101232323454545676767898989
@@ -39,7 +36,7 @@ const TOPIC_ROWS = `
 `.trim().split(/\s+/);
 
 export function paragrafPrintedPageAnswerKey(testNo:number,questionNos:readonly number[]){
-  const answers=ANSWER_ROWS[testNo-1];
+  const answers=readAnswerRows()[testNo-1];
   const topics=TOPIC_ROWS[(testNo-1)%10];
   if(!answers||answers.length!==30||!topics||topics.length!==30 ||
     questionNos.some(q=>!Number.isInteger(q)||q<1||q>30))return [];
@@ -54,7 +51,8 @@ export function paragrafPrintedPageAnswerKey(testNo:number,questionNos:readonly 
 }
 
 export function printedEditionDiagnostics(){
-  return {edition:PRINT_EDITION,testCount:ANSWER_ROWS.length,
-    totalQuestions:ANSWER_ROWS.reduce((n,s)=>n+s.length,0),
+  const rows=readAnswerRows();
+  return {edition:PRINT_EDITION,testCount:50,loaded:rows.length===50,
+    totalQuestions:rows.reduce((n,s)=>n+s.length,0),
     topicRows:TOPIC_ROWS.length};
 }
