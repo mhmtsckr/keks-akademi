@@ -60,7 +60,7 @@ export type ParagrafDetailedSolution={
 
 /** Maps ONLY the 50-test print edition, never the legacy 6,000-row solution table. */
 export function getParagrafDetailedSolution(id:string):ParagrafDetailedSolution|null{
-  if(!/^\\d{5}$/.test(id))return null;
+  if(!/^\d{5}$/.test(id))return null;
   const serial=Number(id);
   if(serial<1||serial>PARAGRAF_DETAILED_TOTAL)return null;
   const index=serial-1;
