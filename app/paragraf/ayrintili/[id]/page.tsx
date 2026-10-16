@@ -18,7 +18,7 @@ export const metadata:Metadata={
 const PARTS=['Kökü tanı','Kanıt haritası','Çeldirici analizi','Hata defteri','Altın ilke'];
 
 function splitSolution(text:string){
-  const heading=/^\\s*([1-5])\\.\\s*(Kökü tanı|Kanıt haritası|Çeldirici analizi|Hata defteri|Altın ilke):\\s*/gm;
+  const heading=/^\s*([1-5])\.\s*(Kökü tanı|Kanıt haritası|Çeldirici analizi|Hata defteri|Altın ilke):\s*/gm;
   const matches=[...text.matchAll(heading)];
   if(matches.length!==5)return [{title:'Ayrıntılı çözüm',content:text}];
   return matches.map((match,i)=>({
