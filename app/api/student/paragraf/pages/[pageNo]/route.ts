@@ -4,6 +4,7 @@ import {requireRole} from '@/lib/auth';
 import {db} from '@/lib/db';
 import {HttpError, readJson, withApiErrors} from '@/lib/apiGuard';
 import {gradeParagrafPage,paragrafPageLegacyId,parseParagrafPageNo} from '@/lib/paragrafPage';
+import {paragrafPrintedPageAnswerKey,PRINT_EDITION} from '@/lib/paragrafPrintAnswerKey';
 
 const answer=z.enum(['A','B','C','D','E']).nullable();
 const inputSchema=z.object({answers:z.record(z.string(),answer)}).strict();
@@ -24,11 +25,9 @@ async function GET__handler(_req:Request,{params}:Context){
   const user=await requireRole(['STUDENT']);
   if(!user.student)throw new HttpError(403,'Öğrenci profili bulunamadı.');
   const page=parsePage((await params).pageNo);
-  const questions=await db.paragrafBookSolution.findMany({
-    where:{testNo:page.testNo,questionNo:{in:page.questionNos}},
-    select:{id:true,questionNo:true,topic:true},
-    orderBy:{questionNo:'asc'}
-  });
+  // Exact 50-test edition, not the legacy 6,000-row answer table.
+  const questions=paragrafPrintedPageAnswerKey(page.testNo,page.questionNos)
+    .map(({id,questionNo,topic})=>({id,questionNo,topic}));
   if(questions.length!==page.questionNos.length)throw new HttpError(404,'Bu sayfa henüz dijital kullanıma açılmadı.');
   const saved=await db.dailyLog.findUnique({
     where:{legacyId:paragrafPageLegacyId(user.student.id,page.code)},
@@ -52,17 +51,14 @@ async function POST__handler(req:Request,{params}:Context){
   const prior=await db.dailyLog.findUnique({where:{legacyId},select:{payload:true}});
   if(prior)return NextResponse.json({ok:true,alreadySubmitted:true,attempt:savedPayload(prior)},
     {headers:{'Cache-Control':'private, no-store'}});
-  const questions=await db.paragrafBookSolution.findMany({
-    where:{testNo:page.testNo,questionNo:{in:page.questionNos}},
-    select:{id:true,testNo:true,questionNo:true,topic:true,correctAnswer:true}
-  });
+  const questions=paragrafPrintedPageAnswerKey(page.testNo,page.questionNos);
   if(questions.length!==page.questionNos.length)throw new HttpError(404,'Cevap anahtarı eksik; gönderim yapılmadı.');
   let graded:ReturnType<typeof gradeParagrafPage>;
   try{graded=gradeParagrafPage(page.questionNos,questions,answers);}
   catch(e){throw new HttpError(400,(e as Error).message);}
   const now=new Date();
   const attempt={
-    kind:'PARAGRAF_PAGE_ATTEMPT',edition:'KEKS_TYT_PARAGRAF_A3_V1',
+    kind:'PARAGRAF_PAGE_ATTEMPT',edition:PRINT_EDITION,
     pageCode:page.code,testNo:page.testNo,pageInTest:page.pageInTest,
     submittedAt:now.toISOString(),...graded
   };
@@ -82,7 +78,7 @@ async function POST__handler(req:Request,{params}:Context){
         content:[
           'Basılı KEKS Paragraf çalışması, sayfa '+page.code+'.',
           'Yanlış konular: '+(graded.wrongTopics.join(', ')||'Yok')+'.',
-          'Öğrencinin seçtiği yanıtlar ve soru bazlı geri bildirim kendi oturumunda saklanmıştır.',
+          'Öğrencinin seçtiği yanıtlar ve soru bazlı geri bildirim kendi oturumunda saklanmıştır. Bu baskı 50 testlik ayrı cevap anahtarından puanlanmıştır.',
           'Tekrar önerisi: 0, 1, 3, 7, 14 ve 28. günler. Otomatik tekrar kuyruğu henüz oluşturulmadı.'
         ].join('\n'),
         createdByUserId:user.id,visibleToStudent:true,visibleToParent:false
