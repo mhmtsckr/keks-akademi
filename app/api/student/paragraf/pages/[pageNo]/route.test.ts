@@ -14,7 +14,7 @@ const mocks=vi.hoisted(()=>{
     answerKey:vi.fn(),
     db:{
       dailyLog:{findUnique:vi.fn()},
-      $transaction:vi.fn(async(callback:(tx:typeof tx)=>unknown)=>callback(tx))
+      $transaction:vi.fn(async(callback:(dbTx:typeof tx)=>unknown)=>callback(tx))
     }
   };
 });
@@ -23,6 +23,7 @@ vi.mock('@/lib/db',()=>({db:mocks.db}));
 vi.mock('@/lib/paragrafPrintAnswerKey',()=>({
   PRINT_EDITION:'KEKS_TYT_PARAGRAF_A3_V1',paragrafPrintedPageAnswerKey:mocks.answerKey
 }));
+import {AuthError} from '@/lib/apiGuard';
 import {GET,POST} from './route';
 
 const q=[
@@ -106,9 +107,9 @@ describe('KEKS Paragraf basılı sayfa -> kişisel tekrar motoru',()=>{
     expect(mocks.db.$transaction).not.toHaveBeenCalled();
   });
   it('rejects a logged-out student before reading personal answers',async()=>{
-    mocks.requireRole.mockRejectedValue(new Error('NO_SESSION'));
+    mocks.requireRole.mockRejectedValue(new AuthError(401,'Oturum açmanız gerekiyor.'));
     const response=await GET(new Request('http://localhost/api/student/paragraf/pages/001'),params);
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(401);
     expect(mocks.db.dailyLog.findUnique).not.toHaveBeenCalled();
   });
   it('rolls back if answer key conflicts with a historical bank item',async()=>{
