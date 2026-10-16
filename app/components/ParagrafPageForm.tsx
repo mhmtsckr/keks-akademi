@@ -61,7 +61,10 @@ export function ParagrafPageForm({pageNo}:{pageNo:string}){
               <strong>Soru {q.questionNo} · {q.topic}</strong>
               <p>Yanıtınız: {q.answer||'Boş'} · Doğru: {q.correctAnswer} ·
                 {' '}{q.status==='CORRECT'?'Doğru':q.status==='WRONG'?'Yanlış':'Boş'}</p>
-              <a href={'/paragraf/cozum/'+q.id} target="_blank" rel="noopener noreferrer">Bu sorunun ayrıntılı çözümünü aç ↗</a>
+              <p style={{fontSize:13,color:'#596c60',marginBottom:0}}>
+                Ayrıntılı çözüm: ayrı KEKS 1.500 Soru Çözüm PDF'si,
+                Test {attempt.testNo}, Soru {q.questionNo}. Basılı soru QR'ı kısa çözüm verir.
+              </p>
             </article>)}
           </div>
           {attempt.reviewRecommendation&&<div style={{marginTop:18,padding:15,background:'#f0f5ef',borderRadius:10}}>
