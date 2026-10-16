@@ -1,31 +1,30 @@
-import {describe,expect,it} from 'vitest';
+import {describe,expect,it,vi} from 'vitest';
 import {createHash} from 'node:crypto';
-import {
-  paragrafPrintedPageAnswerKey,printedEditionDiagnostics,PRINT_ANSWERS_SHA256
-} from './paragrafPrintAnswerKey';
+import {paragrafPrintedPageAnswerKey,printedEditionDiagnostics,PRINT_ANSWERS_SHA256} from './paragrafPrintAnswerKey';
 
-describe('KEKS TYT Paragraf basılı 50 testin bağımsız cevap anahtarı',()=>{
-  it('sadece 50 test ve 1500 cevap içerir',()=>{
-    expect(printedEditionDiagnostics()).toMatchObject({testCount:50,totalQuestions:1500,topicRows:10});
+describe('KEKS Paragraf A3 - sunucu anahtarı koruması',()=>{
+  it('yanlış veya eksik anahtar varsa tüm cevapları kilitler',()=>{
+    const prior=process.env.KEKS_PARAGRAF_A3_ANSWERS;
+    try{
+      vi.stubEnv('KEKS_PARAGRAF_A3_ANSWERS','ABCDE');
+      expect(paragrafPrintedPageAnswerKey(1,[1,2,3,4])).toEqual([]);
+      expect(printedEditionDiagnostics().loaded).toBe(false);
+    }finally{
+      vi.unstubAllEnvs();
+      if(prior!==undefined)process.env.KEKS_PARAGRAF_A3_ANSWERS=prior;
+    }
   });
-  it('kaynak QR-doğrulama CSV cevaplarının SHA-256 özetini korur',()=>{
-    const answers=Array.from({length:50},(_,i)=>
-      paragrafPrintedPageAnswerKey(i+1,Array.from({length:30},(_,j)=>j+1)))
-      .flat().map(x=>x.correctAnswer).join('');
-    expect(answers).toHaveLength(1500);
-    expect(createHash('sha256').update(answers).digest('hex')).toBe(PRINT_ANSWERS_SHA256);
+  it('baskı anahtarı sunucu ortamında verildiyse hash ve 1500 soru doğrulanır',()=>{
+    const packed=process.env.KEKS_PARAGRAF_A3_ANSWERS;
+    if(!packed)return;
+    expect(createHash('sha256').update(packed).digest('hex')).toBe(PRINT_ANSWERS_SHA256);
+    const diagnostics=printedEditionDiagnostics();
+    expect(diagnostics).toMatchObject({loaded:true,testCount:50,totalQuestions:1500,topicRows:10});
+    expect(paragrafPrintedPageAnswerKey(1,[1,2,3,4]).map(x=>x.correctAnswer)).toHaveLength(4);
   });
-  it('001, 008, 009 ve 400 sayfa sınırlarında doğru soru/tanıma erişir',()=>{
-    expect(paragrafPrintedPageAnswerKey(1,[1,2,3,4]).map(x=>x.correctAnswer)).toEqual(['C','B','A','C']);
-    expect(paragrafPrintedPageAnswerKey(1,[29,30])).toHaveLength(2);
-    expect(paragrafPrintedPageAnswerKey(50,[29,30])).toHaveLength(2);
+  it('geçersiz test ve soru numarasına cevap anahtarı vermez',()=>{
     expect(paragrafPrintedPageAnswerKey(0,[1])).toEqual([]);
     expect(paragrafPrintedPageAnswerKey(51,[1])).toEqual([]);
     expect(paragrafPrintedPageAnswerKey(1,[31])).toEqual([]);
-  });
-  it('eski tek-soru çözüm kimliklerinden farklı baskı-kimlikleri üretir',()=>{
-    const first=paragrafPrintedPageAnswerKey(1,[1])[0];
-    expect(first).toMatchObject({id:'KEKS50-00001',topic:'Ana düşünce',correctAnswer:'C'});
-    expect(first.id).not.toBe('00001');
   });
 });
