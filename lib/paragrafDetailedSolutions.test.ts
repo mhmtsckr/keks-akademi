@@ -59,4 +59,37 @@ describe('KEKS Paragraf 1500 question-specific detailed solutions',()=>{
     expect(u).toBe('https://keksakademi.vercel.app/paragraf/ayrintili/01500?k='+
       paragrafDetailedSignature('01500',secret));
   });
+
+  it('teaches every one of the 1,500 questions with original paragraph, source-specific A-E reasoning and feedback',()=>{
+    const types=new Set<string>();
+    for(let n=1;n<=1500;n++){
+      const id=String(n).padStart(5,'0');
+      const q=getParagrafDetailedSolution(id)!;
+      expect(q.question.stem.length).toBeGreaterThan(45);
+      expect(q.question.passage.length).toBeGreaterThan(180);
+      expect(q.teaching.lesson.length).toBeGreaterThan(50);
+      expect(q.teaching.thesis.length).toBeGreaterThan(25);
+      expect(q.teaching.example.length).toBeGreaterThan(25);
+      expect(q.teaching.boundary.length).toBeGreaterThan(25);
+      expect(q.teaching.method).toContain('Kökü tanı');
+      expect(q.teaching.check).toContain('?');
+      types.add(q.teaching.skill);
+      const answerKeys=Object.keys(q.question.choices).sort();
+      const analysisKeys=Object.keys(q.teaching.analysis).sort();
+      expect(answerKeys).toEqual(['A','B','C','D','E']);
+      expect(analysisKeys).toEqual(['A','B','C','D','E']);
+      for(const letter of ['A','B','C','D','E'] as const){
+        const a=q.teaching.analysis[letter];
+        expect(a.text).toBe(q.question.choices[letter]);
+        expect(a.text.length).toBeGreaterThan(7);
+        expect(a.explanation.length).toBeGreaterThan(130);
+        expect(a.explanation).toContain(a.text);
+        expect(a.decision).toBe(letter===q.answer?'DOĞRU':'ELENİR');
+        expect(a.explanation).toContain(letter===q.answer?'DOĞRU':'ELENİR');
+      }
+      expect(Object.values(q.teaching.analysis).filter(x=>x.decision==='DOĞRU')).toHaveLength(1);
+    }
+    expect(types.size).toBe(10);
+  });
+
 });
