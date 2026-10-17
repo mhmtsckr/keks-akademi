@@ -54,8 +54,16 @@ export const PARAGRAF_DETAILED_EDITION='KEKS_TYT_PARAGRAF_A3_V1';
 export const PARAGRAF_DETAILED_TOTAL=1500;
 const TESTS=[t01,t02,t03,t04,t05,t06,t07,t08,t09,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,t32,t33,t34,t35,t36,t37,t38,t39,t40,t41,t42,t43,t44,t45,t46,t47,t48,t49,t50];
 
+export type ParagrafChoiceLetter='A'|'B'|'C'|'D'|'E';
+export type ParagrafTeaching={
+  skill:string;lesson:string;thesis:string;example:string;boundary:string;
+  analysis:Record<ParagrafChoiceLetter,{text:string;decision:string;explanation:string}>;
+  method:string;check:string;
+};
 export type ParagrafDetailedSolution={
   id:string;testNo:number;questionNo:number;topic:string;answer:string;content:string;
+  question:{stem:string;passage:string;choices:Record<ParagrafChoiceLetter,string>};
+  teaching:ParagrafTeaching;
 };
 
 /** Maps ONLY the 50-test print edition, never the legacy 6,000-row solution table. */
