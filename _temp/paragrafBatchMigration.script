@@ -1,0 +1,109 @@
+// Temporary authored helper for batched extraction of the uploaded question PDF.
+// Executed only after verifying its exact Git blob SHA; remove after migration.
+const repo="mhmtsckr/keks-akademi",branch="feat/paragraf-teaching-solutions-20261017";
+const testStart=start,testEnd=Math.min(start+4,50),ref=pdfRef;
+const stems=[
+["Ana düşünce","Bu parçada asıl anlatılmak istenen aşağıdakilerden hangisidir?"],
+["Örtük anlam","Parçada dolaylı olarak vurgulanan düşünce aşağıdakilerden hangisidir?"],
+["Ulaşılamaz yargı","Bu parçadan aşağıdaki yargılardan hangisine ulaşılamaz?"],
+["Kavramsal ayrım","Parçada özellikle hangi ayrım üzerinde durulmaktadır?"],
+["Başlık","Bu parçaya getirilebilecek en uygun başlık aşağıdakilerden hangisidir?"],
+["Kapsam ve koşul","Parçanın sınırlandırdığı yorum aşağıdakilerden hangisidir?"],
+["Düşünceyi temellendirme","Yazar, görüşünü temellendirmek için özellikle hangisinden yararlanmıştır?"],
+["Çıkarım","Bu parçadan aşağıdaki yargılardan hangisine ulaşılabilir?"],
+["Eleştirel tutum","Parçada eleştirilen yaklaşım aşağıdakilerden hangisidir?"],
+["Yazarın amacı","Bu parçanın yazılış amacı aşağıdakilerden hangisidir?"]];
+const lesson={
+"Ana düşünce":"Ana düşünce bütün paragrafı kapsar. Örnek, metnin kanıtıdır; amaç değildir.",
+"Örtük anlam":"Örtük çıkarım açık kanıt ve bağlamdan yapılır; eklenen kesin genellemeler elenir.",
+"Ulaşılamaz yargı":"Olumsuz kökte desteklenen seçenekleri ele; metnin söylemediği veya çürüttüğü yargıyı seç.",
+"Kavramsal ayrım":"İki yaklaşımı karşılaştırırken farkın hangi gerekçeye ve koşula dayandığını bul.",
+"Başlık":"Başlık bütün metnin konusunu kapsamalı; tek olay ya da sınır dışı kesinlik içermemeli.",
+"Kapsam ve koşul":"Yazarın sınırlandırdığı yaklaşım, yanlış ya da eksik bulduğu genellemedir.",
+"Düşünceyi temellendirme":"Sav, örnek ve sınır sırasını takip ederek yazarın kanıtlama yöntemini adlandır.",
+"Çıkarım":"Metinden çıkarılabilir olan yalnız desteklenen yargıdır; varsayım ekleyemezsin.",
+"Eleştirel tutum":"Yazarın eleştirdiği iddia ile metinde benimsediği düzeltmeyi ayır.",
+"Yazarın amacı":"Yazılış amacı yazarın tartışmayla gerçekleştirmek istediği düşünsel iştir."};
+const fix=s=>String(s||"").replace(/\s+/g," ").trim();
+const fold=s=>fix(s).toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9 ]/g," ");
+const isNeg=new Set(["Ulaşılamaz yargı","Kapsam ve koşul","Eleştirel tutum"]);
+function extend(old,q){
+ const m=fix(old.content).match(/2\.\s*Kanıt haritası:\s*Sav:\s*(.*?)\s*Örnek:\s*(.*?)\s*Sınır:\s*(.*?)\s*3\.\s*Çeldirici analizi:/);
+ if(!m)throw Error("proof absent "+q.id);
+ const [sav,ex,limit]=m.slice(1);
+ const choiceAnalysis={};
+ for(const k of "ABCDE"){
+  const c=q.options[k],correct=k===old.answer,quoted="“"+c+"”";
+  let reason;
+  if(correct){
+   if(isNeg.has(q.skill))reason="DOĞRU. "+quoted+" yargısı metnin reddettiği veya temellendirmediği görüştür. Yazarın savı “"+sav+"”; sınırı ise “"+limit+"”. Bu iki dayanak seçenekle örtüşmediği için olumsuz soru kökünün istediği yanıttır.";
+   else if(q.skill==="Düşünceyi temellendirme")reason="DOĞRU. "+quoted+" Yazar “"+sav+"” düşüncesini “"+ex+"” örneğiyle açıklar, ardından “"+limit+"” diyerek tek örneğin sınırlılığını gösterir. Bu, somutlaştırıp sınırlandırma yöntemidir.";
+   else if(q.skill==="Başlık")reason="DOĞRU. "+quoted+" metnin bütününü adlandırır. Konunun ana savı “"+sav+"”; sınırı “"+limit+"”. İkisini bir arada temsil ettiği için yalnız bir örnekten daha kapsamlıdır.";
+   else if(q.skill==="Kavramsal ayrım")reason="DOĞRU. "+quoted+" metindeki ana karşıtlığı anlatır: “"+sav+"” savı ile “"+limit+"” sınırı birlikte, koşulsuz kabul ile gerekçeli değerlendirmeyi ayırır.";
+   else reason="DOĞRU. "+quoted+" genel yargısı “"+sav+"” kanıtıyla desteklenir. Metin ayrıca “"+limit+"” diyerek hangi ölçüde geçerli olduğunu açıklar. Doğru cevap hem kanıtı hem sınırı korur.";
+  }else if(q.skill==="Düşünceyi temellendirme"){
+   if(/sayısal|gösterge/i.test(c))reason="ELENİR. "+quoted+" sayısal veri kullanmayı gerektirir; metinde istatistik dizisi bulunmaz. Somut kanıt “"+ex+"” biçiminde verilmiştir.";
+   else if(/kronolojik|dönemlerdeki adlar/i.test(c))reason="ELENİR. "+quoted+" olayları tarih sırasına dizmeyi gerektirir. Yazar kronoloji değil, “"+ex+"” örneği kullanıyor.";
+   else reason="ELENİR. "+quoted+" anlatılan yönteme uymaz. “"+ex+"” bir örnektir; “"+limit+"” ifadesi onun koşulsuz kurala çevrilmediğini gösterir.";
+  }else if(q.skill==="Başlık"){
+   if(/tek örnek/i.test(c))reason="ELENİR. "+quoted+" metni yalnız örneğe indirger. “"+sav+"” örnekten daha geniş ana meseledir.";
+   else if(/her koşulda/i.test(c))reason="ELENİR. "+quoted+" sınırsız kesinlik içerir; “"+limit+"” cümlesi tam tersine koşulların değişebileceğini gösterir.";
+   else reason="ELENİR. "+quoted+" başlığı metnin ana sorununu kapsamıyor. “"+sav+"” parçada odaklanan düşünceyi gösterir.";
+  }else if(q.skill==="Kavramsal ayrım"){
+   reason="ELENİR. "+quoted+" unsurları metindeki ana ayrım değildir. Yazar “"+sav+"” savını “"+limit+"” sınırıyla karşı karşıya getirir; teknik, kişisel ya da yazım ayrıntıları üzerinde durmaz.";
+  }else if(q.skill==="Yazarın amacı"){
+   reason="ELENİR. "+quoted+" yazarın koşulsuz veya tartışmasız hükme ulaşmak istediğini varsayar. Oysa “"+limit+"” ifadesi ihtimallerin açık bırakıldığını kanıtlar.";
+  }else if(isNeg.has(q.skill)){
+   if(fold(q.paragraph).includes(fold(c).trim()))reason="ELENİR. "+quoted+" doğrudan metinde dile getirilir; dolayısıyla metinden çıkarılabilen, benimsenen bir görüştür. Bu soru kökü "+(q.skill==="Ulaşılamaz yargı"?"çıkarılamayanı":"eleştirilen ya da sınırlandırılanı")+" aradığı için desteklenen görüş işaretlenmez.";
+   else reason="ELENİR. "+quoted+" sorudaki olumsuz köke göre temel reddedilen iddia değildir. Metnin dayanağı “"+sav+"”, yaptığı uyarı “"+limit+"”. Bunları göz önüne alıp asıl eleştirilen yargıyı ayır.";
+  }else if(fold(q.paragraph).includes(fold(c).trim())){
+   reason="ELENİR. "+quoted+" metinde yer alsa da tek bir örnek veya yardımcı ayrıntıdır. Paragrafın ana savını “"+sav+"” cümlesi verir. Örneği genel yargı yerine koyma.";
+  }else if(/\b(her|hiç|hiçbir|daima|mutlaka|bütün|kesin|tümüyle|yalnız|otomatik)\b/i.test(c)){
+   reason="ELENİR. "+quoted+" aşırı kesin ve kapsayıcı bir iddia kurar. “"+limit+"” cümlesi metnin böyle bir zorunluluk ileri sürmediğini gösterir.";
+  }else reason="ELENİR. "+quoted+" için paragrafta yeterli açık dayanak yoktur. Yazarın asıl savı “"+sav+"” olduğundan, metne kendi yorumunu ekleme.";
+  choiceAnalysis[k]={text:c,decision:correct?"DOĞRU":"ELENİR",explanation:reason};
+ }
+ return {...old,question:{stem:q.stem,passage:q.paragraph,choices:q.options},teaching:{skill:q.skill,lesson:lesson[q.skill],thesis:sav,example:ex,boundary:limit,analysis:choiceAnalysis,method:"Kökü tanı → “"+sav+"” savını bul → “"+ex+"” somut örneğini değerlendir → “"+limit+"” sınırını koru → şıkları kökün istediği yargıya göre ele.",check:"“"+limit+"” cümlesi hangi seçeneği geçersiz kılıyor? Kanıt göstererek kendi cümlenle açıkla."}};
+}
+const pages=[];
+for(let p=3+(testStart-1)*8;p<3+testEnd*8;p+=15){
+ const req=[];
+ for(let a=0;a<5;a++){const first=p+3*a+1,last=Math.min(3+testEnd*8,first+2);if(first<=3+testEnd*8)req.push({ref_id:ref,mode:"pages",start_page:first,end_page:last,include_images:false});}
+ const r=await tools.files__read({read:req});
+ for(let j=0;j<req.length;j++){
+  const ss=(r.results[j].content||[]).filter((x,i)=>i%2===1&&typeof x==="string");
+  if(ss.length!==req[j].end_page-req[j].start_page+1)throw Error("PDF read truncated at "+req[j].start_page);
+  for(let z=0;z<ss.length;z++)pages.push({page:req[j].start_page+z-3,text:ss[z]});
+ }
+}
+const questions=[];
+for(const {page,text:raw} of pages){
+ const testNo=Math.floor((page-1)/8)+1,first=((page-1)%8)*4+1;
+ const ms=[...raw.matchAll(/^(\d{2})\.\s+/gm)];
+ if(ms.length!==(page%8===0?2:4))throw Error("page questions "+page);
+ for(let i=0;i<ms.length;i++){
+  const num=first+i;
+  if(Number(ms[i][1])!==num)throw Error("qnum "+page);
+  const b=raw.slice(ms[i].index,i+1<ms.length?ms[i+1].index:undefined),opts=[...b.matchAll(/^([A-E])\)\s+/gm)];
+  if(opts.length!==5)throw Error("options "+page);
+  const h=fix(b.slice(0,opts[0].index)),root=stems.filter(s=>h.includes(s[1]));
+  if(root.length!==1)throw Error("stem mismatch "+page+" "+h.slice(-80));
+  const [skill,stem]=root[0],paragraph=h.slice(0,h.lastIndexOf(stem)).replace(/^\d{2}\.\s*/,"").trim(),options={};
+  for(let j=0;j<5;j++) options[opts[j][1]]=fix(b.slice(opts[j].index+opts[j][0].length,j+1<5?opts[j+1].index:undefined).split(/KISA COZUM QR|AYRINTILI COZUM QR|SAYFA QR\s*\||TEST\s+\d+\s*-\s*KİŞİSEL ANALİZ|KEKS\s*\/\s*PARAGRAF DERSİ|KEKS Akademi\s+·/)[0]);
+  questions.push({id:String((testNo-1)*30+num).padStart(5,"0"),testNo,questionNo:num,skill,stem,paragraph,options});
+ }
+}
+if(questions.length!==(testEnd-testStart+1)*30)throw Error("expected "+(testEnd-testStart+1)*30+", got "+questions.length);
+const fetches=await Promise.all(Array.from({length:testEnd-testStart+1},(_,j)=>tools.mcp__GitHub__fetch_file({repository_full_name:repo,ref:branch,path:"data/paragraf-solutions/test-"+String(testStart+j).padStart(2,"0")+".json"})));
+const entries=[];
+for(let j=0;j<fetches.length;j++){
+ const testNo=testStart+j,src=JSON.parse(fetches[j].result.content);
+ const enriched=src.questions.map((old,k)=>{const q=questions[j*30+k];if(q.id!==old.id||q.questionNo!==old.questionNo)throw Error("id "+q.id);return extend(old,q)});
+ entries.push({path:"data/paragraf-solutions/test-"+String(testNo).padStart(2,"0")+".json",type:"blob",mode:"100644",content:JSON.stringify({...src,questions:enriched})});
+}
+const parent=JSON.parse((await tools.mcp__GitHub__fetch({url:"https://api.github.com/repos/"+repo+"/branches/"+branch})).result.content).commit.sha;
+const tree=JSON.parse((await tools.mcp__GitHub__fetch({url:"https://api.github.com/repos/"+repo+"/git/commits/"+parent})).result.content).tree.sha;
+const tr=await tools.mcp__GitHub__create_tree({repository_full_name:repo,base_tree_sha:tree,tree_elements:entries});
+const cm=await tools.mcp__GitHub__create_commit({repository_full_name:repo,parent_sha:parent,tree_sha:tr.result.sha,message:"feat(paragraf): pedagogical five-choice solutions for tests "+testStart+"-"+testEnd});
+const r=await tools.mcp__GitHub__update_ref({repository_full_name:repo,branch_name:branch,expected_sha:parent,sha:cm.result.sha});
+return {success:r.result.success,commit:cm.result.sha,from:testStart,to:testEnd,questions:questions.length};
