@@ -92,7 +92,7 @@ export function StudentRubricActions(){
     {action.reviewHistory&&action.reviewHistory.length>1&&<details>
       <summary>Önceki incelemeler ({action.reviewHistory.length})</summary>
       {action.reviewHistory.map((h,i)=><p key={i}>{h.attempt}. deneme: {h.decision==='ACCEPT'?'Kabul':'Yeniden çalışma'} · {h.feedback}</p>)}
-    </details>
+    </details>}
    </div>)}</div>
   </details>}
   <small className="muted">Tamamlandı kaydı, bilginin kalıcı öğrenildiği anlamına gelmez. Koçun yeni bir durumda tekrar ölçebilir.</small>
