@@ -12,6 +12,7 @@ import { isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { AccountSecurity } from '@/app/components/AccountSecurity';
 import { CoachMorningBrief } from '@/app/components/CoachMorningBrief';
+import { CoachTymmPerformanceInbox } from '@/app/components/CoachTymmPerformanceInbox';
 import { CoachInterventionLearning } from '@/app/components/CoachInterventionLearning';
 import { CoachCohortAnalytics } from '@/app/components/CoachCohortAnalytics';
 import { CoachQualityOperations } from '@/app/components/CoachQualityOperations';
@@ -160,6 +161,10 @@ export default async function CoachPage() {
       <CoachMorningBrief/>
     </section>
 
+    <section id="performance-inbox" className="section section-anchor">
+      <CoachTymmPerformanceInbox/>
+    </section>
+
     <section id="intervention-learning" className="section section-anchor">
       <CoachInterventionLearning/>
     </section>
@@ -168,6 +173,7 @@ export default async function CoachPage() {
       <PanelNavigator roleLabel="KEKS Partner Koç" groups={[
         {label:'KOÇ KOMUTA & ÖNCELİKLER',description:'Bugün müdahale edilmesi gereken öğrenci ve görevleri gör.',items:[
           {href:'#morning-brief',title:'Morning Brief',description:'Bugün müdahale gerektiren öğrenciler',badge:'BUGÜN'},
+          {href:'#performance-inbox',title:'Performans İnceleme Kutusu',description:'Tüm öğrencilerde bekleyen rubrikler ve açılan gecikmeli görevler'},
           {href:'#intervention-learning',title:'Müdahale Etkisi',description:'Koçluk kararlarının performans değişimleriyle ilişkisi'},
           {href:'#partner-koc-profili',title:'Partner Koç Profilim',description:'Uzmanlık, takip edilen düzeyler, kontenjan ve KEKS standartları',badge:'AĞ'},
           {href:'#koc-kalite',title:'Koç Kalite Sistemi',description:'Yanıt süresi, görüşme tamamlama, müdahale ve rapor operasyonları',badge:'CANLI'},
