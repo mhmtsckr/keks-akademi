@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect,useState} from 'react';
+import {AdminPerformanceQuality} from './AdminPerformanceQuality';
 
 type Lesson={
   id:string;version:number;subject:string;title:string;skill:string;
@@ -64,6 +65,7 @@ export function AdminMicroLessonReviews(){
    </div>
    <span className="pill">{lessons.filter(x=>x.publication.status==='APPROVED').length}/{lessons.length} onaylı</span>
   </div>
+  <AdminPerformanceQuality/>
   {coverage&&<div className="card" style={{marginBottom:16}}>
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
