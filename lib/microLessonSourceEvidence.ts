@@ -5,6 +5,7 @@ import {findAdditionalTymmOutcome} from './verifiedAdditionalTymmOutcomes';
 import {findVerifiedGeographyOutcome} from './verifiedGrade10GeographyOutcomes';
 import {findVerifiedLiteratureTheme} from './verifiedGrade911LiteratureThemes';
 import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
+import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -15,6 +16,11 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const science=lesson.sourceThemeId?findGrade7ScienceOutcome(lesson.sourceThemeId):null;
+ if(science&&science.subject===lesson.subject&&lesson.targetGrades?.includes(7)&&lesson.sourceUrl===science.url)
+  return {themeVerified:true,outcomeCodeVerified:true,theme:science.title,
+    outcomeCode:science.code,sourceUrl:science.url,checkedOn:science.checkedOn,
+    interpretation:'MEB 2026–2027 7. sınıf Fen Bilimleri ünite ve ilgili tek öğrenme çıktısı doğrulandı. KEKS özgün pilot soruları tüm çıktı becerilerini ölçmez; resmî veya branş uzmanı onayı değildir.'};
  const math=lesson.sourceThemeId?findVerifiedTymmMathOutcome(lesson.sourceThemeId):null;
  if(math&&lesson.subject===math.subject&&lesson.targetGrades?.includes(math.grade)&&lesson.sourceUrl===math.url)
   return {themeVerified:true,outcomeCodeVerified:true,theme:math.theme,outcomeCode:math.code,sourceUrl:math.url,checkedOn:math.checkedOn,interpretation:'MEB TYMM 2026–2027 Matematik öğrenme çıktısı kodu resmî kaynaktan doğrulandı; dört seçenekli KEKS alıştırmaları çıktının tüm muhakeme/performans kanıtlarını ölçmez ve MEB veya uzman onayı değildir.'};
