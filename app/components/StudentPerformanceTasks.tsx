@@ -10,7 +10,7 @@ type Task={id:string;grade:number;subject:string;outcomeCode:string;title:string
  instruction:string;steps:string[];evidencePrompt:string;safety:string;
  sourceUrl:string;criteria:Criterion[];contentStatus:'PILOT';sourceEvidence:{outcomeCodeVerified:boolean}};
 type Submission={id:string;taskId:string;status:'REVIEWED'|'WAITING_FOR_COACH';submittedAt:string;
- response:string;observations:string;review?:{total?:number;max?:number;feedback?:string;nextAction?:string}|null};
+ response:string;observations:string;review?:{total?:number;max?:number;feedback?:string;nextAction?:string;criterionEvidence?:Record<string,string>}|null};
 const KIND_LABEL:Record<string,string>={OPEN_RESPONSE:'Açık uçlu',EXPERIMENT_DESIGN:'Deney tasarımı',MODEL:'Model kurma'};
 const ACTION_LABEL:Record<string,string>={RETRY_WITH_FEEDBACK:'Geri bildirime göre yeniden çalış',
  DIFFERENT_CONTEXT:'Farklı bağlamda yeniden dene',DISCUSS_WITH_COACH:'Koç görüşmesinde ele al'};
@@ -119,7 +119,10 @@ export function StudentPerformanceTasks(){
    <div className="stack" style={{marginTop:12}}>
     {history.map(h=><div key={h.id} className="notice">
      <strong>{tasks.find(t=>t.id===h.taskId)?.title||'Performans görevi'}</strong> · {new Date(h.submittedAt).toLocaleDateString('tr-TR')} · {h.status==='REVIEWED'?'Koç değerlendirdi':'Koç incelemesi bekliyor'}
-     {h.review&&<p><strong>Rubrik:</strong> {h.review.total}/{h.review.max} · <strong>Geribildirim:</strong> {h.review.feedback||'—'} · {ACTION_LABEL[h.review.nextAction||'']||'Sonraki adım belirtilmedi'}</p>}
+     {h.review&&<><p><strong>Rubrik:</strong> {h.review.total}/{h.review.max} · <strong>Geribildirim:</strong> {h.review.feedback||'—'} · {ACTION_LABEL[h.review.nextAction||'']||'Sonraki adım belirtilmedi'}</p>
+      {h.review.criterionEvidence&&Object.entries(h.review.criterionEvidence).length>0&&<ul>
+       {Object.entries(h.review.criterionEvidence).map(([id,note])=><li key={id}><strong>{tasks.find(t=>t.id===h.taskId)?.criteria.find(c=>c.id===id)?.label||id}:</strong> {note}</li>)}
+      </ul>}</>}
     </div>)}
    </div>
   </details>}
