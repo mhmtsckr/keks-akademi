@@ -426,7 +426,7 @@ export const TDE_REMAINING_THEME_PILOTS:readonly MicroLesson[]=[
           "D": "Karşıt amaç taşıyan sözler ve eylemler"
         },
         "answer": "D",
-        "explanation": "Çatışma kişiler arasındaki karşıt istek ve davranışlarda belirir."
+        "explanation": "Tiyatrodaki çatışma, kişiler arasındaki karşıt istek ve davranışların sahnede karşılaşmasıyla belirginleşir."
       }
     ],
     "contentStatus": "PILOT",
