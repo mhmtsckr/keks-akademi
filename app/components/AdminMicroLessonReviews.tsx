@@ -81,7 +81,22 @@ export function AdminMicroLessonReviews(){
        </div>)}
       </div>
     </details>)}
-        {coverage.verifiedMath&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+        {coverage.verifiedGrade7Science&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>MEB TYMM · 7. sınıf Fen Bilimleri</strong> ·
+        {' '+coverage.verifiedGrade7Science.totalOfficialUnits} resmî ünite ·
+        {' '+coverage.verifiedGrade7Science.verifiedSampleOutcomes} doğrulanmış örnek çıktı ·
+        {' '+coverage.verifiedGrade7Science.linkedPilotLessons} pilot ders
+      </summary>
+      <p className="muted">{coverage.verifiedGrade7Science.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+        {(coverage.verifiedGrade7Science.units||[]).map((u:any)=><div key={u.outcomeCode}>
+          <strong>{u.unit}. ünite: {u.title}</strong> · {u.outcomeCode}
+          <p className="muted">{u.skill} · {u.linkedPilotLessons} pilot mikro ders · {u.scheduledHours} ders saati</p>
+          <a href={u.sourceUrl} target="_blank" rel="noopener noreferrer">MEB resmî ünite ve çıktı kaynağı</a>
+        </div>)}
+      </div>
+    </details>}
+            {coverage.verifiedMath&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>MEB TYMM · 9, 10 ve 11. sınıf Matematik</strong> ·
        {' '+coverage.verifiedMath.totalOfficialOutcomes} doğrulanmış öğrenme çıktısı ·
        {' '+coverage.verifiedMath.linkedPilotLessons} pilot mikro ders
