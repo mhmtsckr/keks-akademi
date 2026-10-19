@@ -404,7 +404,7 @@ export const TDE_REMAINING_THEME_PILOTS:readonly MicroLesson[]=[
           "D": "Seyircinin tüm yorumlarını açıklamak"
         },
         "answer": "C",
-        "explanation": "Parantezli ifade sahne yönergesidir."
+        "explanation": "Parantez içindeki sözler, oyuncunun sahnede nasıl hareket edeceğini gösteren sahne yönergesidir."
       },
       {
         "prompt": "'Masada iki fincan vardı. Biri yıllardır kullanılmıyordu.' gibi küçürek anlatı neyle etki yaratabilir?",
