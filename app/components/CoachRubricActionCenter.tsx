@@ -5,12 +5,15 @@ type Suggestion={criterionId:string;criterionLabel:string;score:number;outOf:num
 type Review={id:string;taskId:string;grade:number;subject:string;title:string;phase:string;reviewedAt:string;suggestions:Suggestion[]};
 type Assignment={id:string;reviewSubmissionId:string;criterionId:string;status:string;taskId:string;
  criterionLabel:string;assignment:string;expectedEvidence:string;minutes:number;coachNote:string;
- reflection:string|null;assignedAt:string;completedAt:string|null};
+ reflection:string|null;assignedAt:string;completedAt:string|null;attemptCount?:number;
+ review?:{decision:'ACCEPT'|'REVISE';feedback:string;reviewedAt:string}|null;
+ reviewHistory?:{attempt:number;decision:string;feedback:string;reviewedAt:string}[]};
 
 export function CoachRubricActionCenter({studentId,reviewVersion}:{studentId:string;reviewVersion:string}){
  const [reviews,setReviews]=useState<Review[]>([]);
  const [assignments,setAssignments]=useState<Assignment[]>([]);
  const [notes,setNotes]=useState<Record<string,string>>({});
+ const [reviewNotes,setReviewNotes]=useState<Record<string,string>>({});
  const [busy,setBusy]=useState('');
  const [msg,setMsg]=useState('');
  async function load(){
@@ -35,6 +38,21 @@ export function CoachRubricActionCenter({studentId,reviewVersion}:{studentId:str
    if(!r.ok)throw new Error(j.error||'Atanamadı.');
    setMsg(j.message);await load();
   }catch(e){setMsg('Hata: '+(e instanceof Error?e.message:'Atanamadı.'));}
+  finally{setBusy('');}
+ }
+ async function review(action:Assignment,decision:'ACCEPT'|'REVISE'){
+  const note=(reviewNotes[action.id]||'').trim();
+  if(note.length<30){setMsg('Koç incelemesi için en az 30 karakter somut gerekçe yazılmalı.');return;}
+  setBusy(action.id);setMsg('');
+  try{
+   const r=await fetch('/api/coach/students/'+studentId+'/performance-actions',{
+     method:'PATCH',headers:{'content-type':'application/json'},
+     body:JSON.stringify({assignmentId:action.id,decision,feedback:note})
+   });
+   const j=await r.json();
+   if(!r.ok)throw new Error(j.error||'Kanıt değerlendirilemedi.');
+   setMsg(j.message);setReviewNotes(prev=>({...prev,[action.id]:''}));await load();
+  }catch(e){setMsg('Hata: '+(e instanceof Error?e.message:'İnceleme yapılamadı.'));}
   finally{setBusy('');}
  }
  const needed=reviews.flatMap(r=>r.suggestions.filter(s=>!s.assigned).map(s=>({review:r,suggestion:s})));
@@ -68,10 +86,37 @@ export function CoachRubricActionCenter({studentId,reviewVersion}:{studentId:str
    <summary>Atanan telafi çalışmaları ({assignments.length})</summary>
    <div className="stack">
     {assignments.slice(0,30).map(a=><div className="notice" key={a.id}>
-     <strong>{a.status==='DONE'?'Öğrenci tamamladı':'Öğrenci çalışması bekleniyor'}</strong> · {a.criterionLabel}
+     <strong>{a.status==='VERIFIED'?'Koç kanıtı kabul etti':
+       a.status==='SUBMITTED_FOR_REVIEW'?'Koç incelemesi bekliyor':
+       a.status==='REVISION_REQUIRED'?'Öğrenciden yeniden çalışma istendi':
+       a.status==='COACH_DISCUSSION_REQUIRED'?'Koç görüşmesi gerekiyor':
+       a.status==='DONE'?'Eski tamamlandı bildirimi (koç doğrulaması yok)':
+       'Öğrenci çalışması bekleniyor'}</strong> · {a.criterionLabel}
      <p>{a.assignment}</p>
      <p className="muted">Koç notu: {a.coachNote}</p>
      {a.reflection&&<p><strong>Öğrenci kanıtı:</strong> {a.reflection}</p>}
+     {a.review&&<p><strong>Son koç kararı:</strong> {a.review.decision==='ACCEPT'?'Kabul':'Yeniden çalışma'} · {a.review.feedback}</p>}
+     {a.status==='SUBMITTED_FOR_REVIEW'&&<>
+       <p className="muted"><strong>Deneme:</strong> {a.attemptCount||1}/3. Açıklamayı yalnız somut kanıta göre değerlendirin.</p>
+       <label className="field"><span>Öğrenci kanıtına yönelik gerekçeli inceleme (en az 30 karakter)</span>
+         <textarea rows={3} minLength={30} maxLength={1800}
+           value={reviewNotes[a.id]||''}
+           onChange={e=>setReviewNotes(prev=>({...prev,[a.id]:e.target.value}))}
+           placeholder="Kanıtta hangi açıklama yeterli veya eksik? Öğrenci sonraki çalışmada ne yapmalı?"/>
+       </label>
+       <div className="row" style={{gap:8,flexWrap:'wrap'}}>
+        <button className="btn primary" type="button"
+          disabled={busy===a.id||(reviewNotes[a.id]||'').trim().length<30}
+          onClick={()=>void review(a,'ACCEPT')}>
+          {busy===a.id?'Kaydediliyor…':'Kanıtı Kabul Et'}
+        </button>
+        <button className="btn" type="button"
+          disabled={busy===a.id||(reviewNotes[a.id]||'').trim().length<30}
+          onClick={()=>void review(a,'REVISE')}>
+          {Number(a.attemptCount||1)>=3?'Koç Görüşmesine Yönlendir':'Yeniden Çalışma İste'}
+        </button>
+       </div>
+     </>}
     </div>)}
    </div>
   </details>}
