@@ -6,8 +6,14 @@ import {readJson,withApiErrors,HttpError} from '@/lib/apiGuard';
 import {performanceTaskById} from '@/lib/tymmPerformanceTasks';
 import {readableRubric} from '@/lib/tymmDelayedTransfer';
 import {interventionFor,suggestRubricInterventions} from '@/lib/tymmRubricInterventions';
+import {actionAttempts,actionReviews,reviewActionEvidence} from '@/lib/tymmActionEvidenceReview';
 
 type Ctx={params:Promise<{id:string}>};
+const reviewSchema=z.object({
+ assignmentId:z.string().min(5).max(100),
+ decision:z.enum(['ACCEPT','REVISE']),
+ feedback:z.string().trim().min(30).max(1800)
+}).strict();
 const schema=z.object({
  reviewSubmissionId:z.string().min(5).max(100),
  criterionId:z.string().min(2).max(60),
@@ -48,6 +54,9 @@ async function GET__handler(_req:Request,{params}:Ctx){
    assignment:String(p.assignment||''),expectedEvidence:String(p.expectedEvidence||''),
    minutes:Number(p.minutes||0),coachNote:String(p.coachNote||''),
    reflection:typeof p.reflection==='string'?p.reflection:null,
+   attemptCount:actionAttempts(p).length,review:p.review||null,
+   reviewHistory:actionReviews(p).map(r=>({attempt:r.attempt,decision:r.decision,feedback:r.feedback,reviewedAt:r.reviewedAt})),
+   submittedAt:typeof p.submittedAt==='string'?p.submittedAt:null,
    assignedAt:row.createdAt,completedAt:typeof p.completedAt==='string'?p.completedAt:null}];
  });
  const reviewRows=rows.flatMap(row=>{
@@ -112,5 +121,42 @@ async function POST__handler(req:Request,{params}:Ctx){
   message:'Somut telafi çalışması öğrenciye atandı. Öğrencinin tamamlaması bilgi hâkimiyetini otomatik yükseltmez.'
  },{status:201});
 }
+async function PATCH__handler(req:Request,{params}:Ctx){
+ const {id}=await params;
+ const {user}=await ownedStudent(id);
+ const input=await readJson(req,reviewSchema);
+ const row=await db.dailyLog.findFirst({
+  where:{id:input.assignmentId,studentId:id},
+  select:{id:true,payload:true}
+ });
+ if(!row)throw new HttpError(404,'Bu öğrenciye ait telafi çalışması bulunamadı.');
+ const payload=obj(row.payload);
+ if(payload.type!=='TYMM_RUBRIC_ACTION')throw new HttpError(404,'Kayıt bir telafi çalışması değil.');
+ if(payload.status!=='SUBMITTED_FOR_REVIEW')throw new HttpError(409,'Bu çalışma koç incelemesine açık değil.');
+ // A current assigned coach can review the student. No automated accept is allowed.
+ let next;
+ try{
+  next=reviewActionEvidence(payload,{
+   decision:input.decision,feedback:input.feedback,
+   reviewedAt:new Date().toISOString(),
+   coachUserId:user.id,coachProfileId:user.coachProfile!.id
+  });
+ }catch(e){throw new HttpError(409,e instanceof Error?e.message:'Rubrik kanıtı değerlendirilemedi.');}
+ const updated=await db.dailyLog.updateMany({
+  where:{id:row.id,studentId:id,
+    payload:{path:['status'],equals:'SUBMITTED_FOR_REVIEW'}},
+  data:{payload:next}
+ });
+ if(!updated.count)throw new HttpError(409,'Bu kanıt başka bir inceleme sırasında işlendi.');
+ return NextResponse.json({ok:true,assignmentId:row.id,status:next.status,
+  review:next.review,
+  message:next.status==='VERIFIED'?
+   'Öğrencinin sunduğu kanıt koç tarafından kabul edildi. Kalıcı öğrenme otomatik işaretlenmedi.':
+   next.status==='COACH_DISCUSSION_REQUIRED'?
+   'Üçüncü çalışma da yeterli görülmedi. Yeni gönderim yerine koç görüşmesi önerildi.':
+   'Öğrencinin kanıtı değerlendirilerek eksik yönler için yeniden çalışma istendi.'
+ });
+}
 export const GET=withApiErrors(GET__handler);
 export const POST=withApiErrors(POST__handler);
+export const PATCH=withApiErrors(PATCH__handler);
