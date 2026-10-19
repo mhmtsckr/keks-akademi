@@ -33,7 +33,13 @@ async function GET__handler(req:Request){
   orderBy:{createdAt:'desc'},take:80,
   select:{id:true,createdAt:true,payload:true}
  });
- const history=logs.map(log=>{
+ const pendingLogs=await db.dailyLog.findMany({
+   where:{studentId:user.student.id,payload:{path:['type'],equals:'TYMM_PERFORMANCE_SUBMISSION'}},
+   select:{payload:true}
+ });
+ const pendingTaskIds=[...new Set(pendingLogs.map(row=>String(object(row.payload).taskId||'')))]
+   .filter(id=>tasks.some(task=>task.id===id));
+  const history=logs.map(log=>{
   const p=object(log.payload);
   if(!['TYMM_PERFORMANCE_SUBMISSION','TYMM_PERFORMANCE_REVIEWED'].includes(String(p.type)))return null;
   if(!tasks.some(t=>t.id===p.taskId&&t.version===p.taskVersion))return null;
@@ -46,7 +52,7 @@ async function GET__handler(req:Request){
  }).filter(Boolean);
  return NextResponse.json({
    ok:true,curriculumContext:context,
-   tasks,history,
+   tasks,history,pendingTaskIds,
    note:'Puanlama yalnız yetkili koçun rubrik değerlendirmesiyle yapılır. Çalışmayı teslim etmek bilgi hâkimiyetini veya tekrar takvimini otomatik değiştirmez.'
  });
 }
@@ -68,11 +74,11 @@ async function POST__handler(req:Request){
    // Serialize submissions for one student and task. The weekly limit must not race.
    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${studentId}),hashtext(${task.id})) IS NULL AS acquired`;
    const weeklyStart=new Date(Date.now()-7*86400000);
-   const taskMatch={payload:{path:['taskId'],equals:task.id}} as const;
+   const taskMatch={payload:{path:['taskId'],equals:task.id}};
    const baselineTypes={OR:[
      {payload:{path:['type'],equals:'TYMM_PERFORMANCE_SUBMISSION'}},
      {payload:{path:['type'],equals:'TYMM_PERFORMANCE_REVIEWED'}}
-   ]} as const;
+   ]};
    const [recentCount,pending]=await Promise.all([
      tx.dailyLog.count({where:{studentId,createdAt:{gte:weeklyStart},AND:[taskMatch,baselineTypes]}}),
      tx.dailyLog.findFirst({where:{studentId,AND:[
