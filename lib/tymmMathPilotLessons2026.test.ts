@@ -51,7 +51,7 @@ describe('2026–27 MEB TYMM kaynaklı 9–11 matematik mikro dersleri',()=>{
   const expected:{
    [id:string]:readonly string[]
   }={
-   'math-g9-empirical-probability-v1':['23/40','%25','%24','Bu örneklemde mavinin göreli sıklığı %47'],
+   'math-g9-empirical-probability-v1':['23/40','%25','%24','Bu örneklemde mavinin göreli sıklığı %47'dir],
    'math-g9-theoretical-probability-v1':['1/3','1/4','3/5','3/8'],
    'math-g10-prime-divisors-v1':['9','10','6','10'],
    'math-g10-coordinate-distance-v1':['5','(4,6)','(1,4)','6'],
