@@ -79,7 +79,21 @@ export function AdminMicroLessonReviews(){
        </div>)}
       </div>
     </details>)}
-        {coverage.verifiedGeography&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+        {coverage.verifiedMath&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>MEB TYMM · 9, 10 ve 11. sınıf Matematik</strong> ·
+       {' '+coverage.verifiedMath.totalOfficialOutcomes} doğrulanmış öğrenme çıktısı ·
+       {' '+coverage.verifiedMath.linkedPilotLessons} pilot mikro ders
+      </summary>
+      <p className="muted">{coverage.verifiedMath.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+        {(coverage.verifiedMath.outcomes||[]).map((x:any)=><div key={x.code}>
+          <strong>{x.grade}. sınıf · {x.code}</strong> — {x.theme}
+          <p className="muted">{x.skill} · {x.linkedPilotLessons} çözümlü mikro ders</p>
+          <a href={x.sourceUrl} target="_blank" rel="noopener noreferrer">MEB resmî öğrenme çıktısı</a>
+        </div>)}
+      </div>
+    </details>}
+            {coverage.verifiedGeography&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>MEB TYMM · 10. sınıf Coğrafya</strong> ·
        {' '+coverage.verifiedGeography.distinctThemes} tema ·
        {' '+coverage.verifiedGeography.totalOfficialOutcomes} resmî çıktı ·
