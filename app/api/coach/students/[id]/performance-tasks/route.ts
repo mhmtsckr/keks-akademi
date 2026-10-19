@@ -32,11 +32,23 @@ async function GET__handler(_req:Request,{params}:ApiContext){
  const {id}=await params;
  const {student}=await ownedStudent(id);
  if(!student)return NextResponse.json({error:'Bu öğrenci için koç yetkisi bulunamadı.'},{status:403});
- const rows=await db.dailyLog.findMany({
-  where:{studentId:id,payload:{path:['type'],string_contains:'TYMM_'}},
-  orderBy:{createdAt:'desc'},take:100,
-  select:{id:true,createdAt:true,payload:true}
- });
+ const [recentRows,pendingRows]=await Promise.all([
+  db.dailyLog.findMany({
+   where:{studentId:id,payload:{path:['type'],string_contains:'TYMM_'}},
+   orderBy:{createdAt:'desc'},take:100,
+   select:{id:true,createdAt:true,payload:true}
+  }),
+  // Fetch pending work from oldest first; long historical activity must not starve it.
+  db.dailyLog.findMany({
+   where:{studentId:id,OR:[
+    {payload:{path:['type'],equals:'TYMM_PERFORMANCE_SUBMISSION'}},
+    {payload:{path:['type'],equals:'TYMM_TRANSFER_SUBMISSION'}}
+   ]},
+   orderBy:{createdAt:'asc'},take:100,
+   select:{id:true,createdAt:true,payload:true}
+  })
+ ]);
+ const rows=[...new Map([...recentRows,...pendingRows].map(row=>[row.id,row])).values()];
  const submissions=rows.flatMap(log=>{
   const p=obj(log.payload),type=String(p.type||'');
   if(!['TYMM_PERFORMANCE_SUBMISSION','TYMM_PERFORMANCE_REVIEWED','TYMM_TRANSFER_SUBMISSION','TYMM_TRANSFER_REVIEWED'].includes(type))return [];
