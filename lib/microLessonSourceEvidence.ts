@@ -22,6 +22,15 @@ export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
     outcomeCode:literature.outcomeCode,sourceUrl:literature.sourceUrl,checkedOn:literature.checkedOn,
     interpretation:'MEB 2026–2027 Türk Dili ve Edebiyatı tema ve öğrenme çıktısı kodu doğrulandı. Bu mikro alıştırma tek başına okuma/yazma/konuşma performansını eksiksiz ölçmez; öğretmen ve MEB onayı değildir.'
    };
+  // A verified MEB theme title is evidence of scope, not a verified
+  // learning-outcome code. The two states must never be conflated.
+  if(literature&&literature.verification==='THEME_TITLE'&&literature.subject===lesson.subject
+    &&lesson.targetGrades?.includes(literature.grade)&&literature.sourceUrl===lesson.sourceUrl)
+    return {
+      themeVerified:true,outcomeCodeVerified:false,theme:literature.theme,
+      outcomeCode:null,sourceUrl:literature.sourceUrl,checkedOn:literature.checkedOn,
+      interpretation:'MEB 2026–2027 tema başlığı doğrulandı. Bu mikro ders KEKS tarafından hazırlanmış konu/beceri alıştırmasıdır; resmî öğrenme çıktısı kodu eşleştirmesi ve alan uzmanı incelemesi bekleniyor.'
+    };
   const geo=lesson.sourceThemeId?findVerifiedGeographyOutcome(lesson.sourceThemeId):null;
  if(geo&&geo.subject===lesson.subject&&lesson.targetGrades?.includes(geo.grade)&&lesson.sourceUrl===geo.url)
    return {

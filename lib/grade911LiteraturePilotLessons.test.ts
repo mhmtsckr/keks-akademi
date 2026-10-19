@@ -68,10 +68,10 @@ describe('2026–2027 Türk Dili ve Edebiyatı 9/10/11 resmî temalar',()=>{
   const c=microLessonCoverageSnapshot();
   expect(c.verifiedLiteraturePrograms).toHaveLength(3);
   expect(c.verifiedLiteraturePrograms.reduce((n,x)=>n+x.totalOfficialThemes,0)).toBe(12);
-  expect(c.verifiedLiteraturePrograms.reduce((n,x)=>n+x.linkedPilotLessons,0)).toBe(6);
+  expect(c.verifiedLiteraturePrograms.reduce((n,x)=>n+x.linkedPilotLessons,0)).toBe(12);
   expect(c.verifiedLiteraturePrograms.reduce((n,x)=>n+x.verifiedOutcomeContexts,0)).toBe(6);
-  expect(c.totalLessons).toBe(60);
-  expect(c.totalExercises).toBe(240);
+  expect(c.totalLessons).toBe(66);
+  expect(c.totalExercises).toBe(264);
   expect(c.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
  });
 });
