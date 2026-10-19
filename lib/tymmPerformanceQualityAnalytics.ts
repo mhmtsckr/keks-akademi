@@ -3,6 +3,7 @@
  * Cohort = submissions created within query window; NOT all historical learners.
  * Never serialize student names, raw answers, notes or the underlying log IDs.
  */
+import {readableRubric} from './tymmDelayedTransfer';
 export type PerformanceLogRow={createdAt:Date;payload:unknown};
 type Phase='BASELINE'|'TRANSFER';
 type Group={grade:number;subject:string;submissions:number;awaitingCoach:number;over48Hours:number;reviewed:number;transferReviewed:number};
@@ -59,9 +60,7 @@ export function performanceQualitySnapshot(rows:readonly PerformanceLogRow[],asO
   if(isTransfer){transferReviewed++;if(group)group.transferReviewed++;}
   else baselineReviewed++;
   const rev=record(p.review),scores=Array.isArray(rev.criterionScores)?rev.criterionScores:[];
-  if(rev.max===8&&Number.isInteger(rev.total)&&scores.length===4&&
-    scores.every(x=>{const c=record(x);return Number.isInteger(c.score)&&Number(c.score)>=0&&Number(c.score)<=2;})&&
-    scores.reduce<number>((n,x)=>n+Number(record(x).score),0)===rev.total)validRubrics++;
+  if(readableRubric(rev)!==null)validRubrics++;
   const lagMs=reviewedAt(rev.reviewedAt,row.createdAt);
   if(lagMs!==null){
     const lag=lagMs-row.createdAt.getTime();
