@@ -4,6 +4,7 @@ import {findGrade56Theme} from './verifiedGrade56Themes';
 import {findAdditionalTymmOutcome} from './verifiedAdditionalTymmOutcomes';
 import {findVerifiedGeographyOutcome} from './verifiedGrade10GeographyOutcomes';
 import {findVerifiedLiteratureTheme} from './verifiedGrade911LiteratureThemes';
+import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -14,6 +15,9 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const math=lesson.sourceThemeId?findVerifiedTymmMathOutcome(lesson.sourceThemeId):null;
+ if(math&&lesson.subject===math.subject&&lesson.targetGrades?.includes(math.grade)&&lesson.sourceUrl===math.url)
+  return {themeVerified:true,outcomeCodeVerified:true,theme:math.theme,outcomeCode:math.code,sourceUrl:math.url,checkedOn:math.checkedOn,interpretation:'MEB TYMM 2026–2027 Matematik öğrenme çıktısı kodu resmî kaynaktan doğrulandı; dört seçenekli KEKS alıştırmaları çıktının tüm muhakeme/performans kanıtlarını ölçmez ve MEB veya uzman onayı değildir.'};
  const literature=lesson.sourceThemeId?findVerifiedLiteratureTheme(lesson.sourceThemeId):null;
  if(literature&&literature.verification==='OUTCOME_CODE'&&literature.subject===lesson.subject
   &&lesson.targetGrades?.includes(literature.grade)&&literature.sourceUrl===lesson.sourceUrl)
