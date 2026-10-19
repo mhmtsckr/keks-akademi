@@ -50,7 +50,7 @@ export const TYMM_MATH_PILOT_LESSONS:readonly MicroLesson[]=[
           "D": "%50"
         },
         "answer": "A",
-        "explanation": "12/50 = 0,24 = %24."
+        "explanation": "Toplam 50 denemenin 12'sinde sarı gözlendiğinden göreli sıklık 12/50 = 0,24 = %24'tür."
       },
       {
         "prompt": "100 çekilişin 47'sinde mavi top gözlenmiştir. Hangisi kesin olarak söylenebilir?",
@@ -185,7 +185,7 @@ export const TYMM_MATH_PILOT_LESSONS:readonly MicroLesson[]=[
           "D": "10"
         },
         "answer": "D",
-        "explanation": "(4+1)(1+1)=5×2=10."
+        "explanation": "80 sayısında 2'nin üssü 0–4, 5'in üssü 0–1 seçilebilir; (4+1)(1+1)=10 farklı pozitif bölen vardır."
       },
       {
         "prompt": "45 = 3² × 5 sayısının pozitif bölen sayısı kaçtır?",
