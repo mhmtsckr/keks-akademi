@@ -12,6 +12,7 @@ import {VERIFIED_GRADE56_THEMES} from './verifiedGrade56Themes';
 import {VERIFIED_ADDITIONAL_TYMM_OUTCOMES} from './verifiedAdditionalTymmOutcomes';
 import {VERIFIED_GRADE10_GEOGRAPHY} from './verifiedGrade10GeographyOutcomes';
 import {VERIFIED_GRADE9_11_TDE_THEMES} from './verifiedGrade911LiteratureThemes';
+import {VERIFIED_TYMM_MATH_OUTCOMES} from './verifiedTymmMathOutcomes2026';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -54,6 +55,9 @@ export function microLessonCoverageSnapshot(){
       ||VERIFIED_ADDITIONAL_TYMM_OUTCOMES.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&
         outcome.code===l.sourceThemeId&&outcome.theme.replace(/^\\d+\\. (Tema|Ünite): /,'')===t)
+      ||VERIFIED_TYMM_MATH_OUTCOMES.some(outcome=>
+        outcome.grade===grade&&outcome.subject===subject&&outcome.code===l.sourceThemeId
+        &&norm(outcome.theme)===norm(t))
       ||VERIFIED_GRADE9_11_TDE_THEMES.some(theme=>
         theme.grade===grade&&theme.subject===subject&&theme.theme===t&&theme.id===l.sourceThemeId)
    ));
@@ -102,6 +106,10 @@ export function microLessonCoverageSnapshot(){
    code:outcome.code,theme:outcome.theme,sourceUrl:outcome.url,skill:outcome.skill,
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code&&l.subject==='Coğrafya'&&l.targetGrades?.includes(10)).length
  }));
+ const verifiedMathOutcomeRows=VERIFIED_TYMM_MATH_OUTCOMES.map(outcome=>({
+   code:outcome.code,grade:outcome.grade,subject:outcome.subject,theme:outcome.theme,skill:outcome.skill,sourceUrl:outcome.url,
+   linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code&&l.subject===outcome.subject&&l.targetGrades?.includes(outcome.grade)).length
+ }));
  const verifiedAdditionalOutcomeRows=VERIFIED_ADDITIONAL_TYMM_OUTCOMES.map(outcome=>({
    grade:outcome.grade,subject:outcome.subject,theme:outcome.theme,
    code:outcome.code,skill:outcome.skill,sourceUrl:outcome.url,
@@ -135,6 +143,13 @@ export function microLessonCoverageSnapshot(){
  }));
  return {
   academicYear:'2026-2027',status:'EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT',
+  verifiedMath:{
+    totalOfficialOutcomes:verifiedMathOutcomeRows.length,
+    grades:[9,10,11],
+    linkedPilotLessons:verifiedMathOutcomeRows.reduce((n,x)=>n+x.linkedPilotLessons,0),
+    outcomes:verifiedMathOutcomeRows,
+    disclaimer:'MEB kazanım kodu ve tema bağlamı doğrulandı; KEKS soruları MEB/ÖSYM tarafından onaylanmadı. Bir beceride dört çoktan seçmeli alıştırma tüm muhakeme ve performans çıktısını ölçmez.'
+  },
   verifiedLiteraturePrograms:literatureProgramRows,
     verifiedGeography:{
     grade:10,subject:'Coğrafya',totalOfficialOutcomes:geographyOutcomes.length,
