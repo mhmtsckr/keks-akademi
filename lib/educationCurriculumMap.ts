@@ -7,6 +7,7 @@ import {VERIFIED_ADDITIONAL_TYMM_OUTCOMES} from '@/lib/verifiedAdditionalTymmOut
 import {VERIFIED_GRADE10_GEOGRAPHY} from '@/lib/verifiedGrade10GeographyOutcomes';
 import {literatureThemesForGrade} from '@/lib/verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from '@/lib/verifiedTymmMathOutcomes2026';
+import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from '@/lib/verifiedGrade7ScienceOutcomes';
 
 export type CurriculumAcquisition={
   id:string;
@@ -284,6 +285,22 @@ const DETAILED:Partial<Record<EducationLevelKey,CurriculumSubject[]>>={
   MIDDLE_7:[MIDDLE_7_MATH,VERIFIED_GRADE7_TURKISH_SUBJECT]
 };
 
+function grade7ScienceOfficialIndex():CurriculumSubject{
+ return {
+  name:'Fen Bilimleri',
+  units:VERIFIED_GRADE7_SCIENCE_OUTCOMES.map(outcome=>({
+   name:outcome.unit+'. Ünite: '+outcome.title+' (seçilmiş bir resmî çıktı; tam kapsam değil)',
+   sourceUrl:outcome.url,
+   topics:[{name:outcome.title,subTopics:[{
+    name:outcome.skill,
+    acquisitions:[q(outcome.code,outcome.skill+
+      ' (MEB TYMM kodu doğrulandı; pilot KEKS soruları yalnız bir beceriyi örnekler, öğretmen incelemesi bekliyor)',
+      ['Çoktan seçmeli','Gerekçelendirme','Model/performans görevi'])]
+   }]}]
+  }))
+ };
+}
+
 function lgsLegacySubject(subject:string):CurriculumSubject|null{
   const key=subject==='T.C. İnkılap Tarihi ve Atatürkçülük'
     ?'T.C. İnkılap Tarihi'
@@ -428,7 +445,7 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   const exactGrade=resolveLearningCurriculumContext({gradeLevel}).grade;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=>(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=>(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,

@@ -13,6 +13,7 @@ import {VERIFIED_ADDITIONAL_TYMM_OUTCOMES} from './verifiedAdditionalTymmOutcome
 import {VERIFIED_GRADE10_GEOGRAPHY} from './verifiedGrade10GeographyOutcomes';
 import {VERIFIED_GRADE9_11_TDE_THEMES} from './verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from './verifiedTymmMathOutcomes2026';
+import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from './verifiedGrade7ScienceOutcomes';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -55,6 +56,8 @@ export function microLessonCoverageSnapshot(){
       ||VERIFIED_ADDITIONAL_TYMM_OUTCOMES.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&
         outcome.code===l.sourceThemeId&&outcome.theme.replace(/^\\d+\\. (Tema|Ünite): /,'')===t)
+      ||VERIFIED_GRADE7_SCIENCE_OUTCOMES.some(outcome=>
+        grade===7&&subject==='Fen Bilimleri'&&outcome.title===t&&outcome.code===l.sourceThemeId)
       ||VERIFIED_TYMM_MATH_OUTCOMES.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&outcome.code===l.sourceThemeId
         &&norm(outcome.theme)===norm(t))
@@ -134,6 +137,12 @@ export function microLessonCoverageSnapshot(){
      };
    })
  );
+  const verifiedGrade7ScienceRows=VERIFIED_GRADE7_SCIENCE_OUTCOMES.map(outcome=>({
+   unit:outcome.unit,title:outcome.title,outcomeCode:outcome.code,
+   sourceUrl:outcome.url,skill:outcome.skill,scheduledHours:outcome.hours,
+   linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.subject==='Fen Bilimleri'&&
+     l.targetGrades?.includes(7)&&l.sourceThemeId===outcome.code).length
+ }));
   const verifiedThemeRows=VERIFIED_GRADE7_TURKISH_THEMES.map(theme=>({
    id:theme.id,theme:theme.themeName,skill:theme.skill,
    outcomeCode:theme.outcomeCode,verification:theme.verification,
@@ -143,7 +152,14 @@ export function microLessonCoverageSnapshot(){
  }));
  return {
   academicYear:'2026-2027',status:'EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT',
-  verifiedMath:{
+  verifiedGrade7Science:{
+    grade:7,subject:'Fen Bilimleri',totalOfficialUnits:verifiedGrade7ScienceRows.length,
+    verifiedSampleOutcomes:verifiedGrade7ScienceRows.length,
+    linkedPilotLessons:verifiedGrade7ScienceRows.reduce((n,x)=>n+x.linkedPilotLessons,0),
+    units:verifiedGrade7ScienceRows,
+    disclaimer:'7 ünitenin her birinde yalnız bir resmî öğrenme çıktısı doğrulandı. MEB Fen Bilimleri 7. sınıf programındaki diğer çıktılar ve performans becerileri tamamlanmış değildir; KEKS soruları Pilot durumundadır.'
+  },
+    verifiedMath:{
     totalOfficialOutcomes:verifiedMathOutcomeRows.length,
     grades:[9,10,11],
     linkedPilotLessons:verifiedMathOutcomeRows.reduce((n,x)=>n+x.linkedPilotLessons,0),
