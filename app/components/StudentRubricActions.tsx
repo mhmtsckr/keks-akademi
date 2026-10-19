@@ -1,8 +1,10 @@
 'use client';
 import {FormEvent,useEffect,useState} from 'react';
-type Assignment={id:string;createdAt:string;status:'ASSIGNED'|'DONE';subject:string;grade:number;
+type Assignment={id:string;createdAt:string;status:'ASSIGNED'|'SUBMITTED_FOR_REVIEW'|'REVISION_REQUIRED'|'VERIFIED'|'COACH_DISCUSSION_REQUIRED'|'DONE';subject:string;grade:number;
  criterionLabel:string;assignment:string;expectedEvidence:string;minutes:number;
- coachNote:string;reflection:string|null;completedAt:string|null};
+ coachNote:string;reflection:string|null;completedAt:string|null;attemptCount?:number;
+ review?:{decision:'ACCEPT'|'REVISE';feedback:string;reviewedAt:string}|null;
+ reviewHistory?:{attempt:number;decision:string;feedback:string;reviewedAt:string}[]};
 export function StudentRubricActions(){
  const [rows,setRows]=useState<Assignment[]>([]);
  const [busy,setBusy]=useState('');
@@ -34,8 +36,9 @@ export function StudentRubricActions(){
   }catch(e){setMsg('Hata: '+(e instanceof Error?e.message:'Çalışma kaydedilemedi.'));}
   finally{setBusy('');}
  }
- const pending=rows.filter(x=>x.status==='ASSIGNED');
- const done=rows.filter(x=>x.status==='DONE');
+ const pending=rows.filter(x=>['ASSIGNED','REVISION_REQUIRED'].includes(x.status));
+ const underReview=rows.filter(x=>x.status==='SUBMITTED_FOR_REVIEW');
+ const done=rows.filter(x=>['VERIFIED','COACH_DISCUSSION_REQUIRED','DONE'].includes(x.status));
  return <div className="card" style={{marginTop:12}}>
   <div className="moduleHeaderRow"><div>
    <div className="moduleEyebrow">KEKS · KOÇUN ATADIĞI HEDEFLİ TELAFİLER</div>
@@ -47,6 +50,10 @@ export function StudentRubricActions(){
   <div className="stack">
    {pending.map(action=><article key={action.id} className="card">
     <strong>{action.grade}. sınıf · {action.subject} · {action.minutes} dakikalık çalışma</strong>
+    {action.status==='REVISION_REQUIRED'&&<div className="notice">
+      <strong>Koçun yeniden çalışma istedi. ({action.attemptCount||1}/3)</strong>
+      <p>{action.review?.feedback||'Geri bildirimi inceleyerek açıklamanı yeniden yaz.'}</p>
+    </div>}
     <p className="muted">Geliştirilecek beceri: {action.criterionLabel}</p>
     <p>{action.assignment}</p>
     <p><strong>Beklenen kanıt:</strong> {action.expectedEvidence}</p>
@@ -60,16 +67,32 @@ export function StudentRubricActions(){
       <input name="ownWork" type="checkbox" required/> Bu çalışma ve açıklamanın bana ait olduğunu onaylıyorum.
      </label>
      <button className="btn primary" disabled={busy===action.id}>
-      {busy===action.id?'Kaydediliyor…':'Çalışmamı Tamamlandı Olarak Gönder'}
+      {busy===action.id?'Kaydediliyor…':'Kanıtımı Koç İncelemesine Gönder'}
      </button>
     </form>
    </article>)}
   </div>
+  {underReview.length>0&&<div className="card" style={{marginTop:10}}>
+    <strong>Koç incelemesi bekleyen çalışmalar ({underReview.length})</strong>
+    {underReview.map(action=><div key={action.id} className="notice" style={{marginTop:8}}>
+      <strong>{action.grade}. sınıf · {action.subject} · {action.criterionLabel}</strong>
+      <p>Gönderdiğin açıklama koçun incelemesinde ({action.attemptCount||1}/3). Otomatik olarak kabul edilmedi.</p>
+      {action.reflection&&<p><strong>Son kanıtın:</strong> {action.reflection}</p>}
+    </div>)}
+  </div>}
   {done.length>0&&<details className="card" style={{marginTop:10}}>
-   <summary><strong>Tamamladığım telafi çalışmaları ({done.length})</strong></summary>
+   <summary><strong>Koç tarafından incelenen veya önceki kayıtlardaki çalışmalar ({done.length})</strong></summary>
    <div className="stack">{done.map(action=><div key={action.id} className="notice">
     <strong>{action.grade}. sınıf {action.subject} · {action.criterionLabel}</strong>
+    <p>{action.status==='VERIFIED'?'Koç kanıtı kabul etti (Kalıcı öğrenme onayı değildir).':
+      action.status==='COACH_DISCUSSION_REQUIRED'?'Üç denemeden sonra koç görüşmesi gerekli.':
+      'Önceki kayıt: yalnız öğrenci tamamlandı bildirimi, koç doğrulaması yok.'}</p>
     <p>{action.assignment}</p><p><strong>Benim açıklamam:</strong> {action.reflection||'—'}</p>
+    {action.review&&<p><strong>Koç geri bildirimi:</strong> {action.review.feedback}</p>}
+    {action.reviewHistory&&action.reviewHistory.length>1&&<details>
+      <summary>Önceki incelemeler ({action.reviewHistory.length})</summary>
+      {action.reviewHistory.map((h,i)=><p key={i}>{h.attempt}. deneme: {h.decision==='ACCEPT'?'Kabul':'Yeniden çalışma'} · {h.feedback}</p>)}
+    </details>
    </div>)}</div>
   </details>}
   <small className="muted">Tamamlandı kaydı, bilginin kalıcı öğrenildiği anlamına gelmez. Koçun yeni bir durumda tekrar ölçebilir.</small>
