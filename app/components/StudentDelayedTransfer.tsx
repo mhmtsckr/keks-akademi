@@ -5,7 +5,7 @@ type Variant={id:string;title:string;instruction:string;evidencePrompt:string;
  steps:string[];safety:string;criteria:{id:string;label:string}[]};
 type TransferRow={baselineTaskId:string;title:string;subject:string;grade:number;
  outcomeCode:string;status:'AWAITING_BASELINE'|'LOCKED'|'AVAILABLE'|'WAITING_FOR_COACH'|'REVIEWED';
- dueAt:string|null;assignment:Variant|null};
+ dueAt:string|null;assignment:Variant|null;reviewCriterionLabels?:{id:string;label:string}[]};
 type Comparison={submissionId:string;taskId:string;
  comparison?:{baselineTotal:number;transferTotal:number;max:number;delta:number;
   interpretation:string;disclaimer:string;criteria:{id:string;before:number;after:number;delta:number}[]}|null;
@@ -100,7 +100,7 @@ export function StudentDelayedTransfer({grade}:{grade:number|null|undefined}){
       {item?.feedback&&<p><strong>Koç geribildirimi:</strong> {item.feedback}</p>}
       {item?.criterionEvidence&&Object.entries(item.criterionEvidence).length>0&&<ul>
        {Object.entries(item.criterionEvidence).map(([id,note])=><li key={id}>
-        <strong>{row.assignment?.criteria.find(x=>x.id===id)?.label||id}:</strong> {note}
+        <strong>{row.reviewCriterionLabels?.find(x=>x.id===id)?.label||id}:</strong> {note}
        </li>)}
       </ul>}
      </div>
