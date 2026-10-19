@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {requireRole} from '@/lib/auth';
 import {db} from '@/lib/db';
 import {readJson,withApiErrors,HttpError} from '@/lib/apiGuard';
+import {submitActionEvidence,actionAttempts,actionReviews} from '@/lib/tymmActionEvidenceReview';
 const inputSchema=z.object({
  assignmentId:z.string().min(5).max(100),
  reflection:z.string().trim().min(40).max(1800),
@@ -26,7 +27,9 @@ async function GET__handler(){
    subject:p.subject,grade:p.grade,criterionLabel:p.criterionLabel,
    assignment:p.assignment,expectedEvidence:p.expectedEvidence,
    minutes:p.minutes,coachNote:p.coachNote,reflection:p.reflection||null,
-   completedAt:p.completedAt||null
+   completedAt:p.completedAt||null,
+   attemptCount:actionAttempts(p).length,review:p.review||null,
+   reviewHistory:actionReviews(p).map(r=>({attempt:r.attempt,decision:r.decision,feedback:r.feedback,reviewedAt:r.reviewedAt}))
   }];
  }),note:'Bu telafi görevini bitirmek öğrenme hâkimiyeti veya tekrar programını otomatik değiştirmez.'});
 }
@@ -41,17 +44,19 @@ async function PATCH__handler(req:Request){
  if(!row)throw new HttpError(404,'Bu telafi çalışması sana ait değil.');
  const payload=obj(row.payload);
  if(payload.type!=='TYMM_RUBRIC_ACTION')throw new HttpError(404,'Bu kayıt telafi görevi değil.');
- if(payload.status!=='ASSIGNED')throw new HttpError(409,'Bu görev zaten tamamlandı veya durumu değişti.');
+ if(!['ASSIGNED','REVISION_REQUIRED'].includes(String(payload.status)))
+  throw new HttpError(409,'Bu çalışma gönderime açık değil; koç incelemesi bekleniyor veya sonuçlandı.');
+ let next;
+ try{next=submitActionEvidence(payload,input.reflection,new Date().toISOString());}
+ catch(e){throw new HttpError(409,e instanceof Error?e.message:'Çalışma gönderilemedi.');}
  const updated=await db.dailyLog.updateMany({
   where:{id:row.id,studentId:user.student.id,
-    payload:{path:['status'],equals:'ASSIGNED'}},
-  data:{payload:{...payload,status:'DONE',reflection:input.reflection,
-    completedAt:new Date().toISOString(),
-    completedByStudent:true,masteryStatusUnchanged:true,reviewScheduleUnchanged:true}}
+    payload:{path:['status'],equals:String(payload.status)}},
+  data:{payload:next}
  });
  if(!updated.count)throw new HttpError(409,'Görev başka bir işlemde tamamlandı.');
- return NextResponse.json({ok:true,assignmentId:row.id,status:'DONE',
-   message:'Çalışman ve kendi açıklaman kaydedildi. Koçun ilerlemeni değerlendirebilir; kazanım otomatik Kalıcı olmadı.'});
+ return NextResponse.json({ok:true,assignmentId:row.id,status:'SUBMITTED_FOR_REVIEW',
+   message:'Çalışman koç incelemesine gönderildi. Koç kabul edebilir veya yeniden çalışma isteyebilir; kazanım otomatik Kalıcı olmadı.'});
 }
 export const GET=withApiErrors(GET__handler);
 export const PATCH=withApiErrors(PATCH__handler);
