@@ -9,7 +9,7 @@ type TransferRow={baselineTaskId:string;title:string;subject:string;grade:number
 type Comparison={submissionId:string;taskId:string;
  comparison?:{baselineTotal:number;transferTotal:number;max:number;delta:number;
   interpretation:string;disclaimer:string;criteria:{id:string;before:number;after:number;delta:number}[]}|null;
- feedback:string|null};
+ feedback:string|null;criterionEvidence?:Record<string,string>|null};
 const format=(d:string)=>new Date(d).toLocaleDateString('tr-TR',{year:'numeric',month:'long',day:'numeric'});
 
 export function StudentDelayedTransfer({grade}:{grade:number|null|undefined}){
@@ -98,6 +98,11 @@ export function StudentDelayedTransfer({grade}:{grade:number|null|undefined}){
        <p>{c.interpretation}. {c.disclaimer}</p>
        <ul>{c.criteria.map(k=><li key={k.id}>{k.id}: {k.before}/2 → {k.after}/2</li>)}</ul></>}
       {item?.feedback&&<p><strong>Koç geribildirimi:</strong> {item.feedback}</p>}
+      {item?.criterionEvidence&&Object.entries(item.criterionEvidence).length>0&&<ul>
+       {Object.entries(item.criterionEvidence).map(([id,note])=><li key={id}>
+        <strong>{row.assignment?.criteria.find(x=>x.id===id)?.label||id}:</strong> {note}
+       </li>)}
+      </ul>}
      </div>
     })()}
    </div>)}
