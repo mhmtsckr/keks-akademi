@@ -20,6 +20,7 @@ export function StudentPerformanceTasks(){
  const [grade,setGrade]=useState('');
  const [tasks,setTasks]=useState<Task[]>([]);
  const [history,setHistory]=useState<Submission[]>([]);
+ const [pendingTaskIds,setPendingTaskIds]=useState<string[]>([]);
  const [busy,setBusy]=useState('');
  const [message,setMessage]=useState('');
  const [opened,setOpened]=useState<string|null>(null);
@@ -34,6 +35,7 @@ export function StudentPerformanceTasks(){
    setContext(data.curriculumContext);
    setTasks(data.tasks||[]);
    setHistory(data.history||[]);
+   setPendingTaskIds(data.pendingTaskIds||[]);
   }catch(e){setMessage('Hata: '+(e instanceof Error?e.message:'Görevler yüklenemedi.'));}
  }
  useEffect(()=>{void load('');},[]);
@@ -95,8 +97,13 @@ export function StudentPerformanceTasks(){
      <p className="muted">0: yetersiz/yanlış · 1: kısmen · 2: açık, doğru ve gerekçeli. Koç kararı gereklidir.</p>
     </details>
     <p className="muted">Resmî çıktı: {task.sourceEvidence?.outcomeCodeVerified?'MEB kaynağında kod doğrulandı':'Doğrulama bekliyor'} · <a href={task.sourceUrl} target="_blank" rel="noopener noreferrer">MEB kaynağı</a>. İçerik MEB onaylı değildir.</p>
-    <button className="btn" type="button" onClick={()=>setOpened(opened===task.id?null:task.id)}>
-     {opened===task.id?'Formu Kapat':'Kendi Yanıtımı Yaz'}
+    {pendingTaskIds.includes(task.id)&&<div className="notice">
+      <strong>Koç değerlendirmesi bekleniyor.</strong> Bu görev için önceki teslimin incelenmeden tekrar gönderilemez. Geribildirim geldikten sonra yeniden çalışabilirsin.
+    </div>}
+    <button className="btn" type="button"
+      disabled={pendingTaskIds.includes(task.id)}
+      onClick={()=>setOpened(opened===task.id?null:task.id)}>
+     {pendingTaskIds.includes(task.id)?'Koç Değerlendirmesi Bekleniyor':opened===task.id?'Formu Kapat':'Kendi Yanıtımı Yaz'}
     </button>
     {opened===task.id&&<form onSubmit={e=>void submit(e,task)} className="stack" style={{marginTop:12}}>
      <label className="field"><span>Çözümün, açıklaman ve gerekçelerin</span>
