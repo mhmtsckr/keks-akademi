@@ -33,16 +33,19 @@ async function GET__handler(req:Request){
   ?gradeTasks.map(task=>{
     const state=transferEligibility(task.id,logs,new Date());
     const variant=state.status==='AVAILABLE'?transferVariantFor(task.id):null;
+    const reviewedVariant=state.status==='REVIEWED'?transferVariantFor(task.id):null;
     return {baselineTaskId:task.id,title:task.title,subject:task.subject,
       grade:task.grade,outcomeCode:task.outcomeCode,status:state.status,
       dueAt:state.dueAt,baselineId:state.baselineId,transferId:state.transferId,
+      reviewCriterionLabels:reviewedVariant?.criteria.map(c=>({id:c.id,label:c.label}))||[],
       assignment:variant&&performanceTaskEvidence(task).outcomeCodeVerified?variant:null};
    }):[];
  const comparisons=logs.flatMap(row=>{
   const p=obj(row.payload);
   if(p.type!=='TYMM_TRANSFER_REVIEWED'||!rows.some(x=>x.baselineTaskId===p.taskId))return [];
   const rev=obj(p.review);
-  return [{submissionId:row.id,taskId:p.taskId,comparison:rev.comparison||null,feedback:rev.feedback||null}];
+  return [{submissionId:row.id,taskId:p.taskId,comparison:rev.comparison||null,feedback:rev.feedback||null,
+    criterionEvidence:rev.criterionEvidence||null}];
  });
  return NextResponse.json({ok:true,academicYear:context.academicYear,
    curriculumContext:context,transfers:rows,comparisons,

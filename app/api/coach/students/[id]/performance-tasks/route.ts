@@ -5,10 +5,12 @@ import {readJson,withApiErrors} from '@/lib/apiGuard';
 import {db} from '@/lib/db';
 import {performanceTaskById,evaluateHumanRubric} from '@/lib/tymmPerformanceTasks';
 import {transferVariantFor,compareTransferRubrics,readableRubric} from '@/lib/tymmDelayedTransfer';
+import {validateRubricEvidence,buildRubricReviewQueue} from '@/lib/tymmRubricReviewQuality';
 
 const reviewSchema=z.object({
  submissionId:z.string().min(5).max(90),
  scores:z.record(z.number().int().min(0).max(2)),
+ criterionEvidence:z.record(z.string().max(500)),
  feedback:z.string().trim().min(30).max(1800),
  nextAction:z.enum(['RETRY_WITH_FEEDBACK','DIFFERENT_CONTEXT','DISCUSS_WITH_COACH'])
 }).strict();
@@ -30,11 +32,23 @@ async function GET__handler(_req:Request,{params}:ApiContext){
  const {id}=await params;
  const {student}=await ownedStudent(id);
  if(!student)return NextResponse.json({error:'Bu öğrenci için koç yetkisi bulunamadı.'},{status:403});
- const rows=await db.dailyLog.findMany({
-  where:{studentId:id,payload:{path:['type'],string_contains:'TYMM_'}},
-  orderBy:{createdAt:'desc'},take:100,
-  select:{id:true,createdAt:true,payload:true}
- });
+ const [recentRows,pendingRows]=await Promise.all([
+  db.dailyLog.findMany({
+   where:{studentId:id,payload:{path:['type'],string_contains:'TYMM_'}},
+   orderBy:{createdAt:'desc'},take:100,
+   select:{id:true,createdAt:true,payload:true}
+  }),
+  // Fetch pending work from oldest first; long historical activity must not starve it.
+  db.dailyLog.findMany({
+   where:{studentId:id,OR:[
+    {payload:{path:['type'],equals:'TYMM_PERFORMANCE_SUBMISSION'}},
+    {payload:{path:['type'],equals:'TYMM_TRANSFER_SUBMISSION'}}
+   ]},
+   orderBy:{createdAt:'asc'},take:100,
+   select:{id:true,createdAt:true,payload:true}
+  })
+ ]);
+ const rows=[...new Map([...recentRows,...pendingRows].map(row=>[row.id,row])).values()];
  const submissions=rows.flatMap(log=>{
   const p=obj(log.payload),type=String(p.type||'');
   if(!['TYMM_PERFORMANCE_SUBMISSION','TYMM_PERFORMANCE_REVIEWED','TYMM_TRANSFER_SUBMISSION','TYMM_TRANSFER_REVIEWED'].includes(type))return [];
@@ -57,9 +71,13 @@ async function GET__handler(_req:Request,{params}:ApiContext){
     review:type==='TYMM_PERFORMANCE_REVIEWED'||type==='TYMM_TRANSFER_REVIEWED'?obj(p.review):null
   }];
  });
+ const queue=buildRubricReviewQueue(submissions,new Date());
  return NextResponse.json({
   ok:true,student:{id:student.id,fullName:student.fullName},
-  submissions,waiting:submissions.filter(x=>x.status==='WAITING_FOR_COACH').length,
+  submissions,waiting:queue.count,
+  reviewQueue:{pendingIds:queue.pending.map(x=>x.id),
+    waitingOver48Hours:queue.waitingOver48Hours,
+    oldestWaitingHours:queue.oldestWaitingHours,note:queue.note},
   note:'Rubrik koçun manuel kararıdır; tek puan öğrencinin kalıcı öğrenme düzeyini otomatik değiştirmez.'
  });
 }
@@ -93,14 +111,19 @@ async function POST__handler(req:Request,{params}:ApiContext){
   if(!reviewedBaseline)return NextResponse.json({error:'İlk rubrik kaydı geçersiz.'},{status:409});
   comparisonInput=reviewedBaseline;
  }
+ const evaluatedTask=isTransfer?{...task,criteria:variant!.criteria}:task;
  let score;
- try{score=evaluateHumanRubric(isTransfer?{...task,criteria:variant!.criteria}:task,input.scores);}catch{
-  return NextResponse.json({error:'Rubriğin dört ölçütünün tamamı 0, 1 veya 2 puanla değerlendirilmeli.'},{status:400});
+ let criterionEvidence:Record<string,string>;
+ try{
+  score=evaluateHumanRubric(evaluatedTask,input.scores);
+  criterionEvidence=validateRubricEvidence(evaluatedTask.criteria,input.scores,input.criterionEvidence);
+ }catch(error){
+  return NextResponse.json({error:error instanceof Error?error.message:'Rubrik puanları veya gerekçeleri geçersiz.'},{status:400});
  }
  const comparison=comparisonInput?compareTransferRubrics(comparisonInput,score):null;
  const reviewedAt=new Date().toISOString();
  const review={
-  ...score,comparison,feedback:input.feedback,nextAction:input.nextAction,
+  ...score,comparison,criterionEvidence,feedback:input.feedback,nextAction:input.nextAction,
   evaluatedByUserId:user.id,evaluatedByCoachId:user.coachProfile.id,
   reviewedAt,assessmentType:isTransfer?'HUMAN_COACH_TRANSFER_RUBRIC':'HUMAN_COACH_RUBRIC',
   evidence:'Student written submission; no in-person experimental observation verified',
