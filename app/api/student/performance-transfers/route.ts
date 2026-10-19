@@ -42,7 +42,8 @@ async function GET__handler(req:Request){
   const p=obj(row.payload);
   if(p.type!=='TYMM_TRANSFER_REVIEWED'||!rows.some(x=>x.baselineTaskId===p.taskId))return [];
   const rev=obj(p.review);
-  return [{submissionId:row.id,taskId:p.taskId,comparison:rev.comparison||null,feedback:rev.feedback||null}];
+  return [{submissionId:row.id,taskId:p.taskId,comparison:rev.comparison||null,feedback:rev.feedback||null,
+    criterionEvidence:rev.criterionEvidence||null}];
  });
  return NextResponse.json({ok:true,academicYear:context.academicYear,
    curriculumContext:context,transfers:rows,comparisons,
