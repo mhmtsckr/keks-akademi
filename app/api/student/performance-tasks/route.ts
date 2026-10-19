@@ -2,9 +2,10 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {requireRole} from '@/lib/auth';
 import {db} from '@/lib/db';
-import {readJson,withApiErrors} from '@/lib/apiGuard';
+import {readJson,withApiErrors,HttpError} from '@/lib/apiGuard';
 import {resolveLearningCurriculumContext} from '@/lib/curriculumPolicy2026';
 import {performanceTaskById,performanceTasksForGrade,performanceTaskEvidence} from '@/lib/tymmPerformanceTasks';
+import {baselineSubmissionDecision,baselineSubmissionMessage} from '@/lib/tymmBaselineGate';
 
 const schema=z.object({
  taskId:z.string().min(3).max(130),
@@ -62,23 +63,36 @@ async function POST__handler(req:Request){
   return NextResponse.json({error:'Seçilen görev bu sınıfa ait değil.'},{status:404});
  if(!performanceTaskEvidence(task).outcomeCodeVerified)
   return NextResponse.json({error:'Görevin resmî öğrenme çıktısı kaynağı doğrulanmamış.'},{status:409});
- const recently=await db.dailyLog.findMany({
-   where:{studentId:user.student.id,createdAt:{gte:new Date(Date.now()-7*86400000)},
-     payload:{path:['type'],string_contains:'TYMM_PERFORMANCE_'}},
-   take:80,select:{payload:true}
- });
- const taskRecent=recently.filter(row=>object(row.payload).taskId===task.id);
- if(taskRecent.length>=3)return NextResponse.json({
-   error:'Bu görev için yedi günde en fazla üç teslim yapılabilir. Önce koçundan geribildirim al.'
- },{status:429});
- const submitted=await db.dailyLog.create({
-   data:{studentId:user.student.id,date:new Date(),payload:{
-     type:'TYMM_PERFORMANCE_SUBMISSION',taskId:task.id,taskVersion:task.version,
-     grade:task.grade,subject:task.subject,outcomeCode:task.outcomeCode,
-     response:input.response,observations:input.observations,
-     selfReportedOriginal:true,academicYear:context.academicYear,
-     status:'WAITING_FOR_COACH',masteryStatusUnchanged:true
-   }}
+ const studentId=user.student.id;
+ const submitted=await db.$transaction(async tx=>{
+   // Serialize submissions for one student and task. The weekly limit must not race.
+   await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${studentId}),hashtext(${task.id})) IS NULL AS acquired`;
+   const weeklyStart=new Date(Date.now()-7*86400000);
+   const taskMatch={payload:{path:['taskId'],equals:task.id}} as const;
+   const baselineTypes={OR:[
+     {payload:{path:['type'],equals:'TYMM_PERFORMANCE_SUBMISSION'}},
+     {payload:{path:['type'],equals:'TYMM_PERFORMANCE_REVIEWED'}}
+   ]} as const;
+   const [recentCount,pending]=await Promise.all([
+     tx.dailyLog.count({where:{studentId,createdAt:{gte:weeklyStart},AND:[taskMatch,baselineTypes]}}),
+     tx.dailyLog.findFirst({where:{studentId,AND:[
+       taskMatch,{payload:{path:['type'],equals:'TYMM_PERFORMANCE_SUBMISSION'}}
+     ]},select:{id:true}})
+   ]);
+   const decision=baselineSubmissionDecision(recentCount,Boolean(pending));
+   if(decision!=='ALLOW'){
+     // Throwing inside the transaction prevents creation and releases the lock.
+     throw new HttpError(decision==='WEEKLY_LIMIT'?429:409,baselineSubmissionMessage(decision));
+   }
+   return tx.dailyLog.create({data:{
+     studentId,date:new Date(),payload:{
+       type:'TYMM_PERFORMANCE_SUBMISSION',taskId:task.id,taskVersion:task.version,
+       grade:task.grade,subject:task.subject,outcomeCode:task.outcomeCode,
+       response:input.response,observations:input.observations,
+       selfReportedOriginal:true,academicYear:context.academicYear,
+       status:'WAITING_FOR_COACH',masteryStatusUnchanged:true
+     }
+   }});
  });
  return NextResponse.json({
    ok:true,submissionId:submitted.id,status:'WAITING_FOR_COACH',
