@@ -119,7 +119,7 @@ async function POST__handler(req:Request){
    metadata:{
     reviewType:'SECOND_RATER_BLIND_QUALITY_CHECK',outcomeCode:evidence.task.outcomeCode,
     taskId:task.id,taskVersion:task.version,phase:evidence.phase,
-    firstReviewerUserId:first.evaluatedByUserId,secondReviewerUserId:admin.id,
+    firstReviewerUserId:String(first.evaluatedByUserId),secondReviewerUserId:admin.id,
     secondScores:second.criterionScores,criterionEvidence:notes,
     note:input.note,comparison:report,
     studentMasteryUnchanged:true,firstRubricUnchanged:true,
