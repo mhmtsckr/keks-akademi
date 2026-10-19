@@ -35,14 +35,14 @@ describe('Koçun tüm öğrencileri için TYMM takip kutusu',()=>{
  it('ilk insan rubriğinden yedi gün sonra açılacak veya açılmış görevleri gösterir',()=>{
   const rows=[
    record('a','s1','TYMM_PERFORMANCE_REVIEWED','2026-10-10T00:00:00Z',reviewed('2026-10-12T10:00:00Z')),
-   record('b','s2','TYMM_PERFORMANCE_REVIEWED','2026-10-12T00:00:00Z',reviewed('2026-10-15T13:00:00Z'))
+   record('b','s2','TYMM_PERFORMANCE_REVIEWED','2026-10-12T00:00:00Z',reviewed('2026-10-15T11:00:00Z'))
   ];
   const result=summarizeCoachTymmInbox(students,rows,now);
   expect(result.counts.transferReady).toBe(1);
   expect(result.counts.transferUpcoming48Hours).toBe(1);
   expect(result.items.find(x=>x.studentId==='s1')?.kind).toBe('TRANSFER_READY');
   expect(result.items.find(x=>x.studentId==='s2')?.kind).toBe('TRANSFER_UPCOMING');
-  expect(result.items.find(x=>x.studentId==='s2')?.timestamp).toBe('2026-10-22T13:00:00.000Z');
+  expect(result.items.find(x=>x.studentId==='s2')?.timestamp).toBe('2026-10-22T11:00:00.000Z');
  });
  it('ikinci teslim gelince öğrenciye hazır görev görünmez; yalnız koç kuyruğuna girer',()=>{
   const rows=[
