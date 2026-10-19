@@ -62,7 +62,7 @@ describe('9–11 Türk Dili ve Edebiyatında altı boş MEB tema için özgün p
   const snapshot=microLessonCoverageSnapshot();
   expect(snapshot.totalLessons).toBe(66);
   expect(snapshot.totalExercises).toBe(264);
-  expect(snapshot.verifiedLiteraturePrograms.reduce((n,x)=>n+x.totalThemes,0)).toBe(12);
+  expect(snapshot.verifiedLiteraturePrograms.reduce((n,x)=>n+x.totalOfficialThemes,0)).toBe(12);
   expect(snapshot.verifiedLiteraturePrograms.reduce((n,x)=>n+x.linkedPilotLessons,0)).toBe(12);
   expect(snapshot.verifiedLiteraturePrograms.reduce((n,x)=>n+x.verifiedOutcomeContexts,0)).toBe(6);
   expect(snapshot.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
