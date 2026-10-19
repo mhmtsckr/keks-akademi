@@ -33,9 +33,11 @@ async function GET__handler(req:Request){
   ?gradeTasks.map(task=>{
     const state=transferEligibility(task.id,logs,new Date());
     const variant=state.status==='AVAILABLE'?transferVariantFor(task.id):null;
+    const reviewedVariant=state.status==='REVIEWED'?transferVariantFor(task.id):null;
     return {baselineTaskId:task.id,title:task.title,subject:task.subject,
       grade:task.grade,outcomeCode:task.outcomeCode,status:state.status,
       dueAt:state.dueAt,baselineId:state.baselineId,transferId:state.transferId,
+      reviewCriterionLabels:reviewedVariant?.criteria.map(c=>({id:c.id,label:c.label}))||[],
       assignment:variant&&performanceTaskEvidence(task).outcomeCodeVerified?variant:null};
    }):[];
  const comparisons=logs.flatMap(row=>{
