@@ -15,6 +15,7 @@ import {VERIFIED_GRADE9_GEOGRAPHY} from './verifiedGrade9GeographyOutcomes';
 import {VERIFIED_GRADE9_11_TDE_THEMES} from './verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from './verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from './verifiedGrade7ScienceOutcomes';
+import {VERIFIED_GRADE911_HISTORY_UNITS,VERIFIED_GRADE911_HISTORY_OUTCOMES} from './verifiedGrade911HistoryOutcomes2026';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -62,7 +63,10 @@ export function microLessonCoverageSnapshot(){
       ||VERIFIED_TYMM_MATH_OUTCOMES.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&outcome.code===l.sourceThemeId
         &&norm(outcome.theme)===norm(t))
-      ||VERIFIED_GRADE9_11_TDE_THEMES.some(theme=>
+      ||VERIFIED_GRADE911_HISTORY_OUTCOMES.some(outcome=>
+        outcome.grade===grade&&subject==='Tarih'&&outcome.code===l.sourceThemeId&&
+        norm(VERIFIED_GRADE911_HISTORY_UNITS.find(u=>u.grade===grade&&u.unit===outcome.unit)?.title||'')===norm(t))
+      ||||VERIFIED_GRADE9_11_TDE_THEMES.some(theme=>
         theme.grade===grade&&theme.subject===subject&&theme.theme===t&&theme.id===l.sourceThemeId)
    ));
    return {
@@ -93,7 +97,20 @@ export function microLessonCoverageSnapshot(){
   return {examType,topicIndexSource:'KEKS_INTERNAL' as const,
    totalPilotLessons:rows.reduce((n,x)=>n+x.pilotLessons,0),subjects:rows};
  });
- const literatureProgramRows=[9,10,11].map(grade=>{
+ const historyProgramRows=[9,10,11].map(grade=>{
+  const units=VERIFIED_GRADE911_HISTORY_UNITS.filter(x=>x.grade===grade).map(u=>({
+   unit:u.unit,title:u.title,sourceUrl:u.url,
+   checkedOn:u.checkedOn,
+   outcomes:VERIFIED_GRADE911_HISTORY_OUTCOMES.filter(x=>x.grade===grade&&x.unit===u.unit)
+    .map(x=>({code:x.code,skill:x.skill,sourceUrl:x.url,
+      linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===x.code&&l.subject==='Tarih'&&l.targetGrades?.includes(grade)).length}))
+  }));
+  return {grade,subject:'Tarih',totalOfficialUnits:units.length,
+    checkedOutcomeSubset:units.reduce((n,u)=>n+u.outcomes.length,0),
+    linkedPilotLessons:units.reduce((n,u)=>n+u.outcomes.reduce((m,x)=>m+x.linkedPilotLessons,0),0),
+    units,disclaimer:'Yalnız ünite başlıklarının tümü, 6 seçili çıktının kodları doğrulandı. Diğer kazanımlar henüz aktarılmamıştır; KEKS özgün alıştırmaları uzman onayı bekler.'};
+ });
+  const literatureProgramRows=[9,10,11].map(grade=>{
    const themes=VERIFIED_GRADE9_11_TDE_THEMES.filter(x=>x.grade===grade).map(x=>({
      id:x.id,theme:x.theme,sourceUrl:x.sourceUrl,outcomeCode:x.outcomeCode,
      verification:x.verification,skill:x.skill,
@@ -172,6 +189,7 @@ export function microLessonCoverageSnapshot(){
     outcomes:verifiedMathOutcomeRows,
     disclaimer:'MEB kazanım kodu ve tema bağlamı doğrulandı; KEKS soruları MEB/ÖSYM tarafından onaylanmadı. Bir beceride dört çoktan seçmeli alıştırma tüm muhakeme ve performans çıktısını ölçmez.'
   },
+  verifiedHistoryPrograms:historyProgramRows,
   verifiedLiteraturePrograms:literatureProgramRows,
     verifiedGrade9Geography:{
     grade:9,subject:'Coğrafya',totalOfficialOutcomes:grade9GeographyOutcomes.length,
