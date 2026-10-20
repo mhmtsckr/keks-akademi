@@ -18,6 +18,7 @@ import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from './verifiedGrade7ScienceOutcomes'
 import {VERIFIED_GRADE57_SOCIAL} from './verifiedGrade57SocialOutcomes';
 import {VERIFIED_HISTORY_OUTCOMES} from './verifiedGrade911HistoryOutcomes2026';
 import {VERIFIED_LGS8_OUTCOMES} from './verifiedLgs8Outcomes2026';
+import {VERIFIED_GRADE12_LITERATURE} from './verifiedGrade12LiteratureOutcomes';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -185,8 +186,21 @@ export function microLessonCoverageSnapshot(){
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>
       l.sourceThemeId===theme.id&&l.targetGrades?.includes(7)&&l.subject==='Türkçe').length
  }));
- return {
+ const old12Rows=VERIFIED_GRADE12_LITERATURE.map(o=>({
+   code:o.code,grade:o.grade,subject:o.subject,scope:o.scope,title:o.title,
+   sourceUrl:o.sourceUrl,linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>
+     l.sourceThemeId==='LEGACY.12.'+o.code&&l.targetGrades?.includes(12)&&
+     l.subject===o.subject&&l.sourceUrl===o.sourceUrl).length
+ }));
+  return {
   academicYear:'2026-2027',status:'EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT',
+  verifiedGrade12Literature:{
+    grade:12,program:'MEB 2018 önceki TDE programı',
+    totalSelectedOutcomes:old12Rows.length,
+    linkedPilotLessons:old12Rows.reduce((n,x)=>n+x.linkedPilotLessons,0),
+    outcomes:old12Rows,
+    disclaimer:'Resmî eski MEB programında dört seçili kazanım doğrulandı. 2026–2027 12. sınıfa TYMM denmez; KEKS soruları Pilot olup YKS/AYT ve tüm program kapsamının tamamlandığı ya da MEB/ÖSYM onayı iddia edilmez.'
+  },
   verifiedGrade7Science:{
     grade:7,subject:'Fen Bilimleri',totalOfficialUnits:verifiedGrade7ScienceRows.length,
     verifiedSampleOutcomes:verifiedGrade7ScienceRows.length,
