@@ -4,6 +4,7 @@ import {requireRole} from '@/lib/auth';
 import {db} from '@/lib/db';
 import {readJson,withApiErrors,HttpError} from '@/lib/apiGuard';
 import {submitActionEvidence,actionAttempts,actionReviews} from '@/lib/tymmActionEvidenceReview';
+import {buildRemediationImpactReport} from '@/lib/tymmRemediationImpact';
 const inputSchema=z.object({
  assignmentId:z.string().min(5).max(100),
  reflection:z.string().trim().min(40).max(1800),
@@ -19,11 +20,24 @@ async function GET__handler(){
   where:{studentId:user.student.id,payload:{path:['type'],equals:'TYMM_RUBRIC_ACTION'}},
   orderBy:{createdAt:'desc'},take:100,select:{id:true,createdAt:true,payload:true}
  });
- return NextResponse.json({ok:true,assignments:rows.flatMap(row=>{
+ const taskIds=[...new Set(rows.map(row=>String(obj(row.payload).taskId||'')).filter(Boolean))];
+ const assessments=taskIds.length?await db.dailyLog.findMany({
+  where:{studentId:user.student.id,OR:taskIds.map(taskId=>({
+   payload:{path:['taskId'],equals:taskId}
+  }))},
+  orderBy:{createdAt:'desc'},take:500,
+  select:{id:true,createdAt:true,payload:true}
+ }):[];
+ const evidenceRows=[...new Map([...rows,...assessments].map(row=>[row.id,row])).values()];
+ const remediationImpact=buildRemediationImpactReport(evidenceRows);
+ return NextResponse.json({ok:true,remediationSummary:remediationImpact.summary,
+  remediationCaveat:remediationImpact.caveat,
+  assignments:rows.flatMap(row=>{
   const p=obj(row.payload);
   if(p.type!=='TYMM_RUBRIC_ACTION')return [];
   return [{
    id:row.id,createdAt:row.createdAt,status:p.status,
+   impact:remediationImpact.impacts.find(x=>x.assignmentId===row.id)||null,
    subject:p.subject,grade:p.grade,criterionLabel:p.criterionLabel,
    assignment:p.assignment,expectedEvidence:p.expectedEvidence,
    minutes:p.minutes,coachNote:p.coachNote,reflection:p.reflection||null,
