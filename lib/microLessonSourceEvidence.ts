@@ -9,6 +9,7 @@ import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
 import {findGrade57SocialOutcome} from './verifiedGrade57SocialOutcomes';
 import {findVerifiedHistoryOutcome} from './verifiedGrade911HistoryOutcomes2026';
+import {findLgs8Outcome} from './verifiedLgs8Outcomes2026';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -19,6 +20,11 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const legacy=lesson.sourceThemeId?findLgs8Outcome(lesson.sourceThemeId):null;
+ if(legacy&&lesson.subject===legacy.subject&&lesson.targetGrades?.includes(8)&&lesson.sourceUrl===legacy.sourceUrl)
+  return {themeVerified:true,outcomeCodeVerified:true,theme:legacy.unit,outcomeCode:legacy.code,
+    sourceUrl:legacy.sourceUrl,checkedOn:legacy.checkedOn,
+    interpretation:'2026–2027 8. sınıf için önceki MEB öğretim programındaki kazanım kodu resmî MEB belgesinde doğrulandı. Bu kayıt TYMM çıktısı değildir. KEKS pilot soruları MEB/branş öğretmeni tarafından onaylanmamıştır ve tüm LGS kazanımlarını kapsamaz.'};
  const history=lesson.sourceThemeId?findVerifiedHistoryOutcome(lesson.sourceThemeId):null;
  if(history&&lesson.subject===history.subject&&
    lesson.targetGrades?.includes(history.grade)&&lesson.sourceUrl===history.url){
