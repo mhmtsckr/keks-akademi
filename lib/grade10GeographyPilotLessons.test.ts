@@ -90,7 +90,7 @@ describe('2026–27 10. sınıf Coğrafya MEB TYMM kaynağı ve 8 pilot mikro de
    expect(followup?.criteria.map(x=>x.id)).toEqual(task.criteria.map(x=>x.id));
    expect(followup?.instruction).not.toBe(task.instruction);
   }
-  expect(TYMM_PERFORMANCE_TASKS).toHaveLength(8);
-  expect(TYMM_TRANSFER_VARIANTS).toHaveLength(8);
+  expect(TYMM_PERFORMANCE_TASKS).toHaveLength(11);
+  expect(TYMM_TRANSFER_VARIANTS).toHaveLength(11);
  });
 });

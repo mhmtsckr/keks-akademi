@@ -1,7 +1,8 @@
 /** 2026 editorial pilot: concrete safe follow-up actions for human-scored weak rubric dimensions. */
 import {performanceTaskById} from './tymmPerformanceTasks';
 export type CriterionIntervention={taskId:string;criterionId:string;task:string;expectedEvidence:string;minutes:number;mode:'WRITTEN_SAFE_PRACTICE'};
-export const CRITERION_INTERVENTIONS:readonly CriterionIntervention[]=[
+export const CRITERION_INTERVENTIONS:readonly CriterionIntervention[]=
+[
   {
     "taskId": "perf-g5-moon-model-v1",
     "criterionId": "geometry",
@@ -256,6 +257,102 @@ export const CRITERION_INTERVENTIONS:readonly CriterionIntervention[]=[
     "task": "Kurgusal risk senaryosunda hangi bilgilerin belirsiz olduğunu ve neden yerel yetkili görüşü gerektiğini yaz.",
     "expectedEvidence": "Kesin güvenlik iddiasından kaçınan sonuç cümlesi kur.",
     "minutes": 10,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g9-math-systematic-probability-v1",
+    "criterionId": "sampleSpace",
+    "task": "İki adil para atışında YY, YT, TY ve TT sıralı sonuçlarını küçük bir ağaç şemasıyla göster.",
+    "expectedEvidence": "Dört farklı sıralı çıktıyı ve dalların nasıl oluştuğunu yaz.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g9-math-systematic-probability-v1",
+    "criterionId": "event",
+    "task": "‘Tam bir tura’ olayına giren YT ve TY sonuçlarını örnek uzaydan ayırıp diğerlerini neden dışladığını açıklayan iki cümle yaz.",
+    "expectedEvidence": "İki elverişli olayın adlarını ve dışlanan sonuçları gerekçelendir.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g9-math-systematic-probability-v1",
+    "criterionId": "theory",
+    "task": "İki para atışında 2/4 teorik olasılık ve 12/20 varsayımsal deneysel sıklığı ayrı hesaplayıp sonuçları yüzdeye çevir.",
+    "expectedEvidence": "%50 ve %60 değerlerini doğru kesir ve yüzde biçimleriyle göster.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g9-math-systematic-probability-v1",
+    "criterionId": "inference",
+    "task": "Yirmi varsayımsal denemedeki %60 oranın hilesiz deneyin %50 teorik olasılığıyla neden çelişmek zorunda olmadığını açıkla.",
+    "expectedEvidence": "Az sayıda denemede sonuçların rastlantısal değişebileceğini gerekçelendir.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g10-math-coordinate-map-v1",
+    "criterionId": "representation",
+    "task": "A(1,2) ile B(7,10) koordinatlarını kâğıt üzerine yerleştirip aradaki yatay 6 ve düşey 8 birimlik farkları göster.",
+    "expectedEvidence": "Koordinat değişimlerini ve dik üçgenin dik kenarlarını belirt.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g10-math-coordinate-map-v1",
+    "criterionId": "distance",
+    "task": "A(1,2) ve B(7,10) için √(6²+8²) bağıntısını kurup iki nokta arasındaki uzaklığı birimiyle bul.",
+    "expectedEvidence": "Karekökün 100 üzerinden hesaplanıp sonucun 10 birim olduğunu göster.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g10-math-coordinate-map-v1",
+    "criterionId": "midpoint",
+    "task": "A(1,2), B(7,10) doğru parçasının orta noktasını koordinat ortalamalarıyla bul ve iki ucuna eş uzaklığı kontrol et.",
+    "expectedEvidence": "Orta noktanın (4,6) olduğunu ara işlemlerle doğrula.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g10-math-coordinate-map-v1",
+    "criterionId": "argument",
+    "task": "Koordinat düzleminde iki nokta uzaklığının neden dik üçgenin hipotenüsünden bulunduğunu açıklayan kısa ispat taslağı hazırla.",
+    "expectedEvidence": "Yatay ve düşey eksen farklarıyla Pisagor bağlantısını açıklığa kavuştur.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g11-math-trig-transformation-v1",
+    "criterionId": "transformation",
+    "task": "Sinüs grafiğinde 2 ile dikey germe ve +1 ile yukarı ötelemenin en büyük ve en küçük değerlere etkisini açıkla.",
+    "expectedEvidence": "Genliği 2, orta çizgiyi y=1 olarak gerekçelendir.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g11-math-trig-transformation-v1",
+    "criterionId": "period",
+    "task": "sin(3x) fonksiyonunun hangi en küçük pozitif x artışından sonra tekrarlandığını sinüsün 2π periyoduyla ilişkilendir.",
+    "expectedEvidence": "En küçük pozitif periyodun 2π/3 olduğunu dönüşüm bağıntısıyla yaz.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g11-math-trig-transformation-v1",
+    "criterionId": "range",
+    "task": "-1≤sin(3x)≤1 eşitsizliğini önce 2 ile çarpıp sonra 1 ekleyerek g(x)'in görüntü aralığını bul.",
+    "expectedEvidence": "Sonucun [-1,3] olduğunu ve uç değerlerin oluşabildiğini belirt.",
+    "minutes": 8,
+    "mode": "WRITTEN_SAFE_PRACTICE"
+  },
+  {
+    "taskId": "perf-g11-math-trig-transformation-v1",
+    "criterionId": "proof",
+    "task": "g(x)=2sin(3x)+1 için iki ayırt edici sinüs noktasında fonksiyon değerini hesaplayıp çizim veya cebirle kontrol et.",
+    "expectedEvidence": "Grafik dönüşümü, y=1 orta çizgisi ve [-1,3] aralığıyla tutarlı nokta örnekleri yaz.",
+    "minutes": 8,
     "mode": "WRITTEN_SAFE_PRACTICE"
   }
 ];
