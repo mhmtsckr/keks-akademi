@@ -191,7 +191,7 @@ export function microLessonCoverageSnapshot(){
     totalOfficialOutcomes:verifiedAdditionalOutcomeRows.length,
     linkedPilotLessons:verifiedAdditionalOutcomeRows.reduce((n,x)=>n+x.linkedPilotLessons,0),
     outcomes:verifiedAdditionalOutcomeRows,
-    note:'Bu yalnız kontrol edilen sekiz MEB öğrenme çıktısının kaydıdır; diğer tüm çıktılar henüz dizine alınmamıştır.'
+    note:'Bu yalnız kaynakla doğrulanmış belirli MEB öğrenme çıktılarının alt kümesidir; diğer çıktılar henüz dizine alınmamıştır.'
   },
   verifiedMiddlePrograms,
   verifiedThemeSources:{
