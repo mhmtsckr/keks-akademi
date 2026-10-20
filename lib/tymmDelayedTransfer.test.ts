@@ -12,7 +12,7 @@ function row(type:string,id:string,taskId:string,at:string,review?:unknown){
 }
 describe('Bağımsız gecikmeli TYMM performans ölçümü',()=>{
  it('altı görev için özgün ikinci bağlam ve aynı dört rubrik boyutunu korur',()=>{
-  expect(TYMM_TRANSFER_VARIANTS).toHaveLength(8);
+  expect(TYMM_TRANSFER_VARIANTS).toHaveLength(11);
   expect(new Set(TYMM_TRANSFER_VARIANTS.map(x=>x.id)).size).toBe(8);
   for(const task of TYMM_PERFORMANCE_TASKS){
    const v=transferVariantFor(task.id);
