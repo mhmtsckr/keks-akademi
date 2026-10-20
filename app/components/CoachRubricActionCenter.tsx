@@ -3,7 +3,9 @@ import {useEffect,useState} from 'react';
 
 type Suggestion={criterionId:string;criterionLabel:string;score:number;outOf:number;task:string;expectedEvidence:string;minutes:number;assigned:boolean};
 type Review={id:string;taskId:string;grade:number;subject:string;title:string;phase:string;reviewedAt:string;suggestions:Suggestion[]};
-type Assignment={id:string;reviewSubmissionId:string;criterionId:string;status:string;taskId:string;
+type RemediationImpact={status:string;originalScore:number|null;independentScore:number|null;change:number|null;statement:string;limitations:string};
+type Summary={totalAssigned:number;accepted:number;independentlyReassessed:number;increased:number;unchanged:number;decreased:number;missingFollowUp:number};
+type Assignment={id:string;impact?:RemediationImpact|null;reviewSubmissionId:string;criterionId:string;status:string;taskId:string;
  criterionLabel:string;assignment:string;expectedEvidence:string;minutes:number;coachNote:string;
  reflection:string|null;assignedAt:string;completedAt:string|null;attemptCount?:number;
  review?:{decision:'ACCEPT'|'REVISE';feedback:string;reviewedAt:string}|null;
@@ -12,6 +14,7 @@ type Assignment={id:string;reviewSubmissionId:string;criterionId:string;status:s
 export function CoachRubricActionCenter({studentId,reviewVersion}:{studentId:string;reviewVersion:string}){
  const [reviews,setReviews]=useState<Review[]>([]);
  const [assignments,setAssignments]=useState<Assignment[]>([]);
+ const [remediationSummary,setRemediationSummary]=useState<Summary|null>(null);
  const [notes,setNotes]=useState<Record<string,string>>({});
  const [reviewNotes,setReviewNotes]=useState<Record<string,string>>({});
  const [busy,setBusy]=useState('');
@@ -22,6 +25,7 @@ export function CoachRubricActionCenter({studentId,reviewVersion}:{studentId:str
    const j=await r.json();
    if(!r.ok)throw new Error(j.error||'Telafi önerileri alınamadı.');
    setReviews(j.reviews||[]);setAssignments(j.assignments||[]);
+   setRemediationSummary(j.remediationSummary||null);
   }catch(e){setMsg('Hata: '+(e instanceof Error?e.message:'Yüklenemedi.'));}
  }
  useEffect(()=>{void load();},[studentId,reviewVersion]);
@@ -59,6 +63,12 @@ export function CoachRubricActionCenter({studentId,reviewVersion}:{studentId:str
  return <details className="card" style={{marginTop:12}}>
   <summary><strong>Ölçüte Özel Telafi ve Koç Aksiyonları</strong> · {needed.length} atanabilir beceri</summary>
   <p className="muted">KEKS, yalnız koçun 0 veya 1 puan verdiği ölçütten somut kısa çalışma önerir. Öneri otomatik atanmaz; hangi görevin gerekli olduğuna koç karar verir.</p>
+  {remediationSummary&&remediationSummary.accepted>0&&<div className="notice">
+    <strong>Telafi sonrası bağımsız kanıt izlemesi:</strong> {remediationSummary.accepted} koç tarafından kabul edilen görev,
+    {' '}{remediationSummary.independentlyReassessed} telafi sonrasında bağımsız rubrikle yeniden ölçülen ölçüt,
+    {' '}{remediationSummary.missingFollowUp} henüz uygun yeniden ölçümü olmayan görev.
+    <p className="muted">Ölçüm puanı, telafinin neden-sonuç etkisini veya kalıcı öğrenmeyi kanıtlamaz.</p>
+  </div>}
   {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
   <div className="stack">
    {needed.slice(0,15).map(({review,suggestion})=>{
@@ -96,6 +106,14 @@ export function CoachRubricActionCenter({studentId,reviewVersion}:{studentId:str
      <p className="muted">Koç notu: {a.coachNote}</p>
      {a.reflection&&<p><strong>Öğrenci kanıtı:</strong> {a.reflection}</p>}
      {a.review&&<p><strong>Son koç kararı:</strong> {a.review.decision==='ACCEPT'?'Kabul':'Yeniden çalışma'} · {a.review.feedback}</p>}
+     {a.status==='VERIFIED'&&a.impact&&<div className="notice">
+       <strong>Bağımsız yeniden ölçüm kontrolü:</strong> {a.impact.statement}
+       {a.impact.status==='OBSERVED_AFTER_ACTION'&&<p>
+         İlk ölçüt: {a.impact.originalScore}/2 → bağımsız ölçüt: {a.impact.independentScore}/2
+         {' '}({a.impact.change!>0?'+':''}{a.impact.change} puan)
+       </p>}
+       <small className="muted">{a.impact.limitations}</small>
+     </div>}
      {a.status==='SUBMITTED_FOR_REVIEW'&&<>
        <p className="muted"><strong>Deneme:</strong> {a.attemptCount||1}/3. Açıklamayı yalnız somut kanıta göre değerlendirin.</p>
        <label className="field"><span>Öğrenci kanıtına yönelik gerekçeli inceleme (en az 30 karakter)</span>
