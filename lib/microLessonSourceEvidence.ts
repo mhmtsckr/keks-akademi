@@ -3,6 +3,7 @@ import {findVerifiedThemeById} from './verifiedGrade7TurkishThemes';
 import {findGrade56Theme} from './verifiedGrade56Themes';
 import {findAdditionalTymmOutcome} from './verifiedAdditionalTymmOutcomes';
 import {findVerifiedGeographyOutcome} from './verifiedGrade10GeographyOutcomes';
+import {findGrade9GeographyOutcome} from './verifiedGrade9GeographyOutcomes';
 import {findVerifiedLiteratureTheme} from './verifiedGrade911LiteratureThemes';
 import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
@@ -41,7 +42,12 @@ export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
       outcomeCode:null,sourceUrl:literature.sourceUrl,checkedOn:literature.checkedOn,
       interpretation:'MEB 2026–2027 tema başlığı doğrulandı. Bu mikro ders KEKS tarafından hazırlanmış konu/beceri alıştırmasıdır; resmî öğrenme çıktısı kodu eşleştirmesi ve alan uzmanı incelemesi bekleniyor.'
     };
-  const geo=lesson.sourceThemeId?findVerifiedGeographyOutcome(lesson.sourceThemeId):null;
+  const geo9=lesson.sourceThemeId?findGrade9GeographyOutcome(lesson.sourceThemeId):null;
+ if(geo9&&geo9.subject===lesson.subject&&lesson.targetGrades?.includes(9)&&lesson.sourceUrl===geo9.url)
+  return {themeVerified:true,outcomeCodeVerified:true,
+    theme:geo9.theme,outcomeCode:geo9.code,sourceUrl:geo9.url,checkedOn:geo9.checkedOn,
+    interpretation:'MEB 2026–2027 9. sınıf Coğrafya öğrenme çıktısı kaynakta doğrulandı. KEKS özgün pilot soruları çıktının tüm süreç, harita çizimi ve performans becerilerini ölçmez; MEB veya alan öğretmeni onayı değildir.'};
+ const geo=lesson.sourceThemeId?findVerifiedGeographyOutcome(lesson.sourceThemeId):null;
  if(geo&&geo.subject===lesson.subject&&lesson.targetGrades?.includes(geo.grade)&&lesson.sourceUrl===geo.url)
    return {
      themeVerified:true,outcomeCodeVerified:true,theme:geo.theme,outcomeCode:geo.code,
