@@ -11,6 +11,7 @@ import {VERIFIED_GRADE7_TURKISH_THEMES} from './verifiedGrade7TurkishThemes';
 import {VERIFIED_GRADE56_THEMES} from './verifiedGrade56Themes';
 import {VERIFIED_ADDITIONAL_TYMM_OUTCOMES} from './verifiedAdditionalTymmOutcomes';
 import {VERIFIED_GRADE10_GEOGRAPHY} from './verifiedGrade10GeographyOutcomes';
+import {VERIFIED_GRADE9_GEOGRAPHY} from './verifiedGrade9GeographyOutcomes';
 import {VERIFIED_GRADE9_11_TDE_THEMES} from './verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from './verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from './verifiedGrade7ScienceOutcomes';
@@ -105,7 +106,12 @@ export function microLessonCoverageSnapshot(){
      linkedPilotLessons:themes.reduce((n,x)=>n+x.linkedPilotLessons,0),
      themes,disclaimer:'TDE kodları birden fazla temada yeniden kullanılabilir; resmî çıktı bu kayıtta tema ve sınıfla birlikte tanımlanır. Pilot soru tüm dil becerisini ölçmez.'};
  });
-  const geographyOutcomes=VERIFIED_GRADE10_GEOGRAPHY.map(outcome=>({
+  const grade9GeographyOutcomes=VERIFIED_GRADE9_GEOGRAPHY.map(outcome=>({
+   code:outcome.code,theme:outcome.theme,sourceUrl:outcome.url,skill:outcome.skill,
+   linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code
+     &&l.subject==='Coğrafya'&&l.targetGrades?.includes(9)).length
+ }));
+ const geographyOutcomes=VERIFIED_GRADE10_GEOGRAPHY.map(outcome=>({
    code:outcome.code,theme:outcome.theme,sourceUrl:outcome.url,skill:outcome.skill,
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code&&l.subject==='Coğrafya'&&l.targetGrades?.includes(10)).length
  }));
@@ -167,6 +173,13 @@ export function microLessonCoverageSnapshot(){
     disclaimer:'MEB kazanım kodu ve tema bağlamı doğrulandı; KEKS soruları MEB/ÖSYM tarafından onaylanmadı. Bir beceride dört çoktan seçmeli alıştırma tüm muhakeme ve performans çıktısını ölçmez.'
   },
   verifiedLiteraturePrograms:literatureProgramRows,
+    verifiedGrade9Geography:{
+    grade:9,subject:'Coğrafya',totalOfficialOutcomes:grade9GeographyOutcomes.length,
+    distinctThemes:new Set(grade9GeographyOutcomes.map(x=>x.theme)).size,
+    linkedPilotLessons:grade9GeographyOutcomes.reduce((n,x)=>n+x.linkedPilotLessons,0),
+    outcomes:grade9GeographyOutcomes,
+    disclaimer:'Resmî MEB çıktı kaynakları doğrulandı; KEKS pilot alıştırmaları her çıktının tüm harita, analiz veya performans bileşenlerini ölçmez ve alan uzmanı onayı değildir.'
+  },
     verifiedGeography:{
     grade:10,subject:'Coğrafya',totalOfficialOutcomes:geographyOutcomes.length,
     distinctThemes:new Set(geographyOutcomes.map(x=>x.theme)).size,
