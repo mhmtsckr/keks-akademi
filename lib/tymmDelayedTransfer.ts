@@ -2,7 +2,8 @@
 import {performanceTaskById,type RubricCriterion} from './tymmPerformanceTasks';
 export const TRANSFER_DELAY_DAYS=7;
 export type TransferVariant={baselineTaskId:string;id:string;version:1;title:string;instruction:string;evidencePrompt:string;steps:readonly string[];criterionLabels:readonly string[]};
-export const TYMM_TRANSFER_VARIANTS:readonly TransferVariant[]=[
+export const TYMM_TRANSFER_VARIANTS:readonly TransferVariant[]=
+[
   {
     "baselineTaskId": "perf-g5-moon-model-v1",
     "id": "perf-g5-moon-model-transfer-v1",
@@ -153,6 +154,63 @@ export const TYMM_TRANSFER_VARIANTS:readonly TransferVariant[]=[
       "Ölçülebilir, doğrulanabilir kanıt seçme",
       "Yerel varsayıma uygun müdahale değerlendirmesi",
       "Belirsizlik ve yetkili kaynak gereğini belirtme"
+    ]
+  },
+  {
+    "baselineTaskId": "perf-g9-math-systematic-probability-v1",
+    "id": "perf-g9-math-systematic-probability-transfer-v1",
+    "version": 1,
+    "title": "İki zarın toplamında yeni olasılık durumunu sistematik incele",
+    "instruction": "Hilesiz iki altı yüzlü sayı küpü birlikte atılıyor. Sıralı 36 sonuç arasından toplamı 7 olan 6 durumu bir tablo/örüntüyle göster. Teorik olasılığı 6/36=1/6 olarak hesapla. Varsayımsal 60 denemenin 14'ünde bu toplamın görülmesiyle (14/60) karşılaştır; sonuçların neden tam eşit olmak zorunda olmadığını açıkla.",
+    "evidencePrompt": "Tüm sonuçların nasıl 36 olduğunu, toplamı 7 yapan sıralı çiftleri, iki oranı ve farkın gerekçesini kendi sözlerinle yaz.",
+    "steps": [
+      "Örnek uzayı 6×6 sıralı sonuç üzerinden sistematik kur.",
+      "Toplamı 7 yapan altı sıralı çifti belirleyip teorik oranı hesapla.",
+      "14/60 oranını 1/6 ile karşılaştır, deneysel dalgalanmayı açıkla."
+    ],
+    "criterionLabels": [
+      "İki zarın 36 sıralı sonuçlu örnek uzayını açıklama",
+      "Toplamı 7 olan altı sıralı sonucu eksiksiz belirleme",
+      "6/36 ve 14/60 oranlarını doğru hesaplama",
+      "Deneysel farkı teorik olasılıkla karıştırmadan yorumlama"
+    ]
+  },
+  {
+    "baselineTaskId": "perf-g10-math-coordinate-map-v1",
+    "id": "perf-g10-math-coordinate-map-transfer-v1",
+    "version": 1,
+    "title": "Yeni koordinatlarda eş uzaklığı ve orta noktayı doğrula",
+    "instruction": "Yeni haritada A(-3,4) ile B(5,-2) arasında kuş uçuşu uzaklığı ve orta noktayı bul. Negatif koordinatlar ve işaret farklarını doğru ele al; yanıtını dik üçgen ve eş uzaklık kontrolüyle gerekçelendir.",
+    "evidencePrompt": "Yatay/düşey farkları 8 ve -6 olarak belirtip uzaklığın 10, orta noktanın (1,1) olduğunu işlemlerle göster.",
+    "steps": [
+      "Koordinat farklarını, özellikle y eksenindeki -6'yı doğru yaz.",
+      "Pisagor ile uzaklığı 10 birim hesapla.",
+      "(-3+5)/2 ve (4-2)/2 ile (1,1) orta noktayı bul, sonuçları kontrol et."
+    ],
+    "criterionLabels": [
+      "Negatif koordinatlarla yön/farkları doğru temsil etme",
+      "Yeni konumda Pisagor ile 10 birim uzaklığı bulma",
+      "(1,1) orta noktasını hesaplayıp doğrulama",
+      "İşaret ve harita birimi üzerinden gerekçelendirme"
+    ]
+  },
+  {
+    "baselineTaskId": "perf-g11-math-trig-transformation-v1",
+    "id": "perf-g11-math-trig-transformation-transfer-v1",
+    "version": 1,
+    "title": "Kosinüs dönüşümünde periyot ve aralığı yeniden kanıtla",
+    "instruction": "Yeni bağlamda h(x)=3cos(2x)-2 için genlik, en küçük pozitif periyot, görüntü kümesi ve orta çizgiyi belirle. f(x)=cos(x) referans grafiğine göre değişimi birkaç karakteristik nokta ve eşitsizlikle açıkla.",
+    "evidencePrompt": "Genliği 3, periyodu π, görüntü kümesini [-5,1] ve orta çizgiyi y=-2 bulduğun matematiksel adımları yaz.",
+    "steps": [
+      "Dikey germe 3 ve öteleme -2'yi açıkla.",
+      "cos(2x) nedeniyle periyodu π hesapla.",
+      "-1≤cos(2x)≤1 eşitsizliğinden -5≤h(x)≤1 sonucuna ulaş, grafiksel/cebirsel kontrol et."
+    ],
+    "criterionLabels": [
+      "Kosinüste genlik 3 ve -2 dönüşümünü açıklama",
+      "En küçük pozitif periyodun π olduğunu doğrulama",
+      "[-5,1] değer aralığı ve y=-2 orta çizgiyi belirleme",
+      "Dönüşümü grafik/cebirle tutarlı gerekçelendirme"
     ]
   }
 ];
