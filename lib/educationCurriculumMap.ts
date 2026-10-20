@@ -10,6 +10,7 @@ import {literatureThemesForGrade} from '@/lib/verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from '@/lib/verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from '@/lib/verifiedGrade7ScienceOutcomes';
 import {VERIFIED_GRADE57_SOCIAL} from '@/lib/verifiedGrade57SocialOutcomes';
+import {VERIFIED_LGS8_OUTCOMES} from '@/lib/verifiedLgs8Outcomes2026';
 
 export type CurriculumAcquisition={
   id:string;
@@ -303,6 +304,31 @@ function grade7ScienceOfficialIndex():CurriculumSubject{
  };
 }
 
+function verifiedLgs8Subject(subject:string):CurriculumSubject|null{
+ const outcomes=VERIFIED_LGS8_OUTCOMES.filter(x=>x.subject===subject);
+ if(!outcomes.length)return null;
+ const units=new Map<string,typeof outcomes>();
+ for(const outcome of outcomes){
+  const group=units.get(outcome.unit)||[];
+  units.set(outcome.unit,[...group,outcome]);
+ }
+ return {
+  name:subject,
+  units:[...units.entries()].map(([unit,rows])=>({
+   name:unit+' — doğrulanmış eski MEB kazanım örnekleri (tam ünite kapsamı değildir)',
+   sourceUrl:rows[0].sourceUrl,
+   topics:rows.map(row=>({
+    name:row.skill,
+    subTopics:[{
+      name:row.skill,
+      acquisitions:[q(row.code,row.skill+' (MEB önceki program kazanım kodu doğrulandı; KEKS soruları pilot)',
+        ['Beceri temelli soru','Çoktan seçmeli','Metin/tablo yorumlama','Gerekçelendirme'])]
+    }]
+   }))
+  }))
+ };
+}
+
 function lgsLegacySubject(subject:string):CurriculumSubject|null{
   const key=subject==='T.C. İnkılap Tarihi ve Atatürkçülük'
     ?'T.C. İnkılap Tarihi'
@@ -461,14 +487,14 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   const exactGrade=resolveLearningCurriculumContext({gradeLevel}).grade;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=>(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=>(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?verifiedLgs8Subject(subject)||lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,
     examType:curriculumExamTypeForLevel(key)||profile.examMode,
     framework:['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)?'TYMM':'EXAM',
     sourceLabel:key==='MIDDLE_8'
-      ?'2026–2027: Önceki MEB programı · KEKS LGS konu dizini (resmî kazanım doğrulanmadı)'
+      ?'2026–2027: Önceki MEB programı · yalnız Türkçe ve Fen Bilimleri için seçilmiş resmî kazanım örnekleri doğrulandı; diğer KEKS LGS konu haritaları onay bekliyor'
       :['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)
         ?'2026–2027 Türkiye Yüzyılı Maarif Modeli (mevcut KEKS kazanım kapsaması sınırlıdır)'
         :'KEKS önceki MEB / sınav konu haritası (resmî kazanım eşleştirmesi doğrulanmalıdır)',
