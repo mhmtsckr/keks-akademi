@@ -1,6 +1,7 @@
 'use client';
 import {FormEvent,useEffect,useState} from 'react';
-type Assignment={id:string;createdAt:string;status:'ASSIGNED'|'SUBMITTED_FOR_REVIEW'|'REVISION_REQUIRED'|'VERIFIED'|'COACH_DISCUSSION_REQUIRED'|'DONE';subject:string;grade:number;
+type RemediationImpact={status:string;originalScore:number|null;independentScore:number|null;change:number|null;statement:string;limitations:string};
+type Assignment={id:string;impact?:RemediationImpact|null;createdAt:string;status:'ASSIGNED'|'SUBMITTED_FOR_REVIEW'|'REVISION_REQUIRED'|'VERIFIED'|'COACH_DISCUSSION_REQUIRED'|'DONE';subject:string;grade:number;
  criterionLabel:string;assignment:string;expectedEvidence:string;minutes:number;
  coachNote:string;reflection:string|null;completedAt:string|null;attemptCount?:number;
  review?:{decision:'ACCEPT'|'REVISE';feedback:string;reviewedAt:string}|null;
@@ -89,6 +90,15 @@ export function StudentRubricActions(){
       'Önceki kayıt: yalnız öğrenci tamamlandı bildirimi, koç doğrulaması yok.'}</p>
     <p>{action.assignment}</p><p><strong>Benim açıklamam:</strong> {action.reflection||'—'}</p>
     {action.review&&<p><strong>Koç geri bildirimi:</strong> {action.review.feedback}</p>}
+    {action.impact&&action.status==='VERIFIED'&&<div className="notice">
+      <strong>Telafiden sonraki bağımsız ölçüm</strong>
+      <p>{action.impact.statement}</p>
+      {action.impact.status==='OBSERVED_AFTER_ACTION'&&<p>
+        İlk rubrik: {action.impact.originalScore}/2 → sonraki bağımsız rubrik: {action.impact.independentScore}/2
+        {' '}({action.impact.change!>0?'+':''}{action.impact.change} puan)
+      </p>}
+      <small className="muted">{action.impact.limitations}</small>
+    </div>}
     {action.reviewHistory&&action.reviewHistory.length>1&&<details>
       <summary>Önceki incelemeler ({action.reviewHistory.length})</summary>
       {action.reviewHistory.map((h,i)=><p key={i}>{h.attempt}. deneme: {h.decision==='ACCEPT'?'Kabul':'Yeniden çalışma'} · {h.feedback}</p>)}
