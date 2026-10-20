@@ -79,8 +79,8 @@ describe('8. sınıf LGS / önceki MEB programı / kaynaklı pilot',()=>{
    expect(snap.verifiedLgs8.verifiedSelectedOutcomes).toBe(6);
    expect(snap.verifiedLgs8.linkedPilotLessons).toBe(6);
    expect(snap.gradeRows.find(x=>x.grade===8)?.framework).toBe('MEB_LEGACY');
-   expect(snap.totalLessons).toBe(106);
-   expect(snap.totalExercises).toBe(424);
+   expect(snap.totalLessons).toBe(110);
+   expect(snap.totalExercises).toBe(440);
    expect(snap.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
  });
 });
