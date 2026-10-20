@@ -10,6 +10,7 @@ import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
 import {findGrade57SocialOutcome} from './verifiedGrade57SocialOutcomes';
 import {findVerifiedHistoryOutcome} from './verifiedGrade911HistoryOutcomes2026';
 import {findLgs8Outcome} from './verifiedLgs8Outcomes2026';
+import {findGrade12LiteratureOutcome} from './verifiedGrade12LiteratureOutcomes';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -20,6 +21,15 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const code=lesson.sourceThemeId?.startsWith('LEGACY.12.')?lesson.sourceThemeId.slice('LEGACY.12.'.length):null;
+ const former=code?findGrade12LiteratureOutcome(code):null;
+ if(former&&lesson.subject===former.subject&&lesson.targetGrades?.length===1
+   &&lesson.targetGrades[0]===12&&lesson.sourceUrl===former.sourceUrl){
+   return {themeVerified:true,outcomeCodeVerified:true,
+     theme:former.title,outcomeCode:former.code,sourceUrl:former.sourceUrl,
+     checkedOn:former.checkedOn,
+     interpretation:'12. sınıfta yürürlükteki önceki MEB 2018 Türk Dili ve Edebiyatı kazanımı kaynakta doğrulandı. TYMM değildir. KEKS soruları özgün Pilot içeriktir ve MEB/ÖSYM veya branş öğretmeni onayı yoktur.'};
+ }
  const legacy=lesson.sourceThemeId?findLgs8Outcome(lesson.sourceThemeId):null;
  if(legacy&&lesson.subject===legacy.subject&&lesson.targetGrades?.includes(8)&&lesson.sourceUrl===legacy.sourceUrl)
   return {themeVerified:true,outcomeCodeVerified:true,theme:legacy.unit,outcomeCode:legacy.code,
