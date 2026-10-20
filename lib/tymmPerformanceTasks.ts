@@ -2,10 +2,12 @@
 import {findAdditionalTymmOutcome} from './verifiedAdditionalTymmOutcomes';
 import {VERIFIED_GRADE56_THEMES} from './verifiedGrade56Themes';
 import {findVerifiedGeographyOutcome} from './verifiedGrade10GeographyOutcomes';
+import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 export type PerformanceTaskKind='OPEN_RESPONSE'|'EXPERIMENT_DESIGN'|'MODEL';
 export type RubricCriterion={id:string;label:string;levels:Readonly<Record<0|1|2,string>>};
 export type PerformanceTask={id:string;grade:number;subject:string;outcomeCode:string;version:number;kind:PerformanceTaskKind;title:string;instruction:string;steps:readonly string[];evidencePrompt:string;safety:string;criteria:readonly RubricCriterion[];sourceUrl:string;contentStatus:'PILOT'};
-export const TYMM_PERFORMANCE_TASKS:readonly PerformanceTask[]=[
+export const TYMM_PERFORMANCE_TASKS:readonly PerformanceTask[]=
+[
   {
     "id": "perf-g5-moon-model-v1",
     "grade": 5,
@@ -461,11 +463,185 @@ export const TYMM_PERFORMANCE_TASKS:readonly PerformanceTask[]=[
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/cografya-dersi/unite/94",
     "contentStatus": "PILOT"
+  },
+  {
+    "id": "perf-g9-math-systematic-probability-v1",
+    "grade": 9,
+    "subject": "Matematik",
+    "outcomeCode": "MAT.9.7.2",
+    "version": 1,
+    "kind": "OPEN_RESPONSE",
+    "title": "İki para atışında tüm durumları sistematik göster",
+    "instruction": "Hilesiz bir para art arda iki kez atılıyor. Tüm sıralı sonuçları (Y: yazı, T: tura) ağaç şeması veya tabloyla göster. Tam bir tura gelme olasılığını teorik olarak hesapla. Yirmi bağımsız denemenin 12'sinde tam bir tura geldiği varsayımsal veriyi teorik olasılıkla karşılaştır; farkın niçin kesin bir çelişki olmadığını gerekçelendir.",
+    "steps": [
+      "Aynı sonuçları çift saymadan YY, YT, TY, TT örnek uzayını oluştur.",
+      "Tam bir tura içeren olayları seçip 2/4=1/2 teorik olasılığını bul.",
+      "Verilen deneysel oranı 12/20=0,60 hesapla; 0,50 ile karşılaştırıp rastlantısal değişkenliği açıkla."
+    ],
+    "evidencePrompt": "Kullandığın ağaç şeması/tabloyu metin olarak yaz; uygun olay kümesini, hesaplamaları ve teorik-deneysel farkın gerekçesini göster.",
+    "safety": "Gerçek deney veya internet aracı zorunlu değildir. Verilen 20 denemenin sonucu varsayımsal veridir; kendi denemeni yapmış gibi yazma.",
+    "criteria": [
+      {
+        "id": "sampleSpace",
+        "label": "Sıralı dört sonucu eksiksiz ve sistematik gösterme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "event",
+        "label": "Tam bir tura olayını YT ve TY olarak belirleme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "theory",
+        "label": "Teorik 1/2 ve deneysel 12/20 oranlarını doğru hesaplama",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "inference",
+        "label": "Deneysel-teorik farkı rastlantısal değişkenlikle açıklama",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      }
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/matematik-dersi/unite/97",
+    "contentStatus": "PILOT"
+  },
+  {
+    "id": "perf-g10-math-coordinate-map-v1",
+    "grade": 10,
+    "subject": "Matematik",
+    "outcomeCode": "MAT.10.6.1",
+    "version": 1,
+    "kind": "MODEL",
+    "title": "Koordinat haritasında uzaklığı ve orta noktayı gerekçelendir",
+    "instruction": "Bir ızgara haritasında A(1,2), B(7,10) noktaları yer alıyor. İki nokta arasındaki kuş uçuşu uzaklığı ve AB doğru parçasının orta noktasını hesapla. Bulduğun formülleri dik üçgen ve koordinat örüntüsü üzerinden gerekçelendir; sonucu harita birimiyle belirt.",
+    "steps": [
+      "A'dan B'ye x yönündeki 6 birim ve y yönündeki 8 birim farkı göster.",
+      "Pisagor ile uzaklığı √(6²+8²)=10 birim hesapla.",
+      "Orta noktayı ((1+7)/2,(2+10)/2)=(4,6) bul, iki uçla eşit uzaklığı kontrol et."
+    ],
+    "evidencePrompt": "Koordinat düzlemini ve dik üçgenini metinle tanımla; uzaklık, orta nokta, her ara işlem ve birim yorumunu yaz.",
+    "safety": "Bu görev kâğıt üzerinde bir koordinat modeli ve matematiksel açıklamadır; gerçek saha ölçümü gerektirmez.",
+    "criteria": [
+      {
+        "id": "representation",
+        "label": "İki noktayı, yatay/dikey farkları doğru temsil etme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "distance",
+        "label": "Pisagor bağlantısıyla 10 birim uzaklık hesaplama",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "midpoint",
+        "label": "(4,6) orta noktasını bulma ve kontrol etme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "argument",
+        "label": "Genellemeyi ve kuş uçuşu uzaklık yorumunu gerekçelendirme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      }
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/matematik-dersi/unite/263",
+    "contentStatus": "PILOT"
+  },
+  {
+    "id": "perf-g11-math-trig-transformation-v1",
+    "grade": 11,
+    "subject": "Matematik",
+    "outcomeCode": "MAT.11.3.1",
+    "version": 1,
+    "kind": "OPEN_RESPONSE",
+    "title": "Dönüştürülmüş sinüs fonksiyonunun niteliklerini çıkar",
+    "instruction": "g(x)=2sin(3x)+1 fonksiyonunu f(x)=sin(x) referans grafiğiyle karşılaştır. Genliğini, en küçük pozitif periyodunu, görüntü kümesini ve orta çizgisini bul. Değişken dönüşümlerinin grafiğe etkisini cebirsel veya çizimle açıklayıp bulgularını doğrula.",
+    "steps": [
+      "Dış çarpan 2 ve dikey öteleme +1'in grafiği nasıl dönüştürdüğünü açıkla.",
+      "Yatay çarpan 3 nedeniyle periyodu 2π/3 hesapla.",
+      "-1≤sin(3x)≤1 eşitsizliğinden -1≤g(x)≤3 ve orta çizgi y=1 sonucuna ulaş."
+    ],
+    "evidencePrompt": "sin(x) ile g(x) grafiğini birkaç karakteristik nokta veya sözel çizimle kıyasla; periyot ve değer aralığının matematiksel gerekçesini yaz.",
+    "safety": "Bu görev yalnız kâğıt üzerinde trigonometrik grafik ve eşitsizlik muhakemesidir.",
+    "criteria": [
+      {
+        "id": "transformation",
+        "label": "Genlik 2 ve +1 dikey dönüşümünü açıklama",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "period",
+        "label": "En küçük pozitif periyodu 2π/3 belirleme",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "range",
+        "label": "Görüntü kümesini [-1,3] ve orta çizgiyi y=1 bulma",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      },
+      {
+        "id": "proof",
+        "label": "Referans fonksiyonla grafiksel/cebirsel doğrulama yapma",
+        "levels": {
+          "0": "Yanlış, belirsiz veya gerekçesiz",
+          "1": "Kısmen doğru; yöntem veya kanıt eksik",
+          "2": "Matematiksel olarak doğru, açık ve gerekçeli"
+        }
+      }
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/matematik-dersi/unite/281",
+    "contentStatus": "PILOT"
   }
 ];
 export function performanceTaskById(id:string,version?:number){return TYMM_PERFORMANCE_TASKS.find(x=>x.id===id&&(version===undefined||x.version===version))||null;}
 export function performanceTasksForGrade(grade:number){return TYMM_PERFORMANCE_TASKS.filter(x=>x.grade===grade);}
 export function performanceTaskEvidence(task:PerformanceTask){
+ const math=findVerifiedTymmMathOutcome(task.outcomeCode);
+ if(math&&math.grade===task.grade&&math.subject===task.subject&&math.url===task.sourceUrl)
+  return {outcomeCodeVerified:true,sourceUrl:math.url};
  const fromGeo=findVerifiedGeographyOutcome(task.outcomeCode);
  if(fromGeo&&fromGeo.grade===task.grade&&fromGeo.subject===task.subject&&fromGeo.url===task.sourceUrl)
   return {outcomeCodeVerified:true,sourceUrl:fromGeo.url};
