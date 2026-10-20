@@ -70,7 +70,18 @@ export function AdminMicroLessonReviews(){
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
     <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
-    {(coverage.verifiedLiteraturePrograms||[]).map((g:any)=><details key={'tde-'+g.grade} className="card" style={{marginTop:12,marginBottom:12}}>
+    {(coverage.verifiedHistoryPrograms||[]).map((g:any)=><details key={'history-'+g.grade} className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>MEB TYMM · {g.grade}. sınıf Tarih</strong> · {' '+g.totalOfficialUnits} resmî ünite · {' '+g.checkedOutcomeSubset} doğrulanmış örnek çıktı · {' '+g.linkedPilotLessons} pilot mikro ders</summary>
+      <p className="muted">{g.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+       {(g.units||[]).map((u:any)=><div key={u.unit}>
+         <strong>{u.unit}. ünite: {u.title}</strong> · {u.outcomes.length?u.outcomes.length+' doğrulanmış örnek çıktı':'Öğrenme çıktısı henüz dizine alınmadı'}
+         {(u.outcomes||[]).map((out:any)=><p key={out.code} className="muted">{out.code} · {out.skill} · {out.linkedPilotLessons} pilot ders</p>)}
+         <a href={u.sourceUrl} target="_blank" rel="noopener noreferrer">MEB resmî Tarih programı</a>
+        </div>)}
+      </div>
+     </details>)}
+        {(coverage.verifiedLiteraturePrograms||[]).map((g:any)=><details key={'tde-'+g.grade} className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>MEB TYMM · {g.grade}. sınıf Türk Dili ve Edebiyatı</strong> · {' '+g.totalOfficialThemes} tema · {' '+g.verifiedOutcomeContexts} tema bağlamında doğrulanmış kod · {' '+g.linkedPilotLessons} özgün mikro ders</summary>
       <p className="muted">{g.disclaimer}</p>
       <div className="stack" style={{gap:8}}>
