@@ -45,11 +45,14 @@ function impact(action:RemediationEvidenceRow,rows:readonly RemediationEvidenceR
  const originalValid=['TYMM_PERFORMANCE_REVIEWED','TYMM_TRANSFER_REVIEWED'].includes(originalType)&&
   originalMeta.taskId===taskId&&originalMeta.taskVersion===task.version&&originalMeta.grade===task.grade;
  const originalScore=originalValid?scoreById(obj(originalMeta.review),criterionId):null;
+ const originalReviewedAt=originalValid?date(obj(originalMeta.review).reviewedAt):null;
+ const sourcePrecedesAction=Boolean(original&&originalReviewedAt!==null&&
+   originalReviewedAt>=original.createdAt.getTime()&&originalReviewedAt<=action.createdAt.getTime());
  const base={assignmentId,taskId,criterionId,criterionLabel,originalScore,
   independentScore:null as number|null,change:null as number|null,
   evidenceAt:null as string|null,comparedSubmissionId:null as string|null,
   limitations:LIMITATIONS};
- if(!originalValid||originalScore===null||originalScore>1||
+ if(!originalValid||!sourcePrecedesAction||originalScore===null||originalScore>1||
    Number(p.originalRubricScore)!==originalScore){
    return {...base,status:'SOURCE_NOT_VERIFIABLE',
     statement:'Bu görevin kaynak rubriği doğrulanamadı; gelişim karşılaştırması yapılmıyor.'};
@@ -79,8 +82,8 @@ function impact(action:RemediationEvidenceRow,rows:readonly RemediationEvidenceR
    return {row,score:scoreById(obj(x.review),criterionId)};
  }).find(x=>x.score!==null);
  if(!comparable){
-   return {...base,status:linked.length?'TRANSFER_BEFORE_ACTION':'AWAITING_INDEPENDENT_MEASUREMENT',
-     statement:linked.length
+   return {...base,status:linked.some(x=>x.createdAt.getTime()<acceptedAt)?'TRANSFER_BEFORE_ACTION':'AWAITING_INDEPENDENT_MEASUREMENT',
+     statement:linked.some(x=>x.createdAt.getTime()<acceptedAt)
        ?'Bağımsız ikinci görev telafi kabulünden önce teslim edilmiş; telafi sonrası gelişim diye sunulamaz.'
        :'Koç telafiyi kabul etti; sonrasında aynı kazanım için bağımsız ve puanlanmış ikinci görev henüz bulunmuyor.'};
  }
