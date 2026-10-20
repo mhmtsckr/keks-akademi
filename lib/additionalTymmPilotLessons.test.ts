@@ -9,10 +9,11 @@ import {microLessonCoverageSnapshot} from './microLessonCoverage2026';
 
 describe('MEB TYMM 5/6 Fen ve 9/10/11 kaynaklı pilot genişleme',()=>{
  it('resmî kaynaklara bağlanan sekiz benzersiz öğrenme çıktısı kodunu doğrular',()=>{
-  expect(VERIFIED_ADDITIONAL_TYMM_OUTCOMES).toHaveLength(8);
+  expect(VERIFIED_ADDITIONAL_TYMM_OUTCOMES).toHaveLength(12);
   expect(VERIFIED_ADDITIONAL_TYMM_OUTCOMES.map(x=>x.code)).toEqual([
    'FB.5.3.1','FB.5.3.2','FB.6.4.1','FB.6.4.3',
-   'FİZ.9.2.2','KİM.10.1.1','KİM.10.1.6','BİY.11.1.3'
+   'FİZ.9.2.2','KİM.10.1.1','KİM.10.1.6','BİY.11.1.3',
+   'BİY.9.2.2','BİY.9.2.4','BİY.10.1.2','BİY.10.2.1'
   ]);
   for(const x of VERIFIED_ADDITIONAL_TYMM_OUTCOMES){
    expect(x.url.startsWith('https://tymm.meb.gov.tr/')).toBe(true);
@@ -20,7 +21,7 @@ describe('MEB TYMM 5/6 Fen ve 9/10/11 kaynaklı pilot genişleme',()=>{
   }
  });
  it('her derste özgün çözüm, dört ayrı çoktan seçmeli soru ve gerekçeler vardır',()=>{
-  expect(ADDITIONAL_TYMM_PILOT_LESSONS).toHaveLength(8);
+  expect(ADDITIONAL_TYMM_PILOT_LESSONS).toHaveLength(12);
   const prompts:string[]=[];
   for(const lesson of ADDITIONAL_TYMM_PILOT_LESSONS){
    expect(lesson.targetGrades).toHaveLength(1);
@@ -40,7 +41,7 @@ describe('MEB TYMM 5/6 Fen ve 9/10/11 kaynaklı pilot genişleme',()=>{
    expect(source.outcomeCode).toBe(lesson.sourceThemeId);
    expect(lessonSourceEvidence({...lesson,sourceUrl:'https://invalid.test'}).outcomeCodeVerified).toBe(false);
   }
-  expect(new Set(prompts).size).toBe(32);
+  expect(new Set(prompts).size).toBe(48);
   expect(new Set(ALL_MICRO_LESSONS.map(x=>x.id)).size).toBe(ALL_MICRO_LESSONS.length);
  });
  it('5/6 ve 9/10/11 sınıfları birbirinden ayırır, geniş konu adına ders uydurmaz',()=>{
@@ -66,12 +67,16 @@ describe('MEB TYMM 5/6 Fen ve 9/10/11 kaynaklı pilot genişleme',()=>{
   expect(acquisitions(10,'Kimya')).toContain('KİM.10.1.1');
   expect(acquisitions(10,'Kimya')).toContain('KİM.10.1.6');
   expect(acquisitions(11,'Biyoloji')).toContain('BİY.11.1.3');
+  expect(acquisitions(9,'Biyoloji')).toContain('BİY.9.2.2');
+  expect(acquisitions(9,'Biyoloji')).toContain('BİY.9.2.4');
+  expect(acquisitions(10,'Biyoloji')).toContain('BİY.10.1.2');
+  expect(acquisitions(10,'Biyoloji')).toContain('BİY.10.2.1');
   expect(getEducationCurriculum('Lise 9-10 | Maarif Model (1. Aşama)')?.subjects.find(x=>x.name==='Kimya')?.units[0].name).toBe('Düzey Müfredat Haritası');
   const coverage=microLessonCoverageSnapshot();
-  expect(coverage.totalLessons).toBe(79);
-  expect(coverage.totalExercises).toBe(316);
-  expect(coverage.verifiedAdditionalOutcomes.totalOfficialOutcomes).toBe(8);
-  expect(coverage.verifiedAdditionalOutcomes.linkedPilotLessons).toBe(8);
+  expect(coverage.totalLessons).toBe(83);
+  expect(coverage.totalExercises).toBe(332);
+  expect(coverage.verifiedAdditionalOutcomes.totalOfficialOutcomes).toBe(12);
+  expect(coverage.verifiedAdditionalOutcomes.linkedPilotLessons).toBe(12);
   expect(coverage.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
  });
 });
