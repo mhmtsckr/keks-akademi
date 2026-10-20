@@ -36,8 +36,8 @@ describe('1–12. sınıflar için özgün başlangıç mikro dersleri',()=>{
   expect(coverage.gradeRows).toHaveLength(12);
   expect(coverage.gradeRows.find(x=>x.grade===8)?.framework).toBe('MEB_LEGACY');
   expect(coverage.gradeRows.find(x=>x.grade===12)?.framework).toBe('MEB_LEGACY');
-  expect(coverage.totalExercises).toBe(376);
-  expect(coverage.totalLessons).toBe(94);
+  expect(coverage.totalExercises).toBe(408);
+  expect(coverage.totalLessons).toBe(102);
   expect(coverage.status).toBe('EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT');
   expect(coverage.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
  });

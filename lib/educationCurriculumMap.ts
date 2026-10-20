@@ -10,6 +10,7 @@ import {literatureThemesForGrade} from '@/lib/verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from '@/lib/verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from '@/lib/verifiedGrade7ScienceOutcomes';
 import {VERIFIED_GRADE57_SOCIAL} from '@/lib/verifiedGrade57SocialOutcomes';
+import {VERIFIED_GRADE8_12_LEGACY} from '@/lib/verifiedGrade812LegacyOutcomes';
 
 export type CurriculumAcquisition={
   id:string;
@@ -287,6 +288,29 @@ const DETAILED:Partial<Record<EducationLevelKey,CurriculumSubject[]>>={
   MIDDLE_7:[MIDDLE_7_MATH,VERIFIED_GRADE7_TURKISH_SUBJECT]
 };
 
+function legacySourceCheckedSubject(grade:8|12,subject:string):CurriculumSubject|null{
+ const verified=VERIFIED_GRADE8_12_LEGACY.filter(x=>x.grade===grade&&x.subject===subject);
+ if(!verified.length)return null;
+ const known:CurriculumUnit={
+  name:grade===8
+   ?'8. sınıf · 2019 Türkçe programından doğrulanmış seçili kazanımlar (LGS)'
+   :'12. sınıf · 2018 TDE programından doğrulanmış seçili kazanımlar (AYT)',
+  sourceUrl:verified[0].sourceUrl,
+  topics:verified.map(outcome=>({
+   name:outcome.title,
+   subTopics:[{
+    name:outcome.scope,
+    acquisitions:[q(outcome.code,
+      outcome.scope+' (resmî önceki MEB programı kodu; KEKS pilot soruları uzman incelemesi bekliyor)',
+      grade===8?['LGS dört seçenekli beceri sorusu','Gerekçeli açık uçlu cevap']:
+      ['AYT beş seçenekli soru','Edebî metin analizi','Gerekçeli açık uçlu yorum'])]
+   }]
+  }))
+ };
+ const existing=grade===8?lgsLegacySubject(subject):null;
+ return {name:subject,units:[known,...(existing?.units||[])]};
+}
+
 function grade7ScienceOfficialIndex():CurriculumSubject{
  return {
   name:'Fen Bilimleri',
@@ -461,14 +485,16 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   const exactGrade=resolveLearningCurriculumContext({gradeLevel}).grade;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=>(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=>(exactGrade===8||exactGrade===12?legacySourceCheckedSubject(exactGrade,subject):null)||(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,
     examType:curriculumExamTypeForLevel(key)||profile.examMode,
     framework:['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)?'TYMM':'EXAM',
     sourceLabel:key==='MIDDLE_8'
-      ?'2026–2027: Önceki MEB programı · KEKS LGS konu dizini (resmî kazanım doğrulanmadı)'
+      ?'2026–2027: Önceki MEB Türkçe programından 8. sınıf seçili kazanımlar doğrulandı; diğer LGS konuları henüz resmî kodla eşleşmedi'
+      :key==='HIGH_12'
+        ?'2026–2027: 12. sınıf 2018 Türk Dili ve Edebiyatı programından dört resmî kazanım doğrulandı; YKS/AYT kapsamının geri kalanı henüz tam eşleştirilmedi'
       :['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)
         ?'2026–2027 Türkiye Yüzyılı Maarif Modeli (mevcut KEKS kazanım kapsaması sınırlıdır)'
         :'KEKS önceki MEB / sınav konu haritası (resmî kazanım eşleştirmesi doğrulanmalıdır)',

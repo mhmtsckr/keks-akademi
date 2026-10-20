@@ -57,8 +57,8 @@ describe('7. sınıf Türkçe için MEB kaynaklı tema dizini',()=>{
   expect(turkish?.units[2].topics[0].subTopics[0].acquisitions[0].id).toBe('T.O.7.18');
   expect(turkish?.units[0].topics[0].subTopics[0].acquisitions[0].id).toMatch(/^TYMM\.TR\.7\./);
   const coverage=microLessonCoverageSnapshot();
-  expect(coverage.totalLessons).toBe(94);
-  expect(coverage.totalExercises).toBe(376);
+  expect(coverage.totalLessons).toBe(102);
+  expect(coverage.totalExercises).toBe(408);
   expect(coverage.verifiedThemeSources.totalThemes).toBe(6);
   expect(coverage.verifiedThemeSources.linkedPilotLessons).toBe(6);
   expect(coverage.verifiedThemeSources.outcomesWithVerifiedCodes).toBe(2);
