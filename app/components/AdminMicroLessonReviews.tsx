@@ -188,7 +188,21 @@ export function AdminMicroLessonReviews(){
        </div>)}
       </div>
     </details>}
-        {coverage.verifiedSocialOutcomes&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+    {coverage.verifiedLegacyPrograms&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>2026–2027 Önceki MEB Programı · 8. Sınıf LGS / 12. Sınıf AYT</strong> ·
+       {' '+coverage.verifiedLegacyPrograms.selectedOfficialOutcomes} kaynaklı kazanım ·
+       {' '+coverage.verifiedLegacyPrograms.linkedPilotLessons} pilot ders
+      </summary>
+      <p className="muted">{coverage.verifiedLegacyPrograms.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+        {(coverage.verifiedLegacyPrograms.outcomes||[]).map((x:any)=><div key={x.grade+'-'+x.code}>
+          <strong>{x.grade}. sınıf · {x.code} · {x.title}</strong>
+          <p className="muted">{x.scope} · {x.linkedPilotLessons} pilot ders · {x.grade===8?'4 seçenek LGS':'5 seçenek AYT'} biçimi</p>
+          <a href={x.sourceUrl} target="_blank" rel="noopener noreferrer">Önceki MEB programı resmî kaynağı</a>
+        </div>)}
+      </div>
+    </details>}
+            {coverage.verifiedSocialOutcomes&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>2026–2027 TYMM · Sosyal Bilgiler 5–7</strong> ·
        {' '+coverage.verifiedSocialOutcomes.officialOutcomeCount} doğrulanmış MEB çıktısı ·
        {' '+coverage.verifiedSocialOutcomes.linkedPilotLessons} pilot mikro ders
