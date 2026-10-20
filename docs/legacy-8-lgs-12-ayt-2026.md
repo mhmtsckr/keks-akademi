@@ -12,7 +12,7 @@ Doğrulanmış 8. sınıf örnek kazanımları: **T.8.3.17** metnin ana düşün
 
 ## Katalog ve kalite sınırları
 
-- Önceki kod temelli toplam: **94 mikro ders, 376 alıştırma**. Yeni pilot: **8 mikro ders, 32 özgün alıştırma**. Yeni katalog: **102 mikro ders, 408 alıştırma**.
+- Önceki kod temelli toplam: **100 mikro ders, 400 alıştırma**. Yeni pilot: **8 mikro ders, 32 özgün alıştırma**. Yeni katalog: **108 mikro ders, 432 alıştırma**.
 - **MEB kazanım kodunun kaynakta bulunması** KEKS sorusunun MEB, ÖSYM veya öğretmen tarafından onaylandığı anlamına **gelmez**. Bütün yeni dersler `PILOT` statüsündedir.
 - Kodu doğrulanmayan diğer ders/konular mevcut KEKS iç konu dizininde eksik olarak kalır; tüm LGS/AYT kapsamının tamamlandığı ileri sürülmez.
 - 8. sınıfa yalnızca dört seçenekli LGS-benzeri uygulama, 12. sınıfa beş seçenekli AYT-benzeri uygulama sunulur. Belli bir kazanımın hem okul yazılısındaki açık uçlu ölçümünü hem de sınavdaki seçmeli biçimini bu dört soru ile eksiksiz değerlendirme iddiası yoktur.
