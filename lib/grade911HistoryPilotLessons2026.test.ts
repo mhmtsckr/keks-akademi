@@ -64,8 +64,8 @@ describe('2026–27 MEB TYMM 9–11 Tarih müfredatına kaynaklı pilot',()=>{
   expect(cov.verifiedHistoryPrograms.reduce((n,x)=>n+x.totalOfficialUnits,0)).toBe(9);
   expect(cov.verifiedHistoryPrograms.reduce((n,x)=>n+x.checkedOutcomeSubset,0)).toBe(6);
   expect(cov.verifiedHistoryPrograms.reduce((n,x)=>n+x.linkedPilotLessons,0)).toBe(6);
-  expect(cov.totalLessons).toBe(94);
-  expect(cov.totalExercises).toBe(376);
+  expect(cov.totalLessons).toBe(100);
+  expect(cov.totalExercises).toBe(400);
   expect(cov.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
  });
 });
