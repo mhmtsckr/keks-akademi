@@ -314,7 +314,7 @@ function verifiedLgs8Subject(subject:string):CurriculumSubject|null{
  }
  return {
   name:subject,
-  units:[...units.entries()].map(([unit,rows])=>({
+  units:[...[...units.entries()].map(([unit,rows])=>({
    name:unit+' — doğrulanmış eski MEB kazanım örnekleri (tam ünite kapsamı değildir)',
    sourceUrl:rows[0].sourceUrl,
    topics:rows.map(row=>({
