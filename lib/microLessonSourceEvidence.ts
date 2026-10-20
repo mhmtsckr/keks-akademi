@@ -9,6 +9,7 @@ import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
 import {findGrade57SocialOutcome} from './verifiedGrade57SocialOutcomes';
 import {findVerifiedHistoryOutcome} from './verifiedGrade911HistoryOutcomes2026';
+import {findVerifiedLegacyOutcome} from './verifiedGrade812LegacyOutcomes';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -19,6 +20,18 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const id=lesson.sourceThemeId||'';
+ const legacy=id.startsWith('LEGACY.8.')?findVerifiedLegacyOutcome(id.slice(9)):
+   id.startsWith('LEGACY.12.')?findVerifiedLegacyOutcome(id.slice(10)):null;
+ if(legacy&&legacy.subject===lesson.subject&&lesson.targetGrades?.length===1
+   &&lesson.targetGrades[0]===legacy.grade&&lesson.sourceUrl===legacy.sourceUrl){
+   return {
+     themeVerified:true,outcomeCodeVerified:true,
+     theme:legacy.title,outcomeCode:legacy.code,sourceUrl:legacy.sourceUrl,
+     checkedOn:legacy.checkedOn,
+     interpretation:'2026–2027 döneminde yürürlükteki önceki MEB programından bir kazanım doğrulandı. TYMM değildir. KEKS özgün pilot soruları MEB/ÖSYM veya bağımsız branş öğretmeni tarafından onaylanmamıştır.'
+   };
+ }
  const history=lesson.sourceThemeId?findVerifiedHistoryOutcome(lesson.sourceThemeId):null;
  if(history&&lesson.subject===history.subject&&
    lesson.targetGrades?.includes(history.grade)&&lesson.sourceUrl===history.url){
