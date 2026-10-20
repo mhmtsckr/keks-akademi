@@ -8,7 +8,7 @@ const codes=['MAT.9.7.2','MAT.10.6.1','MAT.11.3.1'];
 const expected=[
  {code:codes[0],grade:9,source:'https://tymm.meb.gov.tr/matematik-dersi/unite/97',words:['1/2','12/20']},
  {code:codes[1],grade:10,source:'https://tymm.meb.gov.tr/matematik-dersi/unite/263',words:['10','(4,6)']},
- {code:codes[2],grade:11,source:'https://tymm.meb.gov.tr/matematik-dersi/unite/281',words:['2π/3','[-1,3]']}
+ {code:codes[2],grade:11,source:'https://tymm.meb.gov.tr/matematik-dersi/unite/281',words:['2π/3','-1≤g(x)≤3']}
 ];
 describe('2026–27 TYMM 9–11 Matematik insan-rubrikli pilot ve farklı bağlam',()=>{
  it('her sınıf için bir özgün görev ve kayıtlı resmî MEB çıktı kaynağı bulunur',()=>{
