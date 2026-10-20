@@ -325,7 +325,7 @@ function verifiedLgs8Subject(subject:string):CurriculumSubject|null{
         ['Beceri temelli soru','Çoktan seçmeli','Metin/tablo yorumlama','Gerekçelendirme'])]
     }]
    }))
-  }),...(lgsLegacySubject(subject)?.units||[])]
+  })),...(lgsLegacySubject(subject)?.units||[])]
  };
 }
 
