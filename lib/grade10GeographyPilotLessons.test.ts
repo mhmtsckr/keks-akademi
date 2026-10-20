@@ -69,8 +69,8 @@ describe('2026–27 10. sınıf Coğrafya MEB TYMM kaynağı ve 8 pilot mikro de
   const ids=geo?.units.flatMap(u=>u.topics.flatMap(t=>t.subTopics.flatMap(s=>s.acquisitions.map(a=>a.id))))||[];
   for(const x of VERIFIED_GRADE10_GEOGRAPHY)expect(ids).toContain(x.code);
   const cov=microLessonCoverageSnapshot();
-  expect(cov.totalLessons).toBe(84);
-  expect(cov.totalExercises).toBe(336);
+  expect(cov.totalLessons).toBe(88);
+  expect(cov.totalExercises).toBe(352);
   expect(cov.verifiedGeography.distinctThemes).toBe(7);
   expect(cov.verifiedGeography.totalOfficialOutcomes).toBe(8);
   expect(cov.verifiedGeography.linkedPilotLessons).toBe(8);
