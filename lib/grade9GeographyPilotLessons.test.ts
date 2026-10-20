@@ -69,8 +69,8 @@ describe('2026–27 TYMM 9. sınıf Coğrafya kaynaklı içerikler',()=>{
   expect(coverage.verifiedGrade9Geography.totalOfficialOutcomes).toBe(5);
   expect(coverage.verifiedGrade9Geography.distinctThemes).toBe(4);
   expect(coverage.verifiedGrade9Geography.linkedPilotLessons).toBe(5);
-  expect(coverage.totalLessons).toBe(100);
-  expect(coverage.totalExercises).toBe(400);
+  expect(coverage.totalLessons).toBe(108);
+  expect(coverage.totalExercises).toBe(432);
   expect(coverage.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
  });
 });
