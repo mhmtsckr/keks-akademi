@@ -14,7 +14,7 @@ describe('9/10 Biyoloji TYMM resmî öğrenme çıktısı pilotları',()=>{
      const outcome=VERIFIED_ADDITIONAL_TYMM_OUTCOMES.find(x=>x.code===code);
      expect(outcome).toBeTruthy();
      expect(outcome?.subject).toBe('Biyoloji');
-     expect(outcome?.grade).toBe(Number(code.match(/\\.(9|10)\\./)?.[1]));
+     expect(outcome?.grade).toBe(Number(code.match(/\.(9|10)\./)?.[1]));
      expect(outcome?.url.startsWith('https://tymm.meb.gov.tr/')).toBe(true);
      expect(outcome?.checkedOn).toBe('2026-10-20');
      const lessons=ADDITIONAL_TYMM_PILOT_LESSONS.filter(x=>x.sourceThemeId===code);
