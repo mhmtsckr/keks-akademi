@@ -16,6 +16,7 @@ import {VERIFIED_GRADE9_11_TDE_THEMES} from './verifiedGrade911LiteratureThemes'
 import {VERIFIED_TYMM_MATH_OUTCOMES} from './verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from './verifiedGrade7ScienceOutcomes';
 import {VERIFIED_GRADE57_SOCIAL} from './verifiedGrade57SocialOutcomes';
+import {VERIFIED_LGS8_OUTCOMES} from './verifiedLgs8Outcomes2026';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -58,6 +59,8 @@ export function microLessonCoverageSnapshot(){
       ||VERIFIED_ADDITIONAL_TYMM_OUTCOMES.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&
         outcome.code===l.sourceThemeId&&outcome.theme.replace(/^\\d+\\. (Tema|Ünite): /,'')===t)
+      ||VERIFIED_LGS8_OUTCOMES.some(outcome=>grade===8&&outcome.subject===subject&&
+        outcome.code===l.sourceThemeId&&outcome.skill===t)
       ||VERIFIED_GRADE57_SOCIAL.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&outcome.code===l.sourceThemeId&&outcome.theme===t)
       ||VERIFIED_GRADE7_SCIENCE_OUTCOMES.some(outcome=>
@@ -158,6 +161,12 @@ export function microLessonCoverageSnapshot(){
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.subject==='Fen Bilimleri'&&
      l.targetGrades?.includes(7)&&l.sourceThemeId===outcome.code).length
  }));
+  const verifiedLgs8Rows=VERIFIED_LGS8_OUTCOMES.map(outcome=>({
+  code:outcome.code,grade:outcome.grade,subject:outcome.subject,
+  unit:outcome.unit,skill:outcome.skill,sourceUrl:outcome.sourceUrl,
+  framework:outcome.framework,linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>
+    l.sourceThemeId===outcome.code&&l.subject===outcome.subject&&l.targetGrades?.includes(8)).length
+ }));
   const verifiedThemeRows=VERIFIED_GRADE7_TURKISH_THEMES.map(theme=>({
    id:theme.id,theme:theme.themeName,skill:theme.skill,
    outcomeCode:theme.outcomeCode,verification:theme.verification,
@@ -201,6 +210,13 @@ export function microLessonCoverageSnapshot(){
     linkedPilotLessons:verifiedAdditionalOutcomeRows.reduce((n,x)=>n+x.linkedPilotLessons,0),
     outcomes:verifiedAdditionalOutcomeRows,
     note:'Bu yalnız kaynakla doğrulanmış belirli MEB öğrenme çıktılarının alt kümesidir; diğer çıktılar henüz dizine alınmamıştır.'
+  },
+  verifiedLgs8:{
+    grade:8,framework:'MEB_LEGACY',exam:'LGS',
+    verifiedSelectedOutcomes:verifiedLgs8Rows.length,
+    linkedPilotLessons:verifiedLgs8Rows.reduce((n,x)=>n+x.linkedPilotLessons,0),
+    outcomes:verifiedLgs8Rows,
+    disclaimer:'2026–2027 8. sınıfa uygulanmış eski MEB programındaki yalnız seçilmiş 6 kazanım kodu doğrulandı. Gelecekteki TYMM 8. sınıf tema sayfaları yürürlükteymiş gibi kullanılmaz; diğer LGS konu/kazanımları henüz eksiktir. KEKS soruları pilot olup resmî uzman onayı değildir.'
   },
   verifiedSocialOutcomes:{
     officialOutcomeCount:socialOutcomes.length,
