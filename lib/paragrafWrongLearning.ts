@@ -32,13 +32,7 @@ export function toPrintedReviewQuestion(q:ParagrafDetailedSolution){
  return {
   id,examType:'TYT',subject:'Türkçe',topic:q.topic,
   prompt:q.question.passage+'\n\n'+q.question.stem,
-  options:{
-   ...choices,
-   _kind:'PARAGRAF_PRINT_REFERENCE',
-   _edition:OPTIK_LEARNING_EDITION,
-   _testNo:q.testNo,_questionNo:q.questionNo,
-   _printedCode:'KEKS50-'+q.id
-  },
+  options:{...choices},
   correctAnswer:q.answer,
   explanation:q.content,
   sourceKind:OPTIK_PRINT_SOURCE,
