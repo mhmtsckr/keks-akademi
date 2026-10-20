@@ -17,6 +17,7 @@ import {VERIFIED_TYMM_MATH_OUTCOMES} from './verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from './verifiedGrade7ScienceOutcomes';
 import {VERIFIED_GRADE57_SOCIAL} from './verifiedGrade57SocialOutcomes';
 import {VERIFIED_HISTORY_OUTCOMES} from './verifiedGrade911HistoryOutcomes2026';
+import {VERIFIED_GRADE8_12_LEGACY} from './verifiedGrade812LegacyOutcomes';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -176,8 +177,20 @@ export function microLessonCoverageSnapshot(){
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>
       l.sourceThemeId===theme.id&&l.targetGrades?.includes(7)&&l.subject==='Türkçe').length
  }));
- return {
+ const legacyRows=VERIFIED_GRADE8_12_LEGACY.map(o=>({
+   grade:o.grade,subject:o.subject,code:o.code,title:o.title,scope:o.scope,
+   sourceUrl:o.sourceUrl,programVersion:o.programVersion,
+   linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId==='LEGACY.'+o.grade+'.'+o.code&&
+     l.subject===o.subject&&l.targetGrades?.includes(o.grade)&&l.sourceUrl===o.sourceUrl).length
+ }));
+  return {
   academicYear:'2026-2027',status:'EDITORIAL_BACKLOG_NOT_OFFICIAL_ALIGNMENT',
+  verifiedLegacyPrograms:{
+   grades:[8,12],selectedOfficialOutcomes:legacyRows.length,
+   linkedPilotLessons:legacyRows.reduce((sum,x)=>sum+x.linkedPilotLessons,0),
+   outcomes:legacyRows,
+   disclaimer:'Yalnız sekiz seçili kazanım eski MEB programından doğrulandı. TYMM değildir; KEKS özgün pilot alıştırmaları resmî MEB/ÖSYM veya uzman onaylı değildir. Tüm müfredatın kapsandığı iddia edilmez.'
+  },
   verifiedGrade7Science:{
     grade:7,subject:'Fen Bilimleri',totalOfficialUnits:verifiedGrade7ScienceRows.length,
     verifiedSampleOutcomes:verifiedGrade7ScienceRows.length,
