@@ -66,7 +66,7 @@ export function microLessonCoverageSnapshot(){
       ||VERIFIED_GRADE911_HISTORY_OUTCOMES.some(outcome=>
         outcome.grade===grade&&subject==='Tarih'&&outcome.code===l.sourceThemeId&&
         norm(VERIFIED_GRADE911_HISTORY_UNITS.find(u=>u.grade===grade&&u.unit===outcome.unit)?.title||'')===norm(t))
-      ||||VERIFIED_GRADE9_11_TDE_THEMES.some(theme=>
+      ||VERIFIED_GRADE9_11_TDE_THEMES.some(theme=>
         theme.grade===grade&&theme.subject===subject&&theme.theme===t&&theme.id===l.sourceThemeId)
    ));
    return {
