@@ -56,8 +56,11 @@ describe('Rubrik telafi → gecikmeli bağımsız tekrar kanıt zinciri',()=>{
   expect(first([action(),transfer()]).status).toBe('SOURCE_NOT_VERIFIABLE');
  });
  it('ikinci rubrik sonrası verilen telafi için üçüncü bağımsız veri olmadan sonuç iddia etmez',()=>{
-  const a=action();(a.payload as Record<string,unknown>).reviewSubmissionId='transfer1';
-  expect(first([a,transfer(),baseline()]).status).toBe('AWAITING_INDEPENDENT_MEASUREMENT');
+  const reviewedTransfer=transfer(0);
+  const a=action('VERIFIED','2026-10-14T10:00:00Z');
+  a.createdAt=new Date('2026-10-12T08:00:00Z');
+  (a.payload as Record<string,unknown>).reviewSubmissionId='transfer1';
+  expect(first([a,reviewedTransfer,baseline()]).status).toBe('AWAITING_INDEPENDENT_MEASUREMENT');
  });
  it('sonraki ölçütte puan gerilerse risk sinyalini gösterir; otomatik etki iddia etmez',()=>{
   const b=baseline(1);
