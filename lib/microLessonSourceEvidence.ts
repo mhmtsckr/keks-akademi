@@ -7,6 +7,7 @@ import {findGrade9GeographyOutcome} from './verifiedGrade9GeographyOutcomes';
 import {findVerifiedLiteratureTheme} from './verifiedGrade911LiteratureThemes';
 import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
+import {verifiedHistoryOutcome} from './verifiedGrade911HistoryOutcomes2026';
 import {findGrade57SocialOutcome} from './verifiedGrade57SocialOutcomes';
 
 export type LessonSourceEvidence={
@@ -18,6 +19,11 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const history=lesson.sourceThemeId?verifiedHistoryOutcome(lesson.sourceThemeId):null;
+ if(history&&history.subject===lesson.subject&&lesson.targetGrades?.includes(history.grade)&&lesson.sourceUrl===history.url)
+  return {themeVerified:true,outcomeCodeVerified:true,theme:history.skill,outcomeCode:history.code,sourceUrl:history.url,checkedOn:history.checkedOn,
+    interpretation:'MEB 2026–2027 Tarih öğrenme çıktısının kodu resmî kaynaktan doğrulandı. KEKS özgün pilot soruları ilgili çıktının tüm kanıt/araştırma boyutlarını ölçmez, MEB veya alan uzmanı onayı değildir.'};
+
  const social=lesson.sourceThemeId?findGrade57SocialOutcome(lesson.sourceThemeId):null;
  if(social&&lesson.subject===social.subject&&lesson.targetGrades?.includes(social.grade)&&lesson.sourceUrl===social.url)
    return {themeVerified:true,outcomeCodeVerified:true,theme:social.theme,outcomeCode:social.code,
