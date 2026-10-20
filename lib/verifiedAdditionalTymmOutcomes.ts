@@ -80,6 +80,46 @@ export const VERIFIED_ADDITIONAL_TYMM_OUTCOMES:readonly VerifiedTymmOutcome[]=[
     "url": "https://tymm.meb.gov.tr/biyoloji-dersi/unite/13",
     "checkedOn": "2026-10-12",
     "scope": "OFFICIAL_OUTCOME"
+  },
+  {
+    "grade": 9,
+    "subject": "Biyoloji",
+    "theme": "2. Tema: Organizasyon",
+    "code": "BİY.9.2.2",
+    "skill": "Hücre zarından madde geçişlerini enerji gereksinimi, yön ve molekül özelliklerine göre sınıflandırma",
+    "url": "https://tymm.meb.gov.tr/21/unite/3",
+    "checkedOn": "2026-10-20",
+    "scope": "OFFICIAL_OUTCOME"
+  },
+  {
+    "grade": 9,
+    "subject": "Biyoloji",
+    "theme": "2. Tema: Organizasyon",
+    "code": "BİY.9.2.4",
+    "skill": "Verilen ayırt edici özelliklerle canlıları sınıflandırma ve bilimsel gruplamayı yorumlama",
+    "url": "https://tymm.meb.gov.tr/21/unite/3",
+    "checkedOn": "2026-10-20",
+    "scope": "OFFICIAL_OUTCOME"
+  },
+  {
+    "grade": 10,
+    "subject": "Biyoloji",
+    "theme": "1. Tema: Enerji",
+    "code": "BİY.10.1.2",
+    "skill": "Fotosentezde madde giriş ve çıkışlarını gösteren bilimsel modeli yorumlama ve eksiklerini iyileştirme",
+    "url": "https://tymm.meb.gov.tr/biyoloji-dersi/unite/8",
+    "checkedOn": "2026-10-20",
+    "scope": "OFFICIAL_OUTCOME"
+  },
+  {
+    "grade": 10,
+    "subject": "Biyoloji",
+    "theme": "2. Tema: Ekoloji",
+    "code": "BİY.10.2.1",
+    "skill": "Ekosistemin canlı-cansız bileşenleri ve aralarındaki etkileri çözümleme",
+    "url": "https://tymm.meb.gov.tr/biyoloji-dersi/unite/10",
+    "checkedOn": "2026-10-20",
+    "scope": "OFFICIAL_OUTCOME"
   }
 ];
 export function findAdditionalTymmOutcome(code:string){return VERIFIED_ADDITIONAL_TYMM_OUTCOMES.find(x=>x.code===code)||null;}
