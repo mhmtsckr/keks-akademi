@@ -70,7 +70,21 @@ export function AdminMicroLessonReviews(){
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
     <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
-    {coverage.verifiedLgs8&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+    {coverage.verifiedGrade12Literature&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>12. Sınıf · AYT Edebiyat · Önceki MEB 2018 Programı</strong> ·
+        {' '+coverage.verifiedGrade12Literature.totalSelectedOutcomes} kaynaklı kazanım ·
+        {' '+coverage.verifiedGrade12Literature.linkedPilotLessons} pilot ders
+      </summary>
+      <p className="muted">{coverage.verifiedGrade12Literature.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+        {(coverage.verifiedGrade12Literature.outcomes||[]).map((x:any)=><div key={x.code}>
+          <strong>{x.code} · {x.title}</strong> · {x.linkedPilotLessons} pilot ders
+          <p className="muted">{x.scope} · Beş seçenekli AYT tipi soru</p>
+          <a href={x.sourceUrl} target="_blank" rel="noopener noreferrer">Resmî MEB 2018 Edebiyat programı</a>
+        </div>)}
+      </div>
+    </details>}
+        {coverage.verifiedLgs8&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>8. Sınıf · LGS · Önceki MEB öğretim programı</strong> ·
         {' '+coverage.verifiedLgs8.verifiedSelectedOutcomes} resmî kazanım ·
         {' '+coverage.verifiedLgs8.linkedPilotLessons} pilot mikro ders

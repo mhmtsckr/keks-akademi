@@ -12,6 +12,7 @@ import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from '@/lib/verifiedGrade7ScienceOutco
 import {VERIFIED_GRADE57_SOCIAL} from '@/lib/verifiedGrade57SocialOutcomes';
 import {VERIFIED_HISTORY_OUTCOMES} from '@/lib/verifiedGrade911HistoryOutcomes2026';
 import {VERIFIED_LGS8_OUTCOMES} from '@/lib/verifiedLgs8Outcomes2026';
+import {VERIFIED_GRADE12_LITERATURE} from '@/lib/verifiedGrade12LiteratureOutcomes';
 
 export type CurriculumAcquisition={
   id:string;
@@ -330,6 +331,20 @@ function verifiedLgs8Subject(subject:string):CurriculumSubject|null{
  };
 }
 
+function grade12LiteratureLegacySubject(subject:string):CurriculumSubject|null{
+ if(subject!=='Türk Dili ve Edebiyatı')return null;
+ return {name:subject,units:[{
+  name:'12. sınıf · Önceki MEB 2018 programında doğrulanan seçili TDE kazanımları (tam kapsam değildir)',
+  sourceUrl:VERIFIED_GRADE12_LITERATURE[0].sourceUrl,
+  topics:VERIFIED_GRADE12_LITERATURE.map(x=>({
+    name:x.title,
+    subTopics:[{name:x.scope,
+      acquisitions:[q(x.code,x.scope+' (resmî eski MEB kodu doğrulandı; KEKS pilot yanıtları uzman incelemesi bekliyor)',
+        ['AYT beş seçenekli soru','Edebî yorum','Gerekçeli açık uçlu cevap'])]}]
+  }))
+ }]};
+}
+
 function lgsLegacySubject(subject:string):CurriculumSubject|null{
   const key=subject==='T.C. İnkılap Tarihi ve Atatürkçülük'
     ?'T.C. İnkılap Tarihi'
@@ -488,7 +503,7 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   const exactGrade=resolveLearningCurriculumContext({gradeLevel}).grade;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=>(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?verifiedLgs8Subject(subject)||lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=(exactGrade===12?grade12LiteratureLegacySubject(subject):null)||>(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?verifiedLgs8Subject(subject)||lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,
@@ -496,6 +511,8 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
     framework:['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)?'TYMM':'EXAM',
     sourceLabel:key==='MIDDLE_8'
       ?'2026–2027: Önceki MEB programı · seçilmiş 8. sınıf Türkçe ve Fen kazanımları MEB belgesiyle doğrulandı; diğer KEKS LGS konuları kontrol bekliyor'
+      :key==='HIGH_12'
+        ?'2026–2027: Önceki MEB 2018 12. sınıf Türk Dili ve Edebiyatı programından dört seçili kazanım doğrulandı; diğer YKS/AYT kapsamı eksik'
       :['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)
         ?'2026–2027 Türkiye Yüzyılı Maarif Modeli (mevcut KEKS kazanım kapsaması sınırlıdır)'
         :'KEKS önceki MEB / sınav konu haritası (resmî kazanım eşleştirmesi doğrulanmalıdır)',
