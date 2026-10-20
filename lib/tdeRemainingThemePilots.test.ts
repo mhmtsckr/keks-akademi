@@ -60,8 +60,8 @@ describe('9–11 Türk Dili ve Edebiyatında altı boş MEB tema için özgün p
  });
  it('temanın ilk pilotu var diye resmî kazanımlar tamamen bitmiş görünmez',()=>{
   const snapshot=microLessonCoverageSnapshot();
-  expect(snapshot.totalLessons).toBe(106);
-  expect(snapshot.totalExercises).toBe(424);
+  expect(snapshot.totalLessons).toBe(110);
+  expect(snapshot.totalExercises).toBe(440);
   expect(snapshot.verifiedLiteraturePrograms.reduce((n,x)=>n+x.totalOfficialThemes,0)).toBe(12);
   expect(snapshot.verifiedLiteraturePrograms.reduce((n,x)=>n+x.linkedPilotLessons,0)).toBe(12);
   expect(snapshot.verifiedLiteraturePrograms.reduce((n,x)=>n+x.verifiedOutcomeContexts,0)).toBe(6);
