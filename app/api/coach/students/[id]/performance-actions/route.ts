@@ -7,6 +7,7 @@ import {performanceTaskById} from '@/lib/tymmPerformanceTasks';
 import {readableRubric} from '@/lib/tymmDelayedTransfer';
 import {interventionFor,suggestRubricInterventions} from '@/lib/tymmRubricInterventions';
 import {actionAttempts,actionReviews,reviewActionEvidence} from '@/lib/tymmActionEvidenceReview';
+import {buildRemediationImpactReport} from '@/lib/tymmRemediationImpact';
 
 type Ctx={params:Promise<{id:string}>};
 const reviewSchema=z.object({
@@ -59,7 +60,8 @@ async function GET__handler(_req:Request,{params}:Ctx){
    submittedAt:typeof p.submittedAt==='string'?p.submittedAt:null,
    assignedAt:row.createdAt,completedAt:typeof p.completedAt==='string'?p.completedAt:null}];
  });
- const reviewRows=rows.flatMap(row=>{
+ const remediationImpact=buildRemediationImpactReport(rows);
+  const reviewRows=rows.flatMap(row=>{
   const p=obj(row.payload);
   if(!isHumanReview(p))return [];
   const task=performanceTaskById(String(p.taskId||''),Number(p.taskVersion));
@@ -77,7 +79,9 @@ async function GET__handler(_req:Request,{params}:Ctx){
    }))
   }];
  });
- return NextResponse.json({ok:true,reviews:reviewRows,assignments:existing,
+ return NextResponse.json({ok:true,reviews:reviewRows,assignments:existing.map(a=>({...a,
+   impact:remediationImpact.impacts.find(x=>x.assignmentId===a.id)||null})),
+  remediationSummary:remediationImpact.summary,remediationCaveat:remediationImpact.caveat,
   note:'Koç kararıyla atanabilir somut beceri çalışmalarını gösterir. Sadece rubrik puanı esas alınır; tanı veya kalıcı öğrenme sonucu çıkarılmaz.'});
 }
 async function POST__handler(req:Request,{params}:Ctx){
