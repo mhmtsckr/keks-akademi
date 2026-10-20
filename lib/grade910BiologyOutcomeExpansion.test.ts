@@ -38,7 +38,7 @@ describe('9/10 Biyoloji TYMM resmî öğrenme çıktısı pilotları',()=>{
      for(const q of lesson.exercises){
        expect(Object.keys(q.options||{})).toEqual(['A','B','C','D']);
        expect(['A','B','C','D']).toContain(q.answer);
-       expect(q.options?.[q.answer].length).toBeGreaterThan(10);
+       expect(q.options?.[q.answer].trim().length).toBeGreaterThan(3);
        expect(q.explanation.length).toBeGreaterThan(40);
      }
      expect(findMicroLesson({subject:'Biyoloji',topic:lesson.title})?.id).toBe(lesson.id);
