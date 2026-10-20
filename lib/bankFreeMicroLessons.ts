@@ -16,6 +16,7 @@ import {TYMM_MATH_PILOT_LESSONS} from './tymmMathPilotLessons2026';
 import {GRADE7_SCIENCE_PILOTS} from './grade7SciencePilotLessons2026';
 import {GRADE57_SOCIAL_PILOTS} from './grade57SocialPilotLessons2026';
 import {GRADE911_HISTORY_PILOTS} from './grade911HistoryPilotLessons2026';
+import {LGS8_LEGACY_PILOT_LESSONS} from './lgs8LegacyPilotLessons2026';
 import {findExpandedMicroLesson} from './expandedMicroLessonMatch';
 
 export type GuidedExercise={
@@ -100,7 +101,7 @@ function normalize(value:string){
   return value.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
 }
 
-export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS,...GRADE_SEED_LESSONS,...GRADE7_TURKISH_THEME_LESSONS,...GRADE56_TYMM_PILOT_LESSONS,...ADDITIONAL_TYMM_PILOT_LESSONS,...GRADE10_GEOGRAPHY_PILOTS,...GRADE9_GEOGRAPHY_PILOTS,...GRADE9_11_LITERATURE_PILOTS,...TDE_REMAINING_THEME_PILOTS,...TYMM_MATH_PILOT_LESSONS,...GRADE7_SCIENCE_PILOTS,...GRADE57_SOCIAL_PILOTS,...GRADE911_HISTORY_PILOTS];
+export const ALL_MICRO_LESSONS:readonly MicroLesson[]=[...MICRO_LESSONS,...EXPANDED_MICRO_LESSONS,...GRADE_SEED_LESSONS,...GRADE7_TURKISH_THEME_LESSONS,...GRADE56_TYMM_PILOT_LESSONS,...ADDITIONAL_TYMM_PILOT_LESSONS,...GRADE10_GEOGRAPHY_PILOTS,...GRADE9_GEOGRAPHY_PILOTS,...GRADE9_11_LITERATURE_PILOTS,...TDE_REMAINING_THEME_PILOTS,...TYMM_MATH_PILOT_LESSONS,...GRADE7_SCIENCE_PILOTS,...GRADE57_SOCIAL_PILOTS,...GRADE911_HISTORY_PILOTS,...LGS8_LEGACY_PILOT_LESSONS];
 
 export function findMicroLesson(input:{
   subject:string;topic:string;prompt?:string|null;selectedLessonId?:string|null
@@ -112,7 +113,7 @@ export function findMicroLesson(input:{
   }
   // Match only an explicit, narrow skill tag; never infer grade from a general "Türkçe" topic.
   const preciseTopic=normalize(input.topic);
-  const matched=[...GRADE56_TYMM_PILOT_LESSONS,...ADDITIONAL_TYMM_PILOT_LESSONS,...GRADE10_GEOGRAPHY_PILOTS,...GRADE9_GEOGRAPHY_PILOTS,...GRADE9_11_LITERATURE_PILOTS,...TDE_REMAINING_THEME_PILOTS,...TYMM_MATH_PILOT_LESSONS,...GRADE7_SCIENCE_PILOTS,...GRADE57_SOCIAL_PILOTS,...GRADE911_HISTORY_PILOTS].filter(x=>
+  const matched=[...GRADE56_TYMM_PILOT_LESSONS,...ADDITIONAL_TYMM_PILOT_LESSONS,...GRADE10_GEOGRAPHY_PILOTS,...GRADE9_GEOGRAPHY_PILOTS,...GRADE9_11_LITERATURE_PILOTS,...TDE_REMAINING_THEME_PILOTS,...TYMM_MATH_PILOT_LESSONS,...GRADE7_SCIENCE_PILOTS,...GRADE57_SOCIAL_PILOTS,...GRADE911_HISTORY_PILOTS,...LGS8_LEGACY_PILOT_LESSONS].filter(x=>
     normalize(x.subject)===subject&&x.topicTags?.some(tag=>normalize(tag)===preciseTopic));
   if(matched.length===1)return matched[0];
   if(!subject.includes('matematik'))

@@ -70,7 +70,21 @@ export function AdminMicroLessonReviews(){
     <div className="moduleEyebrow">2026–2027 · DERS/KONU TAMAMLAMA HARİTASI</div>
     <h4>Üretim ve eksik kazanım takibi</h4>
     <p className="muted">{coverage.totalLessons} pilot/içerik · {coverage.totalExercises} alıştırma. Bu tablo MEB/ÖSYM tarafından doğrulanmış kazanım kapsamı değildir; eksik içerik iş listesidir.</p>
-    {(coverage.verifiedLiteraturePrograms||[]).map((g:any)=><details key={'tde-'+g.grade} className="card" style={{marginTop:12,marginBottom:12}}>
+    {coverage.verifiedLgs8&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>8. Sınıf · LGS · Önceki MEB öğretim programı</strong> ·
+        {' '+coverage.verifiedLgs8.verifiedSelectedOutcomes} resmî kazanım ·
+        {' '+coverage.verifiedLgs8.linkedPilotLessons} pilot mikro ders
+      </summary>
+      <p className="muted">{coverage.verifiedLgs8.disclaimer}</p>
+      <div className="stack" style={{gap:9}}>
+        {(coverage.verifiedLgs8.outcomes||[]).map((x:any)=><div key={x.code}>
+          <strong>{x.subject} · {x.code}</strong> — {x.unit}
+          <p className="muted">{x.skill} · {x.linkedPilotLessons} pilot soru seti</p>
+          <a href={x.sourceUrl} target="_blank" rel="noopener noreferrer">Resmî MEB eski program kazanım belgesi</a>
+        </div>)}
+      </div>
+    </details>}
+        {(coverage.verifiedLiteraturePrograms||[]).map((g:any)=><details key={'tde-'+g.grade} className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>MEB TYMM · {g.grade}. sınıf Türk Dili ve Edebiyatı</strong> · {' '+g.totalOfficialThemes} tema · {' '+g.verifiedOutcomeContexts} tema bağlamında doğrulanmış kod · {' '+g.linkedPilotLessons} özgün mikro ders</summary>
       <p className="muted">{g.disclaimer}</p>
       <div className="stack" style={{gap:8}}>
