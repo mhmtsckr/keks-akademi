@@ -27,7 +27,7 @@ MEB kaynakları ünite ve resmi öğrenme çıktısı kodunu doğrular; **soru m
 
 ## Kapsama ve güvenlik
 
-- Katalog önce **88 mikro ders / 352 alıştırma**, bu paketle **94 mikro ders / 376 alıştırma** olacak şekilde güncellenmiştir.
+- Katalog sosyal bilgiler kapsamı dâhil önce **94 mikro ders / 376 alıştırma**, bu paketle **100 mikro ders / 400 alıştırma** olacak şekilde güncellenmiştir.
 - 9, 10 ve 11. sınıfların her biri gerçek sınıf olarak ayrılır; 9–10 birleşik eğitim etiketi tek sınıf kabul edilmez.
 - Öğrenci sunucusu görev/sınıf uygunluğunu kontrol etmeye devam eder. Bir Tarih ünitesinin genel adı tek başına belirli öğrenme çıktısı tanılamak için yeterli değildir.
 - Yönetici Akademik İçerik paneli resmî bağlantıları, hangi ünitede kaç doğrulanmış çıktı ve pilot soru olduğu, eksik üniteleri gösterir.
