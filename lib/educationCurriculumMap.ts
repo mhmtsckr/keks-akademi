@@ -9,6 +9,7 @@ import {VERIFIED_GRADE9_GEOGRAPHY} from '@/lib/verifiedGrade9GeographyOutcomes';
 import {literatureThemesForGrade} from '@/lib/verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from '@/lib/verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from '@/lib/verifiedGrade7ScienceOutcomes';
+import {historyUnitsForGrade,VERIFIED_GRADE911_HISTORY_OUTCOMES} from '@/lib/verifiedGrade911HistoryOutcomes2026';
 import {VERIFIED_GRADE57_SOCIAL} from '@/lib/verifiedGrade57SocialOutcomes';
 
 export type CurriculumAcquisition={
@@ -454,6 +455,29 @@ export function curriculumExamTypeForLevel(level:EducationLevelKey|null){
   return null;
 }
 
+function grade911HistoryOfficialIndex(grade:number):CurriculumSubject|null{
+ const units=historyUnitsForGrade(grade);
+ if(!units.length)return null;
+ return {
+  name:'Tarih',
+  units:units.map(u=>{
+   const outcomes=VERIFIED_GRADE911_HISTORY_OUTCOMES.filter(x=>x.grade===grade&&x.unit===u.unit);
+   return {
+    name:u.unit+'. Ünite: '+u.title,
+    sourceUrl:u.url,
+    topics:[{
+      name:u.title,
+      subTopics:[{
+        name:outcomes.length?'Resmî kodu doğrulanan öğrenme çıktıları':'Çıktı eşleştirmesi henüz yapılmadı',
+        acquisitions:outcomes.map(x=>q(x.code,x.skill+' (MEB kaynağı doğrulandı; KEKS soru onayı bekliyor)',
+          ['Kanıt çözümleme','Tarih şeridi','Karşılaştırma','Çoktan seçmeli','Açık uçlu gerekçelendirme']))
+      }]
+    }]
+   };
+  })
+ };
+}
+
 export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:string|null):EducationCurriculum|null{
   const key=educationLevelKey(gradeLevel);
   const profile=resolveEducationLevelProfile(gradeLevel,academicTrack);
@@ -461,7 +485,7 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   const exactGrade=resolveLearningCurriculumContext({gradeLevel}).grade;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=>(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=>(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)&&subject==='Tarih'?grade911HistoryOfficialIndex(exactGrade):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,
