@@ -80,8 +80,8 @@ describe('2026–27 MEB TYMM kaynaklı 9–11 matematik mikro dersleri',()=>{
     expect(ids).toContain(outcome.code);
   }
   const coverage=microLessonCoverageSnapshot();
-  expect(coverage.totalLessons).toBe(106);
-  expect(coverage.totalExercises).toBe(424);
+  expect(coverage.totalLessons).toBe(110);
+  expect(coverage.totalExercises).toBe(440);
   expect(coverage.verifiedMath.totalOfficialOutcomes).toBe(6);
   expect(coverage.verifiedMath.linkedPilotLessons).toBe(6);
   expect(coverage.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
