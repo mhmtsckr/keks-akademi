@@ -10,6 +10,7 @@ import {literatureThemesForGrade} from '@/lib/verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from '@/lib/verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from '@/lib/verifiedGrade7ScienceOutcomes';
 import {VERIFIED_GRADE57_SOCIAL} from '@/lib/verifiedGrade57SocialOutcomes';
+import {VERIFIED_HISTORY_OUTCOMES} from '@/lib/verifiedGrade911HistoryOutcomes2026';
 
 export type CurriculumAcquisition={
   id:string;
@@ -390,7 +391,7 @@ function grade911TdeOfficialIndex(grade:number,subject:string):CurriculumSubject
 
 function grade911OfficialIndex(grade:number,subject:string):CurriculumSubject|null{
   if(![9,10,11].includes(grade))return null;
-  const known=[...VERIFIED_ADDITIONAL_TYMM_OUTCOMES,...VERIFIED_GRADE10_GEOGRAPHY,...VERIFIED_GRADE9_GEOGRAPHY,...VERIFIED_TYMM_MATH_OUTCOMES].filter(x=>x.grade===grade&&x.subject===subject);
+  const known=[...VERIFIED_ADDITIONAL_TYMM_OUTCOMES,...VERIFIED_GRADE10_GEOGRAPHY,...VERIFIED_GRADE9_GEOGRAPHY,...VERIFIED_TYMM_MATH_OUTCOMES,...VERIFIED_HISTORY_OUTCOMES].filter(x=>x.grade===grade&&x.subject===subject);
   if(!known.length)return null;
   const grouped=new Map<string,typeof known>();
   for(const x of known){
