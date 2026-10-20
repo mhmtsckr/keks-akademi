@@ -4,9 +4,9 @@ import {CRITERION_INTERVENTIONS,interventionFor,suggestRubricInterventions} from
 
 describe('Koç onaylı ölçüte özel TYMM telafi aksiyonları',()=>{
  it('sekiz görev ve 32 ölçütün hepsinde güvenli, somut kısa telafi bulunur',()=>{
-  expect(TYMM_PERFORMANCE_TASKS).toHaveLength(8);
-  expect(CRITERION_INTERVENTIONS).toHaveLength(32);
-  expect(new Set(CRITERION_INTERVENTIONS.map(x=>x.taskId+'|'+x.criterionId)).size).toBe(32);
+  expect(TYMM_PERFORMANCE_TASKS).toHaveLength(11);
+  expect(CRITERION_INTERVENTIONS).toHaveLength(44);
+  expect(new Set(CRITERION_INTERVENTIONS.map(x=>x.taskId+'|'+x.criterionId)).size).toBe(44);
   for(const t of TYMM_PERFORMANCE_TASKS){
    expect(t.criteria).toHaveLength(4);
    for(const c of t.criteria){
