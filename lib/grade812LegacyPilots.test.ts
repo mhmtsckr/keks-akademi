@@ -82,8 +82,8 @@ describe('2026–2027 eski MEB programı · 8. sınıf LGS / 12. sınıf AYT',()
   const coverage=microLessonCoverageSnapshot();
   expect(coverage.verifiedLegacyPrograms.selectedOfficialOutcomes).toBe(8);
   expect(coverage.verifiedLegacyPrograms.linkedPilotLessons).toBe(8);
-  expect(coverage.totalLessons).toBe(102);
-  expect(coverage.totalExercises).toBe(408);
+  expect(coverage.totalLessons).toBe(108);
+  expect(coverage.totalExercises).toBe(432);
   expect(coverage.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
  });
 });
