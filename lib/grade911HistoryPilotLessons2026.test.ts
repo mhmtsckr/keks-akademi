@@ -65,8 +65,8 @@ describe('MEB TYMM 2026-27 grade 9-11 History audited micro lessons',()=>{
    }
   }
   const c=microLessonCoverageSnapshot();
-  expect(c.totalLessons).toBe(100);
-  expect(c.totalExercises).toBe(400);
+  expect(c.totalLessons).toBe(108);
+  expect(c.totalExercises).toBe(432);
   expect(c.verifiedHistoryOutcomes.officialOutcomeCount).toBe(6);
   expect(c.verifiedHistoryOutcomes.linkedPilotLessons).toBe(6);
   expect(c.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);
