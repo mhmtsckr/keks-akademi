@@ -7,6 +7,7 @@ import {findGrade9GeographyOutcome} from './verifiedGrade9GeographyOutcomes';
 import {findVerifiedLiteratureTheme} from './verifiedGrade911LiteratureThemes';
 import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
+import {findGrade57SocialOutcome} from './verifiedGrade57SocialOutcomes';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -17,6 +18,12 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const social=lesson.sourceThemeId?findGrade57SocialOutcome(lesson.sourceThemeId):null;
+ if(social&&lesson.subject===social.subject&&lesson.targetGrades?.includes(social.grade)&&lesson.sourceUrl===social.url)
+   return {themeVerified:true,outcomeCodeVerified:true,theme:social.theme,outcomeCode:social.code,
+     sourceUrl:social.url,checkedOn:social.checkedOn,
+     interpretation:'MEB 2026–2027 Sosyal Bilgiler öğrenme çıktısı kaynakta doğrulandı; KEKS pilot çoktan seçmeli soruları tartışma, harita çizimi, proje ve sosyal katılım performanslarının yerine geçmez. Resmî MEB veya branş uzmanı onayı değildir.'};
+
  const science=lesson.sourceThemeId?findGrade7ScienceOutcome(lesson.sourceThemeId):null;
  if(science&&science.subject===lesson.subject&&lesson.targetGrades?.includes(7)&&lesson.sourceUrl===science.url)
   return {themeVerified:true,outcomeCodeVerified:true,theme:science.title,

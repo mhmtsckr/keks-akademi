@@ -174,6 +174,20 @@ export function AdminMicroLessonReviews(){
         </div>)}
       </div>
     </details>)}
+        {coverage.verifiedSocialOutcomes&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>2026–2027 TYMM · Sosyal Bilgiler 5–7</strong> ·
+       {' '+coverage.verifiedSocialOutcomes.officialOutcomeCount} doğrulanmış MEB çıktısı ·
+       {' '+coverage.verifiedSocialOutcomes.linkedPilotLessons} pilot mikro ders
+      </summary>
+      <p className="muted">{coverage.verifiedSocialOutcomes.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+       {(coverage.verifiedSocialOutcomes.outcomes||[]).map((x:any)=><div key={x.code}>
+        <strong>{x.grade}. sınıf · {x.code} · {x.theme}</strong> · {x.linkedPilotLessons} mikro ders
+        <p className="muted">{x.skill}</p>
+        <a href={x.sourceUrl} target="_blank" rel="noopener noreferrer">Resmî MEB öğrenme çıktısı</a>
+       </div>)}
+      </div>
+    </details>}
         {coverage.verifiedThemeSources&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>Resmî kaynak eşleştirmesi: 7. sınıf Türkçe</strong> · {coverage.verifiedThemeSources.totalThemes} MEB teması · {coverage.verifiedThemeSources.linkedPilotLessons} pilot örnek · {coverage.verifiedThemeSources.outcomesWithVerifiedCodes} doğrulanmış çıktı kodu</summary>
       <p className="muted">{coverage.verifiedThemeSources.disclaimer}</p>

@@ -15,6 +15,7 @@ import {VERIFIED_GRADE9_GEOGRAPHY} from './verifiedGrade9GeographyOutcomes';
 import {VERIFIED_GRADE9_11_TDE_THEMES} from './verifiedGrade911LiteratureThemes';
 import {VERIFIED_TYMM_MATH_OUTCOMES} from './verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from './verifiedGrade7ScienceOutcomes';
+import {VERIFIED_GRADE57_SOCIAL} from './verifiedGrade57SocialOutcomes';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -57,6 +58,8 @@ export function microLessonCoverageSnapshot(){
       ||VERIFIED_ADDITIONAL_TYMM_OUTCOMES.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&
         outcome.code===l.sourceThemeId&&outcome.theme.replace(/^\\d+\\. (Tema|Ünite): /,'')===t)
+      ||VERIFIED_GRADE57_SOCIAL.some(outcome=>
+        outcome.grade===grade&&outcome.subject===subject&&outcome.code===l.sourceThemeId&&outcome.theme===t)
       ||VERIFIED_GRADE7_SCIENCE_OUTCOMES.some(outcome=>
         grade===7&&subject==='Fen Bilimleri'&&outcome.title===t&&outcome.code===l.sourceThemeId)
       ||VERIFIED_TYMM_MATH_OUTCOMES.some(outcome=>
@@ -111,7 +114,13 @@ export function microLessonCoverageSnapshot(){
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code
      &&l.subject==='Coğrafya'&&l.targetGrades?.includes(9)).length
  }));
- const geographyOutcomes=VERIFIED_GRADE10_GEOGRAPHY.map(outcome=>({
+ const socialOutcomes=VERIFIED_GRADE57_SOCIAL.map(outcome=>({
+   grade:outcome.grade,subject:outcome.subject,code:outcome.code,theme:outcome.theme,
+   skill:outcome.skill,sourceUrl:outcome.url,
+   linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code&&
+     l.targetGrades?.includes(outcome.grade)&&l.subject===outcome.subject).length
+ }));
+  const geographyOutcomes=VERIFIED_GRADE10_GEOGRAPHY.map(outcome=>({
    code:outcome.code,theme:outcome.theme,sourceUrl:outcome.url,skill:outcome.skill,
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code&&l.subject==='Coğrafya'&&l.targetGrades?.includes(10)).length
  }));
@@ -192,6 +201,12 @@ export function microLessonCoverageSnapshot(){
     linkedPilotLessons:verifiedAdditionalOutcomeRows.reduce((n,x)=>n+x.linkedPilotLessons,0),
     outcomes:verifiedAdditionalOutcomeRows,
     note:'Bu yalnız kaynakla doğrulanmış belirli MEB öğrenme çıktılarının alt kümesidir; diğer çıktılar henüz dizine alınmamıştır.'
+  },
+  verifiedSocialOutcomes:{
+    officialOutcomeCount:socialOutcomes.length,
+    linkedPilotLessons:socialOutcomes.reduce((n,x)=>n+x.linkedPilotLessons,0),
+    grades:[5,6,7],outcomes:socialOutcomes,
+    disclaimer:'Altı resmî çıktı kodu kontrol edilmiştir; Sosyal Bilgiler programının diğer öğrenme çıktıları ve performans kazanımları henüz tamamlanmış değildir.'
   },
   verifiedMiddlePrograms,
   verifiedThemeSources:{
