@@ -493,6 +493,8 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
     framework:['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)?'TYMM':'EXAM',
     sourceLabel:key==='MIDDLE_8'
       ?'2026–2027: Önceki MEB Türkçe programından 8. sınıf seçili kazanımlar doğrulandı; diğer LGS konuları henüz resmî kodla eşleşmedi'
+      :key==='HIGH_12'
+        ?'2026–2027: 12. sınıf 2018 Türk Dili ve Edebiyatı programından dört resmî kazanım doğrulandı; YKS/AYT kapsamının geri kalanı henüz tam eşleştirilmedi'
       :['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)
         ?'2026–2027 Türkiye Yüzyılı Maarif Modeli (mevcut KEKS kazanım kapsaması sınırlıdır)'
         :'KEKS önceki MEB / sınav konu haritası (resmî kazanım eşleştirmesi doğrulanmalıdır)',
