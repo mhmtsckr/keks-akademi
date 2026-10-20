@@ -490,7 +490,7 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
     examType:curriculumExamTypeForLevel(key)||profile.examMode,
     framework:['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)?'TYMM':'EXAM',
     sourceLabel:key==='MIDDLE_8'
-      ?'2026–2027: 8. sınıf Türkçe eski MEB programında dört seçili kazanım doğrulandı; diğer LGS konuları resmî kazanım eşleştirmesi bekliyor'
+      ?'2026–2027: Önceki MEB 2019 Türkçe programında 8. sınıf için dört seçili kazanım doğrulandı; diğer LGS konuları resmî kazanım eşleştirmesi bekliyor'
       :key==='HIGH_12'
         ?'2026–2027: 12. sınıf 2018 Türk Dili ve Edebiyatı programından seçili dört kazanım doğrulandı; diğer AYT konularının eşleştirmesi bekliyor'
       :['PRIMARY_123','MIDDLE_56','MIDDLE_7','HIGH_910','HIGH_11'].includes(key)
