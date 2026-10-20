@@ -63,8 +63,8 @@ describe('MEB TYMM 2026–27: 7. sınıf Fen Bilimleri resmî ünite kaynakları
   expect(ids).toEqual(VERIFIED_GRADE7_SCIENCE_OUTCOMES.map(x=>x.code));
   expect(units.every(u=>u.sourceUrl?.startsWith('https://tymm.meb.gov.tr/'))).toBe(true);
   const c=microLessonCoverageSnapshot();
-  expect(c.totalLessons).toBe(88);
-  expect(c.totalExercises).toBe(352);
+  expect(c.totalLessons).toBe(94);
+  expect(c.totalExercises).toBe(376);
   expect(c.verifiedGrade7Science.totalOfficialUnits).toBe(7);
   expect(c.verifiedGrade7Science.verifiedSampleOutcomes).toBe(7);
   expect(c.verifiedGrade7Science.linkedPilotLessons).toBe(7);
