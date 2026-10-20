@@ -174,6 +174,20 @@ export function AdminMicroLessonReviews(){
         </div>)}
       </div>
     </details>)}
+    {coverage.verifiedHistoryOutcomes&&<details className="card" style={{marginTop:12,marginBottom:12}}>
+      <summary><strong>2026–2027 TYMM · Tarih 9–11</strong> ·
+        {' '+coverage.verifiedHistoryOutcomes.officialOutcomeCount} doğrulanmış MEB öğrenme çıktısı ·
+        {' '+coverage.verifiedHistoryOutcomes.linkedPilotLessons} pilot mikro ders
+      </summary>
+      <p className="muted">{coverage.verifiedHistoryOutcomes.disclaimer}</p>
+      <div className="stack" style={{gap:8}}>
+       {(coverage.verifiedHistoryOutcomes.outcomes||[]).map((item:any)=><div key={item.code}>
+        <strong>{item.grade}. sınıf · {item.code}</strong> · {item.theme} · {item.linkedPilotLessons} pilot ders
+        <p className="muted">{item.skill}</p>
+        <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">MEB öğrenme çıktısı kaynağı</a>
+       </div>)}
+      </div>
+    </details>}
         {coverage.verifiedSocialOutcomes&&<details className="card" style={{marginTop:12,marginBottom:12}}>
       <summary><strong>2026–2027 TYMM · Sosyal Bilgiler 5–7</strong> ·
        {' '+coverage.verifiedSocialOutcomes.officialOutcomeCount} doğrulanmış MEB çıktısı ·

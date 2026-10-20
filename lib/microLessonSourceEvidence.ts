@@ -8,6 +8,7 @@ import {findVerifiedLiteratureTheme} from './verifiedGrade911LiteratureThemes';
 import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
 import {findGrade57SocialOutcome} from './verifiedGrade57SocialOutcomes';
+import {findVerifiedHistoryOutcome} from './verifiedGrade911HistoryOutcomes2026';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -18,7 +19,16 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
- const social=lesson.sourceThemeId?findGrade57SocialOutcome(lesson.sourceThemeId):null;
+ const history=lesson.sourceThemeId?findVerifiedHistoryOutcome(lesson.sourceThemeId):null;
+ if(history&&lesson.subject===history.subject&&
+   lesson.targetGrades?.includes(history.grade)&&lesson.sourceUrl===history.url){
+   return {
+    themeVerified:true,outcomeCodeVerified:true,
+    theme:history.theme,outcomeCode:history.code,sourceUrl:history.url,checkedOn:history.checkedOn,
+    interpretation:'2026–2027 MEB Tarih öğrenme çıktısı resmî kaynaktan doğrulandı. Bu kaynak eşleştirmesi KEKS özgün alıştırmalarının tüm çıktı becerilerini ölçtüğü, MEB onaylı olduğu veya branş uzmanı kontrolünden geçtiği anlamına gelmez.'
+   };
+ }
+  const social=lesson.sourceThemeId?findGrade57SocialOutcome(lesson.sourceThemeId):null;
  if(social&&lesson.subject===social.subject&&lesson.targetGrades?.includes(social.grade)&&lesson.sourceUrl===social.url)
    return {themeVerified:true,outcomeCodeVerified:true,theme:social.theme,outcomeCode:social.code,
      sourceUrl:social.url,checkedOn:social.checkedOn,

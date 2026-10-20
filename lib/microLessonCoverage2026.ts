@@ -16,6 +16,7 @@ import {VERIFIED_GRADE9_11_TDE_THEMES} from './verifiedGrade911LiteratureThemes'
 import {VERIFIED_TYMM_MATH_OUTCOMES} from './verifiedTymmMathOutcomes2026';
 import {VERIFIED_GRADE7_SCIENCE_OUTCOMES} from './verifiedGrade7ScienceOutcomes';
 import {VERIFIED_GRADE57_SOCIAL} from './verifiedGrade57SocialOutcomes';
+import {VERIFIED_HISTORY_OUTCOMES} from './verifiedGrade911HistoryOutcomes2026';
 
 function norm(text:string){return text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();}
 function overlap(a:string,b:string){return norm(a)===norm(b);}
@@ -65,6 +66,9 @@ export function microLessonCoverageSnapshot(){
       ||VERIFIED_TYMM_MATH_OUTCOMES.some(outcome=>
         outcome.grade===grade&&outcome.subject===subject&&outcome.code===l.sourceThemeId
         &&norm(outcome.theme)===norm(t))
+      ||VERIFIED_HISTORY_OUTCOMES.some(outcome=>
+        outcome.grade===grade&&outcome.subject===subject&&outcome.code===l.sourceThemeId&&
+        outcome.theme===t)
       ||VERIFIED_GRADE9_11_TDE_THEMES.some(theme=>
         theme.grade===grade&&theme.subject===subject&&theme.theme===t&&theme.id===l.sourceThemeId)
    ));
@@ -114,7 +118,14 @@ export function microLessonCoverageSnapshot(){
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code
      &&l.subject==='Coğrafya'&&l.targetGrades?.includes(9)).length
  }));
- const socialOutcomes=VERIFIED_GRADE57_SOCIAL.map(outcome=>({
+ const historyOutcomes=VERIFIED_HISTORY_OUTCOMES.map(outcome=>({
+   grade:outcome.grade,subject:outcome.subject,code:outcome.code,
+   theme:outcome.theme,skill:outcome.skill,sourceUrl:outcome.url,
+   linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>
+     l.sourceThemeId===outcome.code&&l.subject===outcome.subject&&
+     l.targetGrades?.includes(outcome.grade)).length
+ }));
+  const socialOutcomes=VERIFIED_GRADE57_SOCIAL.map(outcome=>({
    grade:outcome.grade,subject:outcome.subject,code:outcome.code,theme:outcome.theme,
    skill:outcome.skill,sourceUrl:outcome.url,
    linkedPilotLessons:ALL_MICRO_LESSONS.filter(l=>l.sourceThemeId===outcome.code&&
@@ -201,6 +212,12 @@ export function microLessonCoverageSnapshot(){
     linkedPilotLessons:verifiedAdditionalOutcomeRows.reduce((n,x)=>n+x.linkedPilotLessons,0),
     outcomes:verifiedAdditionalOutcomeRows,
     note:'Bu yalnız kaynakla doğrulanmış belirli MEB öğrenme çıktılarının alt kümesidir; diğer çıktılar henüz dizine alınmamıştır.'
+  },
+  verifiedHistoryOutcomes:{
+   officialOutcomeCount:historyOutcomes.length,
+   linkedPilotLessons:historyOutcomes.reduce((n,x)=>n+x.linkedPilotLessons,0),
+   grades:[9,10,11],outcomes:historyOutcomes,
+   disclaimer:'MEB 2026–2027 Tarih dersinden doğrulanan altı öğrenme çıktısıdır; kalan çıktılar ve tarihsel kanıta dayalı bütün performans becerileri henüz kapsanmamıştır.'
   },
   verifiedSocialOutcomes:{
     officialOutcomeCount:socialOutcomes.length,
