@@ -461,7 +461,7 @@ export function getEducationCurriculum(gradeLevel?:string|null,academicTrack?:st
   const exactGrade=resolveLearningCurriculumContext({gradeLevel}).grade;
   const detailed=DETAILED[key]||[];
   const byName=new Map(detailed.map(x=>[x.name,x]));
-  const subjects=profile.subjects.map(subject=(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||>(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
+  const subjects=profile.subjects.map(subject=>(exactGrade&&[5,6,7].includes(exactGrade)?grade57SocialIndex(exactGrade,subject):null)||(key==='MIDDLE_7'&&subject==='Fen Bilimleri'&&exactGrade===7?grade7ScienceOfficialIndex():null)||(key==='MIDDLE_56'&&exactGrade?grade56OfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911TdeOfficialIndex(exactGrade,subject):null)||(exactGrade&&[9,10,11].includes(exactGrade)?grade911OfficialIndex(exactGrade,subject):null)||byName.get(subject)||(key==='MIDDLE_8'?lgsLegacySubject(subject):null)||{name:subject,units:[fallbackUnit(subject,key)]});
   return {
     educationLevelKey:key,
     educationLevelLabel:profile.label,
