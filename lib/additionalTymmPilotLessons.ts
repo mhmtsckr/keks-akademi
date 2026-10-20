@@ -1,4 +1,4 @@
-/** Eight independent original question sets, NOT copied from MEB/ÖSYM; expert review pending. */
+/** Twelve independent original question sets, NOT copied from MEB/ÖSYM; expert review pending. */
 import type {MicroLesson} from './bankFreeMicroLessons';
 export const ADDITIONAL_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
   {
@@ -584,5 +584,297 @@ export const ADDITIONAL_TYMM_PILOT_LESSONS:readonly MicroLesson[]=[
     ],
     "sourceUrl": "https://tymm.meb.gov.tr/biyoloji-dersi/unite/13",
     "sourceThemeId": "BİY.11.1.3"
+  },
+  {
+    "id": "grade9-membrane-transport-classification-v1",
+    "version": 1,
+    "subject": "Biyoloji",
+    "targetGrades": [
+      9
+    ],
+    "title": "Zardan geçişte enerji ve derişim farkı",
+    "skill": "Enerji gereksinimi ile derişim yönünü kullanarak zar geçişlerini sınıflandırma",
+    "explanation": "Basit difüzyon ve kolaylaştırılmış difüzyon pasif taşıma örnekleridir; ATP doğrudan harcanmaz ve madde derişim farkına uygun ilerler. Aktif taşıma, maddeleri derişim farkına karşı taşıyabilir ve enerji gerektirir. Ozmoz, suyun seçici geçirgen zardan net geçişidir; büyük maddeler için endositoz gibi vezikül mekanizmaları kullanılabilir.",
+    "misconception": "Taşıyıcı protein kullanılan her geçişi aktif taşıma sanmak ya da ozmozun çözünen maddenin hareketi olduğunu düşünmek.",
+    "worked": {
+      "prompt": "Bir hücre, dışarıda az bulunan X iyonunu içeriye, içerideki X iyonu zaten daha yoğun olmasına rağmen alıyor. Bu süreç hangi başlığa girer?",
+      "steps": [
+        "İyonun geçiş yönünü belirle: düşük derişimden yüksek derişime.",
+        "Derişim farkına karşı taşımanın enerji gerektirebileceğini fark et.",
+        "Durumu aktif taşıma olarak sınıflandır."
+      ],
+      "answer": "Aktif taşıma"
+    },
+    "exercises": [
+      {
+        "prompt": "Glukoz, taşıyıcı protein yardımıyla çok yoğun olduğu taraftan az yoğun tarafa ATP doğrudan harcanmadan geçiyor. Geçiş türü nedir?",
+        "options": {
+          "A": "Aktif taşıma",
+          "B": "Endositoz",
+          "C": "Kolaylaştırılmış difüzyon",
+          "D": "Ekzositoz"
+        },
+        "answer": "C",
+        "explanation": "Taşıyıcı protein bulunsa da madde derişim farkına uygun ve doğrudan enerji kullanılmadan geçtiği için kolaylaştırılmış difüzyondur."
+      },
+      {
+        "prompt": "Bir bitki hücresinin bulunduğu ortamda çözünen madde derişimi hücre öz suyundan daha yüksektir. Yarı geçirgen zar üzerinden net su hareketi nasıl beklenir?",
+        "options": {
+          "A": "Hücreden dış ortama",
+          "B": "Dış ortamdan hücreye",
+          "C": "İki yönde de su molekülü hareket etmez",
+          "D": "Çözünen madde yerine su ATP ile pompalanır"
+        },
+        "answer": "A",
+        "explanation": "Dış ortam daha derişikse suyun net geçişi hücreden dış ortama doğrudur; bu ozmozla açıklanır."
+      },
+      {
+        "prompt": "Bir hücre büyük bir parçacığı hücre zarıyla çevreleyip içeri alıyor. Bu süreç hangi yolla açıklanır?",
+        "options": {
+          "A": "Basit difüzyon",
+          "B": "Ozmoz",
+          "C": "Kolaylaştırılmış difüzyon",
+          "D": "Endositoz"
+        },
+        "answer": "D",
+        "explanation": "Büyük bir parçacığın zarla sarılarak vezikül içinde alınması endositozdur."
+      },
+      {
+        "prompt": "Bir iyon, yoğun olduğu taraftan az yoğun tarafa bir kanal proteininden geçiyor. Hangisi kesin söylenebilir?",
+        "options": {
+          "A": "İyon her zaman ATP tüketir",
+          "B": "Bu koşullarda geçiş pasif taşıma olabilir",
+          "C": "Zar tüm moleküllere geçirgendir",
+          "D": "İyon yalnız vezikül ile taşınmıştır"
+        },
+        "answer": "B",
+        "explanation": "Derişim farkına uygun bir iyon kanalından geçiş, doğrudan ATP harcamadan pasif olarak gerçekleşebilir."
+      }
+    ],
+    "contentStatus": "PILOT",
+    "topicTags": [
+      "Zardan geçişte enerji ve derişim farkı"
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/21/unite/3",
+    "sourceThemeId": "BİY.9.2.2"
+  },
+  {
+    "id": "grade9-organism-classification-criteria-v1",
+    "version": 1,
+    "subject": "Biyoloji",
+    "targetGrades": [
+      9
+    ],
+    "title": "Canlıları ölçütlere göre sınıflandırma",
+    "skill": "Canlıların ayırt edici özelliklerinden tutarlı gruplar oluşturup bilimsel sınıflamayla karşılaştırma",
+    "explanation": "Bilimsel sınıflandırma canlılar arasındaki akrabalık ve evrimsel ilişkileri yansıtmayı hedefler. Yeni bir gruplama oluştururken aynı ölçütleri bütün örneklerde kullanmak gerekir. İki sözcüklü tür adı cins adı ve tür belirleyici addan oluşur; güncel sınıflandırmada görünüş benzerliği tek başına yakın akrabalık kanıtı değildir.",
+    "misconception": "Aynı ortamda yaşayan veya benzer renkte olan canlıların mutlaka yakın akraba olduğunu varsaymak.",
+    "worked": {
+      "prompt": "Bir öğrenci yunus, köpekbalığı ve serçeyi 'suda yaşayanlar' ve 'diğerleri' diye ayırıyor. Bu ölçüt canlıların akrabalığını neden tek başına göstermez?",
+      "steps": [
+        "Önce kullanılan ölçütü saptar: yaşam ortamı.",
+        "Yunus memeli, köpekbalığı balıktır; benzer ortam farklı gruplarda olabilir.",
+        "Yaşam ortamı tek başına evrimsel akrabalığın güvenilir göstergesi değildir."
+      ],
+      "answer": "Benzer yaşam ortamı, yakın akrabalığı tek başına kanıtlamaz."
+    },
+    "exercises": [
+      {
+        "prompt": "Yunus ve köpekbalığının aynı suda yaşaması için aşağıdaki çıkarımlardan hangisi doğrudur?",
+        "options": {
+          "A": "İkisinin de balık olduğunu kanıtlar",
+          "B": "Akrabalık derecelerinin aynı olduğunu gösterir",
+          "C": "Her ikisinin de aynı sınıfa ait olduğunu kesinleştirir",
+          "D": "Yaşam ortamı tek başına akrabalığı göstermez"
+        },
+        "answer": "D",
+        "explanation": "Yunus memelidir; köpekbalığı balıktır. Ortak çevre benzerliği yakın akrabalık için yeterli değildir."
+      },
+      {
+        "prompt": "Bilimsel tür adlandırmasında iki sözcüklü adın ilk sözcüğü genel olarak neyi belirtir?",
+        "options": {
+          "A": "Türün yaşını",
+          "B": "Cinsi",
+          "C": "Bireyin yaşadığı ülkeyi",
+          "D": "Besin çeşidini"
+        },
+        "answer": "B",
+        "explanation": "İkili adlandırmanın ilk sözcüğü cins adıdır; ikincisi tür belirleyici addır."
+      },
+      {
+        "prompt": "Sınıflandırma tablosundaki tüm canlıları aynı ilkeyle ayırmak isteyen öğrenci için hangi yaklaşım uygundur?",
+        "options": {
+          "A": "Her canlı için ölçütü rastgele değiştirmek",
+          "B": "Yalnız canlıların halk arasındaki adını kullanmak",
+          "C": "Önceden tanımlanmış ortak özellikleri her örneğe uygulamak",
+          "D": "En renkli canlıları aynı aileye almak"
+        },
+        "answer": "C",
+        "explanation": "Geçerli bir gruplamada ölçütlerin bütün örneklere tutarlı uygulanması gerekir."
+      },
+      {
+        "prompt": "İki türün dış görünüşte benzemesiyle ilgili hangi ifade en doğrudur?",
+        "options": {
+          "A": "Akrabalık için ek kalıtsal ve yapısal kanıt gerekir",
+          "B": "Kesinlikle aynı türdürler",
+          "C": "Kesinlikle aynı cinse aittirler",
+          "D": "İkisinin yaşam alanı her zaman aynıdır"
+        },
+        "answer": "A",
+        "explanation": "Görünüş benzerliği tek başına kesin taksonomik sınıflandırma sağlamaz; farklı kanıtlar birlikte değerlendirilir."
+      }
+    ],
+    "contentStatus": "PILOT",
+    "topicTags": [
+      "Canlıları ölçütlere göre sınıflandırma"
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/21/unite/3",
+    "sourceThemeId": "BİY.9.2.4"
+  },
+  {
+    "id": "grade10-photosynthesis-model-review-v1",
+    "version": 1,
+    "subject": "Biyoloji",
+    "targetGrades": [
+      10
+    ],
+    "title": "Fotosentez modelini kanıtlarla geliştirme",
+    "skill": "Fotosentezin girdi, ürün ve enerji akışını gösteren modeldeki hataları saptama",
+    "explanation": "Fotosentezde ışık enerjisi kullanılarak karbondioksit ve sudan organik maddeler sentezlenir, oksijen açığa çıkar. Bir modelde madde girişleri, çıkışları ve enerjinin kaynağı ayrı gösterilmelidir. Modelleme yalnız denklemi ezberlemek değil, varsayımları gerçek verilerle karşılaştırıp düzeltmektir.",
+    "misconception": "Fotosentezde organik maddenin karbonunun topraktan alındığını sanmak ya da ışığı madde girdisi gibi göstermek.",
+    "worked": {
+      "prompt": "Bir modelde 'topraktaki mineraller → yaprağın organik karbonu' yazıyor fakat CO₂ gösterilmiyor. Modelin temel eksikliği nedir?",
+      "steps": [
+        "Modelin hangi maddeyi açıklamayı amaçladığını belirle: organik karbon.",
+        "Fotosentezde organik moleküldeki karbonun ana kaynağının atmosferik CO₂ olduğunu hatırla.",
+        "Modele yaprağa CO₂ girişini ekle ve mineral rolünü ayrı göster."
+      ],
+      "answer": "Karbondioksit girdisinin eksik olması"
+    },
+    "exercises": [
+      {
+        "prompt": "Bir fotosentez modelinde organik maddelerdeki karbonun kaynağı belirtilmemiş. Hangi girdi özellikle eklenmelidir?",
+        "options": {
+          "A": "Oksijen",
+          "B": "Azot gazı",
+          "C": "Karbondioksit",
+          "D": "Hazır glukoz"
+        },
+        "answer": "C",
+        "explanation": "Fotosentezle oluşturulan organik maddenin karbonu CO₂'den gelir."
+      },
+      {
+        "prompt": "Bir öğrenci fotosentezde ışık enerjisini 'üretilen madde' okuyla gösteriyor. Modeli nasıl düzeltmelidir?",
+        "options": {
+          "A": "Işığı enerji girişi olarak göstermelidir",
+          "B": "Işığın karbon atomlarından oluştuğunu yazmalıdır",
+          "C": "Işığı klorofilin ürün maddesi saymalıdır",
+          "D": "Su girişini tamamen silmelidir"
+        },
+        "answer": "A",
+        "explanation": "Işık fotosentezin enerji kaynağıdır; tepkimedeki atomları sağlayan bir madde değildir."
+      },
+      {
+        "prompt": "Aynı bitki türünün aynı koşullarında yalnız ışık şiddeti değiştirilecek bir model-deney eşleştirmesinde hangi koşul kontrol altında tutulmalıdır?",
+        "options": {
+          "A": "Işık şiddeti de sabit olmalıdır",
+          "B": "Bitki türü her ölçümde değişmelidir",
+          "C": "Yalnız deneyin adı aynı olmalıdır",
+          "D": "Karşılaştırılacak diğer koşullar, örneğin CO₂ miktarı sabit tutulmalıdır"
+        },
+        "answer": "D",
+        "explanation": "Tek bir değişkenin etkisini incelemek için diğer koşullar mümkün olduğunca sabit tutulur."
+      },
+      {
+        "prompt": "Fotosentezi anlatan bir modelin ürünler bölümünde hangisinin bulunması beklenir?",
+        "options": {
+          "A": "Yalnız karbondioksit",
+          "B": "Organik madde ve oksijen",
+          "C": "Yalnız su",
+          "D": "Işık ve toprak minerali"
+        },
+        "answer": "B",
+        "explanation": "Basitleştirilmiş fotosentez modelinde organik madde sentezi ve oksijen oluşumu gösterilir."
+      }
+    ],
+    "contentStatus": "PILOT",
+    "topicTags": [
+      "Fotosentez modelini kanıtlarla geliştirme"
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/biyoloji-dersi/unite/8",
+    "sourceThemeId": "BİY.10.1.2"
+  },
+  {
+    "id": "grade10-ecosystem-components-v1",
+    "version": 1,
+    "subject": "Biyoloji",
+    "targetGrades": [
+      10
+    ],
+    "title": "Ekosistem bileşenleri ve etkileşimleri",
+    "skill": "Canlı-cansız bileşenleri ayırarak çevresel değişimin canlı topluluklarına etkisini yorumlama",
+    "explanation": "Ekosistemde üretici, tüketici ve ayrıştırıcı gibi canlı bileşenler ile su, ışık, sıcaklık, mineral ve toprak özellikleri gibi cansız bileşenler ilişkilidir. Bir cansız koşuldaki değişiklik birden fazla canlı grubunu dolaylı olarak etkileyebilir. Bilimsel çıkarımda gözlenen olayla tahmin edilen sonucu ayrı tutmak gerekir.",
+    "misconception": "Ayrıştırıcıların cansız bileşen olduğunu düşünmek veya tek bir gözleme bakarak bütün ekosistemlerde aynı sonucu kesinleştirmek.",
+    "worked": {
+      "prompt": "Bir gölette uzun süreli kuraklık nedeniyle su seviyesi azalıyor ve sucul bitki alanı daralıyor. Bu örnek hangi ilişkidir?",
+      "steps": [
+        "Kuraklık ve su düzeyi azalması cansız çevre koşulundaki değişimdir.",
+        "Sucul bitkilerin yaşam alanı ve yoğunluğu canlı bileşendir.",
+        "Cansız koşuldaki değişim canlı bileşenleri etkileyebilir."
+      ],
+      "answer": "Cansız çevre koşullarının canlı bileşenleri etkilemesi"
+    },
+    "exercises": [
+      {
+        "prompt": "Bir orman ekosisteminde hangisi canlı bileşendir?",
+        "options": {
+          "A": "Güneş ışığı",
+          "B": "Toprak sıcaklığı",
+          "C": "Rüzgâr",
+          "D": "Ayrıştırıcı mantar"
+        },
+        "answer": "D",
+        "explanation": "Mantar, ekosistemin canlı ayrıştırıcı bileşenlerindendir."
+      },
+      {
+        "prompt": "Bir gölde çözünmüş oksijenin azalmasının balık topluluğu üzerinde etkisi inceleniyor. Doğru ilişki hangisidir?",
+        "options": {
+          "A": "İki cansız bileşen ilişkisidir",
+          "B": "Cansız koşulun canlı topluluğu etkilemesidir",
+          "C": "İki canlı türü arasındaki rekabettir",
+          "D": "Suyun artık canlı olduğu anlamına gelir"
+        },
+        "answer": "B",
+        "explanation": "Suda çözünmüş oksijen cansız bir koşuldur ve balıklar canlı bileşendir."
+      },
+      {
+        "prompt": "Aynı bölgede yağışın azalması ve bitki örtüsünün seyrelmesi birlikte gözleniyor. Hangisi bilimsel olarak daha dikkatli çıkarımdır?",
+        "options": {
+          "A": "Yağış azalması bitkileri etkileyebilir; başka etkenler de incelenmelidir",
+          "B": "Bütün bitkiler mutlaka aynı gün ölür",
+          "C": "Sadece yırtıcı hayvanlar etkilenir",
+          "D": "Bitki örtüsü cansız bir bileşendir"
+        },
+        "answer": "A",
+        "explanation": "Olası etki değerlendirilebilir fakat neden-sonuç ilişkisi için diğer etkenler de incelenmelidir."
+      },
+      {
+        "prompt": "Bir göletteki ayrıştırıcı sayısı azaldığında hangi süreçte değişim görülmesi beklenebilir?",
+        "options": {
+          "A": "Güneş ışığının oluşumu",
+          "B": "Yerçekiminin yönü",
+          "C": "Organik atıkların parçalanması",
+          "D": "Su molekülünün kimyasal formülü"
+        },
+        "answer": "C",
+        "explanation": "Ayrıştırıcılar organik maddelerin parçalanmasında işlev görür; azalmaları döngüleri etkileyebilir."
+      }
+    ],
+    "contentStatus": "PILOT",
+    "topicTags": [
+      "Ekosistem bileşenleri ve etkileşimleri"
+    ],
+    "sourceUrl": "https://tymm.meb.gov.tr/biyoloji-dersi/unite/10",
+    "sourceThemeId": "BİY.10.2.1"
   }
 ];
