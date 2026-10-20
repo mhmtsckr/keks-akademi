@@ -7,6 +7,7 @@ import {findGrade9GeographyOutcome} from './verifiedGrade9GeographyOutcomes';
 import {findVerifiedLiteratureTheme} from './verifiedGrade911LiteratureThemes';
 import {findVerifiedTymmMathOutcome} from './verifiedTymmMathOutcomes2026';
 import {findGrade7ScienceOutcome} from './verifiedGrade7ScienceOutcomes';
+import {verifiedHistoryOutcome} from './verifiedGrade911HistoryOutcomes2026';
 
 export type LessonSourceEvidence={
   themeVerified:boolean;
@@ -17,6 +18,12 @@ export type LessonSourceEvidence={
 };
 
 export function lessonSourceEvidence(lesson:MicroLesson):LessonSourceEvidence{
+ const history=lesson.sourceThemeId?verifiedHistoryOutcome(lesson.sourceThemeId):null;
+ if(history&&history.subject===lesson.subject&&lesson.targetGrades?.includes(history.grade)&&lesson.sourceUrl===history.url)
+  return {themeVerified:true,outcomeCodeVerified:true,
+   theme:history.skill,outcomeCode:history.code,sourceUrl:history.url,checkedOn:history.checkedOn,
+   interpretation:'MEB 2026–2027 Tarih öğrenme çıktısının kodu resmî kaynaktan doğrulandı. KEKS tarafından hazırlanan örnekler kanıt yorumlamayı destekleyen pilot alıştırmalardır; bütün süreç becerilerinin veya branş uzmanı onayının kanıtı değildir.'};
+
  const science=lesson.sourceThemeId?findGrade7ScienceOutcome(lesson.sourceThemeId):null;
  if(science&&science.subject===lesson.subject&&lesson.targetGrades?.includes(7)&&lesson.sourceUrl===science.url)
   return {themeVerified:true,outcomeCodeVerified:true,theme:science.title,
