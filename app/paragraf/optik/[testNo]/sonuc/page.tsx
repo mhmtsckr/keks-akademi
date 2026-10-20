@@ -1,6 +1,8 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {parseOpticalTest,gradeOptical} from '@/lib/paragrafOptik';
+import {buildOpticalWrongLearningPlan} from '@/lib/paragrafWrongLearning';
+import {RecoveryActions} from './RecoveryActions';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'KEKS Paragraf | Test Sonuç ve Konu Analizi',robots:{index:false,follow:false,noarchive:true}};
 type Props={params:Promise<{testNo:string}>;searchParams:Promise<{c?:string|string[]}>};
@@ -15,6 +17,7 @@ export default async function ResultPage({params,searchParams}:Props){
   <h1>Test yanıtları bulunamadı</h1><p>Test {testNo} için 30 cevabı dijital optiğe girmen gerekiyor.</p>
   <a href={'/paragraf/optik/'+testNo}>Dijital optiğe dön</a>
  </main>;
+ const recovery=buildOpticalWrongLearningPlan(test,encoded);
  const statistic=[['Doğru',result.correct,'#e7f5e9'],['Yanlış',result.wrong,'#ffeded'],['Boş',result.blank,'#f2f2f2'],['Net',result.net.toLocaleString('tr-TR',{maximumFractionDigits:2}),'#e8f2ff']];
  return <main style={{fontFamily:'Arial,sans-serif',background:light,minHeight:'100vh',color:navy,padding:'16px 12px 56px'}}>
   <article style={{maxWidth:1000,margin:'auto'}}>
@@ -55,6 +58,7 @@ export default async function ResultPage({params,searchParams}:Props){
      </li>)}</ol>
     </div>:null}
    </section>
+   {recovery&&<RecoveryActions testNo={test} encoded={encoded} missed={recovery.missed}/>}
    <section style={{background:'#fff',padding:20,borderRadius:15,marginTop:18}}>
     <h2>Yanlış soruların doğru cevapları ve öğretici çözümleri</h2>
     {result.details.filter(d=>d.status!=='DOĞRU').length===0?<p>İncelenecek yanlış veya boş soru bulunmuyor.</p>:<div style={{display:'grid',gap:10}}>
@@ -68,7 +72,7 @@ export default async function ResultPage({params,searchParams}:Props){
     <a href={'/paragraf/optik/'+testNo} style={{color:navy}}>← Optiğe dön / yeni deneme</a>
     {test<50?<a href={'/paragraf/optik/'+String(test+1).padStart(2,'0')} style={{color:navy}}>Sonraki Test {String(test+1).padStart(2,'0')} →</a>:null}
    </div>
-   <p style={{fontSize:12,color:'#69798d'}}>Uyarı: QR bağlantısını paylaştığın kişiler kodladığın cevapları görebilir. Bu form öğrenci hesabında kalıcı kayıt oluşturmaz.</p>
+   <p style={{fontSize:12,color:'#69798d'}}>Uyarı: QR bağlantısını paylaştığın kişiler kodladığın cevapları görebilir. QR sonucu yalnız bağlantı üzerinden görüntülenir; kişisel tekrar listesine aktarım için yukarıdaki kaydetme işlemini öğrenci hesabınla onaylaman gerekir.</p>
   </article>
  </main>;
 }
