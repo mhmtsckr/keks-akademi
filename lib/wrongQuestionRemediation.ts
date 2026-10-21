@@ -1,4 +1,7 @@
 import {getEducationCurriculum} from '@/lib/educationCurriculumMap';
+import {buildSubjectRecoveryPlan} from '@/lib/subjectRecoveryPlan';
+import {findMicroLesson} from '@/lib/bankFreeMicroLessons';
+import {resolveLearningCurriculumContext,lessonAllowedForContext} from '@/lib/curriculumPolicy2026';
 
 export const REMEDIATION_REASONS={
   BILGI_EKSIKLIGI:{label:'Bilgi eksikliği',instruction:'Önce temel kavramı ve kuralı kendi cümlelerinle özetle; ardından çözümlü örneği incele.'},
@@ -7,7 +10,8 @@ export const REMEDIATION_REASONS={
   SORU_KOKU:{label:'Soru kökünü yanlış okuma',instruction:'Sorunun son cümlesini yeniden oku; istenen büyüklüğü bir cümlede ifade et.'},
   SURE:{label:'Süre yönetimi',instruction:'Önce süre sınırı olmadan doğru çöz; sonra benzer soruda çözüm süresini ölç.'},
   YONTEM_BILMEME:{label:'Yöntem bilmeme',instruction:'Uygun çözüm stratejisini seç; neden bu stratejiyi kullandığını açıklayıp yeni örnekte uygula.'},
-  UNUTMA:{label:'Unutma',instruction:'Notlara bakmadan kuralı hatırlamayı dene; ardından örnekle doğrula ve yakın tekrar yap.'}
+  UNUTMA:{label:'Unutma',instruction:'Notlara bakmadan kuralı hatırlamayı dene; ardından örnekle doğrula ve yakın tekrar yap.'},
+  BELIRLENEMEDI:{label:'Henüz belirleyemedim',instruction:'Hata veya boş bırakma nedenini kesin varsayma; soruyu koçunla inceleyerek önce soru kökü ve alt konuyu belirle.'}
 } as const;
 
 export type RemediationReason=keyof typeof REMEDIATION_REASONS;
@@ -41,6 +45,8 @@ export function selectRemediationQuestions(
 export function buildWrongQuestionSupport(input:{
   subject:string;topic:string;examType?:string;gradeLevel?:string|null;academicTrack?:string|null;
   explanation?:string|null;classificationConfidence?:number|null;errorReason?:RemediationReason|null;
+  bankReason?:string|null;hasGuidedLesson?:boolean;
+  prompt?:string|null;practiceSkillId?:string|null;educationGrade?:number|null;
 }){
   const curriculum=getEducationCurriculum(input.gradeLevel,input.academicTrack);
   const subject=curriculum?.subjects.find(s=>normalized(s.name)===normalized(input.subject));
@@ -52,9 +58,21 @@ export function buildWrongQuestionSupport(input:{
   const matched=matches.length===1?matches[0]:null;
   const reason=input.errorReason&&isRemediationReason(input.errorReason)?REMEDIATION_REASONS[input.errorReason]:null;
   const suppliedExplanation=input.explanation?.trim()||null;
+  const selectedLesson=findMicroLesson({
+    subject:input.subject,topic:input.topic,prompt:input.prompt,
+    selectedLessonId:input.practiceSkillId||null
+  });
+  const ctx=resolveLearningCurriculumContext({
+    gradeLevel:input.gradeLevel,examType:input.examType,selectedGrade:input.educationGrade
+  });
+  const hasGuidedLesson=input.hasGuidedLesson??Boolean(selectedLesson&&lessonAllowedForContext(selectedLesson,ctx));
   return {
     subject:input.subject,
     topic:input.topic,
+    learningPlan:buildSubjectRecoveryPlan({
+      subject:input.subject,topic:input.topic,bankReason:input.bankReason,
+      classificationConfidence:input.classificationConfidence,hasGuidedLesson
+    }),
     acquisition:matched?{id:matched.acquisition.id,label:matched.acquisition.label,unit:matched.unit,subTopic:matched.subTopic}:null,
     topicConfirmationNeeded:input.classificationConfidence!=null&&input.classificationConfidence<0.65,
     reason:input.errorReason||null,

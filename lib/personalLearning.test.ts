@@ -3,7 +3,7 @@ import {buildMicroLearningTasks,buildPersonalQuestionSets,personalBankReason} fr
 
 describe('kişisel soru bankası ve mikro öğrenme',()=>{
   const now=new Date('2026-09-28T04:00:00Z');
-  const item=(id:string,days:number,subject:string,reason:'WRONG'|'MARKED'='WRONG')=>({
+  const item=(id:string,days:number,subject:string,reason:'WRONG'|'MARKED'|'BLANK'='WRONG')=>({
     id,examType:'TYT',subject,topic:'Konu '+id,prompt:'Soru '+id,
     createdAt:new Date(now.getTime()-days*86400000),options:{bankReason:reason}
   });
@@ -31,6 +31,19 @@ describe('kişisel soru bankası ve mikro öğrenme',()=>{
 
   it('işaretli soru nedenini tanır',()=>{
     expect(personalBankReason(item('1',0,'Matematik','MARKED'))).toBe('MARKED');
+  });
+
+  it('boş bırakılan soruları haftalık ve aylık kişisel testte ayrı etiketler',()=>{
+    const sets=buildPersonalQuestionSets([
+      item('blank-1',1,'Geometri','BLANK'),
+      item('wrong-1',2,'Kimya','WRONG'),
+      item('marked-1',3,'Felsefe','MARKED')
+    ],now);
+    expect(sets.weekly.count).toBe(2);
+    expect(sets.weekly.items.some(x=>x.id==='blank-1')).toBe(true);
+    expect(sets.weekly.items.some(x=>x.id==='marked-1')).toBe(false);
+    expect(sets.monthly.items.find(x=>x.id==='blank-1')?.reason).toBe('BLANK');
+    expect(personalBankReason(item('blank-2',0,'Tarih','BLANK'))).toBe('BLANK');
   });
 
   it('öğrenci profiline göre 3-5 dakikalık mikro görevler üretir',()=>{

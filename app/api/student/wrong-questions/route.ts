@@ -66,7 +66,10 @@ async function POST__handler(req:Request){
   const context=resolveLearningCurriculumContext({
     gradeLevel:user.student.gradeLevel,selectedGrade:educationGrade,examType
   });
-  const bankReason=String(fd.get('bankReason')||'WRONG').toUpperCase()==='MARKED'?'MARKED':'WRONG';
+  const rawReason=String(fd.get('bankReason')||'WRONG').trim().toUpperCase();
+  if(!['WRONG','BLANK','MARKED'].includes(rawReason))
+    return NextResponse.json({error:'Soru kayıt nedeni geçersiz.'},{status:400});
+  const bankReason=rawReason as 'WRONG'|'BLANK'|'MARKED';
   if(subject.length<2)return NextResponse.json({error:'Ders seçiniz.'},{status:400});
   if(educationGrade!==null&&context.grade!==educationGrade)
     return NextResponse.json({error:'Seçilen sınıf öğrenci eğitim düzeyiyle uyuşmuyor.'},{status:400});
@@ -108,7 +111,7 @@ async function POST__handler(req:Request){
 
     const q=await tx.questionBankItem.create({data:{
       examType,subject,topic:classified.topic,
-      prompt:questionText||'Görsel yanlış soru',
+      prompt:questionText||'Görsel kişisel soru',
       options:{
         _kind:'STUDENT_WRONG',
         imageUrl,
@@ -144,7 +147,7 @@ async function POST__handler(req:Request){
       classificationConfidence:classified.confidence,
       classificationMethod:classified.method,bankReason,dueAt:result.review.dueAt,stepIndex:0
     },
-    message:(bankReason==='MARKED'?'İşaretlenen':'Yanlış')+' soru '+subject+' · '+result.q.topic+' olarak kişisel soru bankasına eklendi ve 0. gün tekrar görevine bağlandı.',
+    message:(bankReason==='MARKED'?'İşaretlenen':bankReason==='BLANK'?'Boş bırakılan':'Yanlış')+' soru '+subject+' · '+result.q.topic+' olarak kişisel soru bankasına eklendi ve 0. gün tekrar görevine bağlandı.',
     scheduleDays:REVIEW_DAYS
   });
 }

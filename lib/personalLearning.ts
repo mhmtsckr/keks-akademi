@@ -8,7 +8,7 @@ function meta(v:unknown){return v&&typeof v==='object'&&!Array.isArray(v)?v as R
 export function personalBankReason(item:PersonalBankItem){
   const m=meta(item.options);
   const reason=String(m.bankReason||'WRONG').toUpperCase();
-  return reason==='MARKED'?'MARKED':'WRONG';
+  return reason==='MARKED'?'MARKED':reason==='BLANK'?'BLANK':'WRONG';
 }
 
 function diversify(items:PersonalBankItem[],limit:number){
@@ -28,7 +28,7 @@ export function buildPersonalQuestionSets(items:PersonalBankItem[],now=new Date(
   const weekStart=new Date(now.getTime()-7*86400000);
   const monthStart=new Date(now.getTime()-30*86400000);
 
-  const weeklyPool=items.filter(x=>personalBankReason(x)==='WRONG'&&x.createdAt>=weekStart);
+  const weeklyPool=items.filter(x=>personalBankReason(x)!=='MARKED'&&x.createdAt>=weekStart);
   const monthlyPool=items.filter(x=>x.createdAt>=monthStart);
 
   const weekly=diversify(weeklyPool,10);
