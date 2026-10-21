@@ -226,6 +226,12 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
             <div className="notice" style={{marginTop:8}}>
               {x.support.topicConfirmationNeeded&&<p><strong>Konu eşleşmesi doğrulanmalı:</strong> Otomatik sınıflandırmanın güveni düşük. Konuyu aşağıdaki listeden düzenleyebilirsin.</p>}
               {x.support.acquisition&&<p><strong>Kazanım:</strong> {x.support.acquisition.id} · {x.support.acquisition.label}</p>}
+              {x.support.learningPlan&&<div>
+                <p><strong>{x.support.learningPlan.statusLabel} · {x.support.learningPlan.method}</strong></p>
+                <p>{x.support.learningPlan.diagnosticQuestion}</p>
+                <ol>{x.support.learningPlan.steps.map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
+                <small className="muted">{x.support.learningPlan.note}</small>
+              </div>}
               <p>Önce konunun kuralını notlarına bakmadan açıklamayı dene. Sonra soruyu çöz.</p>
             </div>
           </details>}
@@ -251,6 +257,12 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         ?<p><strong>Kazanım:</strong> {support.acquisition.id} · {support.acquisition.label}</p>
         :<p className="muted">Bu kayıt henüz doğrulanmış bir kazanımla eşleşmedi. Gösterilen konu etiketi başlangıç rehberidir.</p>}
       <p><strong>{support.reasonLabel||'Önerilen çalışma'}:</strong> {support.instruction}</p>
+      {support.learningPlan&&<div className="notice">
+        <strong>{support.learningPlan.statusLabel} · {support.learningPlan.method}</strong>
+        <p>{support.learningPlan.diagnosticQuestion}</p>
+        <ol>{support.learningPlan.steps.map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
+        <small className="muted">{support.learningPlan.note}</small>
+      </div>}
       {support.explanation
         ?<div className="notice"><strong>Yüklenen çözüm notu (doğrulama gerektirebilir):</strong> {support.explanation}</div>
         :<div className="notice">Yüklenen soruya ait doğrulanmış bir çözüm yok. İlgili beceri için ayrı hazırlanmış bir çözümlü örnek varsa aşağıdan çalışabilirsin.</div>}
