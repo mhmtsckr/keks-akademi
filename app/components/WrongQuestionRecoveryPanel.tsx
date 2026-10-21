@@ -9,7 +9,8 @@ const ERROR_REASONS=[
  ['SORU_KOKU','Soru kökünü yanlış okuma'],
  ['SURE','Süre yönetimi'],
  ['YONTEM_BILMEME','Yöntem bilmeme'],
- ['UNUTMA','Unutma']
+ ['UNUTMA','Unutma'],
+ ['BELIRLENEMEDI','Henüz belirleyemedim']
 ] as const;
 const CHECKS:Record<string,string>={
  BILGI_EKSIKLIGI:'Temel kavramı notlara bakmadan açıkla, ardından farklı soruyla kontrol et.',
@@ -18,7 +19,8 @@ const CHECKS:Record<string,string>={
  SORU_KOKU:'Sorunun son cümlesindeki isteneni kendi sözlerinle tekrar yaz.',
  SURE:'Önce süresiz doğru çöz; sonraki soruda süreni ölç.',
  YONTEM_BILMEME:'Seçtiğin yöntemin niçin uygun olduğunu gerekçelendir.',
- UNUTMA:'Kuralı notsuz hatırla ve ileriki tekrar gününde yeniden uygula.'
+ UNUTMA:'Kuralı notsuz hatırla ve ileriki tekrar gününde yeniden uygula.',
+ BELIRLENEMEDI:'Önce hangi alt beceride zorlandığını belirlemek için koçundan destek iste.'
 };
 type Question={id:string;subject:string;topic:string;classificationConfidence?:number;review?:{id:string}|null;bankReason?:string};
 type Reflection={reason:string;reasonLabel:string;mistakenStep:string;correctedPrinciple:string;nextTimeCheck:string;recordedAt:string;suggestedAction:string};
@@ -84,13 +86,13 @@ export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:
   <div className="moduleHeaderRow">
    <div>
     <div className="moduleEyebrow">MİZA · YANLIŞTAN ÖĞRENME DÖNGÜSÜ</div>
-    <h2>Yanlışımı bul → Düzelt → Farklı soruda dene</h2>
-    <p className="muted">Sadece doğru cevabı görmek yerine, yanlış yaptığın adımı, doğrusunu ve sonraki soruda neyi kontrol edeceğini kaydet. Ardından farklı bir örnekte ve gecikmeli tekrarda yeniden ölç.</p>
+    <h2>Yanlışımı veya boş bırakma nedenimi bul → Düzelt → Yeniden dene</h2>
+    <p className="muted">Yanlış veya boş bıraktığın soruda hangi adımda zorlandığını ve sonraki soruda neyi kontrol edeceğini kaydet. Ardından farklı bir örnekte ve gecikmeli tekrarda yeniden ölç.</p>
    </div>
    <span className="pill">{snapshot?.summary.withReflection||0}/{items.length} hata analizi</span>
   </div>
   <label className="field">
-   <span>Analiz edeceğin yanlış soru</span>
+   <span>Analiz edeceğin yanlış / boş soru</span>
    <select value={chosen} onChange={e=>{setChosen(e.target.value);setMessage('')}}>
     {items.map(q=><option value={q.id} key={q.id}>{q.subject} · {q.topic} · {q.id.slice(-5)}</option>)}
    </select>
@@ -120,14 +122,14 @@ export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:
    </div>
    <form onSubmit={e=>void save(e)} className="stack">
     <label className="field">
-     <span>1. Neden yanlış yaptım?</span>
+     <span>1. Neden yanlış yaptım veya boş bıraktım?</span>
      <select value={reason} onChange={e=>setReason(e.target.value)}>
       {ERROR_REASONS.map(([id,label])=><option key={id} value={id}>{label}</option>)}
      </select>
     </label>
     <p className="muted"><strong>Önerilen yaklaşım:</strong> {CHECKS[reason]}</p>
     <label className="field">
-     <span>2. Tam olarak hangi düşüncem veya adımım yanlıştı?</span>
+     <span>2. Hangi düşüncede zorlandım veya hangi adımı atlayamadım?</span>
      <textarea rows={3} value={mistakenStep} onChange={e=>setMistakenStep(e.target.value)}
       minLength={15} maxLength={900} required placeholder="Örnek: Soru kökünde istenmeyeni aradım, son cümleyi atladım."/>
     </label>
