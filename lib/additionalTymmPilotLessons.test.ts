@@ -73,8 +73,8 @@ describe('MEB TYMM 5/6 Fen ve 9/10/11 kaynaklı pilot genişleme',()=>{
   expect(acquisitions(10,'Biyoloji')).toContain('BİY.10.2.1');
   expect(getEducationCurriculum('Lise 9-10 | Maarif Model (1. Aşama)')?.subjects.find(x=>x.name==='Kimya')?.units[0].name).toBe('Düzey Müfredat Haritası');
   const coverage=microLessonCoverageSnapshot();
-  expect(coverage.totalLessons).toBe(106);
-  expect(coverage.totalExercises).toBe(424);
+  expect(coverage.totalLessons).toBe(111);
+  expect(coverage.totalExercises).toBe(444);
   expect(coverage.verifiedAdditionalOutcomes.totalOfficialOutcomes).toBe(12);
   expect(coverage.verifiedAdditionalOutcomes.linkedPilotLessons).toBe(12);
   expect(coverage.gradeRows.every(x=>x.topicIndexComplete===false)).toBe(true);

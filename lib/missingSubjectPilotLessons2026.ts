@@ -10,7 +10,7 @@ export const MISSING_SUBJECT_PILOT_LESSONS:readonly MicroLesson[]=[
   explanation:'Üçgenin üç iç açısının toplamı 180 derecedir. Komşu iç ve dış açı ise bütünlerdir: toplamları 180 derecedir. Bir dış açı, kendisine komşu olmayan iki iç açının toplamına eşittir.',
   misconception:'Dış açıyı üçgenin dördüncü iç açısı saymak ya da 180 dereceyi birden çok kez çıkarıp karıştırmak.',
   worked:{prompt:'Bir üçgenin iki iç açısı 45° ve 65° ise üçüncü açı kaç derecedir?',
-   steps:['Üçgenin iç açı toplamı 180° olarak yazılır.','45° + 65° = 110° bulunur.','180° − 110° = 70°.'],answer:'70°'},
+   steps:['Üçgenin iç açı toplamı 180° olarak yazılır.','45° + 65° = 110° bulunur.','180° − 110° = 70°.'],answer:'70 derece'},
   exercises:[
    {prompt:'Bir üçgende açılar 50°, 60° ve x°. x kaç derecedir?',options:{A:'70',B:'60',C:'80',D:'90'},answer:'A',explanation:'50 + 60 = 110; 180 − 110 = 70.'},
    {prompt:'Bir üçgende iki açı 30° ve 80° ise üçüncü açı kaç derecedir?',options:{A:'80',B:'70',C:'60',D:'50'},answer:'B',explanation:'30 + 80 = 110; üçüncü iç açı 70° olur.'},
@@ -25,7 +25,7 @@ export const MISSING_SUBJECT_PILOT_LESSONS:readonly MicroLesson[]=[
   topicTags:['Simple Present vs Present Continuous','İngilizce zamanlar'],
   explanation:'Every day, usually ve often gibi sıklık ifadeleri genel alışkanlığa işaret eder; now, at the moment ve look gibi ipuçları şu an süren eylemi gösterebilir. Üçüncü tekil özne ile Simple Present olumlu yüklem genellikle -s alır; does not sonrasında fiil yalın kullanılır.',
   misconception:'He/She öznesinden sonra her durumda -ing kullanmak veya does not ile -s ekini birlikte yazmak.',
-  worked:{prompt:'She ___ to school every day. (go)',steps:['Every day bir alışkanlığa işaret eder.','She üçüncü tekil öznedir.','Simple Present olumlu biçim goes olur.'],answer:'goes'},
+  worked:{prompt:'She ___ to school every day. (go)',steps:['Every day bir alışkanlığa işaret eder.','She üçüncü tekil öznedir.','Simple Present olumlu biçim goes olur.'],answer:'goes (Simple Present)'},
   exercises:[
    {prompt:'He ___ football every weekend.',options:{A:'plays',B:'playing',C:'play',D:'is play'},answer:'A',explanation:'Every weekend alışkanlık; he ile plays.'},
    {prompt:'Look! They ___ in the garden now.',options:{A:'play',B:'are playing',C:'plays',D:'played'},answer:'B',explanation:'Look ve now şu an devam eden eylem: are playing.'},
