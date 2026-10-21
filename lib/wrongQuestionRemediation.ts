@@ -1,4 +1,5 @@
 import {getEducationCurriculum} from '@/lib/educationCurriculumMap';
+import {buildSubjectRecoveryPlan} from '@/lib/subjectRecoveryPlan';
 
 export const REMEDIATION_REASONS={
   BILGI_EKSIKLIGI:{label:'Bilgi eksikliği',instruction:'Önce temel kavramı ve kuralı kendi cümlelerinle özetle; ardından çözümlü örneği incele.'},
@@ -41,6 +42,7 @@ export function selectRemediationQuestions(
 export function buildWrongQuestionSupport(input:{
   subject:string;topic:string;examType?:string;gradeLevel?:string|null;academicTrack?:string|null;
   explanation?:string|null;classificationConfidence?:number|null;errorReason?:RemediationReason|null;
+  bankReason?:string|null;hasGuidedLesson?:boolean;
 }){
   const curriculum=getEducationCurriculum(input.gradeLevel,input.academicTrack);
   const subject=curriculum?.subjects.find(s=>normalized(s.name)===normalized(input.subject));
@@ -55,6 +57,10 @@ export function buildWrongQuestionSupport(input:{
   return {
     subject:input.subject,
     topic:input.topic,
+    learningPlan:buildSubjectRecoveryPlan({
+      subject:input.subject,topic:input.topic,bankReason:input.bankReason,
+      classificationConfidence:input.classificationConfidence,hasGuidedLesson:input.hasGuidedLesson
+    }),
     acquisition:matched?{id:matched.acquisition.id,label:matched.acquisition.label,unit:matched.unit,subTopic:matched.subTopic}:null,
     topicConfirmationNeeded:input.classificationConfidence!=null&&input.classificationConfidence<0.65,
     reason:input.errorReason||null,
