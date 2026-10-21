@@ -40,6 +40,11 @@ async function GET__handler(){
       support:buildWrongQuestionSupport({
         subject:x.question.subject,topic:x.question.topic,
         gradeLevel:student.gradeLevel,academicTrack:student.academicTrack,
+        examType:x.question.examType,prompt:x.question.prompt,
+        bankReason:String(questionMeta(x.question.options).bankReason||'WRONG'),
+        practiceSkillId:String(questionMeta(x.question.options).practiceSkillId||'')||null,
+        educationGrade:typeof questionMeta(x.question.options).educationGrade==='number'
+          ?Number(questionMeta(x.question.options).educationGrade):null,
         classificationConfidence:Number(questionMeta(x.question.options).classificationConfidence||0)||null
       }),
       question:{
@@ -83,6 +88,11 @@ async function POST__handler(req:Request){
     subject:item.question.subject,topic:item.question.topic,examType:item.question.examType,
     gradeLevel:user.student.gradeLevel,academicTrack:user.student.academicTrack,
     explanation:item.question.explanation,
+    prompt:item.question.prompt,
+    bankReason:String(questionMeta(item.question.options).bankReason||'WRONG'),
+    practiceSkillId:String(questionMeta(item.question.options).practiceSkillId||'')||null,
+    educationGrade:typeof questionMeta(item.question.options).educationGrade==='number'
+      ?Number(questionMeta(item.question.options).educationGrade):null,
     classificationConfidence:Number(questionMeta(item.question.options).classificationConfidence||0)||null,
     errorReason
   });
