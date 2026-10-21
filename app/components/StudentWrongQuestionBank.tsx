@@ -13,7 +13,8 @@ const ERROR_REASONS=[
   ['SORU_KOKU','Soru kökünü yanlış okuma'],
   ['SURE','Süre'],
   ['YONTEM_BILMEME','Yöntem bilmeme'],
-  ['UNUTMA','Unutma']
+  ['UNUTMA','Unutma'],
+  ['BELIRLENEMEDI','Henüz belirleyemedim']
 ] as const;
 
 const SUBJECTS=[
