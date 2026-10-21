@@ -328,26 +328,26 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
     <div className="card">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">KİŞİSEL SORU BANKASI</div><h2>Otomatik tekrar testleri</h2><p className="muted">Yanlış ve işaretlediğin sorular tek havuzda tutulur. KEKS son 7 gün ve son 30 gün için dengeli tekrar setleri hazırlar.</p></div>
+        <div><div className="moduleEyebrow">KİŞİSEL SORU BANKASI</div><h2>Otomatik tekrar testleri</h2><p className="muted">Yanlış, boş ve işaretlediğin sorular tek havuzda tutulur. KEKS son 7 gün ve son 30 gün için dengeli tekrar setleri hazırlar.</p></div>
         <span className="pill">{items.length} soru</span>
       </div>
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))'}}>
         <div className="card" style={{margin:0}}>
           <strong>Haftalık Yanlışlar Testi</strong>
           <div className="kpi">{sets?.weekly?.count||0}</div>
-          <p className="muted">Son 7 gündeki yanlışlardan en fazla 10 soru.</p>
+          <p className="muted">Son 7 gündeki yanlış veya boş sorulardan en fazla 10 soru.</p>
           <button className="btn primary" type="button" disabled={!sets?.weekly?.count} onClick={()=>setOpenSet(openSet==='weekly'?null:'weekly')}>{openSet==='weekly'?'Kapat':'Testi Aç'}</button>
         </div>
         <div className="card" style={{margin:0}}>
           <strong>Aylık Karma Tekrar</strong>
           <div className="kpi">{sets?.monthly?.count||0}</div>
-          <p className="muted">Son 30 gündeki yanlış + işaretli sorulardan ders dengeli karma set.</p>
+          <p className="muted">Son 30 gündeki yanlış, boş ve işaretli sorulardan ders dengeli karma set.</p>
           <button className="btn primary" type="button" disabled={!sets?.monthly?.count} onClick={()=>setOpenSet(openSet==='monthly'?null:'monthly')}>{openSet==='monthly'?'Kapat':'Tekrarı Aç'}</button>
         </div>
       </div>
       {openSet&&<div className="stack" style={{marginTop:16}}>
         {(sets?.[openSet]?.items||[]).map((q:any,i:number)=><div className="card" key={q.id} style={{margin:0}}>
-          <div className="moduleHeaderRow"><strong>{i+1}. {q.subject} · {q.topic}</strong>{q.reason&&<span className="pill">{q.reason==='MARKED'?'İşaretli':'Yanlış'}</span>}</div>
+          <div className="moduleHeaderRow"><strong>{i+1}. {q.subject} · {q.topic}</strong>{q.reason&&<span className="pill">{q.reason==='MARKED'?'İşaretli':q.reason==='BLANK'?'Boş':'Yanlış'}</span>}</div>
           <p>{q.prompt}</p>
         </div>)}
       </div>}
@@ -357,7 +357,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       <div className="moduleHeaderRow">
         <div>
           <div className="moduleEyebrow">GÜNLÜK YANLIŞ SORU BANKASI</div>
-          <h2>Yanlış yaptığın soruyu yükle</h2>
+          <h2>Yanlış veya boş bıraktığın soruyu yükle</h2>
           <p className="muted">Dersi seç, soru fotoğrafını veya metnini ekle. KEKS konuyu otomatik sınıflandırır. 0–1–3–7–14–28 gün tabanlı tekrar motoru, doğru/yanlış performansına göre sonraki aralığı kişiselleştirir.</p>
         </div>
         <span className="moduleIcon">↺</span>
@@ -370,7 +370,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         </div>
         <div className="field">
           <label>Kayıt nedeni</label>
-          <select name="bankReason"><option value="WRONG">Yanlış yaptım</option><option value="MARKED">Sonra tekrar etmek için işaretledim</option></select>
+          <select name="bankReason"><option value="WRONG">Yanlış yaptım</option><option value="BLANK">Boş bıraktım</option><option value="MARKED">Sonra tekrar etmek için işaretledim</option></select>
         </div>
         {curriculumContext?.canSelectGrade&&<div className="field wrongQuestionWide">
           <label>Gerçek sınıf (gerekli)</label>
@@ -407,18 +407,18 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <small className="muted">2026–2027 {curriculumContext?.framework==='TYMM'?'TYMM':'MEB/ÖSYM'} yaklaşımı · {curriculumContext?.grade?curriculumContext.grade+'. sınıf':curriculumContext?.framework==='OSYM'?'Sınav grubu':'Sınıf seçimi bekleniyor'}. Bu eşleştirme resmî kazanım onayı değildir. Görsel sorularda beceriyi sen seçmelisin.</small>
         </div>
         <div className="field">
-          <label>Senin verdiğin yanlış cevap</label>
+          <label>Senin işaretlediğin cevap (boş bıraktıysan yazma)</label>
           <input name="originalStudentAnswer" placeholder="İsteğe bağlı"/>
         </div>
         <div className="field">
-          <label>Doğru cevap</label>
-          <input name="correctAnswer" required placeholder="Tekrar gününde bununla kontrol edilir"/>
+          <label>Kaynağından kontrol ettiğin doğru cevap</label>
+          <input name="correctAnswer" required placeholder="Kitabın cevap anahtarından doğrulayarak yaz"/><small className="muted">Bu anahtar kullanıcı tarafından girilir; KEKS kendiliğinden doğrulanmış kaynak saymaz. Cevap bilinmiyorsa koçundan doğrulama iste.</small>
         </div>
         <div className="field wrongQuestionWide">
           <label>Kısa çözüm / açıklama</label>
           <textarea name="explanation" rows={3} placeholder="Neden yanlış yaptığını veya doğru çözümün kısa notunu yazabilirsin."/>
         </div>
-        <button className="btn primary wrongQuestionWide" disabled={busy}>{busy?'Sınıflandırılıyor…':'Yanlış Soruyu Kaydet ve Tekrara Ekle'}</button>
+        <button className="btn primary wrongQuestionWide" disabled={busy}>{busy?'Sınıflandırılıyor…':'Soruyu Kaydet ve Tekrara Ekle'}</button>
       </form>
     </div>
 
@@ -426,16 +426,16 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
     <div className="card">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">OTOMATİK SINIFLANDIRMA</div><h2>Son yanlış sorularım</h2></div>
+        <div><div className="moduleEyebrow">OTOMATİK SINIFLANDIRMA</div><h2>Yanlış ve boş sorularım</h2></div>
         <span className="pill">{items.length} kayıt</span>
       </div>
-      {items.length===0?<p className="muted">Henüz kendi yanlış sorunu yüklemedin.</p>:<div className="wrongQuestionList">
+      {items.length===0?<p className="muted">Henüz kişisel soru yüklemedin.</p>:<div className="wrongQuestionList">
         {items.slice(0,12).map((q:any)=><article className="wrongQuestionRow" key={q.id}>
           {q.imageUrl&&<Image src={q.imageUrl} alt="Yüklenen yanlış soru" width={150} height={105} unoptimized className="wrongQuestionThumb"/>}
           <div className="wrongQuestionRowBody">
             <div className="wrongQuestionRowHead">
               <div><strong>{q.subject}</strong><span>{q.examType} · {new Date(q.createdAt).toLocaleDateString('tr-TR')}</span></div>
-              <div className="row"><span className="pill">{q.bankReason==='MARKED'?'İşaretli':'Yanlış'}</span><span className="pill">{Math.round((q.classificationConfidence||0)*100)}% konu eşleşmesi</span></div>
+              <div className="row"><span className="pill">{q.bankReason==='MARKED'?'İşaretli':q.bankReason==='BLANK'?'Boş':'Yanlış'}</span><span className="pill">{Math.round((q.classificationConfidence||0)*100)}% konu eşleşmesi</span></div>
             </div>
             <p>{q.prompt}</p>
             <div className="wrongQuestionTopicEdit">
