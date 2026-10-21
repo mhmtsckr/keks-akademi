@@ -10,7 +10,8 @@ export const REMEDIATION_REASONS={
   SORU_KOKU:{label:'Soru kökünü yanlış okuma',instruction:'Sorunun son cümlesini yeniden oku; istenen büyüklüğü bir cümlede ifade et.'},
   SURE:{label:'Süre yönetimi',instruction:'Önce süre sınırı olmadan doğru çöz; sonra benzer soruda çözüm süresini ölç.'},
   YONTEM_BILMEME:{label:'Yöntem bilmeme',instruction:'Uygun çözüm stratejisini seç; neden bu stratejiyi kullandığını açıklayıp yeni örnekte uygula.'},
-  UNUTMA:{label:'Unutma',instruction:'Notlara bakmadan kuralı hatırlamayı dene; ardından örnekle doğrula ve yakın tekrar yap.'}
+  UNUTMA:{label:'Unutma',instruction:'Notlara bakmadan kuralı hatırlamayı dene; ardından örnekle doğrula ve yakın tekrar yap.'},
+  BELIRLENEMEDI:{label:'Henüz belirleyemedim',instruction:'Hata veya boş bırakma nedenini kesin varsayma; soruyu koçunla inceleyerek önce soru kökü ve alt konuyu belirle.'}
 } as const;
 
 export type RemediationReason=keyof typeof REMEDIATION_REASONS;
