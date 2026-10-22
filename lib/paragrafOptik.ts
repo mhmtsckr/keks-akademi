@@ -33,7 +33,7 @@ export function gradeOptical(test:number,encoded:string){
   entry.total++;if(status==='BOŞ')entry.blank++;else if(status==='DOĞRU')entry.correct++;else{entry.wrong++;entry.questions.push(i+1);}
   topics.set(q.topic,entry);
   const secret=process.env.KEKS_PARAGRAF_QR_SECRET||'';
-  return {number:i+1,chosen,answer:q.answer,topic:q.topic,status,solutionUrl:status==='YANLIŞ'?paragrafDetailedSolutionUrl(q.id,secret,'https://keksakademi.vercel.app'):null};
+  return {number:i+1,chosen,answer:q.answer,topic:q.topic,status,solutionUrl:status!=='DOĞRU'?paragrafDetailedSolutionUrl(q.id,secret,'https://keksakademi.vercel.app'):null};
  });
  const topicsResult=[...topics.values()].sort((a,b)=>b.wrong-a.wrong||b.blank-a.blank||a.topic.localeCompare(b.topic,'tr'));
  const recommendations=topicsResult.filter(x=>x.wrong>0||x.blank>0).slice(0,5).map(x=>({

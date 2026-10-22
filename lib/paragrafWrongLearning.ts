@@ -1,6 +1,7 @@
 import type {ParagrafDetailedSolution} from '@/lib/paragrafDetailedSolutions';
 import {gradeOptical,detailedQuestions,type Mark} from '@/lib/paragrafOptik';
 import {REMEDIATION_REASONS,type RemediationReason} from '@/lib/wrongQuestionRemediation';
+import {buildParagrafRemediation,isBlankCause} from '@/lib/paragrafRemediationEngine';
 
 export const OPTIK_LEARNING_EDITION='KEKS_PARAGRAF_OPTIK_50_V1';
 export const OPTIK_IMPORT_PREFIX='PARAGRAF_OPTIK_FIRST:';
@@ -39,7 +40,7 @@ export function toPrintedReviewQuestion(q:ParagrafDetailedSolution){
   active:false,reviewStatus:'PRINT_PROOF'
  } as const;
 }
-export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons:Record<string,string>={}){
+export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons:Record<string,string>={},blankCauses:Record<string,string>={}){
  const grade=gradeOptical(test,encoded);
  const questions=detailedQuestions(test);
  if(!grade||!questions)return null;
@@ -48,6 +49,12 @@ export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons
   const reported=safeReason(reasons[String(item.number)]);
   const actualChoice=item.chosen==='X'?null:item.chosen as Exclude<Mark,'X'>;
   const wrongExplanation=actualChoice?source.teaching.analysis[actualChoice]?.explanation:null;
+  const blankCause=item.status==='BOŞ'&&isBlankCause(blankCauses[String(item.number)])
+   ?blankCauses[String(item.number)] :null;
+  const remediation=buildParagrafRemediation({
+   topic:source.topic,status:item.status==='BOŞ'?'BOŞ':'YANLIŞ',blankCause,wrongReason:reported,
+   selectedChoice:actualChoice,wrongChoiceExplanation:wrongExplanation
+  });
   const supportInstruction=reported
    ?REMEDIATION_REASONS[reported].instruction
    :item.status==='BOŞ'
@@ -55,14 +62,17 @@ export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons
     :'Seçtiğin şıkkı paragraftaki kanıtla karşılaştır ve neden elendiğini kendi cümlenle açıkla.';
   return {
    number:item.number,questionId:source.id,reviewId:opticalPrintedQuestionId(source),
-   topic:source.topic,status:item.status,marked:item.chosen,correct:item.answer,
-   reason:reported,reasonSource:reported?'STUDENT_SELF_REPORT':'UNCLASSIFIED',
+   solutionUrl:item.solutionUrl,
+   topic:source.topic,status:item.status==='BOŞ'?'BOŞ' as const:'YANLIŞ' as const,marked:item.chosen,correct:item.answer,
+   reason:reported,blankCause,
+   reasonSource:reported||blankCause?'STUDENT_SELF_REPORT':'UNCLASSIFIED',
+   remediation,
    errorReasonKnown:!!reported,lesson:source.teaching.lesson,
    misconception:wrongExplanation||null,
    rightEvidence:source.teaching.analysis[source.answer as 'A'|'B'|'C'|'D'|'E']?.explanation||null,
-   firstAction:supportInstruction,
-   secondAction:'Ayrıntılı çözümde A–E seçeneklerinin gerekçelerini incele; ana savı ve sınırı not almadan tekrar açıkla.',
-   thirdAction:'Aynı beceriyi başka bir soruda, çözümü görmeden ölç; tek doğru cevap kalıcı öğrenme kanıtı değildir.'
+   firstAction:blankCause?remediation.lessonSteps[0]:supportInstruction,
+   secondAction:remediation.lessonSteps.slice(1).join(' '),
+   thirdAction:remediation.transferTask
   };
  });
  const topicCount=new Map<string,{topic:string,wrong:number,blank:number,questionNos:number[]}>();

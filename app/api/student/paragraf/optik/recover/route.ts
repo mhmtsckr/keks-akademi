@@ -4,6 +4,7 @@ import {requireRole} from '@/lib/auth';
 import {db} from '@/lib/db';
 import {HttpError,readJson,withApiErrors} from '@/lib/apiGuard';
 import {REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
+import {BLANK_CAUSES} from '@/lib/paragrafRemediationEngine';
 import {buildOpticalWrongLearningPlan,opticalAttemptLegacyId,toPrintedReviewQuestion} from '@/lib/paragrafWrongLearning';
 import {detailedQuestions} from '@/lib/paragrafOptik';
 
@@ -11,10 +12,15 @@ export const runtime='nodejs';
 const reason=z.enum(Object.keys(REMEDIATION_REASONS) as [
  keyof typeof REMEDIATION_REASONS,...(keyof typeof REMEDIATION_REASONS)[]
 ]);
+const blankCause=z.enum(Object.keys(BLANK_CAUSES) as [keyof typeof BLANK_CAUSES,...(keyof typeof BLANK_CAUSES)[]]);
+const questionNo=z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/);
+const reflection=z.string().trim().max(350);
 const schema=z.object({
  testNo:z.number().int().min(1).max(50),
  encoded:z.string().regex(/^[A-EX]{30}$/),
- reasons:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),reason).optional()
+ reasons:z.record(questionNo,reason).optional(),
+ blankCauses:z.record(questionNo,blankCause).optional(),
+ reflections:z.record(questionNo,reflection).optional()
 }).strict();
 const noStore={'Cache-Control':'private, no-store'} as const;
 
@@ -31,7 +37,7 @@ async function POST__handler(req:Request){
  const existing=await db.dailyLog.findUnique({where:{legacyId},select:{payload:true}});
  if(existing)return NextResponse.json({ok:true,alreadySaved:true,attempt:stored(existing.payload)},
   {headers:noStore});
- const plan=buildOpticalWrongLearningPlan(input.testNo,input.encoded,input.reasons);
+ const plan=buildOpticalWrongLearningPlan(input.testNo,input.encoded,input.reasons,input.blankCauses);
  const source=detailedQuestions(input.testNo);
  if(!plan||!source)throw new HttpError(400,'Bu baskıya ait test ve cevap anahtarı doğrulanamadı.');
  // Only wrong or unanswered questions get queued; the student explicitly opts in.
@@ -42,6 +48,9 @@ async function POST__handler(req:Request){
   ...plan.summary,
   wrongTopics:plan.priorities.map(x=>x.topic),
   reasons:Object.fromEntries(plan.missed.filter(x=>x.reason).map(x=>[String(x.number),x.reason])),
+  blankCauses:Object.fromEntries(plan.missed.filter(x=>x.blankCause).map(x=>[String(x.number),x.blankCause])),
+  reflections:Object.fromEntries(plan.missed.filter(x=>input.reflections?.[String(x.number)]?.trim()).map(x=>[String(x.number),input.reflections![String(x.number)].trim()])),
+  learningSkills:Object.fromEntries(plan.missed.map(x=>[String(x.number),x.remediation.skill])),
   reviewQuestionIds:plan.missed.map(x=>x.reviewId),
   reasonSource:'STUDENT_SELF_REPORT',verifiedMastery:false
  };
