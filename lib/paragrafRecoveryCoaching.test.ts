@@ -50,7 +50,7 @@ describe('KEKS Paragraf: yanlış ve boştan öğrenme v2',()=>{
    expect(wrong.skill.length).toBeGreaterThan(3);
    expect(wrong.diagnostic.length).toBeGreaterThan(20);
    expect(wrong.practice.length).toBeGreaterThan(20);
-   expect(blank.firstProbe).toContain('çözümü');
+   expect(blank.firstProbe.toLocaleLowerCase('tr-TR')).toContain('çözümü');
    expect(blank.verify).toContain('farklı bir soruda');
   }
  });
