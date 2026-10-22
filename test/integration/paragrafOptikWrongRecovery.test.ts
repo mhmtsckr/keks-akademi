@@ -12,9 +12,10 @@ const key=Array.from({length:30},(_,i)=>getParagrafDetailedSolution(String(i+1).
 const alternative=key[0]==='A'?'B':'A';
 const mistake=alternative+'X'+key.slice(2);
 const url='http://localhost/api/student/paragraf/optik/recover';
-function req(marks=mistake,reasons:Record<string,string>={'1':'SORU_KOKU'}){
+function req(marks=mistake,reasons:Record<string,string>={'1':'SORU_KOKU'},
+ selfChecks:Record<string,{answer:string;evidence?:string}>={}){
  return new Request(url,{method:'POST',headers:{'content-type':'application/json'},
-  body:JSON.stringify({testNo:1,encoded:marks,reasons})});
+  body:JSON.stringify({testNo:1,encoded:marks,reasons,selfChecks})});
 }
 let student1:string,student2:string;
 async function student(label:string){
@@ -111,4 +112,45 @@ describe('opt-in optical mistakes -> PostgreSQL -> adaptive reviews',()=>{
   expect(r.status).toBe(400);
   expect(await db.reviewQueueItem.count()).toBe(0);
  });
+ it('persists blank-specific self report and second try, without promoting review mastery',async()=>{
+  const r=await recoverPOST(req(mistake,{'1':'SORU_KOKU','2':'BOS_IKI_SIK'},{
+   '1':{answer:key[0],evidence:'Metindeki koşulu işaretledim.'},
+   '2':{answer:key[1],evidence:'İki seçenek arasında kaldım.'}
+  }));
+  expect(r.status).toBe(200);
+  const record=await db.dailyLog.findUniqueOrThrow({
+   where:{legacyId:'PARAGRAF_OPTIK_FIRST:'+student1+':01'}
+  });
+  const data=record.payload as Record<string,any>;
+  expect(data.reasons).toMatchObject({'1':'SORU_KOKU','2':'BOS_IKI_SIK'});
+  expect(data.selfChecks['1']).toMatchObject({
+   answer:key[0],attemptCorrect:true,masteryVerified:false
+  });
+  expect(data.selfChecks['2']).toMatchObject({
+   answer:key[1],attemptCorrect:true,masteryVerified:false
+  });
+  expect(data.verifiedMastery).toBe(false);
+  const queue=await db.reviewQueueItem.findMany({where:{studentId:student1}});
+  expect(queue).toHaveLength(2);
+  expect(queue.every(x=>x.status==='DUE'&&x.stepIndex===0)).toBe(true);
+ });
+ it('rejects oversized evidence and preserves the initial submission on re-import',async()=>{
+  const bad=await recoverPOST(req(mistake,{},{
+   '1':{answer:key[0],evidence:'x'.repeat(501)}
+  }));
+  expect(bad.status).toBe(400);
+  expect(await db.dailyLog.count({where:{studentId:student1}})).toBe(0);
+  expect((await recoverPOST(req(mistake,{'2':'BOS_YONTEM'}))).status).toBe(200);
+  const later=await recoverPOST(req(mistake,{'2':'BOS_SURE'},{
+   '2':{answer:key[1],evidence:'Changed evidence'}
+  }));
+  expect(later.status).toBe(200);
+  expect((await later.json()).alreadySaved).toBe(true);
+  const data=(await db.dailyLog.findUniqueOrThrow({
+   where:{legacyId:'PARAGRAF_OPTIK_FIRST:'+student1+':01'}
+  })).payload as Record<string,any>;
+  expect(data.reasons['2']).toBe('BOS_YONTEM');
+  expect(data.selfChecks).toEqual({});
+ });
+
 });

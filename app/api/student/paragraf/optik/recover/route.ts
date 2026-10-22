@@ -3,18 +3,21 @@ import {z} from 'zod';
 import {requireRole} from '@/lib/auth';
 import {db} from '@/lib/db';
 import {HttpError,readJson,withApiErrors} from '@/lib/apiGuard';
-import {REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
+import {OPTICAL_RECOVERY_REASONS} from '@/lib/paragrafRecoveryCoaching';
 import {buildOpticalWrongLearningPlan,opticalAttemptLegacyId,toPrintedReviewQuestion} from '@/lib/paragrafWrongLearning';
 import {detailedQuestions} from '@/lib/paragrafOptik';
 
 export const runtime='nodejs';
-const reason=z.enum(Object.keys(REMEDIATION_REASONS) as [
- keyof typeof REMEDIATION_REASONS,...(keyof typeof REMEDIATION_REASONS)[]
+const reason=z.enum(Object.keys(OPTICAL_RECOVERY_REASONS) as [
+ keyof typeof OPTICAL_RECOVERY_REASONS,...(keyof typeof OPTICAL_RECOVERY_REASONS)[]
 ]);
+const answer=z.enum(['A','B','C','D','E']);
 const schema=z.object({
  testNo:z.number().int().min(1).max(50),
  encoded:z.string().regex(/^[A-EX]{30}$/),
- reasons:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),reason).optional()
+ reasons:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),reason).optional(),
+ selfChecks:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),
+   z.object({answer,evidence:z.string().max(500).optional()}).strict()).optional()
 }).strict();
 const noStore={'Cache-Control':'private, no-store'} as const;
 
@@ -31,7 +34,7 @@ async function POST__handler(req:Request){
  const existing=await db.dailyLog.findUnique({where:{legacyId},select:{payload:true}});
  if(existing)return NextResponse.json({ok:true,alreadySaved:true,attempt:stored(existing.payload)},
   {headers:noStore});
- const plan=buildOpticalWrongLearningPlan(input.testNo,input.encoded,input.reasons);
+ const plan=buildOpticalWrongLearningPlan(input.testNo,input.encoded,input.reasons,input.selfChecks);
  const source=detailedQuestions(input.testNo);
  if(!plan||!source)throw new HttpError(400,'Bu baskıya ait test ve cevap anahtarı doğrulanamadı.');
  // Only wrong or unanswered questions get queued; the student explicitly opts in.
@@ -42,8 +45,11 @@ async function POST__handler(req:Request){
   ...plan.summary,
   wrongTopics:plan.priorities.map(x=>x.topic),
   reasons:Object.fromEntries(plan.missed.filter(x=>x.reason).map(x=>[String(x.number),x.reason])),
+  selfChecks:Object.fromEntries(plan.missed.filter(x=>x.selfCheck).map(x=>[String(x.number),x.selfCheck])),
+  reasonSource:plan.missed.some(x=>x.reason)?'STUDENT_SELF_REPORT':'UNCLASSIFIED',
+  selfCheckNote:'Kendi ikinci denemesindeki doğru cevap, doğrulanmış kalıcı öğrenme anlamına gelmez.',
   reviewQuestionIds:plan.missed.map(x=>x.reviewId),
-  reasonSource:'STUDENT_SELF_REPORT',verifiedMastery:false
+  verifiedMastery:false
  };
  try{
   const result=await db.$transaction(async tx=>{
