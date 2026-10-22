@@ -103,6 +103,41 @@ describe('opt-in optical mistakes -> PostgreSQL -> adaptive reviews',()=>{
   expect(row.status).toBe('PENDING');
   expect(row.dueAt.getTime()).toBeGreaterThan(Date.now());
  });
+ it('stores a guided second try and student-reported blank reason without upgrading mastery',async()=>{
+  const r=await recoverPOST(new Request(url,{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({testNo:1,encoded:mistake,
+    reasons:{'1':'KARARSIZLIK','2':'SURE'},
+    rechecks:{'1':key[0],'2':'A'}})
+  }));
+  expect(r.status).toBe(200);
+  expect((await r.json()).reviewLinked).toBe(2);
+  const log=await db.dailyLog.findUniqueOrThrow({
+   where:{legacyId:'PARAGRAF_OPTIK_FIRST:'+student1+':01'}
+  });
+  const payload=log.payload as Record<string,any>;
+  expect(payload.verifiedMastery).toBe(false);
+  expect(payload.reasons).toEqual({'1':'KARARSIZLIK','2':'SURE'});
+  expect(payload.guidedRechecks).toHaveLength(2);
+  expect(payload.guidedRechecks[0]).toMatchObject({
+   number:1,marked:key[0],correct:true,countsAsMastery:false
+  });
+  expect(payload.guidedRechecks[1]).toMatchObject({
+   number:2,marked:'A',countsAsMastery:false
+  });
+  expect(await db.reviewQueueItem.count({where:{studentId:student1}})).toBe(2);
+  expect((await db.reviewQueueItem.findMany({where:{studentId:student1}}))
+   .every(x=>x.status==='DUE'&&x.stepIndex===0)).toBe(true);
+ });
+ it('rejects a guided retry of a correct question, atomically preserving student data',async()=>{
+  const r=await recoverPOST(new Request(url,{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({testNo:1,encoded:mistake,rechecks:{'3':key[2]}})
+  }));
+  expect(r.status).toBe(400);
+  expect(await db.dailyLog.count()).toBe(0);
+  expect(await db.reviewQueueItem.count()).toBe(0);
+ });
  it('rejects invalid exams and cannot import a missing or incorrect key',async()=>{
   const r=await recoverPOST(new Request(url,{
    method:'POST',headers:{'content-type':'application/json'},
