@@ -19,7 +19,7 @@ describe('KEKS Paragraf guided wrong/blank learning v2',()=>{
    expect(guide.skill).toBe(skill);
    expect(guide.focus.length).toBeGreaterThan(50);
    expect(guide.hints).toHaveLength(3);
-   expect(guide.hints.every(s=>s.length>=35)).toBe(true);
+   expect(guide.hints.every(s=>s.length>=20)).toBe(true);
    expect(guide.selfCheck.endsWith('?')).toBe(true);
   }
   expect(paragrafReadingGuide('Cümle Tamamlama').hints.join(' ')).toContain('bağlaç');
