@@ -52,7 +52,7 @@ export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons
   const blankCause=item.status==='BOŞ'&&isBlankCause(blankCauses[String(item.number)])
    ?blankCauses[String(item.number)] :null;
   const remediation=buildParagrafRemediation({
-   topic:source.topic,status:item.status,blankCause,wrongReason:reported,
+   topic:source.topic,status:item.status==='BOŞ'?'BOŞ':'YANLIŞ',blankCause,wrongReason:reported,
    selectedChoice:actualChoice,wrongChoiceExplanation:wrongExplanation
   });
   const supportInstruction=reported
@@ -63,7 +63,7 @@ export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons
   return {
    number:item.number,questionId:source.id,reviewId:opticalPrintedQuestionId(source),
    solutionUrl:item.solutionUrl,
-   topic:source.topic,status:item.status,marked:item.chosen,correct:item.answer,
+   topic:source.topic,status:item.status==='BOŞ'?'BOŞ' as const:'YANLIŞ' as const,marked:item.chosen,correct:item.answer,
    reason:reported,blankCause,
    reasonSource:reported||blankCause?'STUDENT_SELF_REPORT':'UNCLASSIFIED',
    remediation,
