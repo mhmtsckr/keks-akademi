@@ -13,7 +13,7 @@ const issue={
  passage:'Metin bir düşünceyi açıklar ve örneklendirir.',
  choices:{A:'Ana sav tüm paragrafı kapsar',B:'Dar bir örnek',C:'Yeni varsayım',D:'Konuyla ilgisiz',E:'Kesinlik'},
  readingGuide:{skill:'Ana düşünce',focus:'Metnin tamamını kapsayan görüşü seç.',
-  hints:['İlk ve son cümleyi oku.','Ortak kavramı bul.','Yanlış seçeneği ele.'],
+  hints:['İlk ve son cümleyi oku.','Ortak kavramı bul.','Yanlış seçeneği ele.'] as [string,string,string],
   selfCheck:'Bütününü kapsıyor mu?'}
 };
 afterEach(()=>{cleanup();vi.unstubAllGlobals()});
