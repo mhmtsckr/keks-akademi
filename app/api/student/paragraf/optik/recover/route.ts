@@ -14,7 +14,8 @@ const reason=z.enum(Object.keys(REMEDIATION_REASONS) as [
 const schema=z.object({
  testNo:z.number().int().min(1).max(50),
  encoded:z.string().regex(/^[A-EX]{30}$/),
- reasons:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),reason).optional()
+ reasons:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),reason).optional(),
+ rechecks:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),z.enum(['A','B','C','D','E','X'])).optional()
 }).strict();
 const noStore={'Cache-Control':'private, no-store'} as const;
 
@@ -35,14 +36,22 @@ async function POST__handler(req:Request){
  const source=detailedQuestions(input.testNo);
  if(!plan||!source)throw new HttpError(400,'Bu baskıya ait test ve cevap anahtarı doğrulanamadı.');
  // Only wrong or unanswered questions get queued; the student explicitly opts in.
+ const rechecked=Object.entries(input.rechecks||{}).map(([number,marked])=>{
+  const q=plan.missed.find(item=>item.number===Number(number));
+  if(!q)throw new HttpError(400,'Yalnız yanlış veya boş bırakılan sorulara yeniden deneme girilebilir.');
+  return {number:q.number,originalStatus:q.status,
+   marked,correct:marked==='X'?null:marked===q.correct,
+   kind:'GUIDED_SAME_QUESTION_RETRY',countsAsMastery:false};
+ });
  const now=new Date();
  const entry={
-  kind:'PARAGRAF_OPTIK_WRONG_RECOVERY',version:1,edition:plan.edition,
+  kind:'PARAGRAF_OPTIK_WRONG_RECOVERY',version:2,edition:plan.edition,
   testNo:input.testNo,encoded:input.encoded,submittedAt:now.toISOString(),
   ...plan.summary,
   wrongTopics:plan.priorities.map(x=>x.topic),
   reasons:Object.fromEntries(plan.missed.filter(x=>x.reason).map(x=>[String(x.number),x.reason])),
   reviewQuestionIds:plan.missed.map(x=>x.reviewId),
+  guidedRechecks:rechecked,reviewDays:plan.reviewDays,
   reasonSource:'STUDENT_SELF_REPORT',verifiedMastery:false
  };
  try{
