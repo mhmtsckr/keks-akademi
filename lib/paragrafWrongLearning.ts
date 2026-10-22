@@ -58,6 +58,7 @@ export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons
    selfCheck:selfCheck?{...selfCheck,attemptCorrect:selfCheck.answer===source.answer,
      evidenceProvided:Boolean(selfCheck.evidence),masteryVerified:false}:null,
    errorReasonKnown:!!reported,lesson:source.teaching.lesson,
+   originalQuestion:{passage:source.question.passage,stem:source.question.stem,choices:source.question.choices},
    misconception:wrongExplanation||null,
    rightEvidence:source.teaching.analysis[source.answer as 'A'|'B'|'C'|'D'|'E']?.explanation||null,
    firstAction:supportInstruction,
