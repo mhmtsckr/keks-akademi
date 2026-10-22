@@ -103,6 +103,41 @@ describe('opt-in optical mistakes -> PostgreSQL -> adaptive reviews',()=>{
   expect(row.status).toBe('PENDING');
   expect(row.dueAt.getTime()).toBeGreaterThan(Date.now());
  });
+ it('stores only the student’s wrong/blank causes and reflection with the immutable first attempt',async()=>{
+  const body={testNo:1,encoded:mistake,
+    reasons:{'1':'SORU_KOKU'},blankCauses:{'2':'KARARSIZ_KALDIM'},
+    reflections:{'1':'Şıkta kesinlik vardı, metinde sınır belirtilmiş.','2':'İki şık arasındaki farkı açıklayamadım.','3':'Doğru soruya ait not kaydedilmemeli.'}
+  };
+  const first=await recoverPOST(new Request(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}));
+  expect(first.status).toBe(200);
+  const log=await db.dailyLog.findUniqueOrThrow({
+   where:{legacyId:'PARAGRAF_OPTIK_FIRST:'+student1+':01'}
+  });
+  const p=log.payload as Record<string,unknown>;
+  expect(p.blankCauses).toEqual({'2':'KARARSIZ_KALDIM'});
+  expect(p.reflections).toEqual({'1':body.reflections['1'],'2':body.reflections['2']});
+  expect(p.learningSkills).toMatchObject({'1':'Ana düşünce'});
+  const again=await recoverPOST(new Request(url,{method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({...body,blankCauses:{'2':'SURE_YETMEDI'},reflections:{'2':'Yeni not'}})}));
+  expect(again.status).toBe(200);
+  expect((await again.json()).alreadySaved).toBe(true);
+  const original=await db.dailyLog.findUniqueOrThrow({where:{legacyId:'PARAGRAF_OPTIK_FIRST:'+student1+':01'}});
+  expect((original.payload as Record<string,any>).blankCauses['2']).toBe('KARARSIZ_KALDIM');
+  expect(await db.reviewQueueItem.count({where:{studentId:student1}})).toBe(2);
+ });
+ it('rejects invented blank causes and excessive reflections without partial database writes',async()=>{
+  for(const input of [
+   {testNo:1,encoded:mistake,blankCauses:{'2':'GUESSING_DIAGNOSIS'}},
+   {testNo:1,encoded:mistake,reflections:{'2':'x'.repeat(351)}},
+   {testNo:1,encoded:mistake,reflections:{'31':'Unknown question'}}
+  ]){
+   const r=await recoverPOST(new Request(url,{method:'POST',
+    headers:{'content-type':'application/json'},body:JSON.stringify(input)}));
+   expect(r.status).toBe(400);
+  }
+  expect(await db.dailyLog.count({where:{studentId:student1}})).toBe(0);
+  expect(await db.reviewQueueItem.count({where:{studentId:student1}})).toBe(0);
+ });
  it('rejects invalid exams and cannot import a missing or incorrect key',async()=>{
   const r=await recoverPOST(new Request(url,{
    method:'POST',headers:{'content-type':'application/json'},
