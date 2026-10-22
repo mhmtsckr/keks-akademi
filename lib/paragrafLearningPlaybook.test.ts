@@ -1,4 +1,4 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import {getParagrafDetailedSolution} from './paragrafDetailedSolutions';
 import {buildOpticalWrongLearningPlan} from './paragrafWrongLearning';
 import {paragrafReadingGuide,opticalRecoveryPriority,opticalReasonAction} from './paragrafLearningPlaybook';
@@ -26,6 +26,7 @@ describe('KEKS Paragraf guided wrong/blank learning v2',()=>{
   expect(paragrafReadingGuide('Paragrafı İkiye Bölme').hints.join(' ')).toContain('Konu');
  });
  it('builds question-grounded, independent-retry prompts for each 1,500 printed question',()=>{
+  vi.stubEnv('KEKS_PARAGRAF_QR_SECRET','test-only-paragraf-hmac-qr-secret-of-at-least-32-characters');
   for(let test=1;test<=50;test++){
    const questions=Array.from({length:30},(_,i)=>getParagrafDetailedSolution(String((test-1)*30+i+1).padStart(5,'0'))!);
    const key=questions.map(q=>q.answer).join('');
@@ -49,5 +50,6 @@ describe('KEKS Paragraf guided wrong/blank learning v2',()=>{
    expect(graded.details[0].solutionUrl).toContain(questions[0].id);
    expect(graded.details[1].solutionUrl).toContain(questions[1].id);
   }
+  vi.unstubAllEnvs();
  });
 });
