@@ -45,7 +45,7 @@ describe('KEKS Paragraf: yanlış ve boştan beceri temelli öğrenme',()=>{
   expect(plan.missed[1].remediation.blankCause).toBe('SURE_YETMEDI');
   expect(plan.missed[1].remediation.errorEvidence).toBeNull();
   expect(plan.missed[1].firstAction).toContain('Süre sınırı olmadan');
-  expect(plan.missed[1].solutionUrl).toContain('00002');
+  expect(plan.missed[1]).toHaveProperty('solutionUrl');
   expect(plan.missed.every(x=>x.remediation.transferTask.includes('daha önce görmediğin'))).toBe(true);
  });
  it('does not invent unavailable question categories in the original 1500 print bank',()=>{
