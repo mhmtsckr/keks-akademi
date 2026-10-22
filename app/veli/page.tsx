@@ -109,7 +109,6 @@ export default async function ParentPage() {
 
   const parentDo = parentBrief.support[0]?.detail || 'Mevcut çalışma ritmini destekleyin ve program sorumluluğunu öğrencide bırakın.';
   const parentAvoid = 'Tek tek yanlışları sorgulamayın, deneme sonucunu ceza veya ödül aracına çevirmeyin, başka öğrencilerle kıyaslamayın ve koç planına habersiz ek görev yüklemeyin.';
-  const continuityMeta=continuityIndicator?.value==null?'Süreklilik verisi birikiyor':'Çalışma sürekliliği %'+continuityIndicator.value;
 
   return <PortalShell
     signedIn
@@ -117,7 +116,7 @@ export default async function ParentPage() {
     eyebrow="VELİ PANELİ"
     title={student.fullName + ' · Haftalık Davranış Özeti'}
     description="Sonuçları değil; çalışma düzenini ve destek ihtiyacını görün."
-    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel && <span>{student.gradeLevel}</span>}<span>{continuityMeta}</span></>}
+    meta={<><span>Kod: {student.studentCode}</span>{student.gradeLevel && <span>{student.gradeLevel}</span>}</>}
     wide
   >
     <section className="section"><RealUserReviewPrompt/></section>
@@ -141,12 +140,6 @@ export default async function ParentPage() {
         title="Bu hafta ne bilmeniz ve ne yapmanız gerekiyor?"
       />
 
-      <div className={'card '+(parentBrief.reassurance.tone==='ATTENTION'?'notice error':'')}>
-        <div className="moduleEyebrow">BUGÜN VELİ MÜDAHALESİ GEREKİYOR MU?</div>
-        <h2>{parentBrief.reassurance.headline}</h2>
-        <p>{parentBrief.reassurance.detail}</p>
-      </div>
-
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',marginTop:14}}>
         <div className="card">
           <div className="moduleEyebrow">BU HAFTA İYİ GİDENLER</div>
@@ -154,7 +147,6 @@ export default async function ParentPage() {
             {parentBrief.good.map((item,i)=><div key={i}>
               <strong>{item.title}</strong>
               <p style={{margin:'6px 0'}}>{item.detail}</p>
-              {item.evidence&&<small className="muted">{item.evidence}</small>}
             </div>)}
           </div>
         </div>
@@ -165,7 +157,6 @@ export default async function ParentPage() {
             {parentBrief.attention.map((item,i)=><div key={i}>
               <strong>{item.title}</strong>
               <p style={{margin:'6px 0'}}>{item.detail}</p>
-              {item.evidence&&<small className="muted">{item.evidence}</small>}
             </div>)}
           </div>
         </div>
@@ -181,17 +172,18 @@ export default async function ParentPage() {
         </div>
       </div>
 
-      <details className="card" style={{marginTop:14}}>
-        <summary><strong>Bu özet hangi göstergelerden üretildi?</strong></summary>
-        <div className="grid" style={{marginTop:12}}>
-          {[continuityIndicator,planIndicator,reviewIndicator].filter(Boolean).map((item:any)=><div key={item.key}>
-            <strong>{item.label}: {item.value==null?'Veri yok':'%'+item.value}</strong>
-            <p className="muted">{item.evidence}</p>
-            <small>{item.delta==null?'Geçen hafta karşılaştırması yok':item.delta===0?'Geçen haftayla aynı':(item.delta>0?'+':'')+item.delta+' puan geçen haftaya göre'}</small>
-          </div>)}
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',marginTop:14}}>
+        <div className="card">
+          <div className="moduleEyebrow">ÖNCEKİ HAFTAYA GÖRE DEĞİŞİM</div>
+          <p><strong>{parentBrief.change.text}</strong></p>
+          <small className="muted">Karşılaştırma, iki haftanın aynı günlerini kapsar.</small>
         </div>
-        <p className="muted">{parentBrief.privacyNote}</p>
-      </details>
+        <div className="card">
+          <div className="moduleEyebrow">BU HAFTANIN KEKS ÖNERİSİ</div>
+          <p><strong>{parentBrief.keksRecommendation}</strong></p>
+        </div>
+      </div>
+
     </section>
 
     <section id="akademik-gelisim" className="section section-anchor">
