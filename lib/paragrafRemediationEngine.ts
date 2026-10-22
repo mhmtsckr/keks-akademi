@@ -15,7 +15,7 @@ export function isBlankCause(v:unknown):v is BlankCause{
  return typeof v==='string'&&Object.prototype.hasOwnProperty.call(BLANK_CAUSES,v);
 }
 export function canonicalParagrafSkill(topic:string){
- const s=String(topic||'').toLocaleLowerCase('tr-TR').replace(/\\s+/g,' ').trim();
+ const s=String(topic||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim();
  if(/cümle tamamlama|boşlu[kğ]a.*cümle/.test(s))return 'Cümle tamamlama';
  if(/ikiye bölme|iki paragrafa/.test(s))return 'Paragrafı ikiye bölme';
  if(/cümle sıralama|karışık.*cümle|cümlelerden.*paragraf/.test(s))return 'Cümle sıralama';
