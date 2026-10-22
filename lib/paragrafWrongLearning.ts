@@ -1,6 +1,7 @@
 import type {ParagrafDetailedSolution} from '@/lib/paragrafDetailedSolutions';
 import {gradeOptical,detailedQuestions,type Mark} from '@/lib/paragrafOptik';
 import {REMEDIATION_REASONS,type RemediationReason} from '@/lib/wrongQuestionRemediation';
+import {paragrafReadingGuide,opticalRecoveryPriority,opticalReasonAction} from '@/lib/paragrafLearningPlaybook';
 
 export const OPTIK_LEARNING_EDITION='KEKS_PARAGRAF_OPTIK_50_V1';
 export const OPTIK_IMPORT_PREFIX='PARAGRAF_OPTIK_FIRST:';
@@ -48,16 +49,15 @@ export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons
   const reported=safeReason(reasons[String(item.number)]);
   const actualChoice=item.chosen==='X'?null:item.chosen as Exclude<Mark,'X'>;
   const wrongExplanation=actualChoice?source.teaching.analysis[actualChoice]?.explanation:null;
-  const supportInstruction=reported
-   ?REMEDIATION_REASONS[reported].instruction
-   :item.status==='BOŞ'
-    ?'Önce soru kökünün ne istediğini belirle; metin kanıtını işaretle ve cevabı süresiz dene.'
-    :'Seçtiğin şıkkı paragraftaki kanıtla karşılaştır ve neden elendiğini kendi cümlenle açıkla.';
+  const supportInstruction=opticalReasonAction(reported,item.status==='BOŞ');
+  const readingGuide=paragrafReadingGuide(source.topic);
   return {
    number:item.number,questionId:source.id,reviewId:opticalPrintedQuestionId(source),
    topic:source.topic,status:item.status,marked:item.chosen,correct:item.answer,
    reason:reported,reasonSource:reported?'STUDENT_SELF_REPORT':'UNCLASSIFIED',
    errorReasonKnown:!!reported,lesson:source.teaching.lesson,
+   readingGuide,questionStem:source.question.stem,passage:source.question.passage,
+   choices:source.question.choices,
    misconception:wrongExplanation||null,
    rightEvidence:source.teaching.analysis[source.answer as 'A'|'B'|'C'|'D'|'E']?.explanation||null,
    firstAction:supportInstruction,
@@ -65,17 +65,23 @@ export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons
    thirdAction:'Aynı beceriyi başka bir soruda, çözümü görmeden ölç; tek doğru cevap kalıcı öğrenme kanıtı değildir.'
   };
  });
- const topicCount=new Map<string,{topic:string,wrong:number,blank:number,questionNos:number[]}>();
+ const topicCount=new Map<string,{topic:string,wrong:number,blank:number,questionNos:number[],blankReasons:string[],priority:number}>();
  for(const e of missed){
-  const row=topicCount.get(e.topic)||{topic:e.topic,wrong:0,blank:0,questionNos:[]};
-  if(e.status==='YANLIŞ')row.wrong++;else row.blank++;
-  row.questionNos.push(e.number);topicCount.set(e.topic,row);
+  const row=topicCount.get(e.topic)||{topic:e.topic,wrong:0,blank:0,questionNos:[],blankReasons:[],priority:0};
+  if(e.status==='YANLIŞ')row.wrong++;else{row.blank++;if(e.reason)row.blankReasons.push(e.reason);}
+  row.questionNos.push(e.number);
+  row.priority=opticalRecoveryPriority({wrong:row.wrong,blank:row.blank,reasons:row.blankReasons});
+  topicCount.set(e.topic,row);
  }
- const priorities=[...topicCount.values()].sort((a,b)=>b.wrong-a.wrong||b.blank-a.blank||a.topic.localeCompare(b.topic,'tr'));
+ const priorities=[...topicCount.values()].sort((a,b)=>b.priority-a.priority||b.wrong-a.wrong||a.topic.localeCompare(b.topic,'tr'));
+ const guidance=priorities.map(x=>({topic:x.topic,priority:x.priority,
+  advice:x.wrong? 'Metin kanıtı ve çeldirici elemesini yeniden çalış.':
+    x.blankReasons.includes('SURE')?'Önce süresiz yeniden dene, ardından süreli bir başka soruyla ölç.':
+    'Boş bırakma nedenini belirle ve cevap görmeden yeniden dene.'}));
  return {
   edition:OPTIK_LEARNING_EDITION,testNo:test,attempt:encoded,
   summary:{correct:grade.correct,wrong:grade.wrong,blank:grade.blank,net:grade.net,reviewCount:missed.length},
-  missed,priorities,reviewDays:[0,1,3,7,14,28],
+  missed,priorities,guidance,reviewDays:[0,1,3,7,14,28],
   note:'Hata nedeni öğrenci öz bildirimidir. İlk QR sonucu tekrar başarısı veya doğrulanmış konu hâkimiyeti değildir.'
  };
 }
