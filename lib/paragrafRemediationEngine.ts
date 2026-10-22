@@ -121,6 +121,86 @@ const GUIDES:Record<string,SkillGuide>={
   check:'Bu çıkarım için en az bir doğrudan metin dayanağın var mı?',
   trap:'Metne dışarıdan eklenen makul bilgiler bile metnin örtük anlamı sayılamaz.'
  },
+ 'Yardımcı düşünce':{
+  goal:'Metinde açıkça desteklenen yan yargıları ana düşünceden ayırmak',
+  steps:[
+   'Paragrafta verilmiş temel yargıyı belirle.',
+   'Örneği, açıklamayı ve destekleyici bilgileri birbirinden ayır.',
+   'Soru köküne göre şıkkın gerçekten metinde bulunup bulunmadığını kontrol et.'
+  ],
+  check:'Bu yardımcı yargının paragraftaki dayanak cümlesi hangisi?',
+  trap:'Metnin konusuyla ilgili olması, bir seçeneğin metinde desteklendiği anlamına gelmez.'
+ },
+ 'Kavramsal ayrım':{
+  goal:'Metinde karşılaştırılan iki yaklaşımın ortak ölçütünü ve farkını bulmak',
+  steps:[
+   'Metinde karşılaştırılan iki kavram veya yaklaşımı işaretle.',
+   'Her yaklaşımın gerekçesini ve sınırını ayrı ayrı yaz.',
+   'Şıkları, farkın temel ölçütünü doğru yansıtıp yansıtmadığına göre ele.'
+  ],
+  check:'İki kavram hangi ölçütte ayrılıyor ve metin bu farkı nerede açıklıyor?',
+  trap:'İki kavramın birlikte anılması, onların asıl karşıtlık olduğu anlamına gelmez.'
+ },
+ 'Kapsam ve koşul':{
+  goal:'Yazarın hangi yargıyı hangi koşul altında kabul ettiğini ayırt etmek',
+  steps:[
+   '“Ancak, yalnız, kimi zaman, koşuluyla” gibi sınırlayıcı sözleri belirle.',
+   'Genel iddiayı ve bu iddianın hangi durumda değiştiğini ayrı ayrı yaz.',
+   'Şıklarda sınırı kaldıran kesin genellemeleri işaretleyip ele.'
+  ],
+  check:'Bu yargının hangi koşul olmadan savunulamayacağını söyleyebilir misin?',
+  trap:'Sınır cümlesini yok saymak, kısmen doğru bir ifadeyi yanlış genellemeye dönüştürür.'
+ },
+ 'Düşünceyi temellendirme':{
+  goal:'Savın hangi yöntem ve kanıtlarla desteklendiğini ayırt etmek',
+  steps:[
+   'Önce yazarın savını belirle.',
+   'Yazarın örnek, karşılaştırma, tanımlama veya sayısal veriden hangisini gerçekten kullandığını bul.',
+   'Kullanılmayan yöntemleri yalnız isimleri tanıdık olduğu için seçme.'
+  ],
+  check:'Bu paragrafta yargıyı destekleyen somut kanıt türü hangisi?',
+  trap:'Bir kavramdan bahsedilmesi, o kavramın yöntem olarak kullanıldığı anlamına gelmez.'
+ },
+ 'Çıkarım':{
+  goal:'Metinle desteklenen fakat birebir söylenmemiş sonuca ulaşmak',
+  steps:[
+   'Metnin kesin olarak söylediği iki veya üç dayanağı belirle.',
+   'Çıkarımın dayandığı koşulu kendi sözlerinle ifade et.',
+   'Şıklarda yeni neden, yeni kişi veya koşulsuz hüküm ekleyen ifadeleri ele.'
+  ],
+  check:'Bu çıkarımı destekleyen hangi açık ifadeleri birlikte kullandın?',
+  trap:'Yorum yaparken günlük bilgileri metne yeni kanıt olarak ekleme.'
+ },
+ 'Eleştirel tutum':{
+  goal:'Yazarın karşı çıktığı görüş ile savunduğu düzeltmeyi ayırt etmek',
+  steps:[
+   'Eleştirilen yargının geçtiği cümleyi bul.',
+   'Yazarın buna karşı getirdiği gerekçeyi ve örneği işaretle.',
+   'Şıklarda eleştirilen iddia yerine yazarın benimsediği görüşü sunanları ele.'
+  ],
+  check:'Yazar hangi görüşe neden katılmıyor, bunu metinle gösterebilir misin?',
+  trap:'Metinde anılan bir düşüncenin mutlaka yazar tarafından desteklendiğini sanma.'
+ },
+ 'Yazarın amacı':{
+  goal:'Yazarın okurda gerçekleştirmek istediği düşünsel işlemi belirlemek',
+  steps:[
+   'Yazarın ne anlattığından ayrı olarak, bunu niçin tartıştığını sor.',
+   'Metindeki örneklerin hangi temel iddiayı sorgulattığını veya desteklediğini belirle.',
+   'Metinde olmayan aşırı iddialı amaç seçeneklerini ele.'
+  ],
+  check:'Yazar bu paragrafı yazmasaydı hangi uyarı veya düşünce eksik kalırdı?',
+  trap:'Paragrafın konusu ile yazılış amacını karıştırma.'
+ },
+ 'Metinler arası çıkarım':{
+  goal:'İki metnin ortak görüşünü ve ayrıldığı koşulları kanıta dayalı karşılaştırmak',
+  steps:[
+   'Her metnin savını ayrı birer cümleyle yaz.',
+   'İkisinin aynı gerekçeye dayandığı ve farklılaştığı noktaları karşılaştır.',
+   'Şıkta bir metne ait yargının yanlışlıkla diğerine yüklenip yüklenmediğini kontrol et.'
+  ],
+  check:'Her iki metinden de en az bir kanıt göstererek sonuca ulaşabildin mi?',
+  trap:'Birinci metnin yargısını ikinci metin de savunuyormuş gibi varsayma.'
+ },
  'Başlık':{
   goal:'Metnin bütününü ve düşünce yönünü yansıtan kısa ifade seçmek',
   steps:[
