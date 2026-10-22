@@ -58,7 +58,7 @@ export default async function ResultPage({params,searchParams}:Props){
      </li>)}</ol>
     </div>:null}
    </section>
-   {recovery&&<RecoveryActions testNo={test} encoded={encoded} missed={recovery.missed}/>}
+   {recovery&&<RecoveryActions testNo={test} encoded={encoded} missed={recovery.missed} priorities={recovery.priorities}/>}
    <section style={{background:'#fff',padding:20,borderRadius:15,marginTop:18}}>
     <h2>Yanlış soruların doğru cevapları ve öğretici çözümleri</h2>
     {result.details.filter(d=>d.status!=='DOĞRU').length===0?<p>İncelenecek yanlış veya boş soru bulunmuyor.</p>:<div style={{display:'grid',gap:10}}>
