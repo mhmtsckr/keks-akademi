@@ -62,6 +62,7 @@ export function buildOpticalWrongLearningPlan(test:number,encoded:string,reasons
     :'Seçtiğin şıkkı paragraftaki kanıtla karşılaştır ve neden elendiğini kendi cümlenle açıkla.';
   return {
    number:item.number,questionId:source.id,reviewId:opticalPrintedQuestionId(source),
+   solutionUrl:item.solutionUrl,
    topic:source.topic,status:item.status,marked:item.chosen,correct:item.answer,
    reason:reported,blankCause,
    reasonSource:reported||blankCause?'STUDENT_SELF_REPORT':'UNCLASSIFIED',
