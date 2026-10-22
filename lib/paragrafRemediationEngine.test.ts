@@ -5,7 +5,7 @@ import {getParagrafDetailedSolution} from './paragrafDetailedSolutions';
 
 describe('KEKS Paragraf: yanlış ve boştan beceri temelli öğrenme',()=>{
  it.each([
-  ['Cümle Tamamlama','Cümle tamamlama','öncesi'],
+  ['Cümle Tamamlama','Cümle tamamlama','önündeki'],
   ['Paragrafı İkiye Bölme','Paragrafı ikiye bölme','sınır'],
   ['Karışık Cümlelerden Paragraf Oluşturma','Cümle sıralama','giriş'],
   ['Cümle Sıralama','Cümle sıralama','giriş'],
