@@ -14,7 +14,7 @@ const reason=z.enum(Object.keys(REMEDIATION_REASONS) as [
 ]);
 const blankCause=z.enum(Object.keys(BLANK_CAUSES) as [keyof typeof BLANK_CAUSES,...(keyof typeof BLANK_CAUSES)[]]);
 const questionNo=z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/);
-const reflection=z.string().trim().max(350).refine(x=>!/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]/.test(x),'Geçersiz karakterler.');
+const reflection=z.string().trim().max(350);
 const schema=z.object({
  testNo:z.number().int().min(1).max(50),
  encoded:z.string().regex(/^[A-EX]{30}$/),
