@@ -146,6 +146,34 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
         </div>}
     </div>
 
+    <div className="card">
+      <div className="moduleHeaderRow">
+        <div>
+          <div className="moduleEyebrow">KEKS PARAGRAF · YANLIŞ / BOŞ → MÜDAHALE → GECİKMELİ TEKRAR</div>
+          <h2>Hangi beceri için nasıl müdahale edilmeli?</h2>
+          <p className="muted">Son 90 gündeki, öğrencinin onaylayarak kaydettiği optik sonuçları ve kişisel tekrar kayıtları esas alınır. Aynı sorunun yeniden doğru yapılması tek başına kalıcı öğrenme değildir.</p>
+        </div>
+        <span className="pill">{data.paragrafCoachEvidence?.totalOpticalTests||0} kayıtlı test</span>
+      </div>
+      {!data.paragrafCoachEvidence?.topics?.length
+        ?<p className="muted">Henüz bu öğrenciye ait onaylanmış KEKS Paragraf yanlış veya boş kaydı bulunmuyor. QR sonucu öğrenci hesabına otomatik aktarılmaz.</p>
+        :<div className="stack">
+          {data.paragrafCoachEvidence.topics.slice(0,6).map((x:any)=><div className="card" key={x.topic} style={{margin:0}}>
+            <div className="moduleHeaderRow">
+              <strong>{x.topic}</strong>
+              <span className="pill">Öncelik {x.priority} · {x.actionCode==='REPEATED_FAILURE'?'Tekrarlayan hata':x.actionCode==='OVERDUE'?'Geciken tekrar':x.actionCode==='TRANSFER_GAP'?'Aktarım hatası':x.actionCode==='TIME_BLANK'?'Süre nedeniyle boş':x.actionCode==='UNCLASSIFIED'?'Neden belirsiz':'Takip'}</span>
+            </div>
+            <p><strong>İlk test:</strong> {x.wrong} yanlış · {x.blank} boş. <strong>Beyan edilen baskın neden:</strong> {x.primaryReason}.</p>
+            <p className="muted"><strong>Farklı soruda anlık uygulama:</strong> {x.independentCorrect}/{x.independentAttempts} doğru · {x.justifiedAttempts} metinsel gerekçe. Bu işlem gecikmeli tekrar değildir.</p>
+            <p className="muted"><strong>En az 24 saat sonraki tekrar:</strong> {x.delayedCorrect}/{x.delayedAttempts} doğru · {x.delayedDays} farklı gün · {x.delayedDistinctQuestions} farklı kaynak soru. <strong>Geciken:</strong> {x.overdue}.</p>
+            <p><strong>Önerilen koç aksiyonu:</strong> {x.nextAction}</p>
+            <small className="muted">{x.evidenceLevel==='INITIAL_ONLY'?'Güven düzeyi: yalnız ilk test':x.evidenceLevel==='IMMEDIATE_TRANSFER'?'Kanıt: ilk test + anlık farklı soru':'Kanıt: sonraki günlerden tekrar sonuçları'} · Kalıcılık ayrıca doğrulanmalı.</small>
+          </div>)}
+        </div>}
+      {data.paragrafCoachEvidence?.truncated&&<p className="notice">Kayıt hacmi sınırı aşıldı; analiz son 1.500 kayıt üzerinden hazırlanmıştır ve eksik olabilir.</p>}
+      <p className="muted" style={{marginTop:10}}>{data.paragrafCoachEvidence?.note||''}</p>
+    </div>
+
     {goal&&<div className="card">
       <div className="moduleEyebrow">HEDEFE KALAN MESAFE</div>
       <h2>{goal.target}</h2>
