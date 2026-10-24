@@ -18,7 +18,8 @@ const schema=z.object({
  reasons:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),reason).optional(),
  rechecks:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),z.enum(['A','B','C','D','E','X'])).optional(),
  transferChecks:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),
-  z.object({questionId:z.string().regex(/^\d{5}$/),answer:z.enum(['A','B','C','D','E'])}).strict()).optional()
+  z.object({questionId:z.string().regex(/^\d{5}$/),answer:z.enum(['A','B','C','D','E']),
+   evidence:z.string().trim().min(15).max(500)}).strict()).optional()
 }).strict();
 const noStore={'Cache-Control':'private, no-store'} as const;
 
@@ -53,6 +54,7 @@ async function POST__handler(req:Request){
   return {
    number:Number(number),questionId:validated.questionId,chosen:entry.answer,
    correct:validated.correct,topic:validated.topic,
+   evidence:entry.evidence,evidenceStatus:'STUDENT_SELF_REPORT_UNVERIFIED',
    kind:'INDEPENDENT_SAME_SKILL_TRANSFER',countsAsMastery:false
   };
  });
