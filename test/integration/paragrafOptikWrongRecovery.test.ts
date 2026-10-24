@@ -136,7 +136,7 @@ describe('opt-in optical mistakes -> PostgreSQL -> adaptive reviews',()=>{
   const r=await recoverPOST(new Request(url,{
    method:'POST',headers:{'content-type':'application/json'},
    body:JSON.stringify({testNo:1,encoded:mistake,
-     transferChecks:{'1':{questionId:example.id,answer:example.answer}}})
+     transferChecks:{'1':{questionId:example.id,answer:example.answer,evidence:'Metnin bütününe göre örnek seçenek doğru.'}}})
   }));
   expect(r.status).toBe(200);
   const log=await db.dailyLog.findUniqueOrThrow({
@@ -146,7 +146,9 @@ describe('opt-in optical mistakes -> PostgreSQL -> adaptive reviews',()=>{
   expect(payload.independentChecks).toHaveLength(1);
   expect(payload.independentChecks[0]).toMatchObject({
     questionId:example.id,topic:example.topic,correct:true,
-    kind:'INDEPENDENT_SAME_SKILL_TRANSFER',countsAsMastery:false
+    kind:'INDEPENDENT_SAME_SKILL_TRANSFER',countsAsMastery:false,
+    evidence:'Metnin bütününe göre örnek seçenek doğru.',
+    evidenceStatus:'STUDENT_SELF_REPORT_UNVERIFIED'
   });
   expect(payload.verifiedMastery).toBe(false);
   expect(await db.reviewQueueItem.count({where:{studentId:student1}})).toBe(2);
@@ -154,15 +156,26 @@ describe('opt-in optical mistakes -> PostgreSQL -> adaptive reviews',()=>{
  it('rejects forged transfer IDs or an attempt based on a previously correct question',async()=>{
   const bad=await recoverPOST(new Request(url,{
    method:'POST',headers:{'content-type':'application/json'},
-   body:JSON.stringify({testNo:1,encoded:mistake,transferChecks:{'1':{questionId:'00001',answer:'A'}}})
+   body:JSON.stringify({testNo:1,encoded:mistake,transferChecks:{'1':{questionId:'00001',answer:'A',evidence:'Metindeki temel düşünce ile seçenek ilişkili.'}}})
   }));
   expect(bad.status).toBe(400);
   const candidate=independentTransferFor(1,mistake,1)!;
   const forbidden=await recoverPOST(new Request(url,{
    method:'POST',headers:{'content-type':'application/json'},
-   body:JSON.stringify({testNo:1,encoded:mistake,transferChecks:{'3':{questionId:candidate.id,answer:'A'}}})
+   body:JSON.stringify({testNo:1,encoded:mistake,transferChecks:{'3':{questionId:candidate.id,answer:'A',evidence:'Bu farklı seçenek başka bir metinden geliyor.'}}})
   }));
   expect(forbidden.status).toBe(400);
+  expect(await db.dailyLog.count()).toBe(0);
+  expect(await db.reviewQueueItem.count()).toBe(0);
+ });
+ it('rejects transfer without an independently stated reason and saves nothing',async()=>{
+  const example=independentTransferFor(1,mistake,1)!;
+  const r=await recoverPOST(new Request(url,{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({testNo:1,encoded:mistake,
+    transferChecks:{'1':{questionId:example.id,answer:example.answer,evidence:'kısa'}}})
+  }));
+  expect(r.status).toBe(400);
   expect(await db.dailyLog.count()).toBe(0);
   expect(await db.reviewQueueItem.count()).toBe(0);
  });
