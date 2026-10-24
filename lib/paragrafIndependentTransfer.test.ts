@@ -1,3 +1,4 @@
+import type {ParagrafChoiceLetter} from './paragrafDetailedSolutions';
 import {describe,expect,it} from 'vitest';
 import {detailedQuestions} from './paragrafOptik';
 import {
@@ -42,9 +43,9 @@ describe('KEKS 1500 paragraph question independent transfer for wrong/blank',()=
  it('evaluates another question on server using original key and does not claim mastery',()=>{
   const marks=testMarks(1,1,'WRONG');
   const selected=independentTransferFor(1,marks,1)!;
-  const correct=gradeIndependentTransfer(1,marks,1,selected.id,selected.answer)!;
+  const correct=gradeIndependentTransfer(1,marks,1,selected.id,selected.answer as ParagrafChoiceLetter)!;
   expect(correct).toMatchObject({correct:true,questionId:selected.id,countsAsMastery:false});
-  const wrongAnswer=selected.answer==='A'?'B':'A';
+  const wrongAnswer:ParagrafChoiceLetter=selected.answer==='A'?'B':'A';
   const wrong=gradeIndependentTransfer(1,marks,1,selected.id,wrongAnswer)!;
   expect(wrong.correct).toBe(false);
   expect(wrong.chosenReason).toContain(selected.question.choices[wrongAnswer]);
