@@ -1,5 +1,6 @@
 'use client';
 import {useState} from 'react';
+import {IndependentTransferPractice} from './IndependentTransferPractice';
 
 type Choice='A'|'B'|'C'|'D'|'E';
 type TopicIssue={
@@ -29,6 +30,7 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
  const [reasons,setReasons]=useState<Record<string,string>>({});
  const [trials,setTrials]=useState<Record<string,Choice>>({});
  const [checked,setChecked]=useState<Record<string,boolean>>({});
+ const [transferChecks,setTransferChecks]=useState<Record<string,{questionId:string;answer:Choice}>>({});
  const [status,setStatus]=useState('');
  const [saving,setSaving]=useState(false);
  const [saved,setSaved]=useState(false);
@@ -42,12 +44,12 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
    );
    const response=await fetch('/api/student/paragraf/optik/recover',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({testNo,encoded,reasons:selected,rechecks})
+    body:JSON.stringify({testNo,encoded,reasons:selected,rechecks,transferChecks})
    });
    const data=await response.json();
    if(!response.ok){
     if(response.status===401||response.status===403)
-      throw new Error('Kişisel tekrar kaydı için öğrenci hesabınla giriş yapmalısın. <giriş>');
+      throw new Error('Kişisel tekrar ve farklı soru çalışma kayıtları için öğrenci hesabınla giriş yapmalısın. <giriş>');
     throw new Error(data.error||'Tekrar listesi oluşturulamadı.');
    }
    setSaved(true);
@@ -130,6 +132,9 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
        <p><strong>Sonraki adım:</strong> {item.thirdAction}</p>
        <p style={{fontSize:12}}>Bu, aynı sorunun yönlendirmeli ikinci çözümüdür. Tek başına kalıcı kazanım kanıtı değildir.</p>
       </div>}
+      {revealed&&<IndependentTransferPractice testNo={testNo} encoded={encoded}
+       sourceQuestionNo={item.number} originalStatus={item.status}
+       onGraded={(no,questionId,answer)=>setTransferChecks(prev=>({...prev,[String(no)]:{questionId,answer}}))}/>}
      </div>
     </details>;
    })}

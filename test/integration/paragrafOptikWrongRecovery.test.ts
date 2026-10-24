@@ -7,6 +7,7 @@ import {db,resetDb} from './db';
 import {POST as recoverPOST} from '@/app/api/student/paragraf/optik/recover/route';
 import {GET as reviewsGET,POST as reviewPOST} from '@/app/api/student/reviews/route';
 import {getParagrafDetailedSolution} from '@/lib/paragrafDetailedSolutions';
+import {independentTransferFor} from '@/lib/paragrafIndependentTransfer';
 
 const key=Array.from({length:30},(_,i)=>getParagrafDetailedSolution(String(i+1).padStart(5,'0'))!.answer).join('');
 const alternative=key[0]==='A'?'B':'A';
@@ -128,6 +129,42 @@ describe('opt-in optical mistakes -> PostgreSQL -> adaptive reviews',()=>{
   expect(await db.reviewQueueItem.count({where:{studentId:student1}})).toBe(2);
   expect((await db.reviewQueueItem.findMany({where:{studentId:student1}}))
    .every(x=>x.status==='DUE'&&x.stepIndex===0)).toBe(true);
+ });
+ it('stores separately checked same-skill transfer without declaring verified mastery',async()=>{
+  const example=independentTransferFor(1,mistake,1)!;
+  expect(example.testNo).not.toBe(1);
+  const r=await recoverPOST(new Request(url,{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({testNo:1,encoded:mistake,
+     transferChecks:{'1':{questionId:example.id,answer:example.answer}}})
+  }));
+  expect(r.status).toBe(200);
+  const log=await db.dailyLog.findUniqueOrThrow({
+    where:{legacyId:'PARAGRAF_OPTIK_FIRST:'+student1+':01'}
+  });
+  const payload=log.payload as Record<string,any>;
+  expect(payload.independentChecks).toHaveLength(1);
+  expect(payload.independentChecks[0]).toMatchObject({
+    questionId:example.id,topic:example.topic,correct:true,
+    kind:'INDEPENDENT_SAME_SKILL_TRANSFER',countsAsMastery:false
+  });
+  expect(payload.verifiedMastery).toBe(false);
+  expect(await db.reviewQueueItem.count({where:{studentId:student1}})).toBe(2);
+ });
+ it('rejects forged transfer IDs or an attempt based on a previously correct question',async()=>{
+  const bad=await recoverPOST(new Request(url,{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({testNo:1,encoded:mistake,transferChecks:{'1':{questionId:'00001',answer:'A'}}})
+  }));
+  expect(bad.status).toBe(400);
+  const candidate=independentTransferFor(1,mistake,1)!;
+  const forbidden=await recoverPOST(new Request(url,{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({testNo:1,encoded:mistake,transferChecks:{'3':{questionId:candidate.id,answer:'A'}}})
+  }));
+  expect(forbidden.status).toBe(400);
+  expect(await db.dailyLog.count()).toBe(0);
+  expect(await db.reviewQueueItem.count()).toBe(0);
  });
  it('rejects a guided retry of a correct question, atomically preserving student data',async()=>{
   const r=await recoverPOST(new Request(url,{

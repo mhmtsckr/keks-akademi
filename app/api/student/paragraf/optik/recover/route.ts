@@ -6,6 +6,7 @@ import {HttpError,readJson,withApiErrors} from '@/lib/apiGuard';
 import {REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
 import {buildOpticalWrongLearningPlan,opticalAttemptLegacyId,toPrintedReviewQuestion} from '@/lib/paragrafWrongLearning';
 import {detailedQuestions} from '@/lib/paragrafOptik';
+import {gradeIndependentTransfer} from '@/lib/paragrafIndependentTransfer';
 
 export const runtime='nodejs';
 const reason=z.enum(Object.keys(REMEDIATION_REASONS) as [
@@ -15,7 +16,9 @@ const schema=z.object({
  testNo:z.number().int().min(1).max(50),
  encoded:z.string().regex(/^[A-EX]{30}$/),
  reasons:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),reason).optional(),
- rechecks:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),z.enum(['A','B','C','D','E','X'])).optional()
+ rechecks:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),z.enum(['A','B','C','D','E','X'])).optional(),
+ transferChecks:z.record(z.string().regex(/^(?:[1-9]|[12][0-9]|30)$/),
+  z.object({questionId:z.string().regex(/^\d{5}$/),answer:z.enum(['A','B','C','D','E'])}).strict()).optional()
 }).strict();
 const noStore={'Cache-Control':'private, no-store'} as const;
 
@@ -43,6 +46,16 @@ async function POST__handler(req:Request){
    marked,correct:marked==='X'?null:marked===q.correct,
    kind:'GUIDED_SAME_QUESTION_RETRY',countsAsMastery:false};
  });
+ const independentChecks=Object.entries(input.transferChecks||{}).map(([number,entry])=>{
+  const validated=gradeIndependentTransfer(input.testNo,input.encoded,Number(number),
+   entry.questionId,entry.answer);
+  if(!validated)throw new HttpError(400,'Farklı soru doğrulaması uyuşmuyor veya ilk soru yanlış/boş değil.');
+  return {
+   number:Number(number),questionId:validated.questionId,chosen:entry.answer,
+   correct:validated.correct,topic:validated.topic,
+   kind:'INDEPENDENT_SAME_SKILL_TRANSFER',countsAsMastery:false
+  };
+ });
  const now=new Date();
  const entry={
   kind:'PARAGRAF_OPTIK_WRONG_RECOVERY',version:2,edition:plan.edition,
@@ -51,7 +64,7 @@ async function POST__handler(req:Request){
   wrongTopics:plan.priorities.map(x=>x.topic),
   reasons:Object.fromEntries(plan.missed.filter(x=>x.reason).map(x=>[String(x.number),x.reason])),
   reviewQuestionIds:plan.missed.map(x=>x.reviewId),
-  guidedRechecks:rechecked,reviewDays:plan.reviewDays,
+  guidedRechecks:rechecked,independentChecks,reviewDays:plan.reviewDays,
   reasonSource:'STUDENT_SELF_REPORT',verifiedMastery:false
  };
  try{
