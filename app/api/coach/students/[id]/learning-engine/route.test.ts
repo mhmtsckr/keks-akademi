@@ -10,16 +10,18 @@ vi.mock('@/lib/db',()=>({db:{
  dailyLog:{findMany:mocks.logs},
  reviewQueueItem:{findMany:mocks.queues}
 }}));
-const empty=async()=>[];
-vi.mock('@/lib/learningEngine',()=>({
- buildCapacityProfile:async()=>({}),buildTopicMastery:empty,
- buildSubjectLearningModels:empty,buildGoalDistance:async()=>null,
- buildInterventionImpact:empty,buildPlanSimulation:async()=>({}),
- buildStudentTimeline:empty,buildExamKnowledgeMap:empty,
- buildCoachStudentAlignmentSignals:empty
-}));
+vi.mock('@/lib/learningEngine',()=>{
+ const empty=async()=>[];
+ return {
+  buildCapacityProfile:async()=>({}),buildTopicMastery:empty,
+  buildSubjectLearningModels:empty,buildGoalDistance:async()=>null,
+  buildInterventionImpact:empty,buildPlanSimulation:async()=>({}),
+  buildStudentTimeline:empty,buildExamKnowledgeMap:empty,
+  buildCoachStudentAlignmentSignals:empty
+ };
+});
 vi.mock('@/lib/examIntervention',()=>({buildLatestExamInterventionReport:async()=>null}));
-vi.mock('@/lib/resourceTracking',()=>({listResourceTracking:empty}));
+vi.mock('@/lib/resourceTracking',()=>({listResourceTracking:async()=>[]}));
 vi.mock('@/lib/studentIndicators',()=>({buildStudentIndicators:async()=>({})}));
 
 import {GET} from './route';
