@@ -65,6 +65,7 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
  const sources=new Map<string,Source>();
  const topics=new Map<string,Working>();
  const seenTests=new Set<number>();
+ const firstImportAt=new Map<number,number>();
  const seenNovelQuestions=new Set<string>();
  const ordered=[...logs].filter(x=>x.date instanceof Date&&Number.isFinite(x.date.getTime())&&
   x.date.getTime()<=now.getTime()&&x.date.getTime()>=cutoff)
@@ -78,6 +79,7 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
   const graded=gradeOptical(p.testNo,p.encoded);
   if(!graded)continue;
   seenTests.add(p.testNo);
+  firstImportAt.set(p.testNo,log.date.getTime());
   const missed=new Map<number,string>();
   for(const detail of graded.details){
    if(detail.status==='DOĞRU')continue;
@@ -122,6 +124,7 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
   const candidate=getParagrafDetailedSolution(p.questionId);
   if(!source||log.date.getTime()<source.firstAt||!candidate
     ||candidate.testNo===p.testNo||candidate.topic!==source.topic
+    ||(firstImportAt.has(candidate.testNo)&&firstImportAt.get(candidate.testNo)!<=log.date.getTime())
     ||candidate.answer===undefined||!['A','B','C','D','E'].includes(p.chosen)
     ||(p.chosen===candidate.answer)!==p.correct)continue;
   seenNovelQuestions.add(p.questionId);
