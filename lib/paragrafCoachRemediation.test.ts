@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {detailedQuestions} from '@/lib/paragrafOptik';
 import {independentTransferFor} from '@/lib/paragrafIndependentTransfer';
+import {getParagrafDetailedSolution} from '@/lib/paragrafDetailedSolutions';
 import {summarizeParagrafCoachEvidence} from '@/lib/paragrafCoachRemediation';
 
 const now=new Date('2026-10-25T12:00:00.000Z');
@@ -106,6 +107,40 @@ describe('KEKS Paragraf coach evidence aggregator',()=>{
   expect(result.topics[0].actionCode).toBe('TIME_BLANK');
   expect(result.topics[0].nextAction).toContain('süresiz');
   expect(result.topics[0].retentionVerified).toBe(false);
+ });
+
+ it('measures delayed different-question attempts separately and reports insufficient baseline honestly',()=>{
+  const next=independentTransferFor(1,mistake,1)!;
+  const laterCandidate=getParagrafDetailedSolution(next.id)!;
+  const candidateId=next.id;
+  const payload={kind:'PARAGRAF_INDEPENDENT_FOLLOWUP',testNo:1,sourceQuestionNo:1,
+   questionId:candidateId,topic:next.topic,
+   chosen:laterCandidate.answer,correct:true,stage:'IMMEDIATE_DIFFERENT_QUESTION',
+   verifiedMastery:false};
+  const result=summarizeParagrafCoachEvidence([
+   optical({independentChecks:[]}),
+   stored(new Date('2026-10-22T18:00:00.000Z'),payload)
+  ],[],now);
+  const signal=result.topics.find(x=>x.topic===questions[0].topic)!;
+  expect(signal.followupAttempts).toBe(1);
+  expect(signal.followupCorrect).toBe(1);
+  expect(signal.delayedNovelAttempts).toBe(1);
+  expect(signal.delayedNovelDays).toBe(1);
+  expect(signal.observedTrend).toBe('INSUFFICIENT');
+  expect(signal.observedChangePp).toBeNull();
+  expect(signal.observationalOnly).toBe(true);
+  expect(signal.retentionVerified).toBe(false);
+ });
+ it('rejects forged follow-up correctness or attempts unrelated to an imported source',()=>{
+  const other=independentTransferFor(1,mistake,1)!;
+  const result=summarizeParagrafCoachEvidence([
+   optical({independentChecks:[]}),
+   stored(late,{kind:'PARAGRAF_INDEPENDENT_FOLLOWUP',testNo:1,sourceQuestionNo:1,
+    questionId:other.id,chosen:other.answer,correct:false}),
+   stored(later,{kind:'PARAGRAF_INDEPENDENT_FOLLOWUP',testNo:1,sourceQuestionNo:3,
+    questionId:other.id,chosen:other.answer,correct:true})
+  ],[],now);
+  expect(result.topics.reduce((n,r)=>n+r.followupAttempts,0)).toBe(0);
  });
  it('returns empty evidence honestly for a student without opt-in records',()=>{
   expect(summarizeParagrafCoachEvidence([],[],now)).toMatchObject({
