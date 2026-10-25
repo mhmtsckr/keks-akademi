@@ -96,12 +96,14 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
   for(const item of checks){
    const c=asObject(item);
    if(!validQ(c.number)||checkedNumbers.has(c.number)||c.kind!=='INDEPENDENT_SAME_SKILL_TRANSFER'
-      ||typeof c.correct!=='boolean'||typeof c.questionId!=='string'
+      ||typeof c.correct!=='boolean'||typeof c.chosen!=='string'
+      ||!['A','B','C','D','E'].includes(c.chosen)||typeof c.questionId!=='string'
       ||!/^\d{5}$/.test(c.questionId))continue;
    const topic=missed.get(c.number);
    if(!topic)continue;
    const other=getParagrafDetailedSolution(c.questionId);
-   if(!other||other.testNo===p.testNo||other.topic!==topic)continue;
+   if(!other||other.testNo===p.testNo||other.topic!==topic||
+     (c.chosen===other.answer)!==c.correct)continue;
    checkedNumbers.add(c.number);
    const row=rowFor(topics,topic);
    row.independentAttempts++;
