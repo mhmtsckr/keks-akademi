@@ -69,7 +69,13 @@ describe('coach student learning evidence authorization',()=>{
    where:{studentId:'student1',questionId:{startsWith:'KEKS_PRINT_A3_V1_Q'}}
   }));
   expect(mocks.logs).toHaveBeenCalledWith(expect.objectContaining({
-   where:{studentId:'student1',date:expect.any(Object)}
+   where:expect.objectContaining({
+    studentId:'student1',date:expect.any(Object),
+    OR:expect.arrayContaining([
+     {legacyId:{startsWith:'PARAGRAF_OPTIK_FIRST:student1:'}},
+     {legacyId:{startsWith:'PARAGRAF_INDEPENDENT_FOLLOWUP:student1:'}}
+    ])
+   })
   }));
  });
 });
