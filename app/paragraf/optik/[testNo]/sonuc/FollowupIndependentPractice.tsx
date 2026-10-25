@@ -97,6 +97,9 @@ export function FollowupIndependentPractice({testNo,sourceQuestionNo,topic}:{
     Başka bir özgün soru çöz
    </button>}
   </>}
-  {error&&<p role="alert" style={{color:'#b32727'}}>{error} {error.includes('Önce bu testin')?<a href="/giris">Öğrenci hesabına giriş yap</a>:null}</p>}
+  {error&&<p role="alert" style={{color:'#b32727'}}>{error}
+   {error.includes('Önce bu testin')?<span> Yukarıdaki “Yanlış ve Boş Sorularımı Tekrar Listeme Ekle” işlemini öğrenci hesabından yap.</span>:null}
+   {error.includes('oturum')||error.includes('giriş')?<a href="/giris"> Öğrenci hesabına giriş yap</a>:null}
+  </p>}
  </section>;
 }
