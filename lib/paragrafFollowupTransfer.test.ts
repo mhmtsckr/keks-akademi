@@ -1,4 +1,5 @@
 import {describe,expect,it} from 'vitest';
+import type {ParagrafChoiceLetter} from './paragrafDetailedSolutions';
 import {detailedQuestions} from './paragrafOptik';
 import {FOLLOWUP_PREFIX,followupLegacyPrefix,getFollowupSource,pickFollowupTransfer,
  publicFollowupTransfer,gradeFollowupTransfer,usedFollowupQuestionIds} from './paragrafFollowupTransfer';
@@ -23,7 +24,7 @@ describe('independent paragraph follow-up selection',()=>{
   const first=pickFollowupTransfer(1,marks,1,new Set())!;
   const next=pickFollowupTransfer(1,marks,1,new Set([first.id]))!;
   expect(next.id).not.toBe(first.id);
-  const result=gradeFollowupTransfer(next,next.answer);
+  const result=gradeFollowupTransfer(next,next.answer as ParagrafChoiceLetter);
   expect(result).toMatchObject({correct:true,countsAsMastery:false});
  });
  it('declines to generate a fake candidate for first-try correct questions',()=>{
