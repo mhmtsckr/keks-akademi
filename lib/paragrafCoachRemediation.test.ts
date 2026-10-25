@@ -157,6 +157,10 @@ describe('KEKS Paragraf coach evidence aggregator',()=>{
   const baselineB={number:alternate.questionNo,questionId:baselineBQuestion.id,
    kind:'INDEPENDENT_SAME_SKILL_TRANSFER',topic:alternate.topic,correct:false};
   const used=new Set([transfer.id,baselineBQuestion.id]);
+  // The student has already completed both print tests: no item from either may be "new".
+  for(const test of [1,alternate.testNo]){
+   for(let n=1;n<=30;n++)used.add(String((test-1)*30+n).padStart(5,'0'));
+  }
   const novelA=pickFollowupTransfer(1,marks,1,used)!;
   used.add(novelA.id);
   const novelB=pickFollowupTransfer(alternate.testNo,encoded2,alternate.questionNo,used)!;
