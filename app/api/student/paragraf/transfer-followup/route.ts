@@ -36,12 +36,26 @@ async function scope(input:z.infer<typeof query>){
  const encoded=sourceOf(firstPayload,input.testNo);
  if(!first||!encoded)throw new HttpError(404,'Önce bu testin ilk yanlış/boş sonucunu öğrenci hesabına kaydet.');
  // All of this student's prior follow-ups are considered, not other students' records.
- const past=await db.dailyLog.findMany({
-  where:{studentId,legacyId:{startsWith:FOLLOWUP_PREFIX+studentId+':'}},
-  select:{legacyId:true,date:true,payload:true},orderBy:{date:'asc'},take:1501
- });
- if(past.length>1500)throw new HttpError(409,'Geçmiş çalışma hacmi kontrolü gerekiyor.');
+ const [past,allFirstTests]=await Promise.all([
+  db.dailyLog.findMany({
+   where:{studentId,legacyId:{startsWith:FOLLOWUP_PREFIX+studentId+':'}},
+   select:{legacyId:true,date:true,payload:true},orderBy:{date:'asc'},take:1501
+  }),
+  db.dailyLog.findMany({
+   where:{studentId,legacyId:{startsWith:'PARAGRAF_OPTIK_FIRST:'+studentId+':'}},
+   select:{payload:true},take:51
+  })
+ ]);
+ if(past.length>1500||allFirstTests.length>50)
+  throw new HttpError(409,'Geçmiş çalışma hacmi kontrolü gerekiyor.');
  const used=usedFollowupQuestionIds(firstPayload,past.map(x=>x.payload));
+ // A previously submitted print test was already seen by the student.
+ for(const prior of allFirstTests){
+  const p=asObject(prior.payload);
+  if(typeof p.testNo!=='number'||!Number.isInteger(p.testNo)||p.testNo<1||p.testNo>50)continue;
+  for(let n=1;n<=30;n++)used.add(String((p.testNo-1)*30+n).padStart(5,'0'));
+  for(const id of usedFollowupQuestionIds(p,[]))used.add(id);
+ }
  const question=pickFollowupTransfer(input.testNo,encoded,input.sourceQuestionNo,used);
  if(!question)throw new HttpError(404,'Bu beceri için daha önce kullanılmamış uygun başka soru bulunamadı.');
  return {studentId,first,question,past,encoded};
