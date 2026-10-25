@@ -2,6 +2,7 @@
 
 import {FormEvent,useEffect,useState} from 'react';
 import {CoachPerformanceReviews} from './CoachPerformanceReviews';
+import {CoachParagrafInterventionPanel} from './CoachParagrafInterventionPanel';
 
 function masteryLabel(v:string){
   return v==='NEW'?'Yeni'
@@ -176,6 +177,8 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       {data.paragrafCoachEvidence?.truncated&&<p className="notice">Kayıt hacmi sınırı aşıldı; analiz son 1.500 kayıt üzerinden hazırlanmıştır ve eksik olabilir.</p>}
       <p className="muted" style={{marginTop:10}}>{data.paragrafCoachEvidence?.note||''}</p>
     </div>
+
+    <CoachParagrafInterventionPanel studentId={studentId} topics={data.paragrafCoachEvidence?.topics||[]}/>
 
     {goal&&<div className="card">
       <div className="moduleEyebrow">HEDEFE KALAN MESAFE</div>
