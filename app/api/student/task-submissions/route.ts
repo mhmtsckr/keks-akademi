@@ -70,7 +70,7 @@ async function POST__handler(req:Request){
     const saved=await tx.taskSubmission.upsert({
     where:{actionId:action.id},
     create:{
-      actionId:action.id,studentId:user.student.id,subject,topic,
+      actionId:action.id,studentId:user.student!.id,subject,topic,
       totalQuestions:input.totalQuestions,correct:input.correct,wrong:input.wrong,blank:input.blank,
       errorReason:input.errorReason||null,
       net:evaluation.net,accuracy:evaluation.accuracy,completionRate:evaluation.completionRate,
