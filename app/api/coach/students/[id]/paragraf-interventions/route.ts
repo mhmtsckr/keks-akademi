@@ -34,7 +34,10 @@ async function ownedStudent(id:string){
 async function studentEvidence(id:string){
  const cutoff=new Date(Date.now()-90*86400000);
  const logs=await db.dailyLog.findMany({
-  where:{studentId:id,date:{gte:cutoff}},
+  where:{studentId:id,date:{gte:cutoff},OR:[
+      {legacyId:{startsWith:'PARAGRAF_OPTIK_FIRST:'+id+':'}},
+      {legacyId:{startsWith:'PARAGRAF_INDEPENDENT_FOLLOWUP:'+id+':'}}
+    ]},
   select:{date:true,payload:true},orderBy:{date:'desc'},take:1501
  });
  if(logs.length>1500)throw new HttpError(409,
