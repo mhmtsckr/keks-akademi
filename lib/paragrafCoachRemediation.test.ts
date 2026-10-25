@@ -3,6 +3,7 @@ import {detailedQuestions} from '@/lib/paragrafOptik';
 import {independentTransferFor} from '@/lib/paragrafIndependentTransfer';
 import {getParagrafDetailedSolution} from '@/lib/paragrafDetailedSolutions';
 import {summarizeParagrafCoachEvidence} from '@/lib/paragrafCoachRemediation';
+import {pickFollowupTransfer} from '@/lib/paragrafFollowupTransfer';
 
 const now=new Date('2026-10-25T12:00:00.000Z');
 const first=new Date('2026-10-20T12:00:00.000Z');
@@ -141,6 +142,45 @@ describe('KEKS Paragraf coach evidence aggregator',()=>{
     questionId:other.id,chosen:other.answer,correct:true})
   ],[],now);
   expect(result.topics.reduce((n,r)=>n+r.followupAttempts,0)).toBe(0);
+ });
+ it('reports an observed change only with two baseline trials and two delayed new texts on separate days',()=>{
+  // Derive a second real printed question in the same skill, not a fabricated item.
+  const alternate=Array.from({length:1470},(_,i)=>getParagrafDetailedSolution(String(i+31).padStart(5,'0'))!)
+   .find(q=>q.topic===questions[0].topic)!;
+  expect(alternate).toBeTruthy();
+  const secondTest=detailedQuestions(alternate.testNo)!;
+  const encoded2=secondTest.map((q,i)=>i===alternate.questionNo-1?
+   (q.answer==='A'?'B':'A'):q.answer).join('');
+  const baselineA={number:1,questionId:transfer.id,kind:'INDEPENDENT_SAME_SKILL_TRANSFER',
+   topic:questions[0].topic,correct:false};
+  const baselineBQuestion=independentTransferFor(alternate.testNo,encoded2,alternate.questionNo)!;
+  const baselineB={number:alternate.questionNo,questionId:baselineBQuestion.id,
+   kind:'INDEPENDENT_SAME_SKILL_TRANSFER',topic:alternate.topic,correct:false};
+  const used=new Set([transfer.id,baselineBQuestion.id]);
+  const novelA=pickFollowupTransfer(1,marks,1,used)!;
+  used.add(novelA.id);
+  const novelB=pickFollowupTransfer(alternate.testNo,encoded2,alternate.questionNo,used)!;
+  expect(novelA.id).not.toBe(novelB.id);
+  const sample=(date:Date,testNo:number,number:number,q:typeof novelA)=>stored(date,{
+   kind:'PARAGRAF_INDEPENDENT_FOLLOWUP',testNo,sourceQuestionNo:number,
+   questionId:q.id,chosen:q.answer,correct:true
+  });
+  const result=summarizeParagrafCoachEvidence([
+   optical({independentChecks:[baselineA]}),
+   stored(new Date('2026-10-20T14:00:00.000Z'),{
+    kind:'PARAGRAF_OPTIK_WRONG_RECOVERY',testNo:alternate.testNo,encoded:encoded2,
+    independentChecks:[baselineB]}),
+   sample(new Date('2026-10-22T13:00:00.000Z'),1,1,novelA),
+   sample(new Date('2026-10-24T14:00:00.000Z'),alternate.testNo,alternate.questionNo,novelB)
+  ],[],now);
+  const row=result.topics.find(x=>x.topic===questions[0].topic)!;
+  expect(row.independentAttempts).toBe(2);
+  expect(row.delayedNovelAttempts).toBe(2);
+  expect(row.delayedNovelDays).toBe(2);
+  expect(row.observedTrend).toBe('IMPROVING');
+  expect(row.observedChangePp).toBe(100);
+  expect(row.observationalOnly).toBe(true);
+  expect(row.retentionVerified).toBe(false);
  });
  it('returns empty evidence honestly for a student without opt-in records',()=>{
   expect(summarizeParagrafCoachEvidence([],[],now)).toMatchObject({
