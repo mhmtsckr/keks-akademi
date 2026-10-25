@@ -23,7 +23,7 @@ function optical(extra:Record<string,unknown>={}){
   reasons:{'1':'KARARSIZLIK','2':'SURE'},
   independentChecks:[
    {number:1,questionId:transfer.id,topic:questions[0].topic,
-    kind:'INDEPENDENT_SAME_SKILL_TRANSFER',correct:true,
+    kind:'INDEPENDENT_SAME_SKILL_TRANSFER',chosen:transfer.answer,correct:true,
     evidence:'Bu seçeneği paragrafın genel savına dayanarak işaretledim.'}
   ],...extra});
 }
@@ -99,6 +99,16 @@ describe('KEKS Paragraf coach evidence aggregator',()=>{
   const result=summarizeParagrafCoachEvidence([altered],[],now);
   expect(result.topics.reduce((n,r)=>n+r.independentAttempts,0)).toBe(0);
  });
+ it('rejects forged correct outcomes when chosen answer contradicts the answer key',()=>{
+  const fake=optical({independentChecks:[{
+   number:1,questionId:transfer.id,kind:'INDEPENDENT_SAME_SKILL_TRANSFER',
+   chosen:transfer.answer==='A'?'B':'A',correct:true,
+   evidence:'Paragrafın anlam ilişkisi ve metin kanıtını değerlendirdim.'
+  }]});
+  const result=summarizeParagrafCoachEvidence([fake],[],now);
+  expect(result.topics.reduce((n,r)=>n+r.independentAttempts,0)).toBe(0);
+  expect(result.topics.reduce((n,r)=>n+r.independentCorrect,0)).toBe(0);
+ });
  it('uses reason-specific time-blank guidance without inventing a diagnosis',()=>{
   const onlyBlank=answers.map((answer,i)=>i===0?'X':answer).join('');
   const result=summarizeParagrafCoachEvidence([stored(first,{
@@ -152,10 +162,11 @@ describe('KEKS Paragraf coach evidence aggregator',()=>{
   const encoded2=secondTest.map((q,i)=>i===alternate.questionNo-1?
    (q.answer==='A'?'B':'A'):q.answer).join('');
   const baselineA={number:1,questionId:transfer.id,kind:'INDEPENDENT_SAME_SKILL_TRANSFER',
-   topic:questions[0].topic,correct:false};
+   topic:questions[0].topic,chosen:transfer.answer==='A'?'B':'A',correct:false};
   const baselineBQuestion=independentTransferFor(alternate.testNo,encoded2,alternate.questionNo)!;
   const baselineB={number:alternate.questionNo,questionId:baselineBQuestion.id,
-   kind:'INDEPENDENT_SAME_SKILL_TRANSFER',topic:alternate.topic,correct:false};
+   kind:'INDEPENDENT_SAME_SKILL_TRANSFER',topic:alternate.topic,
+   chosen:baselineBQuestion.answer==='A'?'B':'A',correct:false};
   const used=new Set([transfer.id,baselineBQuestion.id]);
   // The student has already completed both print tests: no item from either may be "new".
   for(const test of [1,alternate.testNo]){
