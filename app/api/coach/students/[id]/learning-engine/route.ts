@@ -99,7 +99,11 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   // Keep these signals separate from general REVIEW_RESULT priorities.
   const [opticalLogs,printQueues]=await Promise.all([
     db.dailyLog.findMany({
-      where:{studentId:id,date:{gte:new Date(Date.now()-90*86400000)}},
+      where:{studentId:id,date:{gte:new Date(Date.now()-90*86400000)},OR:[
+        {legacyId:{startsWith:'PARAGRAF_OPTIK_FIRST:'+id+':'}},
+        {legacyId:{startsWith:'PARAGRAF_INDEPENDENT_FOLLOWUP:'+id+':'}},
+        {payload:{path:['type'],equals:'REVIEW_RESULT'}}
+      ]},
       select:{date:true,payload:true},orderBy:{date:'desc'},take:1501
     }),
     db.reviewQueueItem.findMany({
