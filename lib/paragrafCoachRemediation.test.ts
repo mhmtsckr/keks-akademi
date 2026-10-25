@@ -110,7 +110,7 @@ describe('KEKS Paragraf coach evidence aggregator',()=>{
  });
 
  it('measures delayed different-question attempts separately and reports insufficient baseline honestly',()=>{
-  const next=independentTransferFor(1,mistake,1)!;
+  const next=independentTransferFor(1,marks,1)!;
   const laterCandidate=getParagrafDetailedSolution(next.id)!;
   const candidateId=next.id;
   const payload={kind:'PARAGRAF_INDEPENDENT_FOLLOWUP',testNo:1,sourceQuestionNo:1,
@@ -132,7 +132,7 @@ describe('KEKS Paragraf coach evidence aggregator',()=>{
   expect(signal.retentionVerified).toBe(false);
  });
  it('rejects forged follow-up correctness or attempts unrelated to an imported source',()=>{
-  const other=independentTransferFor(1,mistake,1)!;
+  const other=independentTransferFor(1,marks,1)!;
   const result=summarizeParagrafCoachEvidence([
    optical({independentChecks:[]}),
    stored(late,{kind:'PARAGRAF_INDEPENDENT_FOLLOWUP',testNo:1,sourceQuestionNo:1,
