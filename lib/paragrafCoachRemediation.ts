@@ -2,6 +2,7 @@ import {gradeOptical} from '@/lib/paragrafOptik';
 import {getParagrafDetailedSolution} from '@/lib/paragrafDetailedSolutions';
 import {REMEDIATION_REASONS,isRemediationReason} from '@/lib/wrongQuestionRemediation';
 import {opticalReasonAction} from '@/lib/paragrafLearningPlaybook';
+import {FOLLOWUP_EVENT} from '@/lib/paragrafFollowupTransfer';
 
 type Log={date:Date;payload:unknown};
 type Queue={questionId:string;dueAt:Date;status:string};
@@ -12,6 +13,8 @@ type Working={
  reviewAttempts:number;reviewCorrect:number;delayedAttempts:number;delayedCorrect:number;
  delayedWrong:number;delayedDates:Set<string>;delayedQuestionIds:Set<string>;
  overdue:number;lastFailureAt:string|null;
+ followupAttempts:number;followupCorrect:number;delayedNovelAttempts:number;
+ delayedNovelCorrect:number;delayedNovelWrong:number;delayedNovelDates:Set<string>;
 };
 
 export type ParagrafCoachSignal={
@@ -19,7 +22,11 @@ export type ParagrafCoachSignal={
  justifiedAttempts:number;reviewAttempts:number;reviewCorrect:number;delayedAttempts:number;
  delayedCorrect:number;delayedWrong:number;delayedDays:number;delayedDistinctQuestions:number;
  overdue:number;primaryReason:string;primaryReasonSource:'STUDENT_SELF_REPORT'|'UNKNOWN';
- actionCode:'REPEATED_FAILURE'|'OVERDUE'|'TRANSFER_GAP'|'TIME_BLANK'|'UNCLASSIFIED'|'PRACTICE'|'FOLLOW_UP';
+ followupAttempts:number;followupCorrect:number;delayedNovelAttempts:number;
+ delayedNovelCorrect:number;delayedNovelWrong:number;delayedNovelDays:number;
+ observedChangePp:number|null;observedTrend:'INSUFFICIENT'|'IMPROVING'|'DECLINING'|'STABLE';
+ observationalOnly:true;
+ actionCode:'NEW_TEXT_FAILURE'|'REPEATED_FAILURE'|'OVERDUE'|'TRANSFER_GAP'|'TIME_BLANK'|'UNCLASSIFIED'|'PRACTICE'|'FOLLOW_UP';
  nextAction:string;priority:number;evidenceLevel:'INITIAL_ONLY'|'IMMEDIATE_TRANSFER'|'DELAYED_REVIEW';
  retentionVerified:false;
 };
@@ -40,7 +47,9 @@ function rowFor(map:Map<string,Working>,topic:string){
    independentAttempts:0,independentCorrect:0,justifiedAttempts:0,
    reviewAttempts:0,reviewCorrect:0,delayedAttempts:0,delayedCorrect:0,
    delayedWrong:0,delayedDates:new Set(),delayedQuestionIds:new Set(),
-   overdue:0,lastFailureAt:null};
+   overdue:0,lastFailureAt:null,
+   followupAttempts:0,followupCorrect:0,delayedNovelAttempts:0,
+   delayedNovelCorrect:0,delayedNovelWrong:0,delayedNovelDates:new Set()};
   map.set(topic,row);
  }
  return row;
@@ -56,6 +65,7 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
  const sources=new Map<string,Source>();
  const topics=new Map<string,Working>();
  const seenTests=new Set<number>();
+ const seenNovelQuestions=new Set<string>();
  const ordered=[...logs].filter(x=>x.date instanceof Date&&Number.isFinite(x.date.getTime())&&
   x.date.getTime()<=now.getTime()&&x.date.getTime()>=cutoff)
   .sort((a,b)=>a.date.getTime()-b.date.getTime());
@@ -99,6 +109,33 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
   }
  }
 
+ // Post-import different-question attempts are independent immutable DailyLog events.
+ // Do not trust stage, correctness or a client-provided topic without checking source and key.
+ for(const log of ordered){
+  const p=asObject(log.payload);
+  if(p.kind!==FOLLOWUP_EVENT||!validTest(p.testNo)||!validQ(p.sourceQuestionNo)
+    ||typeof p.questionId!=='string'||!/^\d{5}$/.test(p.questionId)
+    ||seenNovelQuestions.has(p.questionId)||typeof p.correct!=='boolean'
+    ||typeof p.chosen!=='string')continue;
+  const serial=(p.testNo-1)*30+p.sourceQuestionNo;
+  const source=sources.get(PREFIX+String(serial).padStart(5,'0'));
+  const candidate=getParagrafDetailedSolution(p.questionId);
+  if(!source||log.date.getTime()<source.firstAt||!candidate
+    ||candidate.testNo===p.testNo||candidate.topic!==source.topic
+    ||candidate.answer===undefined||!['A','B','C','D','E'].includes(p.chosen)
+    ||(p.chosen===candidate.answer)!==p.correct)continue;
+  seenNovelQuestions.add(p.questionId);
+  const row=rowFor(topics,source.topic);
+  row.followupAttempts++;
+  if(p.correct)row.followupCorrect++;
+  // Delayed, unseen question results are strictly separate from original-question review.
+  if(log.date.getTime()-source.firstAt>=DAY){
+   row.delayedNovelAttempts++;
+   if(p.correct)row.delayedNovelCorrect++;else row.delayedNovelWrong++;
+   row.delayedNovelDates.add(log.date.toISOString().slice(0,10));
+  }
+ }
+
  // Only real review results on previously imported PRINT questions are considered.
  for(const log of ordered){
   const p=asObject(log.payload);
@@ -133,7 +170,10 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
   const reasonLabel=reason?REMEDIATION_REASONS[reason].label:'Henüz bildirilmedi';
   let code:ParagrafCoachSignal['actionCode'];
   let nextAction:string;
-  if(t.delayedWrong>=2){
+  if(t.delayedNovelWrong>=2){
+   code='NEW_TEXT_FAILURE';
+   nextAction='Farklı ve en az bir gün sonra çözülen yeni metinlerde hata tekrar ediyor. Koç, yanlış gerekçeyi yeniden inceleyip başka özgün soruyla kontrol etmeli.';
+  }else if(t.delayedWrong>=2){
    code='REPEATED_FAILURE';
    nextAction='Tekrarlayan bağımsız tekrar yanlışlarını koçla adım adım incele; metin kanıtını ve çeldiriciyi karşılaştır. Sonra farklı bir soruyla yeniden ölç.';
   }else if(t.overdue>0){
@@ -155,8 +195,13 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
    code='FOLLOW_UP';
    nextAction='Gecikmeli tekrar sonuçlarını izle; aynı sorunun tekrar edilmesi yeni metne beceri aktarımını tek başına kanıtlamaz.';
   }
-  const priority=t.delayedWrong*5+t.overdue*4+(t.independentAttempts-t.independentCorrect)*3
-    +t.wrong*2+t.blank;
+  const priority=t.delayedNovelWrong*6+t.delayedWrong*5+t.overdue*4+
+    (t.independentAttempts-t.independentCorrect)*3+t.wrong*2+t.blank;
+  const enough=t.independentAttempts>=2&&t.delayedNovelAttempts>=2&&t.delayedNovelDates.size>=2;
+  const observedChangePp=enough?Math.round(100*(t.delayedNovelCorrect/t.delayedNovelAttempts-
+    t.independentCorrect/t.independentAttempts)):null;
+  const observedTrend:ParagrafCoachSignal['observedTrend']=observedChangePp===null?'INSUFFICIENT':
+    observedChangePp>=15?'IMPROVING':observedChangePp<=-15?'DECLINING':'STABLE';
   return {
    topic:t.topic,wrong:t.wrong,blank:t.blank,
    independentAttempts:t.independentAttempts,independentCorrect:t.independentCorrect,
@@ -164,13 +209,17 @@ export function summarizeParagrafCoachEvidence(logs:Log[],queues:Queue[],now=new
    delayedAttempts:t.delayedAttempts,delayedCorrect:t.delayedCorrect,delayedWrong:t.delayedWrong,
    delayedDays:t.delayedDates.size,delayedDistinctQuestions:t.delayedQuestionIds.size,
    overdue:t.overdue,primaryReason:reasonLabel,
+   followupAttempts:t.followupAttempts,followupCorrect:t.followupCorrect,
+   delayedNovelAttempts:t.delayedNovelAttempts,delayedNovelCorrect:t.delayedNovelCorrect,
+   delayedNovelWrong:t.delayedNovelWrong,delayedNovelDays:t.delayedNovelDates.size,
+   observedChangePp,observedTrend,observationalOnly:true as const,
    primaryReasonSource:reason?'STUDENT_SELF_REPORT' as const:'UNKNOWN' as const,
    actionCode:code,nextAction,priority,
-   evidenceLevel:(t.delayedAttempts?'DELAYED_REVIEW':t.independentAttempts?'IMMEDIATE_TRANSFER':'INITIAL_ONLY') as ParagrafCoachSignal['evidenceLevel'],
+   evidenceLevel:(t.delayedAttempts||t.delayedNovelAttempts?'DELAYED_REVIEW':t.independentAttempts||t.followupAttempts?'IMMEDIATE_TRANSFER':'INITIAL_ONLY') as ParagrafCoachSignal['evidenceLevel'],
    retentionVerified:false as const
   };
  }).sort((a,b)=>b.priority-a.priority||b.wrong-a.wrong||a.topic.localeCompare(b.topic,'tr'));
 
  return {windowDays:90,totalOpticalTests:seenTests.size,topics:signals,
-  note:'Yalnız öğrenci onayıyla kaydedilen optik ve kişisel tekrarlar sayılmıştır. Aynı sorunun gecikmeli doğru çözümü kalıcı kazanım ya da farklı metne transfer kanıtı değildir. Hata nedenleri öz bildirimdir.'};
+  note:'Yalnız öğrenci onayıyla kaydedilen optik, yeni özgün sorular ve kişisel tekrarlar sayılmıştır. Önce-sonra farkı gözlemseldir; koç müdahalesinin nedensel etkisini kanıtlamaz. Aynı sorunun doğru tekrarı yeni metne aktarım kanıtı değildir. Hata nedenleri öz bildirimdir.'};
 }
