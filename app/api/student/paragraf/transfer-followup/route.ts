@@ -48,6 +48,11 @@ async function scope(input:z.infer<typeof query>){
  ]);
  if(past.length>1500||allFirstTests.length>50)
   throw new HttpError(409,'Geçmiş çalışma hacmi kontrolü gerekiyor.');
+ const today=new Date().toISOString().slice(0,10);
+ const dailyPrefix=followupLegacyPrefix(studentId,input.testNo,input.sourceQuestionNo);
+ if(past.filter(x=>x.legacyId?.startsWith(dailyPrefix)&&
+    x.date.toISOString().slice(0,10)===today).length>=5)
+  throw new HttpError(429,'Bu soru için bugün en fazla beş yeni deneme kaydedilebilir.');
  const used=usedFollowupQuestionIds(firstPayload,past.map(x=>x.payload));
  // A previously submitted print test was already seen by the student.
  for(const prior of allFirstTests){
