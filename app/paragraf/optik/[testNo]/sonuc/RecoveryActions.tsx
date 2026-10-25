@@ -1,6 +1,7 @@
 'use client';
 import {useState} from 'react';
 import {IndependentTransferPractice} from './IndependentTransferPractice';
+import {FollowupIndependentPractice} from './FollowupIndependentPractice';
 import {opticalReasonAction} from '@/lib/paragrafLearningPlaybook';
 
 type Choice='A'|'B'|'C'|'D'|'E';
@@ -153,6 +154,14 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
   </button>
   {status&&<p role="status" style={{fontWeight:700}}>{status.includes('<giriş>')?<>{status.replace(' <giriş>','')} <a href="/giris">Öğrenci girişi</a></>:status}</p>}
   {saved&&<p><a href="/ogrenci" style={{color:'#074f9c',fontWeight:800}}>Öğrenci panelinde tekrar görevlerimi aç →</a></p>}
+  <details style={{marginTop:16,padding:14,border:'1px solid #d1dbe8',borderRadius:10,background:'#eef4fd'}}>
+   <summary style={{cursor:'pointer',fontWeight:800}}>İlk optikten sonra farklı günlerde yeni soruyla öğrendiklerimi ölç</summary>
+   <p style={{fontSize:13}}>Bu alıştırmalar öğrencinin hesabına ayrı ayrı kaydedilir. İlk optik sonucu daha önce aktarmış olman gerekir. Tekrar kuyruğunun mevcut ilerlemesi değişmez.</p>
+   {missed.map(x=><details key={x.number} style={{marginTop:9,padding:10,background:'#fff',borderRadius:8}}>
+    <summary style={{fontWeight:700,cursor:'pointer'}}>{x.number}. soru · {x.topic} · {x.status==='BOŞ'?'Boş':'Yanlış'}</summary>
+    <FollowupIndependentPractice testNo={testNo} sourceQuestionNo={x.number} topic={x.topic}/>
+   </details>)}
+  </details>
   <p style={{fontSize:12,color:'#63748a',marginTop:16}}>Yeniden deneme sonucu öğrenme seviyesi olarak kullanılmaz. QR ile paylaşılan eski sonuç bağlantısı öğrenci hesabına kendiliğinden kaydedilmez.</p>
  </section>;
 }
