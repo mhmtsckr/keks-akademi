@@ -158,7 +158,7 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
    <summary style={{cursor:'pointer',fontWeight:800}}>İlk optikten sonra farklı günlerde yeni soruyla öğrendiklerimi ölç</summary>
    <p style={{fontSize:13}}>Bu alıştırmalar öğrencinin hesabına ayrı ayrı kaydedilir. İlk optik sonucu daha önce aktarmış olman gerekir. Tekrar kuyruğunun mevcut ilerlemesi değişmez.</p>
    {missed.map(x=><details key={x.number} style={{marginTop:9,padding:10,background:'#fff',borderRadius:8}}>
-    <summary style={{fontWeight:700,cursor:'pointer'}}>{x.number}. soru · {x.topic} · {x.status==='BOŞ'?'Boş':'Yanlış'}</summary>
+    <summary style={{fontWeight:700,cursor:'pointer'}}>Bağımsız yeni metin · Kaynak {x.number} · {x.topic} · {x.status==='BOŞ'?'Boş':'Yanlış'}</summary>
     <FollowupIndependentPractice testNo={testNo} sourceQuestionNo={x.number} topic={x.topic}/>
    </details>)}
   </details>
