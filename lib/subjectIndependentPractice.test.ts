@@ -16,6 +16,16 @@ describe('cross-subject unseen approved independent practice',()=>{
   expect(chooseFreshSubjectPractice(source,[candidate('a'),candidate('b')],
    new Set(['a']),osym)).toMatchObject([{id:'b'}]);
  });
+ it('lets actual 12th-grade YKS learners use exam-matched approved TYT questions',()=>{
+  const exam12=resolveLearningCurriculumContext({gradeLevel:'Lise 12 | YKS',examType:'TYT'});
+  expect(exam12.grade).toBe(12);
+  expect(chooseFreshSubjectPractice(source,[candidate('tyt-approved')],new Set(),exam12)
+   .map(x=>x.id)).toEqual(['tyt-approved']);
+  const ags12=resolveLearningCurriculumContext({gradeLevel:'Lise 12 | YKS',examType:'AGS'});
+  const unrelated={...source,examType:'AGS'};
+  expect(chooseFreshSubjectPractice(unrelated,[candidate('ags',{examType:'AGS'})],
+   new Set(),ags12)).toEqual([]);
+ });
  it('never accepts wrong-exam, private, inactive or pending questions',()=>{
   const pool=[
    candidate('a',{examType:'AYT'}),candidate('b',{active:false}),
