@@ -27,7 +27,7 @@ export function eligibleSubjectPracticeQuestion(q:PracticeCandidate,origin:Pract
              typeof m.grade==='number'?m.grade:null;
  const declaredGrades=m.targetGrades;
  const framework=normalized(m.curriculumFramework);
- const finalYearExam=ctx.grade===12&&Boolean(canonicalExamType(origin.examType));
+ const finalYearExam=ctx.grade===12&&['TYT','AYT','YDT','YKS'].includes(canonicalExamType(origin.examType)||'');
  if(ctx.grade!==null&&!finalYearExam){
   if(grade!==ctx.grade&&!includedGrades(declaredGrades,ctx.grade))return false;
   if(framework&&framework!==ctx.framework)return false;
