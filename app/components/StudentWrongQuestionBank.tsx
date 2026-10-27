@@ -211,14 +211,14 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
     <div className="card wrongQuestionDueCard">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. KEKS her soru için senin doğru/yanlış serini ve yakın dönem tekrar başarını öğrenir; güçlü hatırlamada aralığı uzatır, unutma sinyalinde tekrar tarihini öne çeker.</p></div>
+        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ VE BOŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. KEKS her soru için senin doğru/yanlış serini ve yakın dönem tekrar başarını öğrenir; güçlü hatırlamada aralığı uzatır, unutma sinyalinde tekrar tarihini öne çeker.</p></div>
         <span className="pill">{dueReviews.length} görev</span>
       </div>
-      {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış soru yok.</strong><div className="muted">Yeni yanlış yüklediğinde 0. gün görevi hemen burada görünür.</div></div>:<div className="wrongReviewTaskList">
+      {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış veya boş soru yok.</strong><div className="muted">Yeni yanlış veya boş soru kaydettiğinde 0. gün görevi burada görünür.</div></div>:<div className="wrongReviewTaskList">
         {dueReviews.map((x:any)=><article className="wrongReviewTask" key={x.id}>
           <div className="wrongQuestionRowHead">
             <div><strong>{x.question.subject} · {x.question.topic}</strong><span>Aşama {x.stepIndex} · {new Date(x.dueAt).toLocaleDateString('tr-TR')}</span></div>
-            <span className="pill">TEKRAR GÖREVİ</span>
+            <span className="pill">{x.originReason==='BLANK'?'BOŞTAN ÖĞRENME':x.originReason==='MARKED'?'İŞARETLİ TEKRAR':'YANLIŞTAN ÖĞRENME'}</span>
           </div>
           {x.question.imageUrl&&<Image src={x.question.imageUrl} alt="Tekrar görevi yanlış soru" width={900} height={600} unoptimized className="wrongReviewTaskImage"/>}
           <p>{x.question.prompt}</p>
@@ -339,7 +339,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
             :<input value={practiceAnswers[q.id]||''} onChange={e=>setPracticeAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
         </article>)}
         {practiceResult
-          ?<div className="notice"><strong>Pekiştirme kaydedildi.</strong> {practiceResult.correct} doğru · {practiceResult.wrong} yanlış · {practiceResult.blank} boş. Yanlışların varsa tekrar kuyruğuna alındı.</div>
+          ?<div className="notice"><strong>Pekiştirme kaydedildi.</strong> {practiceResult.correct} doğru · {practiceResult.wrong} yanlış · {practiceResult.blank} boş. Yanlışlar ve boşlar ayrı olarak tekrar kuyruğuna alınır.</div>
           :<button type="button" className="btn primary" disabled={practiceBusy} onClick={finishPractice}>Pekiştirme Testini Kaydet</button>}
       </div>}
     </div>}
