@@ -37,6 +37,8 @@ export function eligibleSubjectPracticeQuestion(q:PracticeCandidate,origin:Pract
   if(Array.isArray(declaredGrades)&&declaredGrades.length>0&&
      (ctx.grade===null||!includedGrades(declaredGrades,ctx.grade)))return false;
   if(framework&&framework!=='OSYM'&&!(finalYearExam&&framework===ctx.framework))return false;
+  // An untyped 'GENEL/OKUL' item is not an exam blueprint, even if approved.
+  if(!canonicalExamType(origin.examType))return false;
   if(ctx.examType&&examToken(q.examType)!==examToken(origin.examType))return false;
   if(Array.isArray(m.targetExams)&&m.targetExams.length>0&&
      !m.targetExams.some(x=>typeof x==='string'&&examToken(x)===examToken(origin.examType)))return false;
