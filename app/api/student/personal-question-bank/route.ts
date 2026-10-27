@@ -34,10 +34,11 @@ async function POST__handler(req:Request){
   if(input.action==='bookmark'){
     const q=await db.questionBankItem.findUnique({where:{id:input.questionId},
       select:{id:true,sourceKind:true,active:true,reviewStatus:true}});
-    if(!q||q.sourceKind.startsWith('STUDENT_WRONG:')
-      ?!q||q.sourceKind!=='STUDENT_WRONG:'+user.student.id||q.reviewStatus!=='STUDENT_PRIVATE'
-      :!q.active||q.reviewStatus!=='APPROVED')
-      return NextResponse.json({error:'Soru bulunamadı.'},{status:404});
+    if(!q)return NextResponse.json({error:'Soru bulunamadı.'},{status:404});
+    const permitted=q.sourceKind.startsWith('STUDENT_WRONG:')
+      ?q.sourceKind==='STUDENT_WRONG:'+user.student.id&&q.reviewStatus==='STUDENT_PRIVATE'
+      :q.active&&q.reviewStatus==='APPROVED';
+    if(!permitted)return NextResponse.json({error:'Soru bulunamadı.'},{status:404});
     await db.dailyLog.create({data:{
       studentId:user.student.id,
       date:new Date(),
