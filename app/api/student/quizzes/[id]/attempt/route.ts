@@ -85,7 +85,8 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
   }});
   const recovery=graded.details.filter(q=>q.status!=='CORRECT').map(q=>({
    questionId:q.questionId,subject:q.subject,topic:q.topic,examType:q.examType,
-   status:q.status,blankReason:q.blankReason
+   status:q.status,blankReason:q.blankReason,
+   answerKeySource:q.answerKeySource
   }));
   await tx.dailyLog.create({data:{studentId,date:now,payload:{
    type:QUIZ_RECOVERY_EVENT,version:1,quizId:quiz.id,attemptId:attempt.id,
@@ -102,6 +103,7 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
   questionId:q.questionId,status:q.status,subject:q.subject,topic:q.topic,
   blankReason:q.blankReason,correctAnswer:q.correctAnswer,
   explanation:q.explanation,explanationSource:q.explanationSource,
+  answerKeySource:q.answerKeySource,
   nextAction:q.status==='CORRECT'?null:recoveryNextStep({
    gradeLevel:user.student!.gradeLevel,subject:q.subject,topic:q.topic,
    examType:q.examType,outcome:q.status,
