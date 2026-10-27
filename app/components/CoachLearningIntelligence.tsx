@@ -141,6 +141,7 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
               <span className="pill">İlk test: {x.firstTestWrong||0} yanlış · {x.firstTestBlank||0} boş</span>
             </div>
             <p><strong>Tekrar sonuçları:</strong> {x.wrongCount} yanlış · {x.blankCount||0} boş / {x.totalReviews} deneme.</p>
+            {!!x.firstTestUnverified&&<p className="muted">İlk testteki {x.firstTestUnverified} sonuç, öğrenci tarafından yüklenen veya onaysız cevap anahtarıyla karşılaştırılmıştır; uzman doğrulaması yapılmış sayılmaz.</p>}
             <p><strong>Bildirilmiş neden:</strong> {x.primaryReason}</p>
             <p className="muted"><strong>Özgün mini alıştırmalar:</strong> {x.guidedAttempts||0} deneme · {x.guidedCorrect||0} doğru. Bunlar kalıcı öğrenme kanıtı sayılmaz.</p>
             <p className="muted"><strong>Koç müdahalesi:</strong> {x.recommendedAction}</p>
