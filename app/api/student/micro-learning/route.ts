@@ -19,7 +19,10 @@ async function student(){
   if(!s)throw new HttpError(404,'Öğrenci bulunamadı.');
   return s;
 }
-const dueWhere=(id:string)=>({studentId:id,status:{in:['DUE','PENDING']},dueAt:{lte:new Date()},question:{active:true,sourceKind:{startsWith:'STUDENT_WRONG:'}}});
+// Uploaded personal questions are private and intentionally inactive in the
+// public question bank. The student's own active review item is still eligible.
+const dueWhere=(id:string)=>({studentId:id,status:{in:['DUE','PENDING']},
+ dueAt:{lte:new Date()},question:{sourceKind:'STUDENT_WRONG:'+id}});
 async function GETHandler(){
   const s=await student();
   const [due,logs]=await Promise.all([
@@ -27,7 +30,7 @@ async function GETHandler(){
     db.dailyLog.findMany({where:{studentId:s.id,date:{gte:new Date(microDayStart().getTime()-6*86400000)},payload:{path:['type'],equals:'MICRO_RESULT'}},orderBy:{date:'desc'}})
   ]);
   const kinds:MicroKind[]=[...(due?['WRONG_1' as const]:[]),...eligibleMicroKinds(s)];
-  const tasks=kinds.map(kind=>{const {items,...pack}=buildMicroPack(kind,microLevel(s),0);return {...pack,reason:kind==='WRONG_1'?'Tekrar zamanı gelen kendi sorun.':'Eğitim ve sınav grubuna uygun kısa alıştırma.'}});
+  const tasks=kinds.map(kind=>{const {items,...pack}=buildMicroPack(kind,microLevel(s),0);return {...pack,reason:kind==='WRONG_1'?'Tekrar zamanı gelen yanlış veya boş bıraktığın kişisel sorun.':'Eğitim ve sınav grubuna uygun kısa alıştırma.'}});
   // A lower recent accuracy moves that category forward; due personal reviews stay first.
   const accuracy=(kind:string)=>{const rows=logs.filter(x=>meta(x.payload).kind===kind);const total=rows.reduce((n,x)=>n+Number(meta(x.payload).total||0),0);return total?rows.reduce((n,x)=>n+Number(meta(x.payload).correct||0),0)/total:0.5};
   tasks.sort((a,b)=>a.kind==='WRONG_1'?-1:b.kind==='WRONG_1'?1:accuracy(a.kind)-accuracy(b.kind));
