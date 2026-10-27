@@ -96,8 +96,7 @@ async function POST__handler(req:Request){
     questions:selected.map(q=>{
       const opts=record((q as typeof candidates[number]).options);
       const options=Object.fromEntries(Object.entries(opts).filter(([key,val])=>
-        !key.startsWith('_')&&!['imageUrl','uploadId','originalStudentAnswer','classificationConfidence','classificationMethod'].includes(key)
-        &&typeof val==='string'
+        /^[A-E]$/.test(key)&&typeof val==='string'
       ));
       return {
         id:q.id,subject:q.subject,topic:q.topic,prompt:q.prompt,options,
