@@ -37,7 +37,8 @@ beforeEach(async()=>{
 describe('multi-subject approved unseen question selection / PostgreSQL',()=>{
  it('chooses only unseen approved TYT questions, hides correct answers and does not alter review queue',async()=>{
   const seen=await question('Matematik','Problemler','TYT','GÖRÜLDÜ');
-  const a=await question('Matematik','Problemler','TYT','YENİ-A');
+  const a=await question('Matematik','Problemler','TYT','YENİ-A',
+    {correctAnswer:'CACHED_PRIVATE_KEY',explanation:'CACHED_PRIVATE_SOLUTION'});
   const b=await question('Matematik','Problemler','TYT','YENİ-B');
   await question('Matematik','Problemler','AYT','YANLIŞ-SINAV');
   await question('Matematik','Problemler','TYT','ÖZEL',{},'STUDENT_PRIVATE','STUDENT_WRONG:'+otherStudentId);
@@ -50,6 +51,8 @@ describe('multi-subject approved unseen question selection / PostgreSQL',()=>{
   expect(body.evidenceStatus).toBe('UNSEEN_APPROVED_QUESTION_NOT_MASTERY');
   expect(body.questions.some((q:{correctAnswer?:string})=>q.correctAnswer!==undefined)).toBe(false);
   expect(JSON.stringify(body.questions)).not.toContain('correctAnswer');
+  expect(JSON.stringify(body.questions)).not.toContain('CACHED_PRIVATE_KEY');
+  expect(JSON.stringify(body.questions)).not.toContain('CACHED_PRIVATE_SOLUTION');
   expect((await db.reviewQueueItem.count({where:{studentId}}))).toBe(originalQueue);
   const next=await POST(request(reviewId));
   expect(next.status).toBe(404);
