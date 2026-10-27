@@ -41,7 +41,7 @@ export function StudentDailyTasks(){
     const r=await fetch('/api/student/task-submissions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Görev kaydedilemedi.'));
-    setMsg(j.late?'KIRMIZI ALARM: Görev 23.00 sonrasında kaydedildi. Koçunuza iletildi.':'Görev sonucu kaydedildi ve koçunuza değerlendirme raporu iletildi.');
+    setMsg(j.late?'KIRMIZI ALARM: Görev 23.00 sonrasında kaydedildi. Koçunuza iletildi.':j.requiresCoachClosure?'Çalışma öz bildirimin kaydedildi. Müdahalenin tamamlandığına koçun karar verecek; gelişim ayrı sorularla ölçülür.':'Görev sonucu kaydedildi ve koçunuza değerlendirme raporu iletildi.');
     await load();
   }
 
@@ -63,12 +63,21 @@ export function StudentDailyTasks(){
             {a.submission?.late?<span className="lateAlarm">KIRMIZI ALARM</span>:a.submission?<span className="doneBadge">KAYDEDİLDİ</span>:a.planSource==='TOPIC_REVIEW_01371428'?<span className="doneBadge">KONU TEKRARI</span>:null}
           </div>
           <p className="muted">{a.description||'Koç görevi'}</p>
+          {a.planSource==='PARAGRAF_OPTIK_REMEDIATION_V1'&&
+           <div className="notice" style={{marginBottom:10}}>
+            <strong>KEKS Paragraf · Koç müdahalesi</strong>
+            <p className="muted">Buradaki soru sayısı ve sonuçlar senin bildirimindir. Müdahale yalnız koç tarafından kapatılır.
+            Doğrulanmış gelişim için ilk optik kaydının QR sonucundan farklı, yeni paragraflar çözmen gerekir.</p>
+            {a.status==='COMPLETED'&&<strong>Koç bu müdahaleyi kapattı.</strong>}
+           </div>}
+
           {a.planSource==='TOPIC_REVIEW_01371428'&&<div className="notice" style={{marginBottom:10}}><strong>0–1–3–7–14–28. Gün Tekrar Sistemi</strong><div className="muted">Bu görev, konuyu bitirdiğin güne göre otomatik planlandı. Branş: {a.subject||'—'} · Konu: {a.topic||'—'}</div></div>}
           <div className="taskMeta"><span>Hedef: {a.targetValue} {a.metricType==='QUESTIONS'?'soru':''}</span><span>23.00'a kadar kayıt</span></div>
           {a.submission&&<div className="taskResultSummary">
             <span><b>{a.submission.totalQuestions}</b> soru</span><span><b>{a.submission.correct}</b> doğru</span><span><b>{a.submission.wrong}</b> yanlış</span><span><b>{a.submission.blank}</b> boş</span><span><b>{a.submission.net}</b> net</span><span><b>%{a.submission.accuracy}</b> doğruluk</span>
             <small>{timeTr(a.submission.submittedAt)}</small>
           </div>}
+          {(a.planSource!=='PARAGRAF_OPTIK_REMEDIATION_V1'||a.status==='ACTIVE')&&
           <form className="taskSubmissionForm" onSubmit={e=>submit(e,a)}>
             <label>Toplam<input name="totalQuestions" type="number" min="0" defaultValue={a.submission?.totalQuestions??a.targetValue} required/></label>
             <label>Doğru<input name="correct" type="number" min="0" defaultValue={a.submission?.correct??0} required/></label>
@@ -76,7 +85,7 @@ export function StudentDailyTasks(){
             <label>Boş<input name="blank" type="number" min="0" defaultValue={a.submission?.blank??0} required/></label>
             <label>Yanlış nedeni<select name="errorReason" defaultValue={a.submission?.errorReason||''}><option value="">Belirtilmedi</option><option value="BILGI_EKSIKLIGI">Bilgi eksikliği</option><option value="ISLEM_HATASI">İşlem hatası</option><option value="DIKKAT">Dikkat</option><option value="SORU_KOKU">Soru kökünü yanlış okuma</option><option value="SURE">Süre</option><option value="YONTEM_BILMEME">Yöntem bilmeme</option><option value="UNUTMA">Unutma</option><option value="SORUYU_ANLAMA">Soruyu anlama</option><option value="STRATEJI">Strateji</option><option value="DIGER">Diğer</option></select></label>
             <button className="btn primary" disabled={busy===a.id}>{busy===a.id?'Kaydediliyor…':a.submission?'Kaydı Güncelle':'Görevi Kaydet'}</button>
-          </form>
+          </form>}
         </div>)}</div>
       </div>
     })}

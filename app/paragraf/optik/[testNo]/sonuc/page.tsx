@@ -60,12 +60,14 @@ export default async function ResultPage({params,searchParams}:Props){
    </section>
    {recovery&&<RecoveryActions testNo={test} encoded={encoded} missed={recovery.missed} priorities={recovery.priorities}/>}
    <section style={{background:'#fff',padding:20,borderRadius:15,marginTop:18}}>
-    <h2>Yanlış soruların doğru cevapları ve öğretici çözümleri</h2>
+    <h2>Öğretici çözümler (ikinci denemenden sonra aç)</h2>
+    <p>Önce yukarıdaki yönlendirmeli soruyu yeniden çöz ve farklı soruyla kendini kontrol et. Çözüm anahtarını erken görmek, bağımsız öğrenme ölçümünü yanıltır.</p>
     {result.details.filter(d=>d.status!=='DOĞRU').length===0?<p>İncelenecek yanlış veya boş soru bulunmuyor.</p>:<div style={{display:'grid',gap:10}}>
-     {result.details.filter(d=>d.status!=='DOĞRU').map(d=><div key={d.number} style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',borderBottom:'1px solid #ddd',padding:'10px 0'}}>
-      <span><strong>{d.number}. soru</strong> · {d.topic} · Senin cevabın: {d.chosen==='X'?'Boş':d.chosen} · Doğru cevap: <strong>{d.answer}</strong></span>
+     {result.details.filter(d=>d.status!=='DOĞRU').map(d=><details key={d.number} style={{borderBottom:'1px solid #ddd',padding:'10px 0'}}>
+      <summary style={{cursor:'pointer',fontWeight:700}}>{d.number}. soru · {d.topic} · Cevap anahtarını ve çözümü göster</summary>
+      <p>Senin cevabın: {d.chosen==='X'?'Boş':d.chosen} · Doğru cevap: <strong>{d.answer}</strong></p>
       {d.solutionUrl?<a href={d.solutionUrl} style={{color:'#0759a5',fontWeight:700}}>Şık şık öğretici çözümü aç</a>:null}
-     </div>)}
+     </details>)}
     </div>}
    </section>
    <div style={{padding:'25px 4px',display:'flex',justifyContent:'space-between',gap:15,flexWrap:'wrap'}}>

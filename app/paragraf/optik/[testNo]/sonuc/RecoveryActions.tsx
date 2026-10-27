@@ -1,6 +1,8 @@
 'use client';
 import {useState} from 'react';
 import {IndependentTransferPractice} from './IndependentTransferPractice';
+import {FollowupIndependentPractice} from './FollowupIndependentPractice';
+import {opticalReasonAction} from '@/lib/paragrafLearningPlaybook';
 
 type Choice='A'|'B'|'C'|'D'|'E';
 type TopicIssue={
@@ -30,7 +32,7 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
  const [reasons,setReasons]=useState<Record<string,string>>({});
  const [trials,setTrials]=useState<Record<string,Choice>>({});
  const [checked,setChecked]=useState<Record<string,boolean>>({});
- const [transferChecks,setTransferChecks]=useState<Record<string,{questionId:string;answer:Choice}>>({});
+ const [transferChecks,setTransferChecks]=useState<Record<string,{questionId:string;answer:Choice;evidence:string}>>({});
  const [status,setStatus]=useState('');
  const [saving,setSaving]=useState(false);
  const [saved,setSaved]=useState(false);
@@ -80,6 +82,8 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
    {missed.map(item=>{
     const id=String(item.number),trial=trials[id],revealed=Boolean(checked[id]);
     const statusText=item.status==='BOŞ'?'Boş bırakılan':'Yanlış yapılan';
+    const selectedReason=reasons[id]&&reasons[id]!=='BELIRLENMEDI'?reasons[id]:null;
+    const reasonAction=opticalReasonAction(selectedReason,item.status==='BOŞ');
     return <details key={id} style={{background:'#f8fafc',padding:15,border:'1px solid #dbe2eb',borderRadius:12}}>
      <summary style={{cursor:'pointer',fontWeight:800,lineHeight:1.6}}>
       {item.number}. soru · {item.topic} · {statusText} — Adım adım tekrar dene
@@ -95,6 +99,7 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
        {REASONS.map(([key,name])=><option key={key} value={key}>{name}</option>)}
       </select>
       <p style={{fontSize:13,color:'#536880'}}>Bu neden senin öz değerlendirmen; sistem kesin neden olarak tahmin etmez.</p>
+      <p style={{background:'#fff8e9',borderLeft:'3px solid '+gold,padding:12,borderRadius:6}}><strong>Seçtiğin nedene göre müdahale:</strong> {reasonAction}</p>
       <div style={{background:'#eaf1fa',padding:14,borderRadius:9}}>
        <strong>2. İpucu: Cevabı görmeden düşün</strong>
        <ol style={{paddingLeft:22}}>
@@ -128,13 +133,13 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
        {trial!==item.correct&&<p><strong>Seçtiğin şık neden elenir?</strong> {item.misconception&&trial===item.marked?item.misconception:'Bu seçeneğin dayanağını metindeki ana sav, örnek ve sınırla karşılaştır.'}</p>}
        <p><strong>Doğru cevabın kanıtı:</strong> {item.rightEvidence||'Ayrıntılı çözümde metinsel dayanağı incele.'}</p>
        <p><strong>Kısa ders:</strong> {item.lesson}</p>
-       <p><strong>Uygula:</strong> {item.firstAction} {item.secondAction}</p>
+       <p><strong>Uygula:</strong> {reasonAction} {item.secondAction}</p>
        <p><strong>Sonraki adım:</strong> {item.thirdAction}</p>
        <p style={{fontSize:12}}>Bu, aynı sorunun yönlendirmeli ikinci çözümüdür. Tek başına kalıcı kazanım kanıtı değildir.</p>
       </div>}
       {revealed&&<IndependentTransferPractice testNo={testNo} encoded={encoded}
        sourceQuestionNo={item.number} originalStatus={item.status}
-       onGraded={(no,questionId,answer)=>setTransferChecks(prev=>({...prev,[String(no)]:{questionId,answer}}))}/>}
+       onGraded={(no,questionId,answer,evidence)=>setTransferChecks(prev=>({...prev,[String(no)]:{questionId,answer,evidence}}))}/>}
      </div>
     </details>;
    })}
@@ -149,6 +154,14 @@ export function RecoveryActions({testNo,encoded,missed,priorities}:{
   </button>
   {status&&<p role="status" style={{fontWeight:700}}>{status.includes('<giriş>')?<>{status.replace(' <giriş>','')} <a href="/giris">Öğrenci girişi</a></>:status}</p>}
   {saved&&<p><a href="/ogrenci" style={{color:'#074f9c',fontWeight:800}}>Öğrenci panelinde tekrar görevlerimi aç →</a></p>}
+  <details style={{marginTop:16,padding:14,border:'1px solid #d1dbe8',borderRadius:10,background:'#eef4fd'}}>
+   <summary style={{cursor:'pointer',fontWeight:800}}>İlk optikten sonra farklı günlerde yeni soruyla öğrendiklerimi ölç</summary>
+   <p style={{fontSize:13}}>Bu alıştırmalar öğrencinin hesabına ayrı ayrı kaydedilir. İlk optik sonucu daha önce aktarmış olman gerekir. Tekrar kuyruğunun mevcut ilerlemesi değişmez.</p>
+   {missed.map(x=><details key={x.number} style={{marginTop:9,padding:10,background:'#fff',borderRadius:8}}>
+    <summary style={{fontWeight:700,cursor:'pointer'}}>Bağımsız yeni metin · Kaynak {x.number} · {x.topic} · {x.status==='BOŞ'?'Boş':'Yanlış'}</summary>
+    <FollowupIndependentPractice testNo={testNo} sourceQuestionNo={x.number} topic={x.topic}/>
+   </details>)}
+  </details>
   <p style={{fontSize:12,color:'#63748a',marginTop:16}}>Yeniden deneme sonucu öğrenme seviyesi olarak kullanılmaz. QR ile paylaşılan eski sonuç bağlantısı öğrenci hesabına kendiliğinden kaydedilmez.</p>
  </section>;
 }

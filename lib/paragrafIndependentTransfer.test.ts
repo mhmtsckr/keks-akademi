@@ -65,12 +65,20 @@ describe('KEKS 1500 paragraph question independent transfer for wrong/blank',()=
   expect(payload.question).not.toHaveProperty('correctAnswer');
   expect(payload.question).not.toHaveProperty('teaching');
   const invalid=await POST(new Request(getUrl,{method:'POST',headers:{'content-type':'application/json'},
-   body:JSON.stringify({testNo:1,encoded:marks,sourceQuestionNo:1,questionId:'00001',answer:'A'})}));
+   body:JSON.stringify({testNo:1,encoded:marks,sourceQuestionNo:1,questionId:'00001',answer:'A',evidence:'Metinde buna ait açık bir dayanak var.'})}));
   expect(invalid.status).toBe(404);
   const candidate=independentTransferFor(1,marks,1)!;
   const scored=await POST(new Request(getUrl,{method:'POST',headers:{'content-type':'application/json'},
-   body:JSON.stringify({testNo:1,encoded:marks,sourceQuestionNo:1,questionId:candidate.id,answer:candidate.answer})}));
+   body:JSON.stringify({testNo:1,encoded:marks,sourceQuestionNo:1,questionId:candidate.id,answer:candidate.answer,evidence:'Metnin bütününden hareketle bu sonuç çıkar.'})}));
   expect(scored.status).toBe(200);
-  expect((await scored.json()).result).toMatchObject({correct:true,countsAsMastery:false});
+  expect((await scored.json()).result).toMatchObject({
+   correct:true,countsAsMastery:false,evidenceStatus:'STUDENT_SELF_REPORT_UNVERIFIED'
+  });
+  const noEvidence=await POST(new Request(getUrl,{method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({testNo:1,encoded:marks,sourceQuestionNo:1,questionId:candidate.id,answer:candidate.answer})}));
+  expect(noEvidence.status).toBe(400);
+  const shortEvidence=await POST(new Request(getUrl,{method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({testNo:1,encoded:marks,sourceQuestionNo:1,questionId:candidate.id,answer:candidate.answer,evidence:'Bu şık.'})}));
+  expect(shortEvidence.status).toBe(400);
  });
 });

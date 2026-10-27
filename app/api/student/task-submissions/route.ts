@@ -5,6 +5,8 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { evaluateTaskSubmission } from '@/lib/taskEvaluation';
 import { awardXp } from '@/lib/gamification';
+import { PARAGRAF_COACH_ACTION_SOURCE } from '@/lib/paragrafInterventionImpact';
+import { HttpError } from '@/lib/apiGuard';
 
 const schema=z.object({
   actionId:z.string(),
@@ -45,6 +47,9 @@ async function POST__handler(req:Request){
     include:{submission:true}
   });
   if(!action)return NextResponse.json({error:'Görev bulunamadı.'},{status:404});
+  const paragraphCoachAction=action.planSource===PARAGRAF_COACH_ACTION_SOURCE;
+  if(paragraphCoachAction&&action.status!=='ACTIVE')
+    return NextResponse.json({error:'Bu paragraf müdahalesi koç tarafından kapatılmış; yeni öz bildirim alınamaz.'},{status:409});
   const now=new Date();
   const lateNow=now>deadlineForAction(action);
   const late=Boolean(action.submission?.late||lateNow);
@@ -52,10 +57,20 @@ async function POST__handler(req:Request){
   const subject=action.subject||action.title;
   const topic=action.topic||null;
 
-  const submission=await db.taskSubmission.upsert({
+  const submission=await db.$transaction(async tx=>{
+    // A student's self-reported count must never close a coach-reviewed paragraph
+    // intervention. Guard the ACTIVE status in the same transaction as submission.
+    if(paragraphCoachAction){
+      const open=await tx.coachingAction.updateMany({
+        where:{id:action.id,studentId:user.student!.id,status:'ACTIVE'},
+        data:{currentValue:Math.min(input.totalQuestions,action.targetValue)}
+      });
+      if(!open.count)throw new HttpError(409,'Koç müdahalesi başka bir işlemde kapatıldı.');
+    }
+    const saved=await tx.taskSubmission.upsert({
     where:{actionId:action.id},
     create:{
-      actionId:action.id,studentId:user.student.id,subject,topic,
+      actionId:action.id,studentId:user.student!.id,subject,topic,
       totalQuestions:input.totalQuestions,correct:input.correct,wrong:input.wrong,blank:input.blank,
       errorReason:input.errorReason||null,
       net:evaluation.net,accuracy:evaluation.accuracy,completionRate:evaluation.completionRate,
@@ -70,11 +85,14 @@ async function POST__handler(req:Request){
       evaluation
     }
   });
-
-  await db.coachingAction.update({where:{id:action.id},data:{
-    currentValue:Math.min(input.totalQuestions,action.targetValue),
-    status:input.totalQuestions>=action.targetValue?'COMPLETED':'ACTIVE'
-  }});
+    if(!paragraphCoachAction){
+      await tx.coachingAction.update({where:{id:action.id},data:{
+        currentValue:Math.min(input.totalQuestions,action.targetValue),
+        status:input.totalQuestions>=action.targetValue?'COMPLETED':'ACTIVE'
+      }});
+    }
+    return saved;
+  });
 
   await db.practiceLog.upsert({where:{taskSubmissionId:submission.id},create:{
     taskSubmissionId:submission.id,studentId:user.student.id,examType:'GÖREV',subject,topic,
@@ -114,7 +132,13 @@ async function POST__handler(req:Request){
   }
 
   if(input.totalQuestions>=action.targetValue)await awardXp(user.student.id,'ACTION_SUBMISSION',submission.id,late?25:50);
-  return NextResponse.json({ok:true,submission,evaluation,late});
+  return NextResponse.json({ok:true,submission,evaluation,late,
+    requiresCoachClosure:paragraphCoachAction,
+    evidenceSource:'STUDENT_SELF_REPORT',
+    note:paragraphCoachAction?
+      'Çalışma öz bildirim olarak kaydedildi. Koçun müdahaleyi kapatması ve farklı sorularda gözlem yapılması ayrı süreçlerdir.':
+      null
+  });
 }
 
 export const GET = withApiErrors(GET__handler);

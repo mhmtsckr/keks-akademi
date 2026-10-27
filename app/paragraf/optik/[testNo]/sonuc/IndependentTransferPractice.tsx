@@ -13,7 +13,7 @@ type PracticeResult={
 const LETTERS:Choice[]=['A','B','C','D','E'];
 export function IndependentTransferPractice({testNo,encoded,sourceQuestionNo,originalStatus,onGraded}:{
  testNo:number;encoded:string;sourceQuestionNo:number;originalStatus:string;
- onGraded?:(sourceQuestionNo:number,questionId:string,answer:Choice)=>void;
+ onGraded?:(sourceQuestionNo:number,questionId:string,answer:Choice,evidence:string)=>void;
 }){
  const [question,setQuestion]=useState<PracticeQuestion|null>(null);
  const [answer,setAnswer]=useState<Choice|null>(null);
@@ -38,11 +38,11 @@ export function IndependentTransferPractice({testNo,encoded,sourceQuestionNo,ori
   setBusy(true);setMessage('');
   try{
    const r=await fetch('/api/paragraf/transfer',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({testNo,encoded,sourceQuestionNo,questionId:question.questionId,answer})});
+    body:JSON.stringify({testNo,encoded,sourceQuestionNo,questionId:question.questionId,answer,evidence:evidence.trim()})});
    const v=await r.json();
    if(!r.ok)throw new Error(v.error||'Bağımsız örnek değerlendirilemedi.');
    setResult(v.result);
-   onGraded?.(sourceQuestionNo,question.questionId,answer);
+   onGraded?.(sourceQuestionNo,question.questionId,answer,evidence.trim());
   }catch(e){setMessage(e instanceof Error?e.message:'Değerlendirme yapılamadı.');}
   finally{setBusy(false);}
  }
@@ -87,6 +87,7 @@ export function IndependentTransferPractice({testNo,encoded,sourceQuestionNo,ori
     {!result.correct&&<p><strong>Doğru seçeneğin metinsel kanıtı:</strong> {result.rightReason}</p>}
     <p><strong>Konuyu hatırla:</strong> {result.lesson}</p>
     <p><strong>Öğrendim mi?</strong> {result.learningCheck}</p>
+    <p style={{fontSize:12}}><strong>Metinsel kanıtın:</strong> {evidence} — Bu gerekçe öğrenci öz bildirimidir; sunucu yalnız yanıtın doğruluğunu kontrol eder, metnin gerçekten kanıt olduğunu otomatik onaylamaz.</p>
     <p><strong>Sıradaki adım:</strong> {result.recommendedNextStep}</p>
     <p style={{fontSize:12}}>Bu uygulama bağımsız örnek çözümüdür; tek denemeyle kalıcı kazanım onayı verilmez. Öğrenci hesabında tekrar kaydı için aşağıdaki kaydetme düğmesini kullan.</p>
    </div>}

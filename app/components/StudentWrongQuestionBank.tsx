@@ -323,6 +323,11 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       </div>}
       {practice&&<div className="stack" style={{marginTop:14}}>
         <h3>{practice.quiz.title}</h3>
+        <div className="notice">
+          <strong>{practice.learningPlan?.method||'Kazanıma uygun bağımsız alıştırma'}</strong>
+          <p className="muted">{practice.learningPlan?.diagnosticQuestion||'Sorunun istenen becerisini belirle.'}</p>
+          <small>{practice.curriculum?.framework==='OSYM'?'Sınav grubuna uygun':practice.curriculum?.grade?practice.curriculum.grade+'. sınıfa uygun':'Doğrulanmış eğitim düzeyi'} onaylı ve daha önce gösterilmemiş soru seçildi. Doğru cevaplar kayıt öncesinde paylaşılmaz. Bu çalışma tek başına kalıcı öğrenme değildir.</small>
+        </div>
         {(practice.questions||[]).map((q:any,i:number)=><article key={q.id} className="card" style={{margin:0}}>
           <strong>{i+1}. {q.subject} · {q.topic}</strong>
           <p>{q.prompt}</p>

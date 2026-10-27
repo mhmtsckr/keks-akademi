@@ -12,7 +12,9 @@ const query=z.object({
 }).strict();
 const submission=query.extend({
   questionId:z.string().regex(/^\d{5}$/),
-  answer:z.enum(['A','B','C','D','E'])
+  answer:z.enum(['A','B','C','D','E']),
+  // The student's own textual justification must reach the server; this is not an AI-verified explanation.
+  evidence:z.string().trim().min(15).max(500)
 }).strict();
 function error(){return NextResponse.json({error:'Bu test ve soru için uygun bağımsız çalışma bulunamadı.'},{status:404,headers:noStore});}
 export async function GET(req:Request){
@@ -36,5 +38,5 @@ export async function POST(req:Request){
   const p=parsed.data;
   const result=gradeIndependentTransfer(p.testNo,p.encoded,p.sourceQuestionNo,p.questionId,p.answer);
   if(!result)return error();
-  return NextResponse.json({ok:true,result},{headers:noStore});
+  return NextResponse.json({ok:true,result:{...result,evidenceStatus:'STUDENT_SELF_REPORT_UNVERIFIED'}},{headers:noStore});
 }

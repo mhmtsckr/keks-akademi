@@ -18,6 +18,7 @@ import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 import { listResourceTracking } from '@/lib/resourceTracking';
 import { buildStudentIndicators } from '@/lib/studentIndicators';
 import {REMEDIATION_REASONS,isRemediationReason} from '@/lib/wrongQuestionRemediation';
+import {summarizeParagrafCoachEvidence} from '@/lib/paragrafCoachRemediation';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -94,6 +95,27 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
         recommendedAction:reason?.instruction||'Öğrencinin çözüm adımlarını kontrol et, konuyu kısa çalıştır ve yeni soru ile ölç.'};
     });
 
+  // The print-optical first attempt is stored as DailyLog.kind (not type).
+  // Keep these signals separate from general REVIEW_RESULT priorities.
+  const [opticalLogs,printQueues]=await Promise.all([
+    db.dailyLog.findMany({
+      where:{studentId:id,date:{gte:new Date(Date.now()-90*86400000)},OR:[
+        {legacyId:{startsWith:'PARAGRAF_OPTIK_FIRST:'+id+':'}},
+        {legacyId:{startsWith:'PARAGRAF_INDEPENDENT_FOLLOWUP:'+id+':'}},
+        {payload:{path:['type'],equals:'REVIEW_RESULT'}}
+      ]},
+      select:{date:true,payload:true},orderBy:{date:'desc'},take:1501
+    }),
+    db.reviewQueueItem.findMany({
+      where:{studentId:id,questionId:{startsWith:'KEKS_PRINT_A3_V1_Q'}},
+      select:{questionId:true,dueAt:true,status:true}
+    })
+  ]);
+  const paragrafCoachEvidence={
+    ...summarizeParagrafCoachEvidence(opticalLogs.slice(0,1500),printQueues),
+    truncated:opticalLogs.length>1500
+  };
+
   const resourceSummary={
     total:resources.length,
     review:resources.filter((x:any)=>x.efficiency?.status==='REVIEW'),
@@ -102,7 +124,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     resources
   };
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,resourceTracking:resourceSummary});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,resourceTracking:resourceSummary});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
