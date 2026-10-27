@@ -2,10 +2,11 @@
 
 import Image from 'next/image';
 import {useEffect,useMemo,useState} from 'react';
+import {BlankReasonPicker} from './BlankReasonPicker';
 
 type BankItem={
   questionId:string;examType:string;subject:string;topic:string;prompt:string;
-  addedAt:string;reason:'WRONG'|'MARKED'|'UPLOADED_WRONG';imageUrl?:string|null;
+  addedAt:string;reason:'WRONG'|'BLANK'|'MARKED'|'UPLOADED_WRONG'|'UPLOADED_BLANK';imageUrl?:string|null;
 };
 type GeneratedQuestion={
   id:string;examType:string;subject:string;topic:string;prompt:string;
@@ -15,15 +16,19 @@ type GeneratedQuestion={
 function reasonLabel(v:BankItem['reason']){
   if(v==='MARKED')return 'İşaretlenen';
   if(v==='UPLOADED_WRONG')return 'Yüklenen yanlış';
+  if(v==='BLANK')return 'Boş bırakılan';
+  if(v==='UPLOADED_BLANK')return 'Yüklenen boş';
   return 'Yanlış yapılan';
 }
 
 export function StudentPersonalQuestionBank(){
   const [items,setItems]=useState<BankItem[]>([]);
-  const [stats,setStats]=useState({total:0,wrong:0,marked:0});
+  const [stats,setStats]=useState({total:0,wrong:0,blank:0,marked:0});
   const [quiz,setQuiz]=useState<{id:string;title:string;kind:string}|null>(null);
   const [questions,setQuestions]=useState<GeneratedQuestion[]>([]);
   const [answers,setAnswers]=useState<Record<string,string>>({});
+  const [blankReasons,setBlankReasons]=useState<Record<string,string>>({});
+  const [feedback,setFeedback]=useState<any[]>([]);
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState('');
 
@@ -32,7 +37,7 @@ export function StudentPersonalQuestionBank(){
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Kişisel soru bankası yüklenemedi.'));
     setItems(j.items||[]);
-    setStats(j.stats||{total:0,wrong:0,marked:0});
+    setStats(j.stats||{total:0,wrong:0,blank:0,marked:0});
   }
   useEffect(()=>{void load()},[]);
 
@@ -44,7 +49,7 @@ export function StudentPersonalQuestionBank(){
     });
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Test oluşturulamadı.'));
-    setQuiz(j.quiz);setQuestions(j.questions||[]);setAnswers({});
+    setQuiz(j.quiz);setQuestions(j.questions||[]);setAnswers({});setBlankReasons({});setFeedback([]);
     setMsg(j.quiz.title+' hazırlandı · '+(j.questions?.length||0)+' soru.');
   }
 
@@ -53,11 +58,15 @@ export function StudentPersonalQuestionBank(){
     setBusy('finish');setMsg('');
     const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{
       method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({answers})
+      body:JSON.stringify({answers,blankReasons:Object.fromEntries(
+        Object.entries(blankReasons).filter(([id,reason])=>reason&&!String(answers[id]||'').trim())
+      )})
     });
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Test sonucu kaydedilemedi.'));
-    setMsg('Test tamamlandı · D '+j.attempt.correct+' · Y '+j.attempt.wrong+' · B '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.reviewAdded+' yanlış tekrar kuyruğuna eklendi.':''));
+    setFeedback(j.feedback||[]);
+    setMsg('Test tamamlandı · D '+j.attempt.correct+' · Y '+j.attempt.wrong+' · B '+j.attempt.blank+' · Net '+j.attempt.net+
+      ' · '+(j.reviewAddedWrong||0)+' yanlış ve '+(j.reviewAddedBlank||0)+' boş tekrar kuyruğuna alındı.');
     await load();
   }
 
@@ -93,6 +102,7 @@ export function StudentPersonalQuestionBank(){
 
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))'}}>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.wrong}</div><div className="muted">Yanlış soru</div></div>
+        <div className="card" style={{margin:0}}><div className="kpi">{stats.blank}</div><div className="muted">Boş soru</div></div>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.marked}</div><div className="muted">İşaretlenen soru</div></div>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.total}</div><div className="muted">Toplam kişisel havuz</div></div>
       </div>
@@ -116,12 +126,28 @@ export function StudentPersonalQuestionBank(){
         <p>{q.prompt}</p>
         {q.inputMode==='CHOICE'
           ?<div className="stack">{Object.entries(q.options||{}).map(([key,val])=><label key={key} style={{display:'flex',gap:10,alignItems:'flex-start'}}>
-              <input type="radio" name={'personal-'+q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(a=>({...a,[q.id]:key}))}/>
+              <input type="radio" disabled={feedback.length>0} name={'personal-'+q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(a=>({...a,[q.id]:key}))}/>
               <span><strong>{key}</strong>) {String(val)}</span>
             </label>)}</div>
-          :<input value={answers[q.id]||''} onChange={e=>setAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+          :<input disabled={feedback.length>0} value={answers[q.id]||''} onChange={e=>setAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+        {!feedback.length&&<>
+          {!!answers[q.id]&&<button type="button" className="btn" style={{marginTop:8}}
+            onClick={()=>setAnswers(a=>({...a,[q.id]:''}))}>Cevabı sil / boş bırak</button>}
+          {!String(answers[q.id]||'').trim()&&<BlankReasonPicker questionId={q.id}
+            value={blankReasons[q.id]||''} onChange={v=>setBlankReasons(x=>({...x,[q.id]:v}))}/>}
+        </>}
       </article>)}
-      <button className="btn primary" style={{marginTop:16}} onClick={finish} disabled={busy==='finish'}>{busy==='finish'?'Sonuç hesaplanıyor…':'Testi Bitir ve Sonucu Kaydet'}</button>
+      {!feedback.length&&<button className="btn primary" style={{marginTop:16}} onClick={finish} disabled={busy==='finish'}>{busy==='finish'?'Sonuç hesaplanıyor…':'Testi Bitir ve Sonucu Kaydet'}</button>}
+      {!!feedback.length&&<div className="stack" style={{marginTop:14}}>
+        <h3>Yanlış ve boş sorudan öğrenme raporu</h3>
+        {feedback.map((q:any)=><div className="notice" key={q.questionId}>
+          <strong>{q.subject} · {q.topic} — {q.status==='BLANK'?'Boş':q.status==='WRONG'?'Yanlış':'Doğru'}</strong>
+          <p>Doğru cevap: {q.correctAnswer} {q.answerKeySource!=='APPROVED_BANK'?'· Doğrulaması gereken cevap anahtarı':''}</p>
+          {q.explanation&&<p>Çözüm: {q.explanation} {q.explanationSource==='USER_PROVIDED_UNVERIFIED'?'(Öğrencinin yüklediği, doğrulanmamış açıklama)':''}</p>}
+          {q.nextAction&&<><p>{q.nextAction.opening}</p><p><strong>Sonraki adım:</strong> {q.nextAction.levelStep}</p><small>{q.nextAction.note}</small></>}
+        </div>)}
+        <p className="muted">0–1–3–7–14–28 günlerindeki kişisel tekrarlar ayrı değerlendirilir. İlk sonuç, kalıcı bilgi hâkimiyeti kanıtı değildir.</p>
+      </div>}
     </div>}
 
     <div className="card">

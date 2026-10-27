@@ -9,7 +9,7 @@ import { adaptiveReviewIntervalDays,reviewIntervalReason } from '@/lib/learningE
 import {buildWrongQuestionSupport,REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
 
 const schema=z.object({
-  id:z.string(),answer:z.string().min(1).max(2000),microSessionId:z.string().optional(),
+  id:z.string(),answer:z.string().max(2000).default(''),submitBlank:z.boolean().default(false),microSessionId:z.string().optional(),
   errorReason:z.enum(Object.keys(REMEDIATION_REASONS) as [keyof typeof REMEDIATION_REASONS,...(keyof typeof REMEDIATION_REASONS)[]]).optional()
 });
 
@@ -70,6 +70,9 @@ async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student) return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const input=await readJson(req, schema);
+  const blank=input.submitBlank;
+  if((blank&&input.answer.trim())||(!blank&&!input.answer.trim()))
+    throw new HttpError(400,'Tekrar için bir cevap yaz veya açıkça “Boş bırak” seç.');
   const microSession=input.microSessionId?await db.dailyLog.findFirst({where:{id:input.microSessionId,studentId:user.student.id}}):null;
   const microMeta=(microSession?.payload||{}) as Record<string,any>;
   if(input.microSessionId&&(!microSession||microMeta.kind!=='WRONG_1'||microMeta.reviewId!==input.id))throw new HttpError(404,'Mikro tekrar oturumu bulunamadı.');
@@ -79,9 +82,10 @@ async function POST__handler(req:Request){
   if(!item) return NextResponse.json({error:'Tekrar kaydı bulunamadı.'},{status:404});
   if(item.status==='COMPLETED')return NextResponse.json({error:'Bu tekrar döngüsü zaten tamamlandı.'},{status:409});
   if(item.dueAt.getTime()>Date.now())return NextResponse.json({error:'Bu sorunun tekrar günü henüz gelmedi.'},{status:409});
-  const correct=String(item.question.sourceKind).startsWith('STUDENT_WRONG:')
+  const correct=!blank&&(String(item.question.sourceKind).startsWith('STUDENT_WRONG:')
     ? areEquivalentShortAnswers(input.answer,item.question.correctAnswer)
-    : input.answer===item.question.correctAnswer;
+    : input.answer.trim()===item.question.correctAnswer);
+  const outcome=correct?'CORRECT':blank?'BLANK':'WRONG';
   const previousCorrect=item.lastCorrect;
   const errorReason=correct?null:(input.errorReason||null);
   const support=buildWrongQuestionSupport({
@@ -137,8 +141,8 @@ async function POST__handler(req:Request){
   if(!completed) due.setDate(due.getDate()+Number(nextIntervalDays||0));
   const row=await db.$transaction(async tx=>{
     if(microSession){
-      const result={correct,correctAnswer:item.question.correctAnswer,explanation:item.question.explanation,support,completed,nextIntervalDays,intervalReason,nextDueAt:completed?null:due.toISOString()};
-      const claimed=await tx.dailyLog.updateMany({where:{id:microSession.id,studentId:user.student!.id,payload:{path:['type'],equals:'MICRO_STARTED'}},data:{date:new Date(),payload:{...microMeta,type:'MICRO_RESULT',durationSeconds:Math.min(300,Math.max(1,Math.round((Date.now()-microSession.createdAt.getTime())/1000))),correct:correct?1:0,wrong:correct?0:1,blank:0,total:1,reviewResult:result}}});
+      const result={correct,blank,outcome,correctAnswer:item.question.correctAnswer,explanation:item.question.explanation,support,completed,nextIntervalDays,intervalReason,nextDueAt:completed?null:due.toISOString()};
+      const claimed=await tx.dailyLog.updateMany({where:{id:microSession.id,studentId:user.student!.id,payload:{path:['type'],equals:'MICRO_STARTED'}},data:{date:new Date(),payload:{...microMeta,type:'MICRO_RESULT',durationSeconds:Math.min(300,Math.max(1,Math.round((Date.now()-microSession.createdAt.getTime())/1000))),correct:correct?1:0,wrong:correct||blank?0:1,blank:blank?1:0,total:1,reviewResult:result}}});
       if(!claimed.count)throw new HttpError(409,'Bu tekrar zaten kaydedildi.');
     }
     // Guard against a simultaneous submission through another session or the review page.
@@ -158,6 +162,8 @@ async function POST__handler(req:Request){
         subject:item.question.subject,
         topic:item.question.topic,
         correct,
+        outcome,
+        blank,
         errorReason,
         remediationSuggested:!correct,
         correctStreak,
@@ -176,6 +182,8 @@ async function POST__handler(req:Request){
     ok:true,
     row,
     correct,
+    outcome,
+    blank,
     correctAnswer:item.question.correctAnswer,
     explanation:item.question.explanation,
     support,

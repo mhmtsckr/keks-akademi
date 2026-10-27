@@ -1,57 +1,123 @@
-import { readJson, withApiErrors } from '@/lib/apiGuard';
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { db } from '@/lib/db';
-import { requireRole } from '@/lib/auth';
-import { calcNet } from '@/lib/performance';
-import { REVIEW_DAYS } from '@/lib/smartCoach';
-import {areEquivalentShortAnswers} from '@/lib/mathAnswerEquivalence';
+import {readJson,withApiErrors,HttpError} from '@/lib/apiGuard';
+import {NextResponse} from 'next/server';
+import {z} from 'zod';
+import {db} from '@/lib/db';
+import {requireRole} from '@/lib/auth';
+import {calcNet} from '@/lib/performance';
+import {BLANK_REASON_CODES,QUIZ_RECOVERY_EVENT,evaluateWrongBlankAnswers,
+ recoveryNextStep,getRecoveryLevel} from '@/lib/levelAwareWrongBlank';
 
-const schema=z.object({answers:z.record(z.string(),z.string().nullable())});
+const reasonCodes=Object.keys(BLANK_REASON_CODES) as [
+ keyof typeof BLANK_REASON_CODES,...(keyof typeof BLANK_REASON_CODES)[]
+];
+const schema=z.object({
+ answers:z.record(z.string().min(1).max(90),z.string().max(2000).nullable())
+   .refine(x=>Object.keys(x).length<=40),
+ blankReasons:z.record(z.string().min(1).max(90),z.enum(reasonCodes))
+   .refine(x=>Object.keys(x).length<=40).optional()
+}).strict();
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
  const user=await requireRole(['STUDENT']);
- if(!user.student) return NextResponse.json({error:'Öğrenci profili bulunamadı.'},{status:400});
+ if(!user.student)throw new HttpError(403,'Öğrenci profili bulunamadı.');
+ const studentId=user.student.id;
  const {id}=await params;
- const quiz=await db.practiceQuiz.findFirst({where:{id,studentId:user.student.id}});
- if(!quiz) return NextResponse.json({error:'Test bulunamadı.'},{status:404});
- const input=await readJson(req, schema);
- const ids=Array.isArray(quiz.questionIds)?quiz.questionIds.map(String):[];
- const qs=await db.questionBankItem.findMany({where:{id:{in:ids}}});
- let correct=0,wrong=0,blank=0;
- const wrongIds:string[]=[];
- for(const q of qs){
-   const ans=input.answers[q.id];
-   if(!ans) blank++;
-   else {
-     const isPrivate=String(q.sourceKind).startsWith('STUDENT_WRONG:');
-     const isCorrect=isPrivate?areEquivalentShortAnswers(ans,q.correctAnswer):ans===q.correctAnswer;
-     if(isCorrect)correct++; else { wrong++; wrongIds.push(q.id); }
-   }
- }
- const net=calcNet(correct,wrong);
- const attempt=await db.practiceQuizAttempt.create({data:{quizId:quiz.id,studentId:user.student.id,answers:input.answers,correct,wrong,blank,net}});
- for(const questionId of wrongIds){
-   const dueAt=new Date(); dueAt.setDate(dueAt.getDate()+REVIEW_DAYS[0]);
-   await db.reviewQueueItem.upsert({
-     where:{studentId_questionId:{studentId:user.student.id,questionId}},
-     create:{studentId:user.student.id,questionId,sourceAttemptId:attempt.id,stepIndex:0,dueAt,status:'DUE',lastCorrect:false},
-     update:{sourceAttemptId:attempt.id,stepIndex:0,dueAt,status:'DUE',lastCorrect:false,completedAt:null}
+ const quiz=await db.practiceQuiz.findFirst({where:{id,studentId}});
+ if(!quiz)throw new HttpError(404,'Test bulunamadı.');
+ const input=await readJson(req,schema);
+ const ids=Array.isArray(quiz.questionIds)?quiz.questionIds:[];
+ if(ids.length===0||ids.length>40||ids.some(x=>typeof x!=='string'||!x)||
+    new Set(ids).size!==ids.length)
+  throw new HttpError(409,'Testin soru listesi geçersiz.');
+ const questions=await db.questionBankItem.findMany({where:{id:{in:ids as string[]}}});
+ if(questions.length!==ids.length||
+    questions.some(q=>q.sourceKind.startsWith('STUDENT_WRONG:')&&q.sourceKind!=='STUDENT_WRONG:'+studentId))
+  throw new HttpError(409,'Testte eksik veya başka öğrenciye ait soru var.');
+ // Preserve authored quiz order instead of database query order.
+ const byId=new Map(questions.map(q=>[q.id,q]));
+ const ordered=ids.map(id=>byId.get(id as string)!);
+ const inputs=input.answers as Record<string,string|null>;
+ const blankReasons=input.blankReasons||{};
+ if(Object.keys(inputs).some(k=>!byId.has(k))||
+    Object.keys(blankReasons).some(k=>!byId.has(k)))
+  throw new HttpError(400,'Bu testte bulunmayan soru kimliği gönderildi.');
+ if(Object.entries(blankReasons).some(([key])=>String(inputs[key]||'').trim()!==''))
+  throw new HttpError(400,'Boş bırakma nedeni, yanıtlanmış soru için girilemez.');
+ const graded=evaluateWrongBlankAnswers(ordered,inputs,blankReasons);
+ const net=calcNet(graded.correct,graded.wrong);
+ const level=getRecoveryLevel(user.student.gradeLevel,ordered[0]?.examType||quiz.examType);
+ const now=new Date();
+ const committed=await db.$transaction(async tx=>{
+  // PostgreSQL transaction advisory lock prevents two simultaneous requests from
+  // creating duplicate attempts, review resets, reports and learning events.
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${studentId}),hashtext(${quiz.id})) IS NULL AS acquired`;
+  const old=await tx.practiceQuizAttempt.findFirst({
+   where:{quizId:quiz.id,studentId},select:{id:true}
+  });
+  if(old)throw new HttpError(409,'Bu testin sonucu daha önce kaydedildi. Yeni tekrar için yeni test oluştur.');
+  const attempt=await tx.practiceQuizAttempt.create({data:{
+   quizId:quiz.id,studentId,answers:inputs,
+   correct:graded.correct,wrong:graded.wrong,blank:graded.blank,net
+  }});
+  // Empty answers are genuine learning gaps, not wrong choices. Both get a
+  // zero-day repeat, while their source reason remains different in the event.
+  for(const questionId of graded.queueIds){
+   await tx.reviewQueueItem.upsert({
+    where:{studentId_questionId:{studentId,questionId}},
+    create:{studentId,questionId,sourceAttemptId:attempt.id,
+     stepIndex:0,dueAt:now,status:'DUE',lastCorrect:false},
+    update:{sourceAttemptId:attempt.id,stepIndex:0,dueAt:now,
+     status:'DUE',lastCorrect:false,completedAt:null}
    });
- }
- if(quiz.examType!=='KISISEL'){
-   await db.practiceLog.create({data:{studentId:user.student.id,examType:quiz.examType,subject:quiz.subject,topic:quiz.topic,correct,wrong,blank,total:correct+wrong+blank,net}});
- }
- const report=await db.studentReport.create({data:{
-   studentId:user.student.id,
-   title:'Otomatik Test Performans Raporu · '+quiz.title,
-   summary:`D ${correct} · Y ${wrong} · B ${blank} · Net ${net}`,
-   content:`${quiz.title} testinde ${correct} doğru, ${wrong} yanlış, ${blank} boş ve ${net} net elde edildi. Koç, yanlış yapılan konu ve alt becerileri sonraki programda önceliklendirmelidir.`,
-   createdByUserId:user.id,
-   visibleToStudent:true,
-   visibleToParent:true
- }});
- return NextResponse.json({ok:true,attempt:{id:attempt.id,correct,wrong,blank,net},reportId:report.id,reviewAdded:wrongIds.length});
+  }
+  if(quiz.examType!=='KISISEL'){
+   await tx.practiceLog.create({data:{
+    studentId,examType:quiz.examType,subject:quiz.subject,topic:quiz.topic,
+    correct:graded.correct,wrong:graded.wrong,blank:graded.blank,
+    total:graded.details.length,net
+   }});
+  }
+  const report=await tx.studentReport.create({data:{
+   studentId,title:'Otomatik Test Performans Raporu · '+quiz.title,
+   summary:`D ${graded.correct} · Y ${graded.wrong} · B ${graded.blank} · Net ${net}`,
+   content:`${quiz.title} testinde ${graded.correct} doğru, ${graded.wrong} yanlış, ${graded.blank} boş ve ${net} net kaydedildi. Yanlış ve boş sorular ayrı neden etiketleriyle 0. gün tekrara alındı; öğretmen/koç destek planını eğitim düzeyine göre oluşturmalıdır.`,
+   createdByUserId:user.id,visibleToStudent:true,visibleToParent:true
+  }});
+  const recovery=graded.details.filter(q=>q.status!=='CORRECT').map(q=>({
+   questionId:q.questionId,subject:q.subject,topic:q.topic,examType:q.examType,
+   status:q.status,blankReason:q.blankReason,
+   answerKeySource:q.answerKeySource
+  }));
+  await tx.dailyLog.create({data:{studentId,date:now,payload:{
+   type:QUIZ_RECOVERY_EVENT,version:1,quizId:quiz.id,attemptId:attempt.id,
+   level:{stage:level.stage,grade:level.grade,framework:level.framework,
+    needsGradeConfirmation:level.needsGradeConfirmation},
+   correct:graded.correct,wrong:graded.wrong,blank:graded.blank,
+   outcomes:recovery,gradedSource:'SERVER_ANSWER_KEY',
+   reasoningSource:'STUDENT_SELF_REPORT_WHEN_PROVIDED',
+   masteryVerified:false
+  }}});
+  return {attempt,reportId:report.id};
+ });
+ const feedback=graded.details.map(q=>({
+  questionId:q.questionId,status:q.status,subject:q.subject,topic:q.topic,
+  blankReason:q.blankReason,correctAnswer:q.correctAnswer,
+  explanation:q.explanation,explanationSource:q.explanationSource,
+  answerKeySource:q.answerKeySource,
+  nextAction:q.status==='CORRECT'?null:recoveryNextStep({
+   gradeLevel:user.student!.gradeLevel,subject:q.subject,topic:q.topic,
+   examType:q.examType,outcome:q.status,
+   blankReason:q.blankReason
+  })
+ }));
+ return NextResponse.json({
+  ok:true,attempt:{id:committed.attempt.id,correct:graded.correct,
+   wrong:graded.wrong,blank:graded.blank,net},
+  reportId:committed.reportId,reviewAdded:graded.queueIds.length,
+  reviewAddedWrong:graded.wrong,reviewAddedBlank:graded.blank,
+  recoveryLevel:level,feedback,
+  evidenceStatus:'SERVER_GRADED_NOT_MASTERY',
+  note:'Yanlış ve boş cevaplar ayrı kaydedildi. Boş nedeni öğrencinin beyanıdır, kesin tanı değildir. Yeni soru ve gecikmeli tekrar başarısı ayrıca ölçülür.'
+ });
 }
-
-export const POST = withApiErrors(POST__handler);
+export const POST=withApiErrors(POST__handler);

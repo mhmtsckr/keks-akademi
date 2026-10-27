@@ -1,4 +1,5 @@
 import {db} from '@/lib/db';
+import {QUIZ_RECOVERY_EVENT} from '@/lib/levelAwareWrongBlank';
 
 function record(v:unknown):Record<string,unknown>{
   return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
@@ -12,7 +13,7 @@ export type PersonalBankItem={
   prompt:string;
   sourceKind:string;
   addedAt:Date;
-  reason:'WRONG'|'MARKED'|'UPLOADED_WRONG';
+  reason:'WRONG'|'BLANK'|'MARKED'|'UPLOADED_WRONG'|'UPLOADED_BLANK';
   imageUrl:string|null;
 };
 
@@ -38,13 +39,31 @@ export async function buildPersonalQuestionBank(studentId:string){
   ]);
 
   const map=new Map<string,PersonalBankItem>();
+  const latestOutcome=new Map<string,{status:'WRONG'|'BLANK';date:Date}>();
+  // Logs are sorted newest first. A later wrong/blank on the same question
+  // supersedes the earlier one, without overwriting the attempt evidence.
+  for(const log of logs){
+    const event=record(log.payload);
+    if(event.type!==QUIZ_RECOVERY_EVENT||event.gradedSource!=='SERVER_ANSWER_KEY'||
+       !Array.isArray(event.outcomes))continue;
+    for(const raw of event.outcomes){
+      const outcome=record(raw);
+      if(typeof outcome.questionId!=='string'||latestOutcome.has(outcome.questionId))continue;
+      if(outcome.status!=='WRONG'&&outcome.status!=='BLANK')continue;
+      latestOutcome.set(outcome.questionId,{status:outcome.status,date:log.date});
+    }
+  }
+  const uploadedReason=(value:unknown):PersonalBankItem['reason']=>
+    record(value).bankReason==='BLANK'?'UPLOADED_BLANK':'UPLOADED_WRONG';
 
   for(const row of reviews){
     const q=row.question;
     const meta=record(q.options);
     map.set(q.id,{
       questionId:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,sourceKind:q.sourceKind,
-      addedAt:row.createdAt,reason:String(q.sourceKind).startsWith('STUDENT_WRONG:')?'UPLOADED_WRONG':'WRONG',
+      addedAt:latestOutcome.get(q.id)?.date||row.createdAt,
+      reason:String(q.sourceKind).startsWith('STUDENT_WRONG:')?
+        uploadedReason(q.options):latestOutcome.get(q.id)?.status||'WRONG',
       imageUrl:typeof meta.imageUrl==='string'?meta.imageUrl:null
     });
   }
@@ -54,7 +73,7 @@ export async function buildPersonalQuestionBank(studentId:string){
     const meta=record(q.options);
     map.set(q.id,{
       questionId:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,sourceKind:q.sourceKind,
-      addedAt:q.createdAt,reason:'UPLOADED_WRONG',
+      addedAt:q.createdAt,reason:uploadedReason(q.options),
       imageUrl:typeof meta.imageUrl==='string'?meta.imageUrl:null
     });
   }
@@ -68,7 +87,10 @@ export async function buildPersonalQuestionBank(studentId:string){
   }
   const activeBookmarkIds=[...latestBookmark.entries()].filter(([,v])=>v.active).map(([id])=>id);
   const bookmarkedQuestions=activeBookmarkIds.length
-    ?await db.questionBankItem.findMany({where:{id:{in:activeBookmarkIds}}})
+    ?await db.questionBankItem.findMany({where:{id:{in:activeBookmarkIds},OR:[
+        {sourceKind:'STUDENT_WRONG:'+studentId,reviewStatus:'STUDENT_PRIVATE'},
+        {active:true,reviewStatus:'APPROVED',sourceKind:{not:{startsWith:'STUDENT_WRONG:'}}}
+      ]}})
     :[];
   for(const q of bookmarkedQuestions){
     if(map.has(q.id))continue;
@@ -140,7 +162,7 @@ export async function createPersonalBankQuiz(input:{
     quiz:{id:quiz.id,title:quiz.title,kind:input.kind},
     questions:questionIds.map(id=>byId.get(id)).filter(Boolean).map(q=>{
       const meta=record(q!.options);
-      const options=Object.fromEntries(Object.entries(meta).filter(([k])=>!k.startsWith('_')&&!['imageUrl','uploadId','originalStudentAnswer','classificationConfidence','classificationMethod'].includes(k)));
+      const options=Object.fromEntries(Object.entries(meta).filter(([k,v])=>/^[A-E]$/.test(k)&&typeof v==='string'));
       return {
         id:q!.id,
         examType:q!.examType,

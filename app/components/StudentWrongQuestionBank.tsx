@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { FormEvent,useEffect,useState } from 'react';
 import {StudentPerformanceTasks} from './StudentPerformanceTasks';
 import {WrongQuestionRecoveryPanel} from './WrongQuestionRecoveryPanel';
+import {BlankReasonPicker} from './BlankReasonPicker';
 
 const ERROR_REASONS=[
   ['','Henüz belirleyemedim'],
@@ -30,6 +31,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [support,setSupport]=useState<any|null>(null);
   const [practice,setPractice]=useState<any|null>(null);
   const [practiceAnswers,setPracticeAnswers]=useState<Record<string,string>>({});
+  const [practiceBlankReasons,setPracticeBlankReasons]=useState<Record<string,string>>({});
   const [practiceResult,setPracticeResult]=useState<any|null>(null);
   const [practiceBusy,setPracticeBusy]=useState(false);
   const [guided,setGuided]=useState<any|null>(null);
@@ -93,12 +95,12 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     await load();
   }
 
-  async function answerReview(id:string){
-    const answer=String(reviewAnswers[id]||'').trim();
-    if(!answer)return;
+  async function answerReview(id:string,submitBlank=false){
+    const answer=submitBlank?'':String(reviewAnswers[id]||'').trim();
+    if(!answer&&!submitBlank)return;
     const r=await fetch('/api/student/reviews',{
       method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({id,answer,errorReason:reviewReasons[id]||undefined})
+      body:JSON.stringify({id,answer,submitBlank,errorReason:reviewReasons[id]||undefined})
     });
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Tekrar görevi kaydedilemedi.'));
@@ -110,7 +112,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     const streakText=j.correctStreak>=2?(' · Ardışık doğru: '+j.correctStreak):j.incorrectStreak>=2?(' · Ardışık yanlış: '+j.incorrectStreak):'';
     setMsg(j.correct
       ? (j.completed?'Doğru. Bu soru için aktif tekrar döngüsü tamamlandı.':'Doğru.'+intervalText+streakText+' · '+(j.intervalReason||'Kişisel unutma eğrisi güncellendi.'))
-      : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
+      : (j.blank?'Tekrar boş bırakıldı. ':'Tekrar yanlış. ')+'Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
     await load();
     setRecoveryRefreshToken(x=>x+1);
   }
@@ -156,7 +158,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       });
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Pekiştirme testi oluşturulamadı.'));return;}
-      setPractice(j);setPracticeAnswers({});setPracticeResult(null);
+      setPractice(j);setPracticeAnswers({});setPracticeBlankReasons({});setPracticeResult(null);
     }catch{setMsg('Hata: Pekiştirme testi yüklenemedi.');}
     finally{setPracticeBusy(false)}
   }
@@ -167,11 +169,13 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     try{
       const r=await fetch('/api/student/quizzes/'+practice.quiz.id+'/attempt',{
         method:'POST',headers:{'content-type':'application/json'},
-        body:JSON.stringify({answers:practiceAnswers})
+        body:JSON.stringify({answers:practiceAnswers,blankReasons:Object.fromEntries(
+        Object.entries(practiceBlankReasons).filter(([id,reason])=>reason&&!String(practiceAnswers[id]||'').trim())
+      )})
       });
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Test kaydedilemedi.'));return;}
-      setPracticeResult(j.attempt);
+      setPracticeResult({...j.attempt,feedback:j.feedback||[],reviewAddedWrong:j.reviewAddedWrong||0,reviewAddedBlank:j.reviewAddedBlank||0});
       await load();
     }catch{setMsg('Hata: Test sonucu kaydedilemedi.');}
     finally{setPracticeBusy(false)}
@@ -211,7 +215,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
     <div className="card wrongQuestionDueCard">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. KEKS her soru için senin doğru/yanlış serini ve yakın dönem tekrar başarını öğrenir; güçlü hatırlamada aralığı uzatır, unutma sinyalinde tekrar tarihini öne çeker.</p></div>
+        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen yanlış ve boş sorular</h2><p className="muted">Soruyu yeniden çöz. KEKS her soru için senin doğru/yanlış serini ve yakın dönem tekrar başarını öğrenir; güçlü hatırlamada aralığı uzatır, unutma sinyalinde tekrar tarihini öne çeker.</p></div>
         <span className="pill">{dueReviews.length} görev</span>
       </div>
       {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış soru yok.</strong><div className="muted">Yeni yanlış yüklediğinde 0. gün görevi hemen burada görünür.</div></div>:<div className="wrongReviewTaskList">
@@ -244,7 +248,10 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
                 {ERROR_REASONS.map(([value,label])=><option value={value} key={value}>{label}</option>)}
               </select>
             </div>
-            <button className="btn primary" type="button" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>answerReview(x.id)}>Görevi Kontrol Et</button>
+            <div className="row" style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button className="btn primary" type="button" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>answerReview(x.id)}>Görevi Kontrol Et</button>
+              <button className="btn" type="button" onClick={()=>answerReview(x.id,true)}>Bilmiyorum / Boş bırak</button>
+            </div>
           </div>
         </article>)}
       </div>}
@@ -333,13 +340,28 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <p>{q.prompt}</p>
           {q.inputMode==='CHOICE'
             ?Object.entries(q.options||{}).map(([key,value])=><label key={key} style={{display:'flex',gap:8,marginBottom:8}}>
-              <input type="radio" name={'remediation-'+q.id} checked={practiceAnswers[q.id]===key} onChange={()=>setPracticeAnswers(a=>({...a,[q.id]:key}))}/>
+              <input type="radio" disabled={Boolean(practiceResult)} name={'remediation-'+q.id} checked={practiceAnswers[q.id]===key} onChange={()=>setPracticeAnswers(a=>({...a,[q.id]:key}))}/>
               <span>{key}) {String(value)}</span>
             </label>)
-            :<input value={practiceAnswers[q.id]||''} onChange={e=>setPracticeAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+            :<input disabled={Boolean(practiceResult)} value={practiceAnswers[q.id]||''} onChange={e=>setPracticeAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+          {!practiceResult&&<>
+            {!!practiceAnswers[q.id]&&<button type="button" className="btn" style={{marginTop:8}}
+              onClick={()=>setPracticeAnswers(a=>({...a,[q.id]:''}))}>Cevabı sil / boş bırak</button>}
+            {!String(practiceAnswers[q.id]||'').trim()&&<BlankReasonPicker questionId={q.id}
+              value={practiceBlankReasons[q.id]||''} onChange={v=>setPracticeBlankReasons(x=>({...x,[q.id]:v}))}/>}
+          </>}
         </article>)}
         {practiceResult
-          ?<div className="notice"><strong>Pekiştirme kaydedildi.</strong> {practiceResult.correct} doğru · {practiceResult.wrong} yanlış · {practiceResult.blank} boş. Yanlışların varsa tekrar kuyruğuna alındı.</div>
+          ?<div className="notice"><strong>Pekiştirme kaydedildi.</strong> {practiceResult.correct} doğru · {practiceResult.wrong} yanlış · {practiceResult.blank} boş.
+            <p>{practiceResult.reviewAddedWrong} yanlış ve {practiceResult.reviewAddedBlank} boş, kişisel tekrar kuyruğuna alındı.</p>
+            {(practiceResult.feedback||[]).filter((x:any)=>x.status!=='CORRECT').map((q:any)=><div key={q.questionId}>
+              <strong>{q.subject} · {q.topic} — {q.status==='BLANK'?'Boş':'Yanlış'}</strong>
+              <p>Doğru cevap: {q.correctAnswer} {q.answerKeySource!=='APPROVED_BANK'?'· Kaynak anahtarının ayrıca doğrulanması gerekiyor':''}</p>
+              {q.explanation&&<p>Çözüm: {q.explanation} {q.explanationSource==='USER_PROVIDED_UNVERIFIED'?'(doğrulanmamış kullanıcı açıklaması)':''}</p>}
+              {q.nextAction&&<><p>{q.nextAction.opening}</p><p>{q.nextAction.levelStep}</p></>}
+            </div>)}
+            <small>Tek seferlik sonuç kalıcı öğrenme kanıtı değildir.</small>
+           </div>
           :<button type="button" className="btn primary" disabled={practiceBusy} onClick={finishPractice}>Pekiştirme Testini Kaydet</button>}
       </div>}
     </div>}
