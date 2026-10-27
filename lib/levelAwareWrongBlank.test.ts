@@ -30,7 +30,7 @@ describe('bütün eğitim düzeylerinde yanlış ve boştan öğrenme',()=>{
  it('öğrencinin yüklediği çözümü onaylı içerik gibi göstermez',()=>{
   const q={...questions[0],id:'private',sourceKind:'STUDENT_WRONG:student1',
    correctAnswer:'1/2',explanation:'Öğrencinin açıklaması'};
-  const result=evaluateWrongBlankAnswers([q],{private:'0.5'});
+  const result=evaluateWrongBlankAnswers([q],{private:'1/2'});
   expect(result.details[0].status).toBe('CORRECT');
   expect(result.details[0].explanationSource).toBe('USER_PROVIDED_UNVERIFIED');
  });
