@@ -23,7 +23,8 @@ export type QuizAnswerOutcome={
  questionId:string;subject:string;topic:string;examType:string;
  status:Outcome;blankReason:BlankReason|null;
  correctAnswer:string;explanation:string|null;
- explanationSource:'APPROVED_CONTENT'|'USER_PROVIDED_UNVERIFIED'|'NOT_AVAILABLE'
+ explanationSource:'APPROVED_CONTENT'|'USER_PROVIDED_UNVERIFIED'|'NOT_AVAILABLE';
+ answerKeySource:'APPROVED_BANK'|'USER_PROVIDED_UNVERIFIED'|'UNVERIFIED_BANK'
 };
 const own=(object:Record<string,unknown>,key:string)=>Object.prototype.hasOwnProperty.call(object,key);
 export function evaluateWrongBlankAnswers(
@@ -46,6 +47,9 @@ export function evaluateWrongBlankAnswers(
    questionId:q.id,subject:q.subject,topic:q.topic,examType:q.examType,status,blankReason,
    correctAnswer:q.correctAnswer,
    explanation:q.explanation,
+   answerKeySource:q.sourceKind.startsWith('STUDENT_WRONG:')
+     ?'USER_PROVIDED_UNVERIFIED':q.reviewStatus==='APPROVED'
+     ?'APPROVED_BANK':'UNVERIFIED_BANK',
    explanationSource:q.explanation?
      q.sourceKind.startsWith('STUDENT_WRONG:')?'USER_PROVIDED_UNVERIFIED':
      q.reviewStatus==='APPROVED'?'APPROVED_CONTENT':'USER_PROVIDED_UNVERIFIED'
