@@ -142,7 +142,7 @@ export function StudentPersonalQuestionBank(){
         <h3>Yanlış ve boş sorudan öğrenme raporu</h3>
         {feedback.map((q:any)=><div className="notice" key={q.questionId}>
           <strong>{q.subject} · {q.topic} — {q.status==='BLANK'?'Boş':q.status==='WRONG'?'Yanlış':'Doğru'}</strong>
-          <p>Doğru cevap: {q.correctAnswer}</p>
+          <p>Doğru cevap: {q.correctAnswer} {q.answerKeySource!=='APPROVED_BANK'?'· Doğrulaması gereken cevap anahtarı':''}</p>
           {q.explanation&&<p>Çözüm: {q.explanation} {q.explanationSource==='USER_PROVIDED_UNVERIFIED'?'(Öğrencinin yüklediği, doğrulanmamış açıklama)':''}</p>}
           {q.nextAction&&<><p>{q.nextAction.opening}</p><p><strong>Sonraki adım:</strong> {q.nextAction.levelStep}</p><small>{q.nextAction.note}</small></>}
         </div>)}
