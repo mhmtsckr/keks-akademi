@@ -32,9 +32,9 @@ describe('cross-level coach feedback for wrong and blank',()=>{
  });
  it('ignores duplicate attempts and impossible/mislabelled or self-reported evidence',()=>{
   const valid=attempt('a',[q('1','BLANK')]);
-  const fake=row({...valid.payload,attemptId:'b',wrong:1,blank:0});
+  const fake=row({...valid.payload as Record<string,unknown>,attemptId:'b',wrong:1,blank:0});
   const repeated=attempt('a',[q('2','WRONG')]);
-  const userNote=row({...valid.payload,attemptId:'c',evidence:'STUDENT_SELF_REPORT'});
+  const userNote=row({...valid.payload as Record<string,unknown>,attemptId:'c',evidence:'STUDENT_SELF_REPORT'});
   const result=summarizeQuizWrongBlankEvidence([valid,fake,repeated,userNote],now);
   expect(result.tests).toBe(1);
   expect(result.blank).toBe(1);
