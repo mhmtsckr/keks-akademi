@@ -57,7 +57,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   });
   const remediationMap=new Map<string,{
     subject:string;topic:string;wrongCount:number;blankCount:number;totalReviews:number;
-    firstTestWrong:number;firstTestBlank:number;
+    firstTestWrong:number;firstTestBlank:number;firstTestUnverified:number;
     guidedAttempts:number;guidedCorrect:number;
     lastWrongAt:string;reasonCounts:Record<string,number>;
   }>();
@@ -74,10 +74,11 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
         const key=o.subject+'|'+o.topic;
         const prev=remediationMap.get(key)||{
           subject:o.subject,topic:o.topic,wrongCount:0,blankCount:0,totalReviews:0,
-          firstTestWrong:0,firstTestBlank:0,guidedAttempts:0,guidedCorrect:0,
+          firstTestWrong:0,firstTestBlank:0,firstTestUnverified:0,guidedAttempts:0,guidedCorrect:0,
           lastWrongAt:'',reasonCounts:{} as Record<string,number>
         };
         if(o.status==='BLANK')prev.firstTestBlank++;else prev.firstTestWrong++;
+        if(o.answerKeySource!=='APPROVED_BANK')prev.firstTestUnverified++;
         if(!prev.lastWrongAt)prev.lastWrongAt=log.date.toISOString();
         remediationMap.set(key,prev);
       }
@@ -88,7 +89,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     const key=p.subject+'|'+p.topic;
     const row=remediationMap.get(key)||{
       subject:p.subject,topic:p.topic,wrongCount:0,blankCount:0,totalReviews:0,
-      firstTestWrong:0,firstTestBlank:0,
+      firstTestWrong:0,firstTestBlank:0,firstTestUnverified:0,
       guidedAttempts:0,guidedCorrect:0,
       lastWrongAt:'',reasonCounts:{} as Record<string,number>
     };
