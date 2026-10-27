@@ -1,4 +1,6 @@
 import {db} from '@/lib/db';
+import {resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
+import {recoveryReasonFromAnswers} from '@/lib/wrongBlankLearningPolicy';
 
 function record(v:unknown):Record<string,unknown>{
   return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
@@ -12,7 +14,7 @@ export type PersonalBankItem={
   prompt:string;
   sourceKind:string;
   addedAt:Date;
-  reason:'WRONG'|'MARKED'|'UPLOADED_WRONG';
+  reason:'WRONG'|'BLANK'|'MARKED'|'UPLOADED_WRONG';
   imageUrl:string|null;
 };
 
@@ -20,7 +22,7 @@ export async function buildPersonalQuestionBank(studentId:string){
   const [reviews,privateQuestions,logs]=await Promise.all([
     db.reviewQueueItem.findMany({
       where:{studentId},
-      include:{question:true},
+      include:{question:true,sourceAttempt:{select:{answers:true}}},
       orderBy:{updatedAt:'desc'},
       take:400
     }),
@@ -44,7 +46,8 @@ export async function buildPersonalQuestionBank(studentId:string){
     const meta=record(q.options);
     map.set(q.id,{
       questionId:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,sourceKind:q.sourceKind,
-      addedAt:row.createdAt,reason:String(q.sourceKind).startsWith('STUDENT_WRONG:')?'UPLOADED_WRONG':'WRONG',
+      addedAt:row.createdAt,reason:recoveryReasonFromAnswers(q.id,row.sourceAttempt?.answers,meta.bankReason)==='BLANK'
+        ?'BLANK':String(q.sourceKind).startsWith('STUDENT_WRONG:')?'UPLOADED_WRONG':'WRONG',
       imageUrl:typeof meta.imageUrl==='string'?meta.imageUrl:null
     });
   }
@@ -54,7 +57,7 @@ export async function buildPersonalQuestionBank(studentId:string){
     const meta=record(q.options);
     map.set(q.id,{
       questionId:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,sourceKind:q.sourceKind,
-      addedAt:q.createdAt,reason:'UPLOADED_WRONG',
+      addedAt:q.createdAt,reason:meta.bankReason==='BLANK'?'BLANK':'UPLOADED_WRONG',
       imageUrl:typeof meta.imageUrl==='string'?meta.imageUrl:null
     });
   }
@@ -72,6 +75,11 @@ export async function buildPersonalQuestionBank(studentId:string){
     :[];
   for(const q of bookmarkedQuestions){
     if(map.has(q.id))continue;
+    // A bookmarked question must be public approved or this student's own
+    // private upload. Never expose another learner's private content.
+    if(q.sourceKind.startsWith('STUDENT_WRONG:')&&
+      (q.sourceKind!=='STUDENT_WRONG:'+studentId||q.reviewStatus!=='STUDENT_PRIVATE'))continue;
+    if(!q.sourceKind.startsWith('STUDENT_WRONG:')&&(!q.active||q.reviewStatus!=='APPROVED'))continue;
     const state=latestBookmark.get(q.id);
     if(!state?.active)continue;
     const meta=record(q.options);
@@ -118,10 +126,24 @@ export function selectMonthlyMixedReview(items:PersonalBankItem[],now=new Date()
 export async function createPersonalBankQuiz(input:{
   studentId:string;userId:string;kind:'WEEKLY_WRONGS'|'MONTHLY_MIXED';count?:number;
 }){
-  const items=await buildPersonalQuestionBank(input.studentId);
+  const [items,learner]=await Promise.all([
+    buildPersonalQuestionBank(input.studentId),
+    db.student.findUnique({where:{id:input.studentId},
+      select:{gradeLevel:true,academicTrack:true}})
+  ]);
+  const profile=resolveEducationLevelProfile(learner?.gradeLevel,learner?.academicTrack);
+  // A short, assisted assessment for a beginning reader should never silently
+  // become a 15–24 question exam. Older learners can receive larger sets.
+  const key=profile?.key;
+  const cap=key==='PRIMARY_123'?4:key==='PRIMARY_4'?6:
+    key==='MIDDLE_56'?8:key==='MIDDLE_7'?10:key==='MIDDLE_8'?12:
+    key==='HIGH_910'?12:key==='HIGH_11'?15:
+    key==='HIGH_12'||key==='GRADUATE_YKS'?20:12;
+  const requested=Math.max(1,Math.min(cap,input.count||
+    (input.kind==='WEEKLY_WRONGS'?15:24)));
   const selected=input.kind==='WEEKLY_WRONGS'
-    ?selectWeeklyWrongTest(items,new Date(),input.count||15)
-    :selectMonthlyMixedReview(items,new Date(),input.count||24);
+    ?selectWeeklyWrongTest(items,new Date(),requested)
+    :selectMonthlyMixedReview(items,new Date(),requested);
   if(!selected.length)return null;
 
   const questionIds=selected.map(x=>x.questionId);
@@ -137,10 +159,11 @@ export async function createPersonalBankQuiz(input:{
   const questions=await db.questionBankItem.findMany({where:{id:{in:questionIds}}});
   const byId=new Map(questions.map(q=>[q.id,q]));
   return {
-    quiz:{id:quiz.id,title:quiz.title,kind:input.kind},
+    quiz:{id:quiz.id,title:quiz.title,kind:input.kind,maxQuestions:cap,levelKey:key||null},
     questions:questionIds.map(id=>byId.get(id)).filter(Boolean).map(q=>{
       const meta=record(q!.options);
-      const options=Object.fromEntries(Object.entries(meta).filter(([k])=>!k.startsWith('_')&&!['imageUrl','uploadId','originalStudentAnswer','classificationConfidence','classificationMethod'].includes(k)));
+      const options=Object.fromEntries(Object.entries(meta)
+        .filter(([k,v])=>/^[A-E]$/.test(k)&&typeof v==='string'));
       return {
         id:q!.id,
         examType:q!.examType,
