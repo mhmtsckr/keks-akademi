@@ -56,18 +56,39 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     select:{date:true,payload:true},orderBy:{date:'desc'},take:500
   });
   const remediationMap=new Map<string,{
-    subject:string;topic:string;wrongCount:number;totalReviews:number;
+    subject:string;topic:string;wrongCount:number;blankCount:number;totalReviews:number;
+    firstTestWrong:number;firstTestBlank:number;
     guidedAttempts:number;guidedCorrect:number;
     lastWrongAt:string;reasonCounts:Record<string,number>;
   }>();
   for(const log of recentLogs){
     const p=(log.payload&&typeof log.payload==='object'&&!Array.isArray(log.payload))
       ?log.payload as Record<string,unknown>:{};
+    if(p.type==='QUIZ_WRONG_BLANK_RECOVERY_V1'&&p.gradedSource==='SERVER_ANSWER_KEY'&&
+       Array.isArray(p.outcomes)){
+      for(const item of p.outcomes){
+        const o=(item&&typeof item==='object'&&!Array.isArray(item))
+          ?item as Record<string,unknown>:{};
+        if(typeof o.subject!=='string'||typeof o.topic!=='string'||!o.subject||!o.topic)continue;
+        if(o.status!=='WRONG'&&o.status!=='BLANK')continue;
+        const key=o.subject+'|'+o.topic;
+        const prev=remediationMap.get(key)||{
+          subject:o.subject,topic:o.topic,wrongCount:0,blankCount:0,totalReviews:0,
+          firstTestWrong:0,firstTestBlank:0,guidedAttempts:0,guidedCorrect:0,
+          lastWrongAt:'',reasonCounts:{} as Record<string,number>
+        };
+        if(o.status==='BLANK')prev.firstTestBlank++;else prev.firstTestWrong++;
+        if(!prev.lastWrongAt)prev.lastWrongAt=log.date.toISOString();
+        remediationMap.set(key,prev);
+      }
+      continue;
+    }
     if(!['REVIEW_RESULT','GUIDED_PRACTICE_RESULT'].includes(String(p.type))
       ||typeof p.subject!=='string'||typeof p.topic!=='string')continue;
     const key=p.subject+'|'+p.topic;
     const row=remediationMap.get(key)||{
-      subject:p.subject,topic:p.topic,wrongCount:0,totalReviews:0,
+      subject:p.subject,topic:p.topic,wrongCount:0,blankCount:0,totalReviews:0,
+      firstTestWrong:0,firstTestBlank:0,
       guidedAttempts:0,guidedCorrect:0,
       lastWrongAt:'',reasonCounts:{} as Record<string,number>
     };
@@ -79,15 +100,18 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     }
     row.totalReviews++;
     if(p.correct===false){
-      row.wrongCount++;
+      if(p.outcome==='BLANK'||p.blank===true)row.blankCount++;
+      else row.wrongCount++;
       if(!row.lastWrongAt)row.lastWrongAt=log.date.toISOString();
       if(isRemediationReason(p.errorReason))row.reasonCounts[p.errorReason]=(row.reasonCounts[p.errorReason]||0)+1;
     }
     remediationMap.set(key,row);
   }
   const remediationPriorities=[...remediationMap.values()]
-    .filter(x=>x.wrongCount>0)
-    .sort((a,b)=>b.wrongCount-a.wrongCount||b.lastWrongAt.localeCompare(a.lastWrongAt))
+    .filter(x=>x.wrongCount+x.blankCount+x.firstTestWrong+x.firstTestBlank>0)
+    .sort((a,b)=> (b.wrongCount+b.blankCount+b.firstTestWrong+b.firstTestBlank)-
+                    (a.wrongCount+a.blankCount+a.firstTestWrong+a.firstTestBlank)||
+                    b.lastWrongAt.localeCompare(a.lastWrongAt))
     .slice(0,5).map(x=>{
       const strongest=Object.entries(x.reasonCounts).sort((a,b)=>b[1]-a[1])[0];
       const reason=strongest?REMEDIATION_REASONS[strongest[0] as keyof typeof REMEDIATION_REASONS]:null;
