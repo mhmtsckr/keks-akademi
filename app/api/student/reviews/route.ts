@@ -41,6 +41,8 @@ async function GET__handler(){
     }),
     items:items.map(x=>{
       const opts=questionMeta(x.question.options);
+      const publicChoices=safePublicOptions(x.question.options);
+      const isPrivate=x.question.sourceKind.startsWith('STUDENT_WRONG:');
       const originReason=recoveryReasonFromAnswers(x.questionId,
         x.sourceAttempt?.answers,opts.bankReason);
       return {
@@ -66,11 +68,11 @@ async function GET__handler(){
         subject:x.question.subject,
         topic:x.question.topic,
         prompt:x.question.prompt,
-        options:String(x.question.sourceKind).startsWith('STUDENT_WRONG:')?{}:safePublicOptions(x.question.options),
+        options:isPrivate?{}:publicChoices,
         sourceKind:x.question.sourceKind,
         sourceYear:x.question.sourceYear,
         officialSourceUrl:x.question.officialSourceUrl,
-        inputMode:String(x.question.sourceKind).startsWith('STUDENT_WRONG:')?'TEXT':'CHOICE',
+        inputMode:isPrivate||Object.keys(publicChoices).length===0?'TEXT':'CHOICE',
         imageUrl:String(x.question.sourceKind).startsWith('STUDENT_WRONG:')
           ? String(questionMeta(x.question.options).imageUrl||'')||null
           : null
