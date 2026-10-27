@@ -7,12 +7,17 @@ import { REVIEW_DAYS } from '@/lib/smartCoach';
 import {areEquivalentShortAnswers} from '@/lib/mathAnswerEquivalence';
 import { adaptiveReviewIntervalDays,reviewIntervalReason } from '@/lib/learningEngine';
 import {buildWrongQuestionSupport,REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
+import {recoveryReasonFromAnswers,learnerRecoveryPolicy} from '@/lib/wrongBlankLearningPolicy';
 
 const schema=z.object({
   id:z.string(),answer:z.string().min(1).max(2000),microSessionId:z.string().optional(),
   errorReason:z.enum(Object.keys(REMEDIATION_REASONS) as [keyof typeof REMEDIATION_REASONS,...(keyof typeof REMEDIATION_REASONS)[]]).optional()
 });
 
+function safePublicOptions(value:unknown){
+ const obj=value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
+ return Object.fromEntries(Object.entries(obj).filter(([key,val])=>/^[A-E]$/.test(key)&&typeof val==='string'));
+}
 function questionMeta(v:unknown){
   return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
 }
@@ -23,7 +28,7 @@ async function GET__handler(){
   const student=user.student;
   const items=await db.reviewQueueItem.findMany({
     where:{studentId:user.student.id,status:{in:['DUE','PENDING']}},
-    include:{question:true},
+    include:{question:true,sourceAttempt:{select:{answers:true}}},
     orderBy:{dueAt:'asc'},
     take:50
   });
@@ -31,7 +36,14 @@ async function GET__handler(){
   return NextResponse.json({
     ok:true,
     scheduleDays:REVIEW_DAYS,
-    items:items.map(x=>({
+    recoveryPolicy:learnerRecoveryPolicy({
+      gradeLevel:student.gradeLevel,academicTrack:student.academicTrack
+    }),
+    items:items.map(x=>{
+      const opts=questionMeta(x.question.options);
+      const originReason=recoveryReasonFromAnswers(x.questionId,
+        x.sourceAttempt?.answers,opts.bankReason);
+      return {
       id:x.id,
       stepIndex:x.stepIndex,
       dueAt:x.dueAt,
@@ -41,19 +53,20 @@ async function GET__handler(){
         subject:x.question.subject,topic:x.question.topic,
         gradeLevel:student.gradeLevel,academicTrack:student.academicTrack,
         examType:x.question.examType,prompt:x.question.prompt,
-        bankReason:String(questionMeta(x.question.options).bankReason||'WRONG'),
+        bankReason:originReason,
         practiceSkillId:String(questionMeta(x.question.options).practiceSkillId||'')||null,
         educationGrade:typeof questionMeta(x.question.options).educationGrade==='number'
           ?Number(questionMeta(x.question.options).educationGrade):null,
         classificationConfidence:Number(questionMeta(x.question.options).classificationConfidence||0)||null
       }),
+      originReason,
       question:{
         id:x.question.id,
         examType:x.question.examType,
         subject:x.question.subject,
         topic:x.question.topic,
         prompt:x.question.prompt,
-        options:String(x.question.sourceKind).startsWith('STUDENT_WRONG:')?{}:x.question.options,
+        options:String(x.question.sourceKind).startsWith('STUDENT_WRONG:')?{}:safePublicOptions(x.question.options),
         sourceKind:x.question.sourceKind,
         sourceYear:x.question.sourceYear,
         officialSourceUrl:x.question.officialSourceUrl,
@@ -62,7 +75,7 @@ async function GET__handler(){
           ? String(questionMeta(x.question.options).imageUrl||'')||null
           : null
       }
-    }))
+    }} )
   });
 }
 
