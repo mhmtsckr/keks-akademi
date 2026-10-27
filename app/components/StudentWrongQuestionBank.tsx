@@ -26,6 +26,8 @@ const SUBJECTS=[
 export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [items,setItems]=useState<any[]>([]);
   const [reviews,setReviews]=useState<any[]>([]);
+  const [recoveryPolicy,setRecoveryPolicy]=useState<any|null>(null);
+  const [showAllReviews,setShowAllReviews]=useState(false);
   const [reviewReasons,setReviewReasons]=useState<Record<string,string>>({});
   const [support,setSupport]=useState<any|null>(null);
   const [practice,setPractice]=useState<any|null>(null);
@@ -59,7 +61,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     ]);
     const [wj,rj,lj]=await Promise.all([wr.json(),rr.json(),lr.json()]);
     if(wr.ok){setItems(wj.items||[]);setSets(wj.sets||null);}
-    if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
+    if(rr.ok){setReviews(rj.items||[]);setRecoveryPolicy(rj.recoveryPolicy||null);}
     if(lr.ok){setLessonCatalog(lj.lessons||[]);setCurriculumContext(lj.curriculumContext||null);}
   }
   useEffect(()=>{void load()},[]);
@@ -204,6 +206,9 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   }
 
   const dueReviews=reviews.filter((x:any)=>new Date(x.dueAt)<=new Date());
+  const recommendedCount=Math.max(1,Math.min(20,Number(recoveryPolicy?.dailyReviewTarget||3)));
+  const visibleDueReviews=showAllReviews?dueReviews:dueReviews.slice(0,recommendedCount);
+  const remainingDueCount=Math.max(0,dueReviews.length-visibleDueReviews.length);
 
   return <div className="wrongQuestionBank">
     <StudentPerformanceTasks/>
@@ -212,16 +217,25 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     <div className="card wrongQuestionDueCard">
       <div className="moduleHeaderRow">
         <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ VE BOŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. KEKS her soru için senin doğru/yanlış serini ve yakın dönem tekrar başarını öğrenir; güçlü hatırlamada aralığı uzatır, unutma sinyalinde tekrar tarihini öne çeker.</p></div>
-        <span className="pill">{dueReviews.length} görev</span>
+        <span className="pill">{dueReviews.length} toplam · bugün {Math.min(dueReviews.length,recommendedCount)} önerilen</span>
       </div>
       {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış veya boş soru yok.</strong><div className="muted">Yeni yanlış veya boş soru kaydettiğinde 0. gün görevi burada görünür.</div></div>:<div className="wrongReviewTaskList">
-        {dueReviews.map((x:any)=><article className="wrongReviewTask" key={x.id}>
+        {visibleDueReviews.map((x:any)=><article className="wrongReviewTask" key={x.id}>
           <div className="wrongQuestionRowHead">
             <div><strong>{x.question.subject} · {x.question.topic}</strong><span>Aşama {x.stepIndex} · {new Date(x.dueAt).toLocaleDateString('tr-TR')}</span></div>
             <span className="pill">{x.originReason==='BLANK'?'BOŞTAN ÖĞRENME':x.originReason==='MARKED'?'İŞARETLİ TEKRAR':'YANLIŞTAN ÖĞRENME'}</span>
           </div>
           {x.question.imageUrl&&<Image src={x.question.imageUrl} alt="Tekrar görevi yanlış soru" width={900} height={600} unoptimized className="wrongReviewTaskImage"/>}
           <p>{x.question.prompt}</p>
+          {x.question.inputMode==='CHOICE'&&<div className="stack" style={{marginBottom:12}}>
+            {Object.entries(x.question.options||{}).map(([letter,choice])=><label key={letter}
+              style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+              <input type="radio" name={'review-choice-'+x.id}
+                checked={reviewAnswers[x.id]===letter}
+                onChange={()=>setReviewAnswers(a=>({...a,[x.id]:letter}))}/>
+              <span><strong>{letter})</strong> {String(choice)}</span>
+            </label>)}
+          </div>}
           {x.support&&<details style={{marginBottom:12}}>
             <summary>Önce konuyu hatırla: {x.support.subject} · {x.support.topic}</summary>
             <div className="notice" style={{marginTop:8}}>
@@ -237,7 +251,11 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
             </div>
           </details>}
           <div className="reviewTextAnswer">
-            <input value={reviewAnswers[x.id]||''} onChange={e=>setReviewAnswers(v=>({...v,[x.id]:e.target.value}))} placeholder="Cevabını yeniden çözerek yaz"/>
+            {x.question.inputMode!=='CHOICE'?
+              <input value={reviewAnswers[x.id]||''}
+                onChange={e=>setReviewAnswers(v=>({...v,[x.id]:e.target.value}))}
+                placeholder="Cevabını yeniden çözerek yaz"/>:
+              <p className="muted">Bir seçenek işaretle; önce çözümü görmeden gerekçeni düşün.</p>}
             <div className="field" style={{marginBottom:8}}>
               <label>Hata nedeni (isteğe bağlı; yanlışsa kaydedilir)</label>
               <select value={reviewReasons[x.id]||''} onChange={e=>setReviewReasons(v=>({...v,[x.id]:e.target.value}))}>
@@ -247,6 +265,16 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
             <button className="btn primary" type="button" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>answerReview(x.id)}>Görevi Kontrol Et</button>
           </div>
         </article>)}
+        {remainingDueCount>0&&<div className="notice">
+          <p><strong>{remainingDueCount} tekrar daha sırada.</strong> Eğitim düzeyine göre kısa bir günlük set gösteriliyor.</p>
+          <button type="button" className="btn" onClick={()=>setShowAllReviews(true)}>
+            Diğer tekrarları da göster
+          </button>
+        </div>}
+        {showAllReviews&&dueReviews.length>recommendedCount&&
+          <button type="button" className="btn" onClick={()=>setShowAllReviews(false)}>
+            Günlük önerilen sete dön
+          </button>}
       </div>}
     </div>
 
