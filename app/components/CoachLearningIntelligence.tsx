@@ -126,20 +126,21 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
     <div className="card">
       <div className="moduleHeaderRow">
         <div>
-          <div className="moduleEyebrow">YANLIŞTAN ÖĞRENME · KOÇ AKSİYONLARI</div>
-          <h2>Tekrar başarısızlığı olan konular</h2>
-          <p className="muted">Son 30 günün tekrar cevapları kullanılır. Hata nedeni öğrencinin beyanıdır; kesin tanı değildir.</p>
+          <div className="moduleEyebrow">YANLIŞ VE BOŞTAN ÖĞRENME · TÜM EĞİTİM DÜZEYLERİ</div>
+          <h2>İlk testte ve tekrar gününde hangi beceriler zorlanıyor?</h2>
+          <p className="muted">Son 30 gündeki sunucu puanlamalı soru sonuçları ve kişisel tekrarlar ayrı sayılır. Boş cevap yanlış seçenek değildir. Hata nedeni öğrenci beyanıdır; kesin tanı değildir.</p>
         </div>
         <span className="pill">{data.remediationPriorities?.length||0} öncelik</span>
       </div>
       {!data.remediationPriorities?.length
-        ?<p className="muted">Son 30 günde kaydedilmiş yanlış tekrar yanıtı yok.</p>
+        ?<p className="muted">Son 30 günde kaydedilmiş yanlış veya boş cevaba ilişkin yeterli kayıt bulunmuyor.</p>
         :<div className="stack">
           {data.remediationPriorities.map((x:any)=><div className="card" key={x.subject+'|'+x.topic} style={{margin:0}}>
             <div className="moduleHeaderRow">
               <strong>{x.subject} · {x.topic}</strong>
-              <span className="pill">{x.wrongCount}/{x.totalReviews} yanlış tekrar</span>
+              <span className="pill">İlk test: {x.firstTestWrong||0} yanlış · {x.firstTestBlank||0} boş</span>
             </div>
+            <p><strong>Tekrar sonuçları:</strong> {x.wrongCount} yanlış · {x.blankCount||0} boş / {x.totalReviews} deneme.</p>
             <p><strong>Bildirilmiş neden:</strong> {x.primaryReason}</p>
             <p className="muted"><strong>Özgün mini alıştırmalar:</strong> {x.guidedAttempts||0} deneme · {x.guidedCorrect||0} doğru. Bunlar kalıcı öğrenme kanıtı sayılmaz.</p>
             <p className="muted"><strong>Koç müdahalesi:</strong> {x.recommendedAction}</p>
