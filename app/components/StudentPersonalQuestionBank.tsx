@@ -5,7 +5,7 @@ import {useEffect,useMemo,useState} from 'react';
 
 type BankItem={
   questionId:string;examType:string;subject:string;topic:string;prompt:string;
-  addedAt:string;reason:'WRONG'|'MARKED'|'UPLOADED_WRONG';imageUrl?:string|null;
+  addedAt:string;reason:'WRONG'|'BLANK'|'MARKED'|'UPLOADED_WRONG';imageUrl?:string|null;
 };
 type GeneratedQuestion={
   id:string;examType:string;subject:string;topic:string;prompt:string;
@@ -14,13 +14,14 @@ type GeneratedQuestion={
 
 function reasonLabel(v:BankItem['reason']){
   if(v==='MARKED')return 'İşaretlenen';
+  if(v==='BLANK')return 'Boş bırakılan';
   if(v==='UPLOADED_WRONG')return 'Yüklenen yanlış';
   return 'Yanlış yapılan';
 }
 
 export function StudentPersonalQuestionBank(){
   const [items,setItems]=useState<BankItem[]>([]);
-  const [stats,setStats]=useState({total:0,wrong:0,marked:0});
+  const [stats,setStats]=useState({total:0,wrong:0,blank:0,marked:0});
   const [quiz,setQuiz]=useState<{id:string;title:string;kind:string}|null>(null);
   const [questions,setQuestions]=useState<GeneratedQuestion[]>([]);
   const [answers,setAnswers]=useState<Record<string,string>>({});
@@ -32,7 +33,7 @@ export function StudentPersonalQuestionBank(){
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Kişisel soru bankası yüklenemedi.'));
     setItems(j.items||[]);
-    setStats(j.stats||{total:0,wrong:0,marked:0});
+    setStats(j.stats||{total:0,wrong:0,blank:0,marked:0});
   }
   useEffect(()=>{void load()},[]);
 
@@ -45,7 +46,7 @@ export function StudentPersonalQuestionBank(){
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Test oluşturulamadı.'));
     setQuiz(j.quiz);setQuestions(j.questions||[]);setAnswers({});
-    setMsg(j.quiz.title+' hazırlandı · '+(j.questions?.length||0)+' soru.');
+    setMsg(j.quiz.title+' hazırlandı · '+(j.questions?.length||0)+' soru. Eğitim düzeyine göre üst sınır: '+(j.quiz.maxQuestions||'—')+'.');
   }
 
   async function finish(){
@@ -57,7 +58,7 @@ export function StudentPersonalQuestionBank(){
     });
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Test sonucu kaydedilemedi.'));
-    setMsg('Test tamamlandı · D '+j.attempt.correct+' · Y '+j.attempt.wrong+' · B '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.reviewAdded+' yanlış tekrar kuyruğuna eklendi.':''));
+    setMsg((j.alreadySubmitted?'Bu test daha önce kaydedilmiş. Sonuç değişmedi.':'Test tamamlandı.')+' · D '+j.attempt.correct+' · Y '+j.attempt.wrong+' · B '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.wrongReviewAdded+' yanlış ve '+j.blankReviewAdded+' boş tekrar kuyruğuna eklendi.':''));
     await load();
   }
 
@@ -85,14 +86,15 @@ export function StudentPersonalQuestionBank(){
       <div className="moduleHeaderRow">
         <div>
           <div className="moduleEyebrow">KİŞİSEL SORU BANKASI</div>
-          <h2>Yanlışlarım ve işaretlediğim sorular</h2>
-          <p className="muted">Yanlış yaptığın veya daha sonra tekrar görmek için işaretlediğin sorular tek havuzda tutulur.</p>
+          <h2>Yanlış, boş ve işaretlediğim sorular</h2>
+          <p className="muted">Yanlış yaptığın, boş bıraktığın veya daha sonra tekrar görmek için işaretlediğin sorular tek havuzda tutulur.</p>
         </div>
         <span className="pill">{stats.total} soru</span>
       </div>
 
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))'}}>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.wrong}</div><div className="muted">Yanlış soru</div></div>
+        <div className="card" style={{margin:0}}><div className="kpi">{stats.blank}</div><div className="muted">Boş bırakılan soru</div></div>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.marked}</div><div className="muted">İşaretlenen soru</div></div>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.total}</div><div className="muted">Toplam kişisel havuz</div></div>
       </div>
@@ -110,6 +112,7 @@ export function StudentPersonalQuestionBank(){
 
     {quiz&&<div className="card">
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">OTOMATİK KİŞİSEL TEST</div><h2>{quiz.title}</h2></div><span className="pill">{questions.length} soru</span></div>
+      <p className="muted">Çözemediğin soruyu boş bırakabilirsin. Boşlar yanlışlardan ayrı kaydedilir ve tekrar kuyruğuna alınır.</p>
       {questions.map((q,i)=><article key={q.id} style={{padding:'18px 0',borderBottom:'1px solid var(--line)'}}>
         <div><strong>{i+1}. {q.subject} · {q.topic}</strong></div>
         {q.imageUrl&&<Image src={q.imageUrl} alt="Kişisel soru bankası sorusu" width={900} height={600} unoptimized style={{maxWidth:'100%',height:'auto',marginTop:12}}/>}

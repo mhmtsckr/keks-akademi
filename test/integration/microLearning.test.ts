@@ -21,6 +21,23 @@ async function wrongSession(){
   return {queue:r,session:(await start.json()).sessionId};
 }
 describe('micro learning real persistence',()=>{
+  it('offers a due blank uploaded question even when private content is inactive',async()=>{
+    const q=await db.questionBankItem.create({data:{
+      examType:'OKUL',subject:'Türkçe',topic:'Ana Düşünce',prompt:'Örnek soruyu yeniden yanıtla',
+      options:{bankReason:'BLANK'},correctAnswer:'C',
+      sourceKind:'STUDENT_WRONG:'+studentId,reviewStatus:'STUDENT_PRIVATE',active:false
+    }});
+    const review=await db.reviewQueueItem.create({data:{
+      studentId,questionId:q.id,dueAt:new Date(Date.now()-1000),status:'DUE'
+    }});
+    const started=await micro(req({action:'start',kind:'WRONG_1'}));
+    expect(started.status).toBe(200);
+    const body=await started.json();
+    expect(body.reviewId).toBe(review.id);
+    expect(body.pack.items).toHaveLength(1);
+    expect(JSON.stringify(body.pack)).not.toContain('correctAnswer');
+  });
+
   it('counts one result when identical submissions arrive together',async()=>{
     const start=await micro(req({action:'start',kind:'WORDS_5'}));
     const sessionId=(await start.json()).sessionId;

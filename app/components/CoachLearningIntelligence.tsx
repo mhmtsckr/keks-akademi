@@ -150,6 +150,40 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
     <div className="card">
       <div className="moduleHeaderRow">
         <div>
+          <div className="moduleEyebrow">TÜM EĞİTİM DÜZEYLERİ · YANLIŞ VE BOŞTAN ÖĞRENME</div>
+          <h2>Derse göre cevap hatası mı, cevap verememe mi?</h2>
+          <p className="muted">Son 60 günün sunucuda değerlendirilen ilk test sonuçları kullanılır. Boş bırakma yanlış cevaptan farklı bir destek gerektirir.</p>
+        </div>
+        <span className="pill">{data.quizWrongBlankEvidence?.tests||0} değerlendirilen test</span>
+      </div>
+      {data.quizWrongBlankEvidence?.tests>0&&
+        <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))'}}>
+          <div className="card"><div className="kpi">{data.quizWrongBlankEvidence.correct}</div><small>Doğru</small></div>
+          <div className="card"><div className="kpi">{data.quizWrongBlankEvidence.wrong}</div><small>Yanlış</small></div>
+          <div className="card"><div className="kpi">{data.quizWrongBlankEvidence.blank}</div><small>Boş</small></div>
+        </div>}
+      {!data.quizWrongBlankEvidence?.topics?.length?
+        <p className="muted">Henüz yeterli doğrulanmış yanlış veya boş ilk test kaydı bulunmuyor.</p>:
+        <div className="stack">
+          {data.quizWrongBlankEvidence.topics.slice(0,8).map((x:any)=>
+            <div className="card" key={x.subject+'|'+x.topic} style={{margin:0}}>
+              <div className="moduleHeaderRow">
+                <strong>{x.subject} · {x.topic}</strong>
+                <span className="pill">{x.wrong} yanlış · {x.blank} boş</span>
+              </div>
+              <p><strong>Koçun sonraki görevi:</strong> {x.action}</p>
+              <small className="muted">{x.priority==='BLANK_DIAGNOSTIC'?'Öncelik: cevaplayamama nedenini belirle':'Öncelik: hatalı çözüm adımını belirle'}.
+              Ayrı bir yeni soruda başarı olmadan bu beceriye kalıcı hâkimiyet denemez.</small>
+            </div>)}
+        </div>}
+      {data.quizWrongBlankEvidence?.truncated&&
+        <p className="notice">Kanıt geçmişi 500 kayıtla sınırlandı; daha eski kayıtlar bu raporda yok.</p>}
+      <p className="muted" style={{marginTop:10}}>{data.quizWrongBlankEvidence?.note||''}</p>
+    </div>
+
+    <div className="card">
+      <div className="moduleHeaderRow">
+        <div>
           <div className="moduleEyebrow">KEKS PARAGRAF · YANLIŞ / BOŞ → MÜDAHALE → GECİKMELİ TEKRAR</div>
           <h2>Hangi beceri için nasıl müdahale edilmeli?</h2>
           <p className="muted">Son 90 gündeki, öğrencinin onaylayarak kaydettiği optik sonuçları ve kişisel tekrar kayıtları esas alınır. Aynı sorunun yeniden doğru yapılması tek başına kalıcı öğrenme değildir.</p>

@@ -20,6 +20,7 @@ async function GET__handler(){
     stats:{
       total:items.length,
       wrong:items.filter(x=>x.reason==='WRONG'||x.reason==='UPLOADED_WRONG').length,
+      blank:items.filter(x=>x.reason==='BLANK').length,
       marked:items.filter(x=>x.reason==='MARKED').length
     }
   });
@@ -31,8 +32,13 @@ async function POST__handler(req:Request){
   const input=await readJson(req,postSchema);
 
   if(input.action==='bookmark'){
-    const q=await db.questionBankItem.findUnique({where:{id:input.questionId},select:{id:true}});
+    const q=await db.questionBankItem.findUnique({where:{id:input.questionId},
+      select:{id:true,sourceKind:true,active:true,reviewStatus:true}});
     if(!q)return NextResponse.json({error:'Soru bulunamadı.'},{status:404});
+    const permitted=q.sourceKind.startsWith('STUDENT_WRONG:')
+      ?q.sourceKind==='STUDENT_WRONG:'+user.student.id&&q.reviewStatus==='STUDENT_PRIVATE'
+      :q.active&&q.reviewStatus==='APPROVED';
+    if(!permitted)return NextResponse.json({error:'Soru bulunamadı.'},{status:404});
     await db.dailyLog.create({data:{
       studentId:user.student.id,
       date:new Date(),
