@@ -50,7 +50,7 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
  const committed=await db.$transaction(async tx=>{
   // PostgreSQL transaction advisory lock prevents two simultaneous requests from
   // creating duplicate attempts, review resets, reports and learning events.
-  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${studentId}),hashtext(${quiz.id}))`;
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${studentId}),hashtext(${quiz.id})) IS NULL AS acquired`;
   const old=await tx.practiceQuizAttempt.findFirst({
    where:{quizId:quiz.id,studentId},select:{id:true}
   });
