@@ -356,7 +356,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
             <p>{practiceResult.reviewAddedWrong} yanlış ve {practiceResult.reviewAddedBlank} boş, kişisel tekrar kuyruğuna alındı.</p>
             {(practiceResult.feedback||[]).filter((x:any)=>x.status!=='CORRECT').map((q:any)=><div key={q.questionId}>
               <strong>{q.subject} · {q.topic} — {q.status==='BLANK'?'Boş':'Yanlış'}</strong>
-              <p>Doğru cevap: {q.correctAnswer}</p>
+              <p>Doğru cevap: {q.correctAnswer} {q.answerKeySource!=='APPROVED_BANK'?'· Kaynak anahtarının ayrıca doğrulanması gerekiyor':''}</p>
               {q.explanation&&<p>Çözüm: {q.explanation} {q.explanationSource==='USER_PROVIDED_UNVERIFIED'?'(doğrulanmamış kullanıcı açıklaması)':''}</p>}
               {q.nextAction&&<><p>{q.nextAction.opening}</p><p>{q.nextAction.levelStep}</p></>}
             </div>)}
