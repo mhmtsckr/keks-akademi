@@ -65,8 +65,7 @@ describe('multi-subject approved unseen question selection / PostgreSQL',()=>{
  it('requires exact 7th-grade school curriculum before presenting science examples',async()=>{
   const learner=await db.student.update({where:{id:studentId},
    data:{gradeLevel:'Ortaokul 7 | Maarif Model'}});
-  const owner=await db.user.findFirstOrThrow({where:{student:{id:studentId}}});
-  mock.role.mockResolvedValue({id:owner.id,role:'STUDENT',student:learner});
+  mock.role.mockResolvedValue({id:learner.userId,role:'STUDENT',student:learner});
   const origin=await question('Fen Bilimleri','Madde ve Isı','OKUL','ORIG',
    {educationGrade:7},'STUDENT_PRIVATE','STUDENT_WRONG:'+studentId);
   const ri=await db.reviewQueueItem.create({data:{studentId,questionId:origin.id,dueAt:new Date()}});
