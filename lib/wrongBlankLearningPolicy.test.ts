@@ -33,6 +33,16 @@ describe('all education levels wrong / blank learning guidance',()=>{
   expect(recoveryReasonFromAnswers('a',null)).toBe('WRONG');
   expect(recoveryReasonFromAnswers('a',{a:'C'},'MARKED')).toBe('MARKED');
  });
+ it('routes AGS / ÖABT / KPSS / ALES exam candidates to independent adult-style recovery',()=>{
+  for(const examType of ['AGS','ÖABT','KPSS','ALES','DGS','YDS','YÖKDİL']){
+   const p=learnerRecoveryPolicy({gradeLevel:'Sınav adayı',examType,wrong:4,blank:2});
+   expect(p.framework).toBe('OSYM');
+   expect(p.supportMode).toBe('INDEPENDENT');
+   expect(p.dailyReviewTarget).toBe(4);
+   expect(p.requiresGradeConfirmation).toBe(false);
+   expect(p.masteryVerified).toBe(false);
+  }
+ });
  it('refuses to attribute a definite grade to a multi-grade learner',()=>{
   const p=learnerRecoveryPolicy({gradeLevel:'İlkokul 1-2-3 | Maarif Model',wrong:1,blank:3});
   expect(p.grade).toBeNull();
