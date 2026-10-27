@@ -119,6 +119,31 @@ describe('all-level server-verified wrong and blank learning / PostgreSQL',()=>{
   expect(bankBody.stats).toMatchObject({wrong:1,blank:1});
   expect(bankBody.items.find((x:{questionId:string})=>x.questionId===qBlank.id).reason).toBe('BLANK');
  });
+ it('keeps essay-style reviewed items answerable and hides choice metadata from learners',async()=>{
+  const free=await db.questionBankItem.create({data:{
+   examType:'OKUL',subject:'Türkçe',topic:'Kısa Cevap',prompt:'Kendi cümlelerinle açıkla.',
+   options:{},correctAnswer:'Örnek cevap',active:true,reviewStatus:'APPROVED',
+   sourceKind:'ORIGINAL'
+  }});
+  const choice=await db.questionBankItem.create({data:{
+   examType:'TYT',subject:'Türkçe',topic:'Paragraf',prompt:'Hangi seçenek?',
+   options:{A:'A şıkkı',B:'B şıkkı',C:'C şıkkı',D:'D şıkkı',E:'E şıkkı',
+    _privateSolution:'DO_NOT_SEND_KEY',correctAnswer:'DO_NOT_SEND_KEY'},
+   correctAnswer:'C',active:true,reviewStatus:'APPROVED',sourceKind:'ORIGINAL'
+  }});
+  await db.reviewQueueItem.createMany({data:[free,choice].map(q=>({
+   studentId:student.id,questionId:q.id,stepIndex:0,dueAt:new Date(),status:'DUE'
+  }))});
+  const response=await reviewList();
+  expect(response.status).toBe(200);
+  const data=await response.json();
+  const f=data.items.find((x:{question:{id:string}})=>x.question.id===free.id);
+  const c=data.items.find((x:{question:{id:string}})=>x.question.id===choice.id);
+  expect(f.question.inputMode).toBe('TEXT');
+  expect(c.question.inputMode).toBe('CHOICE');
+  expect(Object.keys(c.question.options)).toEqual(['A','B','C','D','E']);
+  expect(JSON.stringify(c.question)).not.toContain('DO_NOT_SEND_KEY');
+ });
  it('rejects answer IDs outside the quiz and cannot include foreign student uploads',async()=>{
   const own=await makeQuestion('OWN');
   const foreign=await makeQuestion('FOREIGN',other.id);
