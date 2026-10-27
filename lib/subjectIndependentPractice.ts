@@ -27,13 +27,16 @@ export function eligibleSubjectPracticeQuestion(q:PracticeCandidate,origin:Pract
              typeof m.grade==='number'?m.grade:null;
  const declaredGrades=m.targetGrades;
  const framework=normalized(m.curriculumFramework);
- if(ctx.grade!==null){
+ const finalYearExam=ctx.grade===12&&Boolean(canonicalExamType(origin.examType));
+ if(ctx.grade!==null&&!finalYearExam){
   if(grade!==ctx.grade&&!includedGrades(declaredGrades,ctx.grade))return false;
   if(framework&&framework!==ctx.framework)return false;
- }else if(ctx.framework==='OSYM'){
+ }else if(ctx.framework==='OSYM'||finalYearExam){
   // No K-12-only item can be silently substituted into a candidate exam.
-  if(grade!==null||Array.isArray(declaredGrades)&&declaredGrades.length>0)return false;
-  if(framework&&framework!=='OSYM')return false;
+  if(grade!==null&&(ctx.grade===null||grade!==ctx.grade))return false;
+  if(Array.isArray(declaredGrades)&&declaredGrades.length>0&&
+     (ctx.grade===null||!includedGrades(declaredGrades,ctx.grade)))return false;
+  if(framework&&framework!=='OSYM'&&!(finalYearExam&&framework===ctx.framework))return false;
   if(ctx.examType&&examToken(q.examType)!==examToken(origin.examType))return false;
   if(Array.isArray(m.targetExams)&&m.targetExams.length>0&&
      !m.targetExams.some(x=>typeof x==='string'&&examToken(x)===examToken(origin.examType)))return false;
