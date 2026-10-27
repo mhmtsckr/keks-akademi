@@ -47,15 +47,17 @@ export function learnerRecoveryPolicy(input:{
  const key=profile?.key||null;
  const initial=key==='PRIMARY_123'||key==='PRIMARY_4';
  const guided=key==='PRIMARY_123';
- const high=['HIGH_910','HIGH_11','HIGH_12','GRADUATE_YKS'].includes(key||'');
- const daily=profile?.study.maxReviewsPerDay??2;
+ const examCandidate=context.framework==='OSYM';
+ const high=examCandidate||['HIGH_910','HIGH_11','HIGH_12','GRADUATE_YKS'].includes(key||'');
+ const daily=profile?.study.maxReviewsPerDay??(examCandidate?4:2);
  const newQuestions=guided?1:initial?2:high?4:3;
  const blanks=int(input.blank||0,0,500);
  const wrongs=int(input.wrong||0,0,500);
  const ratio=blanks+wrongs?blanks/(blanks+wrongs):0;
  const blocked=context.framework==='UNRESOLVED';
  return {
-  levelKey:key,label:profile?.label||'Eğitim düzeyi doğrulanmadı',
+  levelKey:key,label:profile?.label||(examCandidate?
+    'ÖSYM sınav hazırlık grubu · '+(context.examType||'Sınav'):'Eğitim düzeyi doğrulanmadı'),
   grade:context.grade,framework:context.framework,examType:context.examType,
   dailyReviewTarget:daily,
   newQuestionTarget:Math.max(1,Math.min(newQuestions,blanks+wrongs||newQuestions)),
