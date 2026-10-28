@@ -59,7 +59,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     ]);
     const [wj,rj,lj]=await Promise.all([wr.json(),rr.json(),lr.json()]);
     if(wr.ok){setItems(wj.items||[]);setSets(wj.sets||null);}
-    if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
+    if(rr.ok)setReviews(rj.items||[]);
     if(lr.ok){setLessonCatalog(lj.lessons||[]);setCurriculumContext(lj.curriculumContext||null);}
   }
   useEffect(()=>{void load()},[]);
@@ -211,14 +211,14 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
     <div className="card wrongQuestionDueCard">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. KEKS her soru için senin doğru/yanlış serini ve yakın dönem tekrar başarını öğrenir; güçlü hatırlamada aralığı uzatır, unutma sinyalinde tekrar tarihini öne çeker.</p></div>
+        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ VE BOŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Yanlış veya boş bıraktığın soruları yeniden çöz. Boş bırakma, yanlış cevap sayılmaz. KEKS her sorunun tekrar aralığını sonraki cevaplarına göre düzenler; kalıcı öğrenme farklı sorularda ayrıca sınanır.</p></div>
         <span className="pill">{dueReviews.length} görev</span>
       </div>
-      {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış soru yok.</strong><div className="muted">Yeni yanlış yüklediğinde 0. gün görevi hemen burada görünür.</div></div>:<div className="wrongReviewTaskList">
+      {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış veya boş soru yok.</strong><div className="muted">Yanlış veya boş bırakılan sorular 0. gün tekrarına alınır.</div></div>:<div className="wrongReviewTaskList">
         {dueReviews.map((x:any)=><article className="wrongReviewTask" key={x.id}>
           <div className="wrongQuestionRowHead">
             <div><strong>{x.question.subject} · {x.question.topic}</strong><span>Aşama {x.stepIndex} · {new Date(x.dueAt).toLocaleDateString('tr-TR')}</span></div>
-            <span className="pill">TEKRAR GÖREVİ</span>
+            <span className="pill">{x.bankReason==='BLANK'?'BOŞTAN ÖĞRENME':x.bankReason==='MARKED'?'İŞARETLİ SORU':'YANLIŞTAN ÖĞRENME'}</span>
           </div>
           {x.question.imageUrl&&<Image src={x.question.imageUrl} alt="Tekrar görevi yanlış soru" width={900} height={600} unoptimized className="wrongReviewTaskImage"/>}
           <p>{x.question.prompt}</p>
@@ -229,6 +229,10 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
               {x.support.acquisition&&<p><strong>Kazanım:</strong> {x.support.acquisition.id} · {x.support.acquisition.label}</p>}
               {x.support.learningPlan&&<div>
                 <p><strong>{x.support.learningPlan.statusLabel} · {x.support.learningPlan.method}</strong></p>
+                {x.support.learningPlan.adaptation&&<p>
+                  <strong>{x.support.learningPlan.adaptation.stage}:</strong>{' '}
+                  {x.support.learningPlan.adaptation.guidedBy}. {x.support.learningPlan.adaptation.intervention}
+                </p>
                 <p>{x.support.learningPlan.diagnosticQuestion}</p>
                 <ol>{x.support.learningPlan.steps.map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
                 <small className="muted">{x.support.learningPlan.note}</small>
