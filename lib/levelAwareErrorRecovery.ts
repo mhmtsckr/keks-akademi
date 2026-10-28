@@ -55,7 +55,7 @@ export function levelAwareErrorRecovery(input:{
   maxSessionMinutes:m.minutes,
   blankReasonOptions:m.basic?BASIC_REASONS:FULL_REASONS,
   intervention:input.bankReason==='BLANK'
-   ?(m.basic?'Önce neden boş bıraktığını birlikte seç; tahmin yürüterek yanlış sayma.':
+   ?(m.basic?'Boş bırakma nedenini birlikte seç; bunu yanlış cevap olarak sayma.':
      'Boş bırakma nedenini bilgi, süre, yöntem ve karar verememe arasında ayır; ardından uygun yeni örnek seç.')
    :m.step,
   completionRule:'REVIEW_PLUS_NEW_QUESTION_EVIDENCE',
