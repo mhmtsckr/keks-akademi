@@ -5,6 +5,7 @@ import {readJson,withApiErrors} from '@/lib/apiGuard';
 import {db} from '@/lib/db';
 import {resolveLearningCurriculumContext} from '@/lib/curriculumPolicy2026';
 import {buildSubjectRecoveryPlan} from '@/lib/subjectRecoveryPlan';
+import {reasonForPersonalReview} from '@/lib/quizErrorLearning';
 import {chooseFreshSubjectPractice,SUBJECT_PRACTICE_DAILY_LIMIT,
  SUBJECT_PRACTICE_HISTORY_LIMIT} from '@/lib/subjectIndependentPractice';
 
@@ -17,12 +18,20 @@ async function POST__handler(req:Request){
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
   const input=await readJson(req,schema);
   const review=await db.reviewQueueItem.findFirst({
-    where:{id:input.reviewId,studentId:user.student.id},include:{question:true}
+    where:{id:input.reviewId,studentId:user.student.id},
+    include:{question:true,sourceAttempt:{select:{answers:true}}}
   });
   if(!review)return NextResponse.json({error:'Tekrar kaydı bulunamadı.'},{status:404});
 
   const origin=review.question;
   const originMeta=record(origin.options);
+  const plan=buildSubjectRecoveryPlan({
+    subject:origin.subject,topic:origin.topic,
+    bankReason:reasonForPersonalReview({questionId:origin.id,options:origin.options,
+      sourceKind:origin.sourceKind,sourceAttempt:review.sourceAttempt}),
+    classificationConfidence:typeof originMeta.classificationConfidence==='number'?originMeta.classificationConfidence:null,
+    gradeLevel:user.student.gradeLevel,examType:origin.examType
+  });
   const curriculum=resolveLearningCurriculumContext({
     gradeLevel:user.student.gradeLevel,
     selectedGrade:typeof originMeta.educationGrade==='number'?originMeta.educationGrade:null,
@@ -68,7 +77,8 @@ async function POST__handler(req:Request){
     if(!Array.isArray(quiz.questionIds))continue;
     for(const item of quiz.questionIds)if(typeof item==='string')seen.add(item);
   }
-  const selected=chooseFreshSubjectPractice(origin,candidates,seen,curriculum,2);
+  const selected=chooseFreshSubjectPractice(origin,candidates,seen,curriculum,
+    Math.max(1,Math.min(4,plan.adaptation.suggestedFreshQuestions)));
   if(!selected.length)return NextResponse.json({
     error:'Bu beceri için eğitim düzeyi ve sınav kapsamına uygun, daha önce gösterilmemiş onaylı soru bulunamadı. Koçundan uygun yeni bir örnek iste.',
     code:'NO_NEW_APPROVED_GRADE_MATCH'
@@ -88,11 +98,7 @@ async function POST__handler(req:Request){
     ok:true,quiz:{id:quiz.id,title:quiz.title},
     curriculum:{grade:curriculum.grade,framework:curriculum.framework,academicYear:curriculum.academicYear},
     evidenceStatus:'UNSEEN_APPROVED_QUESTION_NOT_MASTERY',
-    learningPlan:buildSubjectRecoveryPlan({
-      subject:origin.subject,topic:origin.topic,
-      bankReason:typeof originMeta.bankReason==='string'?originMeta.bankReason:null,
-      classificationConfidence:typeof originMeta.classificationConfidence==='number'?originMeta.classificationConfidence:null
-    }),
+    learningPlan:plan,
     questions:selected.map(q=>{
       const opts=record((q as typeof candidates[number]).options);
       const options=Object.fromEntries(Object.entries(opts).filter(([key,val])=>
