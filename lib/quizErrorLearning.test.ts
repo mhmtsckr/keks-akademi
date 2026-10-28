@@ -24,7 +24,7 @@ describe('source-aware blank and wrong question learning',()=>{
   expect(grade.correct).toBe(2);
   expect(grade.blank).toBe(0);
  });
- it('derives blank from the student's original source attempt, without altering question metadata',()=>{
+ it("derives blank from the student's original source attempt, without altering question metadata",()=>{
   expect(reasonForPersonalReview({questionId:'q-public',options:{},sourceKind:'ORIGINAL',
    sourceAttempt:{answers:{'q-public':''}}})).toBe('BLANK');
   expect(reasonForPersonalReview({questionId:'q-public',options:{},sourceKind:'ORIGINAL',
