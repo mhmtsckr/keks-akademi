@@ -2,6 +2,7 @@
  * Subject-aware *learning method* suggestions, never alleged solutions to private uploads.
  * An identified subject alone is not proof of a specific topic, official outcome or mastery.
  */
+import {levelAwareErrorRecovery} from './levelAwareErrorRecovery';
 export type BankLearningReason='WRONG'|'BLANK'|'MARKED';
 export type LearningFamily='MATHEMATICS'|'TURKISH'|'LITERATURE'|'HISTORY'|'GEOGRAPHY'|'SCIENCE'|
  'ENGLISH'|'PHILOSOPHY'|'RELIGION'|'EDUCATION'|'LEGISLATION'|'OTHER';
@@ -9,6 +10,7 @@ export type RecoveryPlan={
   status:BankLearningReason;statusLabel:string;family:LearningFamily;method:string;
   diagnosticQuestion:string;steps:string[];reviewDays:readonly number[];
   needsTopicConfirmation:boolean;contentStatus:'GUIDED_IF_AVAILABLE'|'METHOD_ONLY';
+  adaptation:ReturnType<typeof levelAwareErrorRecovery>;
   note:string;
 };
 export const PERSONAL_RECOVERY_DAYS=[0,1,3,7,14,28] as const;
@@ -105,9 +107,12 @@ const SPECIFIC_TURKISH:readonly {pattern:RegExp;name:string;check:string;transfe
 ];
 export function buildSubjectRecoveryPlan(input:{
  subject:string;topic:string;bankReason?:string|null;classificationConfidence?:number|null;
- hasGuidedLesson?:boolean
+ hasGuidedLesson?:boolean;gradeLevel?:string|null;examType?:string|null
 }):RecoveryPlan{
  const status:BankLearningReason=input.bankReason==='BLANK'?'BLANK':input.bankReason==='MARKED'?'MARKED':'WRONG';
+ const adaptation=levelAwareErrorRecovery({
+  gradeLevel:input.gradeLevel,examType:input.examType,bankReason:status
+ });
  const family=classifyRecoveryFamily(input.subject);
  const base=METHODS[family],topic=norm(input.topic||'');
  const specific=family==='TURKISH'?SPECIFIC_TURKISH.find(x=>x.pattern.test(topic)):null;
@@ -122,7 +127,7 @@ export function buildSubjectRecoveryPlan(input:{
  const method=specific?.name||base.name;
  return {
   status,statusLabel:status==='BLANK'?'Boş bırakılan soru':status==='MARKED'?'İşaretlenen soru':'Yanlış yapılan soru',
-  family,method,diagnosticQuestion,
+  family,method,diagnosticQuestion,adaptation,
   steps:[
    first,
    needsTopicConfirmation?'Dersi ve alt beceriyi öğrenci/koç olarak doğrula; düşük güvenli sınıflandırmadan resmî kazanım üretme.':
@@ -130,7 +135,8 @@ export function buildSubjectRecoveryPlan(input:{
    input.hasGuidedLesson
     ?'Ayrı hazırlanmış KEKS mikro dersini çalış; alıştırma başarısı özgün soruda başarı değildir.'
     :'Bu alt beceriye özel onaylı çözümlü örnek yoksa öğretmen/koçtan örnek iste; yüklenen sorunun çözümünü uydurma.',
-   specific?.transfer||base.transfer,
+   adaptation.band==='UNRESOLVED'?'Eğitim düzeyini doğrula; hangi sorunun uygun olduğunu varsayma.':
+    (specific?.transfer||base.transfer)+' · '+adaptation.intervention,
    'Özgün soruyu notlara bakmadan yeniden çöz; sonraki bağımsız 0–1–3–7–14–28 tekrarında sonucu kaydet.'
   ],
   reviewDays:PERSONAL_RECOVERY_DAYS,
