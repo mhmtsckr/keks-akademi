@@ -232,7 +232,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
                 {x.support.learningPlan.adaptation&&<p>
                   <strong>{x.support.learningPlan.adaptation.stage}:</strong>{' '}
                   {x.support.learningPlan.adaptation.guidedBy}. {x.support.learningPlan.adaptation.intervention}
-                </p>
+                </p>}
                 <p>{x.support.learningPlan.diagnosticQuestion}</p>
                 <ol>{x.support.learningPlan.steps.map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
                 <small className="muted">{x.support.learningPlan.note}</small>
