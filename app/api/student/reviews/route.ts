@@ -7,6 +7,7 @@ import { REVIEW_DAYS } from '@/lib/smartCoach';
 import {areEquivalentShortAnswers} from '@/lib/mathAnswerEquivalence';
 import { adaptiveReviewIntervalDays,reviewIntervalReason } from '@/lib/learningEngine';
 import {buildWrongQuestionSupport,REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
+import {reasonForPersonalReview} from '@/lib/quizErrorLearning';
 
 const schema=z.object({
   id:z.string(),answer:z.string().min(1).max(2000),microSessionId:z.string().optional(),
@@ -23,7 +24,7 @@ async function GET__handler(){
   const student=user.student;
   const items=await db.reviewQueueItem.findMany({
     where:{studentId:user.student.id,status:{in:['DUE','PENDING']}},
-    include:{question:true},
+    include:{question:true,sourceAttempt:{select:{answers:true}}},
     orderBy:{dueAt:'asc'},
     take:50
   });
@@ -33,6 +34,10 @@ async function GET__handler(){
     scheduleDays:REVIEW_DAYS,
     items:items.map(x=>({
       id:x.id,
+      bankReason:reasonForPersonalReview({
+       questionId:x.questionId,options:x.question.options,
+       sourceKind:x.question.sourceKind,sourceAttempt:x.sourceAttempt
+      }),
       stepIndex:x.stepIndex,
       dueAt:x.dueAt,
       status:new Date(x.dueAt).getTime()<=now?'DUE':'PENDING',
@@ -41,7 +46,10 @@ async function GET__handler(){
         subject:x.question.subject,topic:x.question.topic,
         gradeLevel:student.gradeLevel,academicTrack:student.academicTrack,
         examType:x.question.examType,prompt:x.question.prompt,
-        bankReason:String(questionMeta(x.question.options).bankReason||'WRONG'),
+        bankReason:reasonForPersonalReview({
+          questionId:x.questionId,options:x.question.options,
+          sourceKind:x.question.sourceKind,sourceAttempt:x.sourceAttempt
+        }),
         practiceSkillId:String(questionMeta(x.question.options).practiceSkillId||'')||null,
         educationGrade:typeof questionMeta(x.question.options).educationGrade==='number'
           ?Number(questionMeta(x.question.options).educationGrade):null,
@@ -75,7 +83,8 @@ async function POST__handler(req:Request){
   if(input.microSessionId&&(!microSession||microMeta.kind!=='WRONG_1'||microMeta.reviewId!==input.id))throw new HttpError(404,'Mikro tekrar oturumu bulunamadı.');
   if(input.microSessionId&&microMeta.type==='MICRO_RESULT')return NextResponse.json({ok:true,...microMeta.reviewResult});
   if(input.microSessionId&&(microMeta.type!=='MICRO_STARTED'||Date.now()-microSession!.createdAt.getTime()>86400000))throw new HttpError(409,'Tekrar oturumunun süresi doldu.');
-  const item=await db.reviewQueueItem.findFirst({where:{id:input.id,studentId:user.student.id},include:{question:true}});
+  const item=await db.reviewQueueItem.findFirst({where:{id:input.id,studentId:user.student.id},
+   include:{question:true,sourceAttempt:{select:{answers:true}}}});
   if(!item) return NextResponse.json({error:'Tekrar kaydı bulunamadı.'},{status:404});
   if(item.status==='COMPLETED')return NextResponse.json({error:'Bu tekrar döngüsü zaten tamamlandı.'},{status:409});
   if(item.dueAt.getTime()>Date.now())return NextResponse.json({error:'Bu sorunun tekrar günü henüz gelmedi.'},{status:409});
@@ -89,7 +98,10 @@ async function POST__handler(req:Request){
     gradeLevel:user.student.gradeLevel,academicTrack:user.student.academicTrack,
     explanation:item.question.explanation,
     prompt:item.question.prompt,
-    bankReason:String(questionMeta(item.question.options).bankReason||'WRONG'),
+    bankReason:reasonForPersonalReview({
+      questionId:item.questionId,options:item.question.options,
+      sourceKind:item.question.sourceKind,sourceAttempt:item.sourceAttempt
+    }),
     practiceSkillId:String(questionMeta(item.question.options).practiceSkillId||'')||null,
     educationGrade:typeof questionMeta(item.question.options).educationGrade==='number'
       ?Number(questionMeta(item.question.options).educationGrade):null,
