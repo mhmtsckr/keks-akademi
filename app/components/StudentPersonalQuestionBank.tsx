@@ -5,7 +5,7 @@ import {useEffect,useMemo,useState} from 'react';
 
 type BankItem={
   questionId:string;examType:string;subject:string;topic:string;prompt:string;
-  addedAt:string;reason:'WRONG'|'MARKED'|'UPLOADED_WRONG';imageUrl?:string|null;
+  addedAt:string;reason:'WRONG'|'BLANK'|'MARKED'|'UPLOADED_WRONG';imageUrl?:string|null;
 };
 type GeneratedQuestion={
   id:string;examType:string;subject:string;topic:string;prompt:string;
@@ -14,13 +14,14 @@ type GeneratedQuestion={
 
 function reasonLabel(v:BankItem['reason']){
   if(v==='MARKED')return 'İşaretlenen';
+  if(v==='BLANK')return 'Boş bırakılan';
   if(v==='UPLOADED_WRONG')return 'Yüklenen yanlış';
   return 'Yanlış yapılan';
 }
 
 export function StudentPersonalQuestionBank(){
   const [items,setItems]=useState<BankItem[]>([]);
-  const [stats,setStats]=useState({total:0,wrong:0,marked:0});
+  const [stats,setStats]=useState({total:0,wrong:0,blank:0,marked:0});
   const [quiz,setQuiz]=useState<{id:string;title:string;kind:string}|null>(null);
   const [questions,setQuestions]=useState<GeneratedQuestion[]>([]);
   const [answers,setAnswers]=useState<Record<string,string>>({});
@@ -57,7 +58,8 @@ export function StudentPersonalQuestionBank(){
     });
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Test sonucu kaydedilemedi.'));
-    setMsg('Test tamamlandı · D '+j.attempt.correct+' · Y '+j.attempt.wrong+' · B '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.reviewAdded+' yanlış tekrar kuyruğuna eklendi.':''));
+    setMsg('Test tamamlandı · D '+j.attempt.correct+' · Y '+j.attempt.wrong+' · B '+j.attempt.blank+' · Net '+j.attempt.net
+     +(j.reviewAdded?' · '+j.wrongAdded+' yanlış ve '+j.blankAdded+' boş tekrar kuyruğuna eklendi.':''));
     await load();
   }
 
@@ -86,13 +88,14 @@ export function StudentPersonalQuestionBank(){
         <div>
           <div className="moduleEyebrow">KİŞİSEL SORU BANKASI</div>
           <h2>Yanlışlarım ve işaretlediğim sorular</h2>
-          <p className="muted">Yanlış yaptığın veya daha sonra tekrar görmek için işaretlediğin sorular tek havuzda tutulur.</p>
+          <p className="muted">Yanlış yaptığın, boş bıraktığın veya daha sonra tekrar görmek için işaretlediğin sorular ayrı etiketlerle tutulur. Her yanlış ve boş kayıt kişisel tekrarına bağlanır.</p>
         </div>
         <span className="pill">{stats.total} soru</span>
       </div>
 
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))'}}>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.wrong}</div><div className="muted">Yanlış soru</div></div>
+        <div className="card" style={{margin:0}}><div className="kpi">{stats.blank}</div><div className="muted">Boş bırakılan</div></div>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.marked}</div><div className="muted">İşaretlenen soru</div></div>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.total}</div><div className="muted">Toplam kişisel havuz</div></div>
       </div>
