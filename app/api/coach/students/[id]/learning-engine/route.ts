@@ -28,7 +28,7 @@ const simulationSchema=z.object({
 });
 
 async function ownedStudent(id:string,coachId:string){
-  return db.student.findFirst({where:{id,coachId},select:{id:true,fullName:true,studentCode:true}});
+  return db.student.findFirst({where:{id,coachId},select:{id:true,fullName:true,studentCode:true,gradeLevel:true}});
 }
 
 async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
@@ -131,12 +131,21 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   ))];
   const quizQuestions=ids.length?await db.questionBankItem.findMany({
     where:{id:{in:ids}},select:{
-      id:true,subject:true,topic:true,sourceKind:true,correctAnswer:true
+      id:true,subject:true,topic:true,sourceKind:true,correctAnswer:true,examType:true
     }
   }):[];
+  const blankReasonLogs=await db.dailyLog.findMany({
+    where:{studentId:id,date:{gte:new Date(Date.now()-60*86400000)},
+      payload:{path:['type'],equals:'QUIZ_WRONG_BLANK_EVIDENCE_V3'}},
+    select:{date:true,payload:true},orderBy:{date:'desc'},take:501
+  });
   const allLevelWrongBlankEvidence=summarizeAllLevelQuizCoachEvidence(
-    recentAttempts.slice(0,150),quizQuestions,id,
-    {truncated:recentAttempts.length>150}
+    recentAttempts.slice(0,150),quizQuestions,id,{
+      truncated:recentAttempts.length>150,
+      reasonLogs:blankReasonLogs.slice(0,500),
+      reasonsTruncated:blankReasonLogs.length>500,
+      gradeLevel:student.gradeLevel
+    }
   );
 
   const resourceSummary={
