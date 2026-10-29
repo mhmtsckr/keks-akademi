@@ -1,5 +1,6 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {detailedQuestions} from '@/lib/paragrafOptik';
+import {QUIZ_RECOVERY_EVIDENCE_TYPE} from '@/lib/blankReasonEvidence';
 
 const mocks=vi.hoisted(()=>({
  role:vi.fn(),student:vi.fn(),logs:vi.fn(),queues:vi.fn(),quizAttempts:vi.fn(),questions:vi.fn()
@@ -86,4 +87,56 @@ describe('coach student learning evidence authorization',()=>{
    })
   }));
  });
+ it('links a real blank reason and approved grade-matching catalog to this coach only',async()=>{
+  const started=new Date();
+  const questions=[
+   {id:'q-1',subject:'Matematik',topic:'Kesirler',examType:'OKUL',
+    correctAnswer:'B',sourceKind:'ORIGINAL'},
+   {id:'q-2',subject:'Matematik',topic:'Kesirler',examType:'OKUL',
+    correctAnswer:'A',sourceKind:'ORIGINAL'}
+  ];
+  mocks.quizAttempts.mockResolvedValue([{
+   id:'a-1',quizId:'quiz-1',createdAt:started,
+   correct:0,wrong:1,blank:1,
+   answers:{'q-1':'A','q-2':''},quiz:{questionIds:['q-1','q-2']}
+  }]);
+  mocks.logs.mockImplementation(async (args:any)=>{
+   if(args.where?.payload?.path?.[0]==='type')return [{
+    date:started,payload:{
+     type:QUIZ_RECOVERY_EVIDENCE_TYPE,version:3,quizId:'quiz-1',
+     attemptId:'a-1',outcomeSource:'SERVER_ANSWER_KEY',
+     verifiedMastery:false,correct:0,wrong:1,blank:1,
+     outcomes:[
+      {questionId:'q-1',outcome:'WRONG',blankReason:null},
+      {questionId:'q-2',outcome:'BLANK',blankReason:'SURE'}
+     ]
+    }
+   }];
+   return [];
+  });
+  mocks.questions.mockImplementation(async (args:any)=>{
+   if(args.where?.id?.in)return questions;
+   return [
+    {id:'q-3',subject:'Matematik',topic:'Kesirler',examType:'OKUL',
+     prompt:'Yeni kesir sorusu',options:{educationGrade:7,curriculumFramework:'TYMM'},
+     correctAnswer:'B',sourceKind:'ORIGINAL',reviewStatus:'APPROVED',active:true}
+   ];
+  });
+  const r=await GET(request,ctx('student1'));
+  expect(r.status).toBe(200);
+  const body=await r.json();
+  expect(body.allLevelWrongBlankEvidence).toMatchObject({
+   tests:1,wrong:1,blank:1,reasonVerifiedAttempts:1
+  });
+  expect(body.allLevelWrongBlankEvidence.topics[0]).toMatchObject({
+   band:'MIDDLE_7',primaryBlankReason:'Sürem yetmedi',
+   interventionPriority:'TARGETED_PRACTICE',
+   contentCoverage:{status:'MATCHING_APPROVED',matchingApproved:1}
+  });
+  expect(mocks.questions).toHaveBeenCalledWith(expect.objectContaining({
+   where:expect.objectContaining({subject:'Matematik',topic:'Kesirler',
+    active:true,reviewStatus:'APPROVED'})
+  }));
+ });
+
 });
