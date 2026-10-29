@@ -36,7 +36,7 @@ const wrong=(key[0]==='A'?'B':'A')+key.slice(1);
 beforeEach(()=>{
  vi.clearAllMocks();
  mocks.role.mockResolvedValue({id:'coach-user',role:'COACH',coachProfile:{id:'coach1'}});
- mocks.student.mockResolvedValue({id:'student1',fullName:'A Student',studentCode:'TEST-1'});
+ mocks.student.mockResolvedValue({id:'student1',fullName:'A Student',studentCode:'TEST-1',gradeLevel:'Ortaokul 7 | Maarif Model'});
  mocks.logs.mockResolvedValue([{date:first,payload:{
   kind:'PARAGRAF_OPTIK_WRONG_RECOVERY',testNo:1,encoded:wrong
  }}]);
@@ -51,7 +51,7 @@ describe('coach student learning evidence authorization',()=>{
   const r=await GET(request,ctx('otherStudent'));
   expect(r.status).toBe(404);
   expect(mocks.student).toHaveBeenCalledWith({where:{id:'otherStudent',coachId:'coach1'},
-   select:{id:true,fullName:true,studentCode:true}});
+   select:{id:true,fullName:true,studentCode:true,gradeLevel:true}});
   expect(mocks.logs).not.toHaveBeenCalled();
   expect(mocks.queues).not.toHaveBeenCalled();
   expect(mocks.quizAttempts).not.toHaveBeenCalled();
@@ -67,7 +67,8 @@ describe('coach student learning evidence authorization',()=>{
   expect(r.status).toBe(200);
   const result=await r.json();
   expect(result.paragrafCoachEvidence.totalOpticalTests).toBe(1);
-  expect(result.allLevelWrongBlankEvidence).toMatchObject({tests:0,wrong:0,blank:0,verifiedMastery:false});
+  expect(result.allLevelWrongBlankEvidence).toMatchObject({tests:0,wrong:0,blank:0,verifiedMastery:false,reasonVerifiedAttempts:0});
+  expect(mocks.logs).toHaveBeenCalledWith(expect.objectContaining({where:expect.objectContaining({studentId:'student1',payload:{path:['type'],equals:'QUIZ_WRONG_BLANK_EVIDENCE_V3'}})}));
   expect(mocks.quizAttempts).toHaveBeenCalledWith(expect.objectContaining({where:expect.objectContaining({studentId:'student1'})}));
   expect(result.paragrafCoachEvidence.topics[0]).toMatchObject({
    wrong:1,retentionVerified:false,evidenceLevel:'INITIAL_ONLY'
