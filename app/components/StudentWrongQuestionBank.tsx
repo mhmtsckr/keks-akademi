@@ -93,12 +93,12 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     await load();
   }
 
-  async function answerReview(id:string){
-    const answer=String(reviewAnswers[id]||'').trim();
-    if(!answer)return;
+  async function answerReview(id:string,submitBlank=false){
+    const answer=submitBlank?'':String(reviewAnswers[id]||'').trim();
+    if(!answer&&!submitBlank)return;
     const r=await fetch('/api/student/reviews',{
       method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({id,answer,errorReason:reviewReasons[id]||undefined})
+      body:JSON.stringify({id,answer,submitBlank,errorReason:reviewReasons[id]||undefined})
     });
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Tekrar görevi kaydedilemedi.'));
@@ -110,7 +110,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     const streakText=j.correctStreak>=2?(' · Ardışık doğru: '+j.correctStreak):j.incorrectStreak>=2?(' · Ardışık yanlış: '+j.incorrectStreak):'';
     setMsg(j.correct
       ? (j.completed?'Doğru. Bu soru için aktif tekrar döngüsü tamamlandı.':'Doğru.'+intervalText+streakText+' · '+(j.intervalReason||'Kişisel unutma eğrisi güncellendi.'))
-      : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
+      : (j.blank?'Tekrar boş bırakıldı. ':'Tekrar yanlış. ')+'Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
     await load();
     setRecoveryRefreshToken(x=>x+1);
   }
@@ -248,7 +248,10 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
                 {ERROR_REASONS.map(([value,label])=><option value={value} key={value}>{label}</option>)}
               </select>
             </div>
-            <button className="btn primary" type="button" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>answerReview(x.id)}>Görevi Kontrol Et</button>
+            <div className="row" style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button className="btn primary" type="button" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>answerReview(x.id)}>Görevi Kontrol Et</button>
+              <button className="btn" type="button" onClick={()=>answerReview(x.id,true)}>Bilmiyorum / Boş bırak</button>
+            </div>
           </div>
         </article>)}
       </div>}
