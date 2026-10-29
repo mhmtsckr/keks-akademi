@@ -174,6 +174,16 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
            <p><strong>Boş bırakma nedeni:</strong> {x.primaryBlankReason||'Henüz bildirilmedi'} <small className="muted">({x.reasonCoverage||0}/{x.blank} boş için öğrenci öz bildirimi; kesin tanı değildir)</small></p>
            <p><strong>Önerilen müdahale:</strong> {x.action}</p>
            {x.maxSessionMinutes>0&&<small className="muted">Önerilen kısa çalışma: en fazla {x.maxSessionMinutes} dk · uygun onaylı içerik varsa {x.suggestedFreshQuestions} farklı soru. Bu sayılar öğrencinin başarı düzeyini ölçmez.</small>}
+           {x.contentCoverage&&<p className="muted"><strong>Onaylı soru kapsaması:</strong>{' '}
+             {x.contentCoverage.status==='MATCHING_APPROVED'
+               ?x.contentCoverage.matchingApproved+' düzeye uygun aday kayıt'
+               :x.contentCoverage.status==='NO_MATCHING_APPROVED'
+               ?'Uygun ek soru bulunamadı — editör içeriği gerekli'
+               :x.contentCoverage.status==='NEEDS_GRADE_OR_EXAM'
+               ?'Önce öğrencinin gerçek sınıfı/sınavını doğrula'
+               :'Katalog taraması kesin değil — içerik editörü kontrol etmeli'}.
+             {' '}{x.contentCoverage.note}
+           </p>}
            {x.needsHumanKeyReview&&<p className="muted">En az bir soru öğrenci tarafından yüklenmiş; cevap anahtarı insan onaylı değildir.</p>}
          </div>)}
        </div>}
