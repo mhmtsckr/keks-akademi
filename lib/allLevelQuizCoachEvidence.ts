@@ -85,6 +85,8 @@ export function summarizeAllLevelQuizCoachEvidence(
     const dominant=reported.length?reported[0][0] as BlankReasonCode:null;
     const reasonLabel=dominant?BLANK_REASON_CODES[dominant]:null;
     const base=dominant?blankReasonAction(dominant):
+      t.blank===t.wrong&&t.blank>0?
+       'Önce neden boş bırakıldığını öğrenciyle birlikte belirle; yanlış çözüm adımını da soru köküyle birlikte incele.':
       t.blank>t.wrong?
        'Önce neden boş bırakıldığını öğrenciyle birlikte belirle.':
        'Yanlış çözüm adımını soru köküyle birlikte incele.';
