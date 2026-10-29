@@ -20,6 +20,7 @@ import { buildStudentIndicators } from '@/lib/studentIndicators';
 import {REMEDIATION_REASONS,isRemediationReason} from '@/lib/wrongQuestionRemediation';
 import {summarizeParagrafCoachEvidence} from '@/lib/paragrafCoachRemediation';
 import {summarizeAllLevelQuizCoachEvidence} from '@/lib/allLevelQuizCoachEvidence';
+import {auditApprovedRecoveryCoverage} from '@/lib/approvedRecoveryCoverage';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -148,6 +149,36 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     }
   );
 
+  // This checks actual approved catalog records, not imagined MEB/ÖSYM
+  // content. Candidates may have been shown before; no freshness claim.
+  const verifiedTopics=await Promise.all(
+    allLevelWrongBlankEvidence.topics.map(async t=>{
+      const originId=quizQuestions.find(q=>
+        q.examType===t.examType&&q.subject===t.subject&&q.topic===t.topic
+      )?.id;
+      if(!originId)return {...t,contentCoverage:{
+        status:'INCOMPLETE_CATALOG_SCAN',matchingApproved:0,
+        note:'Kaynak soru kanıtı eksik; içerik uygunluğu doğrulanamıyor.'
+      }};
+      const approved=await db.questionBankItem.findMany({
+        where:{examType:t.examType,subject:t.subject,topic:t.topic,
+          active:true,reviewStatus:'APPROVED'},
+        select:{id:true,examType:true,subject:true,topic:true,prompt:true,
+          options:true,correctAnswer:true,sourceKind:true,active:true,
+          reviewStatus:true},
+        orderBy:{createdAt:'desc'},take:61
+      });
+      return {...t,contentCoverage:auditApprovedRecoveryCoverage({
+        gradeLevel:student.gradeLevel,examType:t.examType,
+        subject:t.subject,topic:t.topic,originQuestionId:originId,
+        candidates:approved.slice(0,60),catalogTruncated:approved.length>60
+      })};
+    })
+  );
+  const allLevelCoachingEvidence={
+    ...allLevelWrongBlankEvidence,topics:verifiedTopics
+  };
+
   const resourceSummary={
     total:resources.length,
     review:resources.filter((x:any)=>x.efficiency?.status==='REVIEW'),
@@ -156,7 +187,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     resources
   };
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,allLevelWrongBlankEvidence,resourceTracking:resourceSummary});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,allLevelWrongBlankEvidence:allLevelCoachingEvidence,resourceTracking:resourceSummary});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
