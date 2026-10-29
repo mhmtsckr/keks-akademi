@@ -170,11 +170,15 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
              <span className="pill">{x.wrong} yanlış · {x.blank} boş</span>
            </div>
            <p className="muted">Bu beceride {x.attempts} kayıtlı soru · {x.correct} doğru.</p>
+           <p><strong>Düzey:</strong> {x.level} · <strong>Koç önceliği:</strong> {x.interventionPriority==='PROMPT_COACH_REVIEW'?'Yakın görüşme önerisi':x.interventionPriority==='TARGETED_PRACTICE'?'Hedefli çalışma':'İzle ve yeniden ölç'}.</p>
+           <p><strong>Boş bırakma nedeni:</strong> {x.primaryBlankReason||'Henüz bildirilmedi'} <small className="muted">({x.reasonCoverage||0}/{x.blank} boş için öğrenci öz bildirimi; kesin tanı değildir)</small></p>
            <p><strong>Önerilen müdahale:</strong> {x.action}</p>
-           {x.needsHumanKeyReview&&<small className="muted">En az bir soru öğrenci tarafından yüklenmiş; cevap anahtarı insan onaylı değildir.</small>}
+           {x.maxSessionMinutes>0&&<small className="muted">Önerilen kısa çalışma: en fazla {x.maxSessionMinutes} dk · uygun onaylı içerik varsa {x.suggestedFreshQuestions} farklı soru. Bu sayılar öğrencinin başarı düzeyini ölçmez.</small>}
+           {x.needsHumanKeyReview&&<p className="muted">En az bir soru öğrenci tarafından yüklenmiş; cevap anahtarı insan onaylı değildir.</p>}
          </div>)}
        </div>}
       {data.allLevelWrongBlankEvidence?.truncated&&<p className="notice">Son 150 test sınırına ulaşıldı; bu analiz bütün geçmişi kapsamıyor.</p>}
+      {data.allLevelWrongBlankEvidence?.reasonsTruncated&&<p className="notice">Boş bırakma nedenlerinin kayıt sınırı aşıldı; tüm öğrenci beyanları rapora dahil değil.</p>}
       {data.allLevelWrongBlankEvidence?.excluded>0&&<p className="muted">{data.allLevelWrongBlankEvidence.excluded} tutarsız veya eksik deneme doğrulanmış toplamdan çıkarıldı.</p>}
       <p className="muted">{data.allLevelWrongBlankEvidence?.note||''}</p>
     </div>
