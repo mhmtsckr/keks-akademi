@@ -20,6 +20,7 @@ import { buildStudentIndicators } from '@/lib/studentIndicators';
 import {REMEDIATION_REASONS,isRemediationReason} from '@/lib/wrongQuestionRemediation';
 import {summarizeParagrafCoachEvidence} from '@/lib/paragrafCoachRemediation';
 import {summarizeAllLevelQuizCoachEvidence} from '@/lib/allLevelQuizCoachEvidence';
+import {auditApprovedRecoveryCoverage} from '@/lib/approvedRecoveryCoverage';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -28,7 +29,7 @@ const simulationSchema=z.object({
 });
 
 async function ownedStudent(id:string,coachId:string){
-  return db.student.findFirst({where:{id,coachId},select:{id:true,fullName:true,studentCode:true}});
+  return db.student.findFirst({where:{id,coachId},select:{id:true,fullName:true,studentCode:true,gradeLevel:true}});
 }
 
 async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
@@ -131,13 +132,52 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   ))];
   const quizQuestions=ids.length?await db.questionBankItem.findMany({
     where:{id:{in:ids}},select:{
-      id:true,subject:true,topic:true,sourceKind:true,correctAnswer:true
+      id:true,subject:true,topic:true,sourceKind:true,correctAnswer:true,examType:true
     }
   }):[];
+  const blankReasonLogs=await db.dailyLog.findMany({
+    where:{studentId:id,date:{gte:new Date(Date.now()-60*86400000)},
+      payload:{path:['type'],equals:'QUIZ_WRONG_BLANK_EVIDENCE_V3'}},
+    select:{date:true,payload:true},orderBy:{date:'desc'},take:501
+  });
   const allLevelWrongBlankEvidence=summarizeAllLevelQuizCoachEvidence(
-    recentAttempts.slice(0,150),quizQuestions,id,
-    {truncated:recentAttempts.length>150}
+    recentAttempts.slice(0,150),quizQuestions,id,{
+      truncated:recentAttempts.length>150,
+      reasonLogs:blankReasonLogs.slice(0,500),
+      reasonsTruncated:blankReasonLogs.length>500,
+      gradeLevel:student.gradeLevel
+    }
   );
+
+  // This checks actual approved catalog records, not imagined MEB/ÖSYM
+  // content. Candidates may have been shown before; no freshness claim.
+  const verifiedTopics=await Promise.all(
+    allLevelWrongBlankEvidence.topics.map(async t=>{
+      const originId=quizQuestions.find(q=>
+        q.examType===t.examType&&q.subject===t.subject&&q.topic===t.topic
+      )?.id;
+      if(!originId)return {...t,contentCoverage:{
+        status:'INCOMPLETE_CATALOG_SCAN',matchingApproved:0,
+        note:'Kaynak soru kanıtı eksik; içerik uygunluğu doğrulanamıyor.'
+      }};
+      const approved=await db.questionBankItem.findMany({
+        where:{examType:t.examType,subject:t.subject,topic:t.topic,
+          active:true,reviewStatus:'APPROVED'},
+        select:{id:true,examType:true,subject:true,topic:true,prompt:true,
+          options:true,correctAnswer:true,sourceKind:true,active:true,
+          reviewStatus:true},
+        orderBy:{createdAt:'desc'},take:61
+      });
+      return {...t,contentCoverage:auditApprovedRecoveryCoverage({
+        gradeLevel:student.gradeLevel,examType:t.examType,
+        subject:t.subject,topic:t.topic,originQuestionId:originId,
+        candidates:approved.slice(0,60),catalogTruncated:approved.length>60
+      })};
+    })
+  );
+  const allLevelCoachingEvidence={
+    ...allLevelWrongBlankEvidence,topics:verifiedTopics
+  };
 
   const resourceSummary={
     total:resources.length,
@@ -147,7 +187,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     resources
   };
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,allLevelWrongBlankEvidence,resourceTracking:resourceSummary});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,allLevelWrongBlankEvidence:allLevelCoachingEvidence,resourceTracking:resourceSummary});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
