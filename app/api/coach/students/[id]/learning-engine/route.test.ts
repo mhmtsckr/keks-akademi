@@ -2,13 +2,15 @@ import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {detailedQuestions} from '@/lib/paragrafOptik';
 
 const mocks=vi.hoisted(()=>({
- role:vi.fn(),student:vi.fn(),logs:vi.fn(),queues:vi.fn()
+ role:vi.fn(),student:vi.fn(),logs:vi.fn(),queues:vi.fn(),quizAttempts:vi.fn(),questions:vi.fn()
 }));
 vi.mock('@/lib/auth',()=>({requireRole:mocks.role}));
 vi.mock('@/lib/db',()=>({db:{
  student:{findFirst:mocks.student},
  dailyLog:{findMany:mocks.logs},
- reviewQueueItem:{findMany:mocks.queues}
+ reviewQueueItem:{findMany:mocks.queues},
+ practiceQuizAttempt:{findMany:mocks.quizAttempts},
+ questionBankItem:{findMany:mocks.questions}
 }}));
 vi.mock('@/lib/learningEngine',()=>{
  const empty=async()=>[];
@@ -39,6 +41,8 @@ beforeEach(()=>{
   kind:'PARAGRAF_OPTIK_WRONG_RECOVERY',testNo:1,encoded:wrong
  }}]);
  mocks.queues.mockResolvedValue([]);
+ mocks.quizAttempts.mockResolvedValue([]);
+ mocks.questions.mockResolvedValue([]);
 });
 
 describe('coach student learning evidence authorization',()=>{
@@ -50,6 +54,7 @@ describe('coach student learning evidence authorization',()=>{
    select:{id:true,fullName:true,studentCode:true}});
   expect(mocks.logs).not.toHaveBeenCalled();
   expect(mocks.queues).not.toHaveBeenCalled();
+  expect(mocks.quizAttempts).not.toHaveBeenCalled();
  });
  it('never accesses data without a coach profile',async()=>{
   mocks.role.mockResolvedValue({id:'u',role:'ADMIN',coachProfile:null});
@@ -62,6 +67,8 @@ describe('coach student learning evidence authorization',()=>{
   expect(r.status).toBe(200);
   const result=await r.json();
   expect(result.paragrafCoachEvidence.totalOpticalTests).toBe(1);
+  expect(result.allLevelWrongBlankEvidence).toMatchObject({tests:0,wrong:0,blank:0,verifiedMastery:false});
+  expect(mocks.quizAttempts).toHaveBeenCalledWith(expect.objectContaining({where:expect.objectContaining({studentId:'student1'})}));
   expect(result.paragrafCoachEvidence.topics[0]).toMatchObject({
    wrong:1,retentionVerified:false,evidenceLevel:'INITIAL_ONLY'
   });

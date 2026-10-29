@@ -2,10 +2,11 @@
 
 import Image from 'next/image';
 import {useEffect,useMemo,useState} from 'react';
+import {BlankReasonPicker} from './BlankReasonPicker';
 
 type BankItem={
   questionId:string;examType:string;subject:string;topic:string;prompt:string;
-  addedAt:string;reason:'WRONG'|'MARKED'|'UPLOADED_WRONG';imageUrl?:string|null;
+  addedAt:string;reason:'WRONG'|'BLANK'|'MARKED'|'UPLOADED_WRONG';imageUrl?:string|null;
 };
 type GeneratedQuestion={
   id:string;examType:string;subject:string;topic:string;prompt:string;
@@ -14,16 +15,20 @@ type GeneratedQuestion={
 
 function reasonLabel(v:BankItem['reason']){
   if(v==='MARKED')return 'İşaretlenen';
+  if(v==='BLANK')return 'Boş bırakılan';
   if(v==='UPLOADED_WRONG')return 'Yüklenen yanlış';
   return 'Yanlış yapılan';
 }
 
 export function StudentPersonalQuestionBank(){
   const [items,setItems]=useState<BankItem[]>([]);
-  const [stats,setStats]=useState({total:0,wrong:0,marked:0});
+  const [stats,setStats]=useState({total:0,wrong:0,blank:0,marked:0});
   const [quiz,setQuiz]=useState<{id:string;title:string;kind:string}|null>(null);
   const [questions,setQuestions]=useState<GeneratedQuestion[]>([]);
   const [answers,setAnswers]=useState<Record<string,string>>({});
+  const [blankReasons,setBlankReasons]=useState<Record<string,string>>({});
+  const [feedback,setFeedback]=useState<Array<{questionId:string;outcome:string;method:string;firstStep:string;level:string;blankReasonLabel?:string|null;answerKeySource:string}>>([]);
+  const [finished,setFinished]=useState(false);
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState('');
 
@@ -44,20 +49,24 @@ export function StudentPersonalQuestionBank(){
     });
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Test oluşturulamadı.'));
-    setQuiz(j.quiz);setQuestions(j.questions||[]);setAnswers({});
+    setQuiz(j.quiz);setQuestions(j.questions||[]);setAnswers({});setBlankReasons({});setFinished(false);setFeedback([]);
     setMsg(j.quiz.title+' hazırlandı · '+(j.questions?.length||0)+' soru.');
   }
 
   async function finish(){
-    if(!quiz)return;
+    if(!quiz||finished||busy)return;
     setBusy('finish');setMsg('');
     const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{
       method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({answers})
+      body:JSON.stringify({answers,blankReasons:Object.fromEntries(
+       Object.entries(blankReasons).filter(([id,reason])=>reason&&!String(answers[id]||'').trim())
+      )})
     });
     const j=await r.json();setBusy('');
     if(!r.ok)return setMsg('Hata: '+(j.error||'Test sonucu kaydedilemedi.'));
-    setMsg('Test tamamlandı · D '+j.attempt.correct+' · Y '+j.attempt.wrong+' · B '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.reviewAdded+' yanlış tekrar kuyruğuna eklendi.':''));
+    setFinished(true);setFeedback(j.feedback||[]);
+    setMsg('Test tamamlandı · D '+j.attempt.correct+' · Y '+j.attempt.wrong+' · B '+j.attempt.blank+' · Net '+j.attempt.net
+     +(j.reviewAdded?' · '+j.wrongAdded+' yanlış ve '+j.blankAdded+' boş tekrar kuyruğuna eklendi.':''));
     await load();
   }
 
@@ -86,13 +95,14 @@ export function StudentPersonalQuestionBank(){
         <div>
           <div className="moduleEyebrow">KİŞİSEL SORU BANKASI</div>
           <h2>Yanlışlarım ve işaretlediğim sorular</h2>
-          <p className="muted">Yanlış yaptığın veya daha sonra tekrar görmek için işaretlediğin sorular tek havuzda tutulur.</p>
+          <p className="muted">Yanlış yaptığın, boş bıraktığın veya daha sonra tekrar görmek için işaretlediğin sorular ayrı etiketlerle tutulur. Her yanlış ve boş kayıt kişisel tekrarına bağlanır.</p>
         </div>
         <span className="pill">{stats.total} soru</span>
       </div>
 
       <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))'}}>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.wrong}</div><div className="muted">Yanlış soru</div></div>
+        <div className="card" style={{margin:0}}><div className="kpi">{stats.blank}</div><div className="muted">Boş bırakılan</div></div>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.marked}</div><div className="muted">İşaretlenen soru</div></div>
         <div className="card" style={{margin:0}}><div className="kpi">{stats.total}</div><div className="muted">Toplam kişisel havuz</div></div>
       </div>
@@ -119,9 +129,24 @@ export function StudentPersonalQuestionBank(){
               <input type="radio" name={'personal-'+q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(a=>({...a,[q.id]:key}))}/>
               <span><strong>{key}</strong>) {String(val)}</span>
             </label>)}</div>
-          :<input value={answers[q.id]||''} onChange={e=>setAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+          :<input value={answers[q.id]||''} disabled={finished} onChange={e=>setAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+        {!finished&&String(answers[q.id]||'').trim()&&<button type="button" className="btn" onClick={()=>setAnswers(a=>({...a,[q.id]:''}))}>Cevabı temizle</button>}
+        {!finished&&!String(answers[q.id]||'').trim()&&
+          <BlankReasonPicker questionId={q.id} value={blankReasons[q.id]||''}
+            onChange={v=>setBlankReasons(x=>({...x,[q.id]:v}))}/>}
       </article>)}
-      <button className="btn primary" style={{marginTop:16}} onClick={finish} disabled={busy==='finish'}>{busy==='finish'?'Sonuç hesaplanıyor…':'Testi Bitir ve Sonucu Kaydet'}</button>
+      {feedback.length>0&&<div className="stack" aria-live="polite" style={{marginTop:16}}>
+        <h3>Yanlış ve boş sorulardan öğrenme önerileri</h3>
+        {feedback.map((item,i)=><div key={item.questionId} className="notice">
+          <strong>{i+1}. {item.outcome==='BLANK'?'Boş bırakılan':'Yanlış yapılan'} soru · {item.level}</strong>
+          {item.blankReasonLabel&&<p>Belirttiğin neden: {item.blankReasonLabel} (öz bildirim)</p>}
+          <p>{item.firstStep}</p><p><strong>Derse özgü yöntem:</strong> {item.method}</p>
+          <small>{item.answerKeySource==='USER_PROVIDED_UNVERIFIED'?
+            'Bu sorunun cevap anahtarını öğrenci girmiştir; uzman doğrulaması yapılmış sayılmaz.':
+            'Onaylı soru bankası cevabı kullanılmıştır.'} Tek sonuç kalıcı öğrenme kanıtı değildir.</small>
+        </div>)}
+      </div>}
+      <button className="btn primary" style={{marginTop:16}} onClick={finish} disabled={busy==='finish'||finished}>{finished?'Test sonucu kaydedildi':busy==='finish'?'Sonuç hesaplanıyor…':'Testi Bitir ve Sonucu Kaydet'}</button>
     </div>}
 
     <div className="card">

@@ -1,4 +1,5 @@
 import {db} from '@/lib/db';
+import {reasonForPersonalReview} from '@/lib/quizErrorLearning';
 
 function record(v:unknown):Record<string,unknown>{
   return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
@@ -12,7 +13,7 @@ export type PersonalBankItem={
   prompt:string;
   sourceKind:string;
   addedAt:Date;
-  reason:'WRONG'|'MARKED'|'UPLOADED_WRONG';
+  reason:'WRONG'|'BLANK'|'MARKED'|'UPLOADED_WRONG';
   imageUrl:string|null;
 };
 
@@ -20,7 +21,7 @@ export async function buildPersonalQuestionBank(studentId:string){
   const [reviews,privateQuestions,logs]=await Promise.all([
     db.reviewQueueItem.findMany({
       where:{studentId},
-      include:{question:true},
+      include:{question:true,sourceAttempt:{select:{answers:true}}},
       orderBy:{updatedAt:'desc'},
       take:400
     }),
@@ -42,9 +43,13 @@ export async function buildPersonalQuestionBank(studentId:string){
   for(const row of reviews){
     const q=row.question;
     const meta=record(q.options);
+    const reason=reasonForPersonalReview({
+      questionId:q.id,options:q.options,sourceKind:q.sourceKind,sourceAttempt:row.sourceAttempt
+    });
     map.set(q.id,{
       questionId:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,sourceKind:q.sourceKind,
-      addedAt:row.createdAt,reason:String(q.sourceKind).startsWith('STUDENT_WRONG:')?'UPLOADED_WRONG':'WRONG',
+      addedAt:row.createdAt,reason:reason==='BLANK'?'BLANK':reason==='MARKED'?'MARKED':
+       String(q.sourceKind).startsWith('STUDENT_WRONG:')?'UPLOADED_WRONG':'WRONG',
       imageUrl:typeof meta.imageUrl==='string'?meta.imageUrl:null
     });
   }
@@ -54,7 +59,8 @@ export async function buildPersonalQuestionBank(studentId:string){
     const meta=record(q.options);
     map.set(q.id,{
       questionId:q.id,examType:q.examType,subject:q.subject,topic:q.topic,prompt:q.prompt,sourceKind:q.sourceKind,
-      addedAt:q.createdAt,reason:'UPLOADED_WRONG',
+      addedAt:q.createdAt,reason:meta.bankReason==='BLANK'?'BLANK':
+        meta.bankReason==='MARKED'?'MARKED':'UPLOADED_WRONG',
       imageUrl:typeof meta.imageUrl==='string'?meta.imageUrl:null
     });
   }
@@ -68,7 +74,9 @@ export async function buildPersonalQuestionBank(studentId:string){
   }
   const activeBookmarkIds=[...latestBookmark.entries()].filter(([,v])=>v.active).map(([id])=>id);
   const bookmarkedQuestions=activeBookmarkIds.length
-    ?await db.questionBankItem.findMany({where:{id:{in:activeBookmarkIds}}})
+    ?await db.questionBankItem.findMany({where:{id:{in:activeBookmarkIds},
+       OR:[{sourceKind:'STUDENT_WRONG:'+studentId,reviewStatus:'STUDENT_PRIVATE'},
+       {active:true,reviewStatus:'APPROVED',NOT:{sourceKind:{startsWith:'STUDENT_WRONG:'}}}]}})
     :[];
   for(const q of bookmarkedQuestions){
     if(map.has(q.id))continue;
@@ -140,7 +148,7 @@ export async function createPersonalBankQuiz(input:{
     quiz:{id:quiz.id,title:quiz.title,kind:input.kind},
     questions:questionIds.map(id=>byId.get(id)).filter(Boolean).map(q=>{
       const meta=record(q!.options);
-      const options=Object.fromEntries(Object.entries(meta).filter(([k])=>!k.startsWith('_')&&!['imageUrl','uploadId','originalStudentAnswer','classificationConfidence','classificationMethod'].includes(k)));
+      const options=Object.fromEntries(Object.entries(meta).filter(([k,v])=>/^[A-E]$/.test(k)&&typeof v==='string'));
       return {
         id:q!.id,
         examType:q!.examType,

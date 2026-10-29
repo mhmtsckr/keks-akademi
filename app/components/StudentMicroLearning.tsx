@@ -19,13 +19,13 @@ export function StudentMicroLearning(){
     if(lock.current)return;lock.current=true;setBusy(true);setError('');
     try{const r=await fetch('/api/student/micro-learning',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'start',kind})});const j=await r.json();if(!r.ok)throw new Error(j.error||'Görev başlatılamadı.');setSession(j);setAnswers({});setResult(null);setSeconds(0)}catch(e){setError(e instanceof Error?e.message:'Bağlantı kurulamadı.')}finally{lock.current=false;setBusy(false)}
   }
-  async function submit(){
+  async function submit(submitBlank=false){
     if(!session||lock.current)return;lock.current=true;setBusy(true);setError('');
     try{
       const review=Boolean(session.reviewId);
-      const r=await fetch(review?'/api/student/reviews':'/api/student/micro-learning',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(review?{id:session.reviewId,answer:answers['0']||'',microSessionId:session.sessionId}:{action:'submit',sessionId:session.sessionId,answers})});
+      const r=await fetch(review?'/api/student/reviews':'/api/student/micro-learning',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(review?{id:session.reviewId,answer:submitBlank?'':answers['0']||'',submitBlank,microSessionId:session.sessionId}:{action:'submit',sessionId:session.sessionId,answers})});
       const j=await r.json();if(!r.ok)throw new Error(j.error||'Sonuç kaydedilemedi.');
-      setResult(review?{correct:j.correct?1:0,wrong:j.correct?0:1,blank:0,total:1,items:[{id:'0',prompt:session.pack.items[0].prompt,answer:answers['0'],correctAnswer:j.correctAnswer,explanation:j.explanation||'',correct:j.correct,blank:false}],next:j.completed?'Tekrar döngüsünü tamamladın.':j.intervalReason}:j.result);
+      setResult(review?{correct:j.correct?1:0,wrong:j.correct||j.blank?0:1,blank:j.blank?1:0,total:1,items:[{id:'0',prompt:session.pack.items[0].prompt,answer:j.blank?'':answers['0'],correctAnswer:j.correctAnswer,explanation:j.explanation||'',correct:j.correct,blank:Boolean(j.blank)}],next:j.completed?'Tekrar döngüsünü tamamladın.':j.intervalReason}:j.result);
       await load();
     }catch(e){setError(e instanceof Error?e.message:'Sonuç kaydedilemedi. Cevapların ekranda duruyor; yeniden deneyebilirsin.')}finally{lock.current=false;setBusy(false)}
   }
@@ -50,7 +50,7 @@ export function StudentMicroLearning(){
       {!result&&<form className="stack" onSubmit={e=>{e.preventDefault();void submit()}}>
         {session.imageUrl&&<img src={session.imageUrl} alt="Tekrar sorusunun görseli" style={{maxWidth:'100%',maxHeight:400,objectFit:'contain'}}/>}
         {session.pack.items.map((item,i)=><label key={item.id} className="field"><span>{i+1}. {item.prompt}</span>{item.options?<select aria-label={item.prompt} value={answers[item.id]||''} disabled={busy} onChange={e=>setAnswers(x=>({...x,[item.id]:e.target.value}))}><option value="">Cevap seç / boş bırak</option>{item.options.map(o=><option key={o} value={o}>{o}</option>)}</select>:<input aria-label={item.prompt} autoComplete="off" value={answers[item.id]||''} maxLength={500} disabled={busy} placeholder={session.reviewId?'Cevabını yaz':'Sayısal cevabını yaz'} onChange={e=>setAnswers(x=>({...x,[item.id]:e.target.value}))}/>}</label>)}
-        <div className="row"><button className="btn primary" disabled={busy||!Object.values(answers).some(x=>x.trim())}>{busy?'Kaydediliyor…':'Kontrol et ve kaydet'}</button><button type="button" className="btn" disabled={busy} onClick={()=>{setSession(null);setError('')}}>Tamamlamadan kapat</button></div>
+        <div className="row"><button className="btn primary" disabled={busy||!Object.values(answers).some(x=>x.trim())}>{busy?'Kaydediliyor…':'Kontrol et ve kaydet'}</button>{session.reviewId&&<button type="button" className="btn" disabled={busy} onClick={()=>void submit(true)}>Bilmiyorum / Boş bırak</button>}<button type="button" className="btn" disabled={busy} onClick={()=>{setSession(null);setError('')}}>Tamamlamadan kapat</button></div>
       </form>}
       {result&&<div aria-live="polite"><h3>{result.correct}/{result.total} doğru · {result.wrong} yanlış · {result.blank} boş</h3><p>Çalışman kaydedildi. {result.correct===result.total?'Bu seti tamamladın.':'Aşağıdaki açıklamaları okuyup eksiklerini pekiştirebilirsin.'}</p>{result.items.map(item=><div className="notice" key={item.id}><strong>{item.correct?'Doğru':item.blank?'Boş':'Tekrar çalış'}: {item.prompt}</strong><p>Cevabın: {item.answer||'Boş'} · Doğru cevap: {item.correctAnswer}</p><p>{item.explanation}</p></div>)}{result.next&&<p>{result.next}</p>}<button className="btn" onClick={()=>{setSession(null);setResult(null);setError('')}}>Görevlere dön</button></div>}
       <small className="muted">Mini oturum başına en fazla 5 dakika kaydedilir. Bu alıştırmalar konu hâkimiyetinin tek başına ölçüsü değildir.</small>

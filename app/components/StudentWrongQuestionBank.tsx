@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { FormEvent,useEffect,useState } from 'react';
 import {StudentPerformanceTasks} from './StudentPerformanceTasks';
 import {WrongQuestionRecoveryPanel} from './WrongQuestionRecoveryPanel';
+import {BlankReasonPicker} from './BlankReasonPicker';
 
 const ERROR_REASONS=[
   ['','Henüz belirleyemedim'],
@@ -30,6 +31,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [support,setSupport]=useState<any|null>(null);
   const [practice,setPractice]=useState<any|null>(null);
   const [practiceAnswers,setPracticeAnswers]=useState<Record<string,string>>({});
+  const [practiceBlankReasons,setPracticeBlankReasons]=useState<Record<string,string>>({});
+  const [practiceFeedback,setPracticeFeedback]=useState<Array<{questionId:string;outcome:string;firstStep:string;method:string;level:string;blankReasonLabel?:string|null}>>([]);
   const [practiceResult,setPracticeResult]=useState<any|null>(null);
   const [practiceBusy,setPracticeBusy]=useState(false);
   const [guided,setGuided]=useState<any|null>(null);
@@ -59,7 +62,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     ]);
     const [wj,rj,lj]=await Promise.all([wr.json(),rr.json(),lr.json()]);
     if(wr.ok){setItems(wj.items||[]);setSets(wj.sets||null);}
-    if(rr.ok)setReviews((rj.items||[]).filter((x:any)=>String(x.question?.sourceKind||'').startsWith('STUDENT_WRONG:')));
+    if(rr.ok)setReviews(rj.items||[]);
     if(lr.ok){setLessonCatalog(lj.lessons||[]);setCurriculumContext(lj.curriculumContext||null);}
   }
   useEffect(()=>{void load()},[]);
@@ -93,12 +96,12 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     await load();
   }
 
-  async function answerReview(id:string){
-    const answer=String(reviewAnswers[id]||'').trim();
-    if(!answer)return;
+  async function answerReview(id:string,submitBlank=false){
+    const answer=submitBlank?'':String(reviewAnswers[id]||'').trim();
+    if(!answer&&!submitBlank)return;
     const r=await fetch('/api/student/reviews',{
       method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({id,answer,errorReason:reviewReasons[id]||undefined})
+      body:JSON.stringify({id,answer,submitBlank,errorReason:reviewReasons[id]||undefined})
     });
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Tekrar görevi kaydedilemedi.'));
@@ -110,7 +113,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     const streakText=j.correctStreak>=2?(' · Ardışık doğru: '+j.correctStreak):j.incorrectStreak>=2?(' · Ardışık yanlış: '+j.incorrectStreak):'';
     setMsg(j.correct
       ? (j.completed?'Doğru. Bu soru için aktif tekrar döngüsü tamamlandı.':'Doğru.'+intervalText+streakText+' · '+(j.intervalReason||'Kişisel unutma eğrisi güncellendi.'))
-      : 'Tekrar yanlış. Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
+      : (j.blank?'Tekrar boş bırakıldı. ':'Tekrar yanlış. ')+'Doğru cevap: '+j.correctAnswer+(j.explanation?' · '+j.explanation:'')+intervalText+streakText+' · '+(j.intervalReason||'Bir sonraki tekrar daha yakın tarihe çekildi.'));
     await load();
     setRecoveryRefreshToken(x=>x+1);
   }
@@ -156,22 +159,24 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       });
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Pekiştirme testi oluşturulamadı.'));return;}
-      setPractice(j);setPracticeAnswers({});setPracticeResult(null);
+      setPractice(j);setPracticeAnswers({});setPracticeBlankReasons({});setPracticeFeedback([]);setPracticeResult(null);
     }catch{setMsg('Hata: Pekiştirme testi yüklenemedi.');}
     finally{setPracticeBusy(false)}
   }
 
   async function finishPractice(){
-    if(!practice?.quiz?.id)return;
+    if(!practice?.quiz?.id||practiceResult||practiceBusy)return;
     setPracticeBusy(true);setMsg('');
     try{
       const r=await fetch('/api/student/quizzes/'+practice.quiz.id+'/attempt',{
         method:'POST',headers:{'content-type':'application/json'},
-        body:JSON.stringify({answers:practiceAnswers})
+        body:JSON.stringify({answers:practiceAnswers,blankReasons:Object.fromEntries(
+          Object.entries(practiceBlankReasons).filter(([id,reason])=>reason&&!String(practiceAnswers[id]||'').trim())
+        )})
       });
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Test kaydedilemedi.'));return;}
-      setPracticeResult(j.attempt);
+      setPracticeResult(j.attempt);setPracticeFeedback(j.feedback||[]);
       await load();
     }catch{setMsg('Hata: Test sonucu kaydedilemedi.');}
     finally{setPracticeBusy(false)}
@@ -211,14 +216,14 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
     <div className="card wrongQuestionDueCard">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Soruyu yeniden çöz. KEKS her soru için senin doğru/yanlış serini ve yakın dönem tekrar başarını öğrenir; güçlü hatırlamada aralığı uzatır, unutma sinyalinde tekrar tarihini öne çeker.</p></div>
+        <div><div className="moduleEyebrow">BUGÜNÜN YANLIŞ VE BOŞ SORU GÖREVLERİ</div><h2>Tekrar günü gelen sorular</h2><p className="muted">Yanlış veya boş bıraktığın soruları yeniden çöz. Boş bırakma, yanlış cevap sayılmaz. KEKS her sorunun tekrar aralığını sonraki cevaplarına göre düzenler; kalıcı öğrenme farklı sorularda ayrıca sınanır.</p></div>
         <span className="pill">{dueReviews.length} görev</span>
       </div>
-      {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış soru yok.</strong><div className="muted">Yeni yanlış yüklediğinde 0. gün görevi hemen burada görünür.</div></div>:<div className="wrongReviewTaskList">
+      {dueReviews.length===0?<div className="notice"><strong>Bugün vadesi gelen yanlış veya boş soru yok.</strong><div className="muted">Yanlış veya boş bırakılan sorular 0. gün tekrarına alınır.</div></div>:<div className="wrongReviewTaskList">
         {dueReviews.map((x:any)=><article className="wrongReviewTask" key={x.id}>
           <div className="wrongQuestionRowHead">
             <div><strong>{x.question.subject} · {x.question.topic}</strong><span>Aşama {x.stepIndex} · {new Date(x.dueAt).toLocaleDateString('tr-TR')}</span></div>
-            <span className="pill">TEKRAR GÖREVİ</span>
+            <span className="pill">{x.bankReason==='BLANK'?'BOŞTAN ÖĞRENME':x.bankReason==='MARKED'?'İŞARETLİ SORU':'YANLIŞTAN ÖĞRENME'}</span>
           </div>
           {x.question.imageUrl&&<Image src={x.question.imageUrl} alt="Tekrar görevi yanlış soru" width={900} height={600} unoptimized className="wrongReviewTaskImage"/>}
           <p>{x.question.prompt}</p>
@@ -229,6 +234,10 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
               {x.support.acquisition&&<p><strong>Kazanım:</strong> {x.support.acquisition.id} · {x.support.acquisition.label}</p>}
               {x.support.learningPlan&&<div>
                 <p><strong>{x.support.learningPlan.statusLabel} · {x.support.learningPlan.method}</strong></p>
+                {x.support.learningPlan.adaptation&&<p>
+                  <strong>{x.support.learningPlan.adaptation.stage}:</strong>{' '}
+                  {x.support.learningPlan.adaptation.guidedBy}. {x.support.learningPlan.adaptation.intervention}
+                </p>}
                 <p>{x.support.learningPlan.diagnosticQuestion}</p>
                 <ol>{x.support.learningPlan.steps.map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
                 <small className="muted">{x.support.learningPlan.note}</small>
@@ -244,7 +253,10 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
                 {ERROR_REASONS.map(([value,label])=><option value={value} key={value}>{label}</option>)}
               </select>
             </div>
-            <button className="btn primary" type="button" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>answerReview(x.id)}>Görevi Kontrol Et</button>
+            <div className="row" style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button className="btn primary" type="button" disabled={!String(reviewAnswers[x.id]||'').trim()} onClick={()=>answerReview(x.id)}>Görevi Kontrol Et</button>
+              <button className="btn" type="button" onClick={()=>answerReview(x.id,true)}>Bilmiyorum / Boş bırak</button>
+            </div>
           </div>
         </article>)}
       </div>}
@@ -333,13 +345,26 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <p>{q.prompt}</p>
           {q.inputMode==='CHOICE'
             ?Object.entries(q.options||{}).map(([key,value])=><label key={key} style={{display:'flex',gap:8,marginBottom:8}}>
-              <input type="radio" name={'remediation-'+q.id} checked={practiceAnswers[q.id]===key} onChange={()=>setPracticeAnswers(a=>({...a,[q.id]:key}))}/>
+              <input type="radio" disabled={Boolean(practiceResult)} name={'remediation-'+q.id} checked={practiceAnswers[q.id]===key} onChange={()=>setPracticeAnswers(a=>({...a,[q.id]:key}))}/>
               <span>{key}) {String(value)}</span>
             </label>)
-            :<input value={practiceAnswers[q.id]||''} onChange={e=>setPracticeAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+            :<input disabled={Boolean(practiceResult)} value={practiceAnswers[q.id]||''} onChange={e=>setPracticeAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+          {!practiceResult&&String(practiceAnswers[q.id]||'').trim()&&
+            <button type="button" className="btn" onClick={()=>setPracticeAnswers(a=>({...a,[q.id]:''}))}>Cevabı temizle</button>}
+          {!practiceResult&&!String(practiceAnswers[q.id]||'').trim()&&
+            <BlankReasonPicker questionId={q.id} value={practiceBlankReasons[q.id]||''}
+             onChange={v=>setPracticeBlankReasons(x=>({...x,[q.id]:v}))}/>}
         </article>)}
         {practiceResult
-          ?<div className="notice"><strong>Pekiştirme kaydedildi.</strong> {practiceResult.correct} doğru · {practiceResult.wrong} yanlış · {practiceResult.blank} boş. Yanlışların varsa tekrar kuyruğuna alındı.</div>
+          ?<div className="stack" aria-live="polite">
+             <div className="notice"><strong>Pekiştirme kaydedildi.</strong> {practiceResult.correct} doğru · {practiceResult.wrong} yanlış · {practiceResult.blank} boş. Yanlış ve boş soruların kişisel tekrarına alındı.</div>
+             {practiceFeedback.map((item,i)=><div className="notice" key={item.questionId}>
+               <strong>{i+1}. {item.outcome==='BLANK'?'Boş':'Yanlış'} · {item.level}</strong>
+               {item.blankReasonLabel&&<p>Belirttiğin neden: {item.blankReasonLabel} (öz bildirim)</p>}
+               <p>{item.firstStep} · {item.method}</p>
+               <small>Tek alıştırma doğru cevabı kalıcı öğrenme kanıtı değildir.</small>
+             </div>)}
+            </div>
           :<button type="button" className="btn primary" disabled={practiceBusy} onClick={finishPractice}>Pekiştirme Testini Kaydet</button>}
       </div>}
     </div>}
