@@ -5,6 +5,7 @@ import {db,resetDb} from './db';
 import {POST as submit} from '@/app/api/student/quizzes/[id]/attempt/route';
 import {GET as reviews} from '@/app/api/student/reviews/route';
 import {GET as bank,POST as bankPost} from '@/app/api/student/personal-question-bank/route';
+import {QUIZ_RECOVERY_EVIDENCE_TYPE} from '@/lib/blankReasonEvidence';
 
 let studentId:string,studentUserId:string,otherStudentId:string,quizId:string,questionIds:string[];
 const ctx=(id:string)=>({params:Promise.resolve({id})});
@@ -134,4 +135,51 @@ describe('wrong + blank all-level quiz recovery / PostgreSQL',()=>{
   expect(r.status).toBe(409);
   expect(await db.practiceQuizAttempt.count()).toBe(0);
  });
+ it('records reason only for verified blank answers with the true education band',async()=>{
+  const req=new Request('http://localhost/api/student/quizzes/'+quizId+'/attempt',{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({answers:{[questionIds[0]]:'',[questionIds[1]]:'A',[questionIds[2]]:'A'},
+    blankReasons:{[questionIds[0]]:'SURE'}})
+  });
+  const result=await submit(req,ctx(quizId));
+  expect(result.status).toBe(200);
+  const body=await result.json();
+  expect(body.feedback).toEqual(expect.arrayContaining([
+   expect.objectContaining({questionId:questionIds[0],outcome:'BLANK',
+    blankReason:'SURE',level:'İlkokul 1–3',recommendedQuestions:1,
+    answerKeySource:'APPROVED_BANK'})
+  ]));
+  const logs=await db.dailyLog.findMany({where:{
+   studentId,payload:{path:['type'],equals:QUIZ_RECOVERY_EVIDENCE_TYPE}
+  }});
+  expect(logs).toHaveLength(1);
+  expect(logs[0].payload).toMatchObject({
+   outcomeSource:'SERVER_ANSWER_KEY',reasonSource:'STUDENT_SELF_REPORT_WHEN_PROVIDED',
+   verifiedMastery:false
+  });
+  const events=(logs[0].payload as {outcomes:Array<{questionId:string;outcome:string;blankReason:string|null}>}).outcomes;
+  expect(events).toEqual(expect.arrayContaining([
+   expect.objectContaining({questionId:questionIds[0],outcome:'BLANK',blankReason:'SURE'}),
+   expect.objectContaining({questionId:questionIds[1],outcome:'WRONG',blankReason:null})
+  ]));
+  expect(JSON.stringify(logs[0].payload)).not.toContain('correctAnswer');
+  expect(await db.reviewQueueItem.count({where:{studentId}})).toBe(2);
+ });
+ it('rejects forged or invalid blank-reason claims atomically',async()=>{
+  const submitWithReasons=(blankReasons:Record<string,string>)=>submit(
+   new Request('http://localhost/api/student/quizzes/'+quizId+'/attempt',{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({answers:{[questionIds[0]]:'B',[questionIds[1]]:''},blankReasons})
+   }),ctx(quizId));
+  const invalidAnswered=await submitWithReasons({[questionIds[0]]:'SURE'});
+  expect(invalidAnswered.status).toBe(400);
+  const foreign=await submitWithReasons({notInQuiz:'SURE'});
+  expect(foreign.status).toBe(400);
+  const invalidReason=await submitWithReasons({[questionIds[1]]:'INVENTED'});
+  expect(invalidReason.status).toBe(400);
+  expect(await db.practiceQuizAttempt.count()).toBe(0);
+  expect(await db.reviewQueueItem.count()).toBe(0);
+  expect(await db.dailyLog.count()).toBe(0);
+ });
+
 });
