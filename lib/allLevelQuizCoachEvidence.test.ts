@@ -1,5 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {summarizeAllLevelQuizCoachEvidence} from './allLevelQuizCoachEvidence';
+import {EDUCATION_LEVELS} from '@/lib/educationLevels';
+import {QUIZ_RECOVERY_EVIDENCE_TYPE} from './blankReasonEvidence';
 const at=new Date('2026-10-28T12:00:00.000Z');
 const questions=[
  {id:'q1',subject:'Matematik',topic:'Problemler',sourceKind:'ORIGINAL',correctAnswer:'B'},
@@ -43,4 +45,56 @@ describe('regraded all-level coach evidence (not student self-reports)',()=>{
   expect(r.truncated).toBe(true);
   expect(r.verifiedMastery).toBe(false);
  });
+ it('links a reported blank reason only to a verified first quiz, with age-adapted coach guidance',()=>{
+  const row=trial('original','quiz-reason',['q1','q2'],{q1:'A',q2:''},
+   {correct:0,wrong:1,blank:1});
+  const correctLog={date:at,payload:{
+   type:QUIZ_RECOVERY_EVIDENCE_TYPE,version:3,
+   quizId:'quiz-reason',attemptId:'original',outcomeSource:'SERVER_ANSWER_KEY',
+   verifiedMastery:false,correct:0,wrong:1,blank:1,
+   outcomes:[
+    {questionId:'q1',outcome:'WRONG',blankReason:null},
+    {questionId:'q2',outcome:'BLANK',blankReason:'SURE'}
+   ]
+  }};
+  for(const gradeLevel of Object.values(EDUCATION_LEVELS)){
+   const v=summarizeAllLevelQuizCoachEvidence([row],questions,'me',{
+    reasonLogs:[correctLog],gradeLevel
+   });
+   expect(v).toMatchObject({tests:1,wrong:1,blank:1,reasonVerifiedAttempts:1,
+    verifiedMastery:false});
+   expect(v.topics[0].reasonCoverage).toBe(1);
+   expect(v.topics[0].primaryBlankReason).toBe('Sürem yetmedi');
+   expect(v.topics[0].reasonSource).toBe('STUDENT_SELF_REPORT_NOT_DIAGNOSIS');
+   expect(v.topics[0].maxSessionMinutes).toBeGreaterThan(0);
+   expect(v.topics[0].action).toContain('süresiz');
+  }
+ });
+ it('does not promote a forged reason or a result for another quiz',()=>{
+  const a=trial('first','quiz-1',['q1','q2'],{q1:'A',q2:''},
+   {correct:0,wrong:1,blank:1});
+  const invalid={date:at,payload:{
+   type:QUIZ_RECOVERY_EVIDENCE_TYPE,version:3,
+   quizId:'another-quiz',attemptId:'first',outcomeSource:'SERVER_ANSWER_KEY',
+   verifiedMastery:false,correct:0,wrong:1,blank:1,
+   outcomes:[{questionId:'q1',outcome:'WRONG',blankReason:null},
+    {questionId:'q2',outcome:'BLANK',blankReason:'BILGI_EKSIKLIGI'}]
+  }};
+  const v=summarizeAllLevelQuizCoachEvidence([a],questions,'me',{
+   reasonLogs:[invalid],gradeLevel:EDUCATION_LEVELS.MIDDLE_7
+  });
+  expect(v).toMatchObject({tests:1,wrong:1,blank:1,reasonVerifiedAttempts:0});
+  expect(v.topics[0].reasonCoverage).toBe(0);
+  expect(v.topics[0].primaryBlankReason).toBeNull();
+  expect(v.topics[0].action).toContain('Önce neden boş bırakıldığını');
+ });
+ it('uses no fabricated study load without a known level or exam context',()=>{
+  const a=trial('first','quiz-1',['q1'],{q1:'A'},
+    {correct:0,wrong:1,blank:0});
+  const v=summarizeAllLevelQuizCoachEvidence([a],questions,'me');
+  expect(v.topics[0]).toMatchObject({band:'UNRESOLVED',
+   maxSessionMinutes:0,suggestedFreshQuestions:0});
+  expect(v.topics[0].action).toContain('Eğitim düzeyini');
+ });
+
 });
