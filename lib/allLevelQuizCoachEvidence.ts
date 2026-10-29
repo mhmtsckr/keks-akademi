@@ -92,7 +92,7 @@ export function summarizeAllLevelQuizCoachEvidence(
       'Eğitim düzeyini ve sınav kapsamını doğrula; sınıfa özgü soru sayısı atama.':
       base+' '+level.guidedBy+'; ardından uygun onaylı, daha önce görülmemiş bir soruda kontrol et.';
     return {
-      subject:t.subject,topic:t.topic,correct:t.correct,wrong:t.wrong,blank:t.blank,
+      subject:t.subject,topic:t.topic,examType:t.examType,correct:t.correct,wrong:t.wrong,blank:t.blank,
       attempts:t.attempts,privateKeyCount:t.privateKeyCount,
       reasonCounts:t.reasonCounts,reasonCoverage:Object.values(t.reasonCounts)
        .reduce((sum,n)=>sum+(n||0),0),
