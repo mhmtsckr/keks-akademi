@@ -19,6 +19,7 @@ import { listResourceTracking } from '@/lib/resourceTracking';
 import { buildStudentIndicators } from '@/lib/studentIndicators';
 import {REMEDIATION_REASONS,isRemediationReason} from '@/lib/wrongQuestionRemediation';
 import {summarizeParagrafCoachEvidence} from '@/lib/paragrafCoachRemediation';
+import {summarizeAllLevelQuizCoachEvidence} from '@/lib/allLevelQuizCoachEvidence';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -116,6 +117,28 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     truncated:opticalLogs.length>1500
   };
 
+  // Re-grade only the coach's student from immutable PracticeQuizAttempt rows.
+  // Never trust a free-form DailyLog for correctness or coaching decisions.
+  const recentAttempts=await db.practiceQuizAttempt.findMany({
+    where:{studentId:id,createdAt:{gte:new Date(Date.now()-60*86400000)}},
+    include:{quiz:{select:{questionIds:true}}},take:151,
+    orderBy:{createdAt:'desc'}
+  });
+  const ids=[...new Set(recentAttempts.flatMap(a=>
+    Array.isArray(a.quiz.questionIds)?a.quiz.questionIds.filter(
+      (x):x is string=>typeof x==='string'&&x.length>0
+    ):[]
+  ))];
+  const quizQuestions=ids.length?await db.questionBankItem.findMany({
+    where:{id:{in:ids}},select:{
+      id:true,subject:true,topic:true,sourceKind:true,correctAnswer:true
+    }
+  }):[];
+  const allLevelWrongBlankEvidence=summarizeAllLevelQuizCoachEvidence(
+    recentAttempts.slice(0,150),quizQuestions,id,
+    {truncated:recentAttempts.length>150}
+  );
+
   const resourceSummary={
     total:resources.length,
     review:resources.filter((x:any)=>x.efficiency?.status==='REVIEW'),
@@ -124,7 +147,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     resources
   };
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,resourceTracking:resourceSummary});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,allLevelWrongBlankEvidence,resourceTracking:resourceSummary});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
