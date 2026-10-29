@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { FormEvent,useEffect,useState } from 'react';
 import {StudentPerformanceTasks} from './StudentPerformanceTasks';
 import {WrongQuestionRecoveryPanel} from './WrongQuestionRecoveryPanel';
+import {BlankReasonPicker} from './BlankReasonPicker';
 
 const ERROR_REASONS=[
   ['','Henüz belirleyemedim'],
@@ -30,6 +31,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [support,setSupport]=useState<any|null>(null);
   const [practice,setPractice]=useState<any|null>(null);
   const [practiceAnswers,setPracticeAnswers]=useState<Record<string,string>>({});
+  const [practiceBlankReasons,setPracticeBlankReasons]=useState<Record<string,string>>({});
+  const [practiceFeedback,setPracticeFeedback]=useState<Array<{questionId:string;outcome:string;firstStep:string;method:string;level:string;blankReasonLabel?:string|null}>>([]);
   const [practiceResult,setPracticeResult]=useState<any|null>(null);
   const [practiceBusy,setPracticeBusy]=useState(false);
   const [guided,setGuided]=useState<any|null>(null);
@@ -156,22 +159,24 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       });
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Pekiştirme testi oluşturulamadı.'));return;}
-      setPractice(j);setPracticeAnswers({});setPracticeResult(null);
+      setPractice(j);setPracticeAnswers({});setPracticeBlankReasons({});setPracticeFeedback([]);setPracticeResult(null);
     }catch{setMsg('Hata: Pekiştirme testi yüklenemedi.');}
     finally{setPracticeBusy(false)}
   }
 
   async function finishPractice(){
-    if(!practice?.quiz?.id)return;
+    if(!practice?.quiz?.id||practiceResult||practiceBusy)return;
     setPracticeBusy(true);setMsg('');
     try{
       const r=await fetch('/api/student/quizzes/'+practice.quiz.id+'/attempt',{
         method:'POST',headers:{'content-type':'application/json'},
-        body:JSON.stringify({answers:practiceAnswers})
+        body:JSON.stringify({answers:practiceAnswers,blankReasons:Object.fromEntries(
+          Object.entries(practiceBlankReasons).filter(([id,reason])=>reason&&!String(practiceAnswers[id]||'').trim())
+        )})
       });
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Test kaydedilemedi.'));return;}
-      setPracticeResult(j.attempt);
+      setPracticeResult(j.attempt);setPracticeFeedback(j.feedback||[]);
       await load();
     }catch{setMsg('Hata: Test sonucu kaydedilemedi.');}
     finally{setPracticeBusy(false)}
@@ -340,13 +345,26 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
           <p>{q.prompt}</p>
           {q.inputMode==='CHOICE'
             ?Object.entries(q.options||{}).map(([key,value])=><label key={key} style={{display:'flex',gap:8,marginBottom:8}}>
-              <input type="radio" name={'remediation-'+q.id} checked={practiceAnswers[q.id]===key} onChange={()=>setPracticeAnswers(a=>({...a,[q.id]:key}))}/>
+              <input type="radio" disabled={Boolean(practiceResult)} name={'remediation-'+q.id} checked={practiceAnswers[q.id]===key} onChange={()=>setPracticeAnswers(a=>({...a,[q.id]:key}))}/>
               <span>{key}) {String(value)}</span>
             </label>)
-            :<input value={practiceAnswers[q.id]||''} onChange={e=>setPracticeAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+            :<input disabled={Boolean(practiceResult)} value={practiceAnswers[q.id]||''} onChange={e=>setPracticeAnswers(a=>({...a,[q.id]:e.target.value}))} placeholder="Cevabını yaz"/>}
+          {!practiceResult&&String(practiceAnswers[q.id]||'').trim()&&
+            <button type="button" className="btn" onClick={()=>setPracticeAnswers(a=>({...a,[q.id]:''}))}>Cevabı temizle</button>}
+          {!practiceResult&&!String(practiceAnswers[q.id]||'').trim()&&
+            <BlankReasonPicker questionId={q.id} value={practiceBlankReasons[q.id]||''}
+             onChange={v=>setPracticeBlankReasons(x=>({...x,[q.id]:v}))}/>}
         </article>)}
         {practiceResult
-          ?<div className="notice"><strong>Pekiştirme kaydedildi.</strong> {practiceResult.correct} doğru · {practiceResult.wrong} yanlış · {practiceResult.blank} boş. Yanlışların varsa tekrar kuyruğuna alındı.</div>
+          ?<div className="stack" aria-live="polite">
+             <div className="notice"><strong>Pekiştirme kaydedildi.</strong> {practiceResult.correct} doğru · {practiceResult.wrong} yanlış · {practiceResult.blank} boş. Yanlış ve boş soruların kişisel tekrarına alındı.</div>
+             {practiceFeedback.map((item,i)=><div className="notice" key={item.questionId}>
+               <strong>{i+1}. {item.outcome==='BLANK'?'Boş':'Yanlış'} · {item.level}</strong>
+               {item.blankReasonLabel&&<p>Belirttiğin neden: {item.blankReasonLabel} (öz bildirim)</p>}
+               <p>{item.firstStep} · {item.method}</p>
+               <small>Tek alıştırma doğru cevabı kalıcı öğrenme kanıtı değildir.</small>
+             </div>)}
+            </div>
           :<button type="button" className="btn primary" disabled={practiceBusy} onClick={finishPractice}>Pekiştirme Testini Kaydet</button>}
       </div>}
     </div>}
