@@ -8,6 +8,7 @@ import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct
 import { detectEducationBand } from '@/lib/taskEvaluation';
 import { getScreeningForm,SCREENING_DISCLAIMER } from '@/lib/screeningForms';
 import { readJson, withApiErrors } from '@/lib/apiGuard';
+import { createRequestId,recordApiError } from '@/lib/errorMonitoring';
 import { writeAudit } from '@/lib/audit';
 import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
 
@@ -182,8 +183,8 @@ async function POST__handler(req:Request){
       report
     });
     await db.assessment.update({where:{id:assessment.id},data:{emailedAt:new Date()}});
-  }catch(error){
-    console.error('SCREENING_ADMIN_EMAIL_FAILED');
+  }catch(emailError){
+    await recordApiError(req,emailError,createRequestId(req));
   }
 
   return NextResponse.json({
