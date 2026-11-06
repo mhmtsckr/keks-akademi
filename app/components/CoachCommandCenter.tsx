@@ -70,7 +70,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
         {agenda.length===0?<p className="muted">Yaklaşan 7 günde planlı seans yok.</p>:<div className="agendaList">{agenda.map(x=><div className="agendaItem" key={x.id}>
           <div className="agendaTime"><b>{new Date(x.startsAt).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'})}</b><span>{new Date(x.startsAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</span></div>
           <div><strong>{x.studentName}</strong><span>{x.title}</span></div>
-          <div className="row"><a className="btn" href={'/koc/ogrenci/'+x.studentId+'#seans-akisi'}>Hazırlan</a>{x.meetingUrl&&<a className="btn primary" href={x.meetingUrl} target="_blank">Katıl</a>}</div>
+          <div className="row"><a className="btn" href={'/koc/ogrenci/'+x.studentId+'#seans-akisi'}>Hazırlan</a>{x.meetingUrl&&<a className="btn primary" href={x.meetingUrl} target="_blank" rel="noopener noreferrer">Katıl</a>}</div>
         </div>)}</div>}
       </div>
     </div>
