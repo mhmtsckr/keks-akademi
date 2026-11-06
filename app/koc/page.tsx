@@ -75,29 +75,31 @@ export default async function CoachPage() {
     },
     orderBy:{createdAt:'desc'}
   });
-  const mizaDailyLogs=students.length?await db.dailyLog.findMany({
-    where:{
-      studentId:{in:students.map(s=>s.id)},
-      date:{gte:todayStart,lt:tomorrowStart},
-      payload:{path:['type'],equals:'MIZA_DAILY_ORCHESTRATION_SUMMARY'}
-    },
-    select:{studentId:true,payload:true,createdAt:true},
-    orderBy:{createdAt:'desc'}
-  }):[];
+  const studentIds=students.map(s=>s.id);
+  const [mizaDailyLogs,coachTasks,weeklyActions]=await Promise.all([
+    students.length?db.dailyLog.findMany({
+      where:{
+        studentId:{in:studentIds},
+        date:{gte:todayStart,lt:tomorrowStart},
+        payload:{path:['type'],equals:'MIZA_DAILY_ORCHESTRATION_SUMMARY'}
+      },
+      select:{studentId:true,payload:true,createdAt:true},
+      orderBy:{createdAt:'desc'}
+    }):([] as Awaited<ReturnType<typeof db.dailyLog.findMany>>),
+    db.coachTask.findMany({
+      where:{coachId:user.coachProfile.id,status:{in:['OPEN','COMPLETED']}},
+      include:{student:{select:{id:true,fullName:true}}},
+      orderBy:[{status:'asc'},{dueAt:'asc'},{createdAt:'desc'}],
+      take:80
+    }),
+    db.coachingAction.findMany({where:{studentId:{in:studentIds},taskDate:{gte:sevenDaysAgo,lte:now}},select:{studentId:true,status:true,submission:{select:{id:true}}}}),
+  ]);
   const mizaSummaryByStudent=new Map<string,Record<string,any>>();
   for(const row of mizaDailyLogs){
     if(mizaSummaryByStudent.has(row.studentId))continue;
     const payload=row.payload&&typeof row.payload==='object'&&!Array.isArray(row.payload)?row.payload as Record<string,any>:{};
     mizaSummaryByStudent.set(row.studentId,payload);
   }
-
-  const coachTasks=await db.coachTask.findMany({
-    where:{coachId:user.coachProfile.id,status:{in:['OPEN','COMPLETED']}},
-    include:{student:{select:{id:true,fullName:true}}},
-    orderBy:[{status:'asc'},{dueAt:'asc'},{createdAt:'desc'}],
-    take:80
-  });
-  const weeklyActions=await db.coachingAction.findMany({where:{studentId:{in:students.map(s=>s.id)},taskDate:{gte:sevenDaysAgo,lte:now}},select:{studentId:true,status:true,submission:{select:{id:true}}}});
   const priorityStudents=students.map(s=>{
     const overdue=s.coachingActions.filter(a=>a.periodEnd<now).length;
     const high=s.coachAlerts.filter(a=>a.severity==='HIGH').length;
