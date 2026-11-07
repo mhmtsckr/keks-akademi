@@ -6,6 +6,7 @@
 import {REMEDIATION_REASONS,type RemediationReason} from './wrongQuestionRemediation';
 import {levelAwareErrorRecovery} from './levelAwareErrorRecovery';
 import {BLANK_REASON_CODES,blankReasonAction} from './blankReasonEvidence';
+import {buildAdvancedRecoveryProgram} from './advancedRecoveryProgram';
 
 export const WRONG_REFLECTION_TYPE='WRONG_QUESTION_REFLECTION' as const;
 export type ReflectionInput={
@@ -21,6 +22,8 @@ export type RecoveryContext={
   gradeLevel?:string|null;
   examType?:string|null;
   topic?:string|null;
+  subject?:string|null;
+  academicTrack?:string|null;
   classificationConfidence?:number|null;
 };
 export type NextRecoveryTask={
@@ -94,6 +97,14 @@ export function buildWrongRecovery(
  const failedReviews=reviews.filter(e=>meta(e.payload).correct!==true&&!reviewIsBlank(e)).length;
  const adaptation=levelAwareErrorRecovery({
   gradeLevel:context.gradeLevel,examType:context.examType,bankReason:context.bankReason
+ });
+ const advancedProgram=buildAdvancedRecoveryProgram({
+  band:adaptation.band,
+  reason:validReason?reason:null,
+  bankReason:context.bankReason,
+  examType:context.examType,academicTrack:context.academicTrack,
+  subject:context.subject,topic:context.topic,
+  consecutiveUnsuccessfulReviews:failureStreak
  });
  const defaultAction=validReason?mistakeAction(reason):context.bankReason==='BLANK'
   ?blankReasonAction(null):'Önce soru kökünü ve zorlandığın alt beceriyi belirle.';
@@ -169,6 +180,7 @@ export function buildWrongRecovery(
    evidenceScope:'Yalnız bu kişisel soruya ait yakın tarihli kayıtlar. Aynı sorunun tekrarı yeni soruya transfer veya kalıcı öğrenme kanıtı değildir.'
   },
   nextTask,
+  advancedProgram,
   adaptation:{band:adaptation.band,stage:adaptation.stage},
   masteryStatusUnchanged:true,reviewScheduleUnchanged:true
  };
