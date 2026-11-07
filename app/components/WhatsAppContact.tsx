@@ -1,5 +1,6 @@
 'use client';
 import {useState} from 'react';
+import {usePathname} from 'next/navigation';
 import {BUSINESS_INFO} from '@/lib/businessInfo';
 import {STUDENT_PLANS} from '@/lib/subscriptionPlans';
 
@@ -17,6 +18,7 @@ const studentLevels=STUDENT_PLANS.map(plan=>({
 }));
 
 export function WhatsAppContact(){
+ const pathname=usePathname();
  const [open,setOpen]=useState(false);
  const [audience,setAudience]=useState<Audience>('STUDENT');
  const [detail,setDetail]=useState('');
@@ -26,6 +28,8 @@ export function WhatsAppContact(){
  const message=`Merhaba KEKS Akademi! 👋\n\n${selected.label}. ${selected.detail}.\n${label}: ${detail.trim()||'-'}\n\nBana uygun abonelik planları ve ücretleri hakkında bilgi almak istiyorum.`;
  const href=`https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
  const canContinue=detail.trim().length>0;
+
+ if(pathname==='/iletisim')return null;
 
  return <div className="waContact">
   {open&&<div className="waPanel" role="dialog" aria-label="KEKS Akademi WhatsApp bilgi">
