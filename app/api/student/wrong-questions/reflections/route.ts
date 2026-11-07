@@ -27,7 +27,7 @@ async function GET__handler(){
  const [questions,reflections,guided,reviews]=await Promise.all([
   db.questionBankItem.findMany({
    where:{sourceKind:PRIVATE_PREFIX+studentId,reviewStatus:'STUDENT_PRIVATE'},
-   orderBy:{createdAt:'desc'},take:50,select:{id:true,examType:true,topic:true,options:true}
+   orderBy:{createdAt:'desc'},take:50,select:{id:true,examType:true,subject:true,topic:true,options:true}
   }),
   db.dailyLog.findMany({
    where:{studentId,payload:{path:['type'],equals:WRONG_REFLECTION_TYPE}},
@@ -52,7 +52,8 @@ async function GET__handler(){
   const rawKind=options.bankReason;
   return buildWrongRecovery(q.id,events,{
    bankReason:rawKind==='BLANK'||rawKind==='MARKED'?rawKind:'WRONG',
-   gradeLevel:user.student!.gradeLevel,examType:q.examType,topic:q.topic,
+   gradeLevel:user.student!.gradeLevel,academicTrack:user.student!.academicTrack,
+   examType:q.examType,subject:q.subject,topic:q.topic,
    classificationConfidence:typeof options.classificationConfidence==='number'
     ?options.classificationConfidence:null
   });
@@ -110,7 +111,8 @@ async function POST__handler(req:Request){
  const result=buildWrongRecovery(question.id,[row],{
   bankReason:questionOptions.bankReason==='BLANK'||questionOptions.bankReason==='MARKED'
    ?questionOptions.bankReason:'WRONG',
-  gradeLevel:user.student.gradeLevel,examType:question.examType,topic:question.topic,
+  gradeLevel:user.student.gradeLevel,academicTrack:user.student.academicTrack,
+  examType:question.examType,subject:question.subject,topic:question.topic,
   classificationConfidence:typeof questionOptions.classificationConfidence==='number'
    ?questionOptions.classificationConfidence:null
  });
