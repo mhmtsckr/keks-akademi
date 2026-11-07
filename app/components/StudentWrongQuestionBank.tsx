@@ -5,6 +5,7 @@ import { FormEvent,useEffect,useState } from 'react';
 import {StudentPerformanceTasks} from './StudentPerformanceTasks';
 import {WrongQuestionRecoveryPanel} from './WrongQuestionRecoveryPanel';
 import {BlankReasonPicker} from './BlankReasonPicker';
+import type {AdvancedRecoveryProgram} from '@/lib/advancedRecoveryProgram';
 
 const ERROR_REASONS=[
   ['','Henüz belirleyemedim'],
@@ -32,7 +33,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [practice,setPractice]=useState<any|null>(null);
   const [practiceAnswers,setPracticeAnswers]=useState<Record<string,string>>({});
   const [practiceBlankReasons,setPracticeBlankReasons]=useState<Record<string,string>>({});
-  const [practiceFeedback,setPracticeFeedback]=useState<Array<{questionId:string;outcome:string;firstStep:string;method:string;level:string;blankReasonLabel?:string|null}>>([]);
+  const [practiceFeedback,setPracticeFeedback]=useState<Array<{questionId:string;outcome:string;firstStep:string;method:string;level:string;blankReasonLabel?:string|null;advancedProgram?:AdvancedRecoveryProgram|null}>>([]);
   const [practiceResult,setPracticeResult]=useState<any|null>(null);
   const [practiceBusy,setPracticeBusy]=useState(false);
   const [practiceError,setPracticeError]=useState('');
@@ -383,6 +384,14 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
                <strong>{i+1}. {item.outcome==='BLANK'?'Boş':'Yanlış'} · {item.level}</strong>
                {item.blankReasonLabel&&<p>Belirttiğin neden: {item.blankReasonLabel} (öz bildirim)</p>}
                <p>{item.firstStep} · {item.method}</p>
+               {item.advancedProgram&&<details>
+                 <summary>{item.advancedProgram.heading} · {item.advancedProgram.methodLabel}</summary>
+                 <small>{item.advancedProgram.examScope} · {item.advancedProgram.totalMinutes} dakikalık öneri</small>
+                 <ol>{item.advancedProgram.steps.map((step,i)=><li key={i}>
+                   <strong>{step.title} ({step.minutes} dk):</strong> {step.instruction}
+                 </li>)}</ol>
+                 <p><strong>Kontrol:</strong> {item.advancedProgram.diagnosticCheck}</p>
+               </details>}
                <small>Tek alıştırma doğru cevabı kalıcı öğrenme kanıtı değildir.</small>
              </div>)}
             </div>
