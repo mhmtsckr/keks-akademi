@@ -115,7 +115,8 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
      const reason=isBlank?reasons[q.id]||null:null;
      const plan=buildSubjectRecoveryPlan({
        subject:q.subject,topic:q.topic,bankReason:isBlank?'BLANK':'WRONG',
-       gradeLevel:user.student!.gradeLevel,examType:q.examType
+       gradeLevel:user.student!.gradeLevel,examType:q.examType,
+       academicTrack:user.student!.academicTrack,errorReason:reason
      });
      return {
        questionId:q.id,subject:q.subject,topic:q.topic,outcome:isBlank?'BLANK':'WRONG',
@@ -123,6 +124,7 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
        blankReasonLabel:reason?BLANK_REASON_CODES[reason]:null,
        firstStep:isBlank?blankReasonAction(reason):'Hatanın oluştuğu çözüm adımını belirle.',
        method:plan.method,level:plan.adaptation.stage,
+       advancedProgram:plan.advancedProgram,
        recommendedQuestions:plan.adaptation.suggestedFreshQuestions,
        answerKeySource:q.sourceKind.startsWith('STUDENT_WRONG:')?
         'USER_PROVIDED_UNVERIFIED':'APPROVED_BANK',
