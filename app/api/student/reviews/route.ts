@@ -173,6 +173,7 @@ async function POST__handler(req:Request){
         questionId:item.questionId,
         subject:item.question.subject,
         topic:item.question.topic,
+        examType:item.question.examType,
         correct,
         outcome,blank,
         errorReason,
