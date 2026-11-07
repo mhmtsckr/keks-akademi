@@ -6,7 +6,7 @@ const LABELS:Record<string,string>={
   NEW:'Yeni',
   LEARNING:'Öğreniliyor',
   REINFORCING:'Pekiştiriliyor',
-  DURABLE:'Kalıcı',
+  DURABLE:'Kalıcılık sinyali',
   RISKY:'Riskli'
 };
 
@@ -46,7 +46,7 @@ export function StudentMasteryOverview(){
       <div>
         <div className="moduleEyebrow">KONU HÂKİMİYETİ · BASİT VE AÇIKLANABİLİR</div>
         <h2>Ne kadar bildiğin değil, bilginin ne durumda olduğu</h2>
-        <p className="muted">KEKS; son test, tekrar başarısı, soru süresi, yanlış nedeni, kaynak verimliliği ve unutma riskini birlikte değerlendirir.</p>
+        <p className="muted">Bu göstergeler genel öğrenme tahminidir. Kalıcılık sinyali kesin öğrenme kanıtı değildir; farklı onaylı sorularda ve farklı günlerdeki aktarım sonuçları ayrıca incelenir.</p><a href="#keks-konu-aktarim">Farklı soru ve gün kanıtlarını incele</a>
       </div>
       <span className="pill">{data.summary?.risky||0} riskli konu</span>
     </div>
@@ -55,7 +55,7 @@ export function StudentMasteryOverview(){
       <span className="pill">Yeni</span>
       <span className="pill">Öğreniliyor</span>
       <span className="pill">Pekiştiriliyor</span>
-      <span className="pill">Kalıcı</span>
+      <span className="pill">Kalıcılık sinyali</span>
       <span className="pill">Riskli</span>
     </div>
 
