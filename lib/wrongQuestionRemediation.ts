@@ -73,7 +73,8 @@ export function buildWrongQuestionSupport(input:{
     learningPlan:buildSubjectRecoveryPlan({
       subject:input.subject,topic:input.topic,bankReason:input.bankReason,
       classificationConfidence:input.classificationConfidence,hasGuidedLesson,
-      gradeLevel:input.gradeLevel,examType:input.examType
+      gradeLevel:input.gradeLevel,examType:input.examType,
+      academicTrack:input.academicTrack,errorReason:input.errorReason
     }),
     acquisition:matched?{id:matched.acquisition.id,label:matched.acquisition.label,unit:matched.unit,subTopic:matched.subTopic}:null,
     topicConfirmationNeeded:input.classificationConfidence!=null&&input.classificationConfidence<0.65,
