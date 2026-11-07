@@ -56,7 +56,30 @@ describe('coach student learning evidence authorization',()=>{
   expect(mocks.queues).not.toHaveBeenCalled();
   expect(mocks.quizAttempts).not.toHaveBeenCalled();
  });
- it('never accesses data without a coach profile',async()=>{
+ it('reports blank reviews separately from wrong answers to the coach',async()=>{
+  mocks.logs.mockResolvedValue([
+   {date:new Date('2026-11-07T11:00:00.000Z'),payload:{
+    type:'REVIEW_RESULT',subject:'Matematik',topic:'Problemler',
+    correct:false,blank:true,outcome:'BLANK',errorReason:'SURE'
+   }},
+   {date:new Date('2026-11-06T11:00:00.000Z'),payload:{
+    type:'REVIEW_RESULT',subject:'Matematik',topic:'Problemler',
+    correct:false,blank:false,outcome:'WRONG',errorReason:'ISLEM_HATASI'
+   }},
+   {date:new Date('2026-11-05T11:00:00.000Z'),payload:{
+    type:'REVIEW_RESULT',subject:'Matematik',topic:'Problemler',
+    correct:true,blank:false,outcome:'CORRECT'
+   }}
+  ]);
+  const res=await GET(request,ctx('student1'));
+  expect(res.status).toBe(200);
+  const data=await res.json();
+  expect(data.remediationPriorities).toHaveLength(1);
+  expect(data.remediationPriorities[0]).toMatchObject({
+   subject:'Matematik',topic:'Problemler',wrongCount:1,blankCount:1,totalReviews:3
+  });
+ });
+  it('never accesses data without a coach profile',async()=>{
   mocks.role.mockResolvedValue({id:'u',role:'ADMIN',coachProfile:null});
   const r=await GET(request,ctx('student1'));
   expect(r.status).toBe(403);
