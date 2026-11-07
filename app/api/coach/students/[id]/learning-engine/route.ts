@@ -18,6 +18,8 @@ import { buildLatestExamInterventionReport } from '@/lib/examIntervention';
 import { listResourceTracking } from '@/lib/resourceTracking';
 import { buildStudentIndicators } from '@/lib/studentIndicators';
 import {REMEDIATION_REASONS,isRemediationReason} from '@/lib/wrongQuestionRemediation';
+import {levelAwareErrorRecovery} from '@/lib/levelAwareErrorRecovery';
+import {buildAdvancedRecoveryProgram} from '@/lib/advancedRecoveryProgram';
 import {summarizeParagrafCoachEvidence} from '@/lib/paragrafCoachRemediation';
 import {summarizeAllLevelQuizCoachEvidence} from '@/lib/allLevelQuizCoachEvidence';
 
@@ -28,7 +30,7 @@ const simulationSchema=z.object({
 });
 
 async function ownedStudent(id:string,coachId:string){
-  return db.student.findFirst({where:{id,coachId},select:{id:true,fullName:true,studentCode:true}});
+  return db.student.findFirst({where:{id,coachId},select:{id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true}});
 }
 
 async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
@@ -57,7 +59,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     select:{date:true,payload:true},orderBy:{date:'desc'},take:500
   });
   const remediationMap=new Map<string,{
-    subject:string;topic:string;wrongCount:number;blankCount:number;totalReviews:number;
+    subject:string;topic:string;examType:string|null;wrongCount:number;blankCount:number;totalReviews:number;
     guidedAttempts:number;guidedCorrect:number;
     lastDifficultyAt:string;reasonCounts:Record<string,number>;
   }>();
@@ -68,10 +70,12 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
       ||typeof p.subject!=='string'||typeof p.topic!=='string')continue;
     const key=p.subject+'|'+p.topic;
     const row=remediationMap.get(key)||{
-      subject:p.subject,topic:p.topic,wrongCount:0,blankCount:0,totalReviews:0,
+      subject:p.subject,topic:p.topic,examType:null,wrongCount:0,blankCount:0,totalReviews:0,
       guidedAttempts:0,guidedCorrect:0,
       lastDifficultyAt:'',reasonCounts:{} as Record<string,number>
     };
+    if(p.type==='REVIEW_RESULT'&&typeof p.examType==='string'&&p.examType.trim())
+      row.examType=p.examType;
     if(p.type==='GUIDED_PRACTICE_RESULT'){
       row.guidedAttempts++;
       if(p.correct===true)row.guidedCorrect++;
@@ -92,8 +96,18 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     .sort((a,b)=>(b.wrongCount+b.blankCount)-(a.wrongCount+a.blankCount)||b.lastDifficultyAt.localeCompare(a.lastDifficultyAt))
     .slice(0,5).map(x=>{
       const strongest=Object.entries(x.reasonCounts).sort((a,b)=>b[1]-a[1])[0];
-      const reason=strongest?REMEDIATION_REASONS[strongest[0] as keyof typeof REMEDIATION_REASONS]:null;
-      return {...x,primaryReason:reason?.label||'Henüz sınıflandırılmadı',
+      const code=strongest&&isRemediationReason(strongest[0])?strongest[0]:null;
+      const reason=code?REMEDIATION_REASONS[code]:null;
+      const band=levelAwareErrorRecovery({
+        gradeLevel:student.gradeLevel,examType:x.examType,
+        bankReason:x.blankCount>x.wrongCount?'BLANK':'WRONG'
+      }).band;
+      const advancedProgram=buildAdvancedRecoveryProgram({
+        band,reason:code,examType:x.examType,academicTrack:student.academicTrack,
+        subject:x.subject,topic:x.topic,bankReason:x.blankCount>x.wrongCount?'BLANK':'WRONG'
+      });
+      return {...x,advancedProgram,
+        primaryReason:reason?.label||'Henüz sınıflandırılmadı',
         recommendedAction:reason?.instruction||(
           x.blankCount>x.wrongCount
            ?'Boş bırakma nedenini (bilgi, süre, yöntem, soru kökü veya kararsızlık) öğrenciyle belirle; kısa bir örnekten sonra yeni onaylı soruda kontrol et.'
