@@ -143,6 +143,15 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
             <p><strong>Bildirilmiş neden:</strong> {x.primaryReason}</p>
             <p className="muted"><strong>Özgün mini alıştırmalar:</strong> {x.guidedAttempts||0} deneme · {x.guidedCorrect||0} doğru. Bunlar kalıcı öğrenme kanıtı sayılmaz.</p>
             <p className="muted"><strong>Koç müdahalesi:</strong> {x.recommendedAction}</p>
+            {x.advancedProgram&&<details>
+              <summary>Öğrenciye uygun müdahale planı · {x.advancedProgram.methodLabel}</summary>
+              <p className="muted">{x.advancedProgram.heading} · {x.advancedProgram.examScope}</p>
+              <ol>{x.advancedProgram.steps.map((step:any,i:number)=><li key={i}>
+                <strong>{step.title} ({step.minutes} dk):</strong> {step.instruction}
+              </li>)}</ol>
+              <p><strong>Öğrenme kontrolü:</strong> {x.advancedProgram.diagnosticCheck}</p>
+              <small className="muted">{x.advancedProgram.transferEvidenceRule}</small>
+            </details>}
           </div>)}
         </div>}
     </div>
