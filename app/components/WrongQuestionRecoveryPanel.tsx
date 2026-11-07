@@ -8,16 +8,19 @@ const ERROR_REASONS=[
  ['DIKKAT','Dikkat'],
  ['SORU_KOKU','Soru kökünü yanlış okuma'],
  ['SURE','Süre yönetimi'],
+ ['KARARSIZLIK','İki seçenek arasında kararsızlık'],
  ['YONTEM_BILMEME','Yöntem bilmeme'],
  ['UNUTMA','Unutma'],
  ['BELIRLENEMEDI','Henüz belirleyemedim']
 ] as const;
+const BLANK_REASONS=new Set(['BILGI_EKSIKLIGI','SORU_KOKU','SURE','KARARSIZLIK','YONTEM_BILMEME','UNUTMA','BELIRLENEMEDI']);
 const CHECKS:Record<string,string>={
  BILGI_EKSIKLIGI:'Temel kavramı notlara bakmadan açıkla, ardından farklı soruyla kontrol et.',
  ISLEM_HATASI:'Çözümü adımlara böl; ara işlem, işaret ve birim kontrolü yap.',
  DIKKAT:'Verilenleri ve isteneni işaretle; sonucun tutarlılığını denetle.',
  SORU_KOKU:'Sorunun son cümlesindeki isteneni kendi sözlerinle tekrar yaz.',
  SURE:'Önce süresiz doğru çöz; sonraki soruda süreni ölç.',
+ KARARSIZLIK:'İki olası cevabın dayanaklarını karşılaştır ve eleme gerekçeni yaz.',
  YONTEM_BILMEME:'Seçtiğin yöntemin niçin uygun olduğunu gerekçelendir.',
  UNUTMA:'Kuralı notsuz hatırla ve ileriki tekrar gününde yeniden uygula.',
  BELIRLENEMEDI:'Önce hangi alt beceride zorlandığını belirlemek için koçundan destek iste.'
@@ -25,7 +28,12 @@ const CHECKS:Record<string,string>={
 type Question={id:string;subject:string;topic:string;classificationConfidence?:number;review?:{id:string}|null;bankReason?:string};
 type Reflection={reason:string;reasonLabel:string;mistakenStep:string;correctedPrinciple:string;nextTimeCheck:string;recordedAt:string;suggestedAction:string};
 type Recovery={questionId:string;stage:string;label:string;reflection:Reflection|null;
- evidence:{guided:{correct:boolean;at:string}|null;independentReview:{correct:boolean;at:string}|null; evidenceScope:string};
+ evidence:{guided:{correct:boolean;at:string}|null;
+ independentReview:{correct:boolean;blank:boolean;at:string}|null;
+ reviewAttempts:number;wrongReviews:number;blankReviews:number;consecutiveUnsuccessfulReviews:number;
+ evidenceScope:string};
+ nextTask:{code:string;title:string;instruction:string;freshQuestionTarget:number;maxSessionMinutes:number;coachSupportSuggested:boolean};
+ adaptation:{band:string;stage:string};
  masteryStatusUnchanged:boolean;reviewScheduleUnchanged:boolean};
 type Snapshot={items:Recovery[];summary:{totalPersonalQuestions:number;withReflection:number;guidedCorrect:number;independentReviewCorrect:number;}};
 export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:{
@@ -58,9 +66,12 @@ export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:
  },[items,chosen]);
  const current=items.find(q=>q.id===chosen)||null;
  const recovery=snapshot?.items.find(x=>x.questionId===chosen)||null;
+ const availableReasons=current?.bankReason==='BLANK'?ERROR_REASONS.filter(([id])=>BLANK_REASONS.has(id)):ERROR_REASONS;
  useEffect(()=>{
   const r=snapshot?.items.find(x=>x.questionId===chosen)?.reflection;
-  setReason(r?.reason||'BILGI_EKSIKLIGI');
+  const blank=items.find(q=>q.id===chosen)?.bankReason==='BLANK';
+  const selected=r?.reason|| (blank?'BELIRLENEMEDI':'BILGI_EKSIKLIGI');
+  setReason(blank&&!BLANK_REASONS.has(selected)?'BELIRLENEMEDI':selected);
   setMistakenStep(r?.mistakenStep||'');
   setCorrectedPrinciple(r?.correctedPrinciple||'');
   setNextTimeCheck(r?.nextTimeCheck||'');
@@ -106,6 +117,7 @@ export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:
      {current.classificationConfidence!=null&&current.classificationConfidence<0.65
       ?' · Otomatik konu eşleşmesi düşük güvenli; konu adını kontrol et.' :''}
     </p>
+    {current.bankReason==='BLANK'&&<p><strong>Boş bırakılan soru:</strong> Yanlış cevapla aynı sayılmaz; nedenini özellikle belirle.</p>}
     {recovery?.reflection&&<>
       <p><strong>Son kendi değerlendirmen:</strong> {recovery.reflection.reasonLabel} · {new Date(recovery.reflection.recordedAt).toLocaleDateString('tr-TR')}</p>
       <p><strong>Önerilen strateji:</strong> {recovery.reflection.suggestedAction}</p>
@@ -115,16 +127,28 @@ export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:
        ?'Yeni çözümlü örnek: '+(recovery.evidence.guided.correct?'Doğru yanıt':'Yeniden çalışma gerekli')
        :'Yeni çözümlü örnek: henüz sonuç yok'}</small>
      <small>{recovery?.evidence.independentReview
-       ?'Bağımsız kişisel soru tekrarı: '+(recovery.evidence.independentReview.correct?'Doğru yanıt':'Tekrar güçlüğü')
+       ?'Kişisel soru tekrarı: '+(recovery.evidence.independentReview.correct?'Doğru yanıt':recovery.evidence.independentReview.blank?'Boş bırakıldı':'Yanlış cevap')
        :'Bağımsız kişisel soru tekrarı: henüz sonuç yok'}</small>
     </div>
-    <small className="muted">Bu göstergeler kesin kazanım hâkimiyeti veya doğrulanmış öğretmen çözümü değildir; tekrar takvimini değiştirmez.</small>
+    {recovery&&<small>
+      Bu analizden sonra: {recovery.evidence.reviewAttempts} kişisel soru tekrarı · {recovery.evidence.wrongReviews} yanlış · {recovery.evidence.blankReviews} boş
+      {recovery.evidence.consecutiveUnsuccessfulReviews>=2?' · Üst üste zorlanma tespit edildi.':''}
+     </small>}
+    {recovery?.nextTask&&<div className="stack" style={{gap:5}}>
+      <strong>Sıradaki öğrenme görevin: {recovery.nextTask.title}</strong>
+      <p>{recovery.nextTask.instruction}</p>
+      <small>{recovery.adaptation.stage} · Önerilen kısa oturum: {recovery.nextTask.maxSessionMinutes||'Önce düzeyi doğrula'}{recovery.nextTask.maxSessionMinutes?' dk':''}
+       {recovery.nextTask.freshQuestionTarget>0?' · '+recovery.nextTask.freshQuestionTarget+' yeni onaylı soru hedefi':''}
+      </small>
+      {recovery.nextTask.coachSupportSuggested&&<small><strong>Koç/öğretmen kontrolü önerilir.</strong></small>}
+     </div>}
+    <small className="muted">Bu göstergeler kesin kazanım hâkimiyeti veya doğrulanmış öğretmen çözümü değildir; kişisel tekrar takvimi ayrı çalışır. Yeni soru yalnız uygun, onaylı havuzda varsa sunulur.</small>
    </div>
    <form onSubmit={e=>void save(e)} className="stack">
     <label className="field">
      <span>1. Neden yanlış yaptım veya boş bıraktım?</span>
      <select value={reason} onChange={e=>setReason(e.target.value)}>
-      {ERROR_REASONS.map(([id,label])=><option key={id} value={id}>{label}</option>)}
+      {availableReasons.map(([id,label])=><option key={id} value={id}>{label}</option>)}
      </select>
     </label>
     <p className="muted"><strong>Önerilen yaklaşım:</strong> {CHECKS[reason]}</p>
