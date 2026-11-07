@@ -1630,3 +1630,22 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .salesLeadEditor .salesLeadWide{grid-column:auto}
   .salesLeadHead{flex-direction:column}
 }
+
+
+/* Official user-supplied KEKS emblem: unchanged artwork, white margins trimmed only by display box. */
+.homeBrandLogo,.portalBrandLogo{
+  display:block;width:94px;height:104px;object-fit:cover;object-position:center;
+  border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.18);
+}
+.homeNav{min-height:124px;padding:10px 0;}
+.portalNav{min-height:118px;height:auto;padding:7px 0;}
+.portalBrandCompact .portalBrandLogo{width:84px;height:94px}
+@media (max-width:860px){
+  .homeBrandLogo{width:82px;height:92px}
+  .homeNav{min-height:110px}
+}
+@media (max-width:650px){
+  .portalBrandLogo{width:78px;height:88px}
+  .portalNav{min-height:96px}
+  .homeBrandLogo{width:78px;height:88px}
+}
