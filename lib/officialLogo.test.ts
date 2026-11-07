@@ -22,9 +22,9 @@ describe('KEKS Akademi official uploaded emblem',()=>{
   expect(read('app/components/PortalShell.tsx')).not.toContain('portalHeroOfficialLogo');
  });
  it('points browser favicon and PWA identity at the same uploaded emblem',()=>{
-  expect(read('app/layout.tsx')).toContain("url:'/keks-official-2026.webp'");
-  expect(read('app/manifest.ts')).toContain("src:'/keks-official-2026.webp'");
-  expect(read('app/favicon.ico/route.ts')).toContain("'/keks-official-2026.webp'");
+  expect(read('app/layout.tsx')).toContain("url:'/keks-official-2026-square.webp'");
+  expect(read('app/manifest.ts')).toContain("src:'/keks-official-2026-square.webp'");
+  expect(read('app/favicon.ico/route.ts')).toContain("'/keks-official-2026-square.webp'");
   expect(fs.existsSync(path.join(ROOT,'app/icon.svg'))).toBe(false);
  });
 });
