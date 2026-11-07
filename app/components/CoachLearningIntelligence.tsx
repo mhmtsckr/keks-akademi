@@ -127,18 +127,18 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
       <div className="moduleHeaderRow">
         <div>
           <div className="moduleEyebrow">YANLIŞTAN ÖĞRENME · KOÇ AKSİYONLARI</div>
-          <h2>Tekrar başarısızlığı olan konular</h2>
+          <h2>Yanlış ve boş tekrarlarda zorlanılan konular</h2>
           <p className="muted">Son 30 günün tekrar cevapları kullanılır. Hata nedeni öğrencinin beyanıdır; kesin tanı değildir.</p>
         </div>
         <span className="pill">{data.remediationPriorities?.length||0} öncelik</span>
       </div>
       {!data.remediationPriorities?.length
-        ?<p className="muted">Son 30 günde kaydedilmiş yanlış tekrar yanıtı yok.</p>
+        ?<p className="muted">Son 30 günde kaydedilmiş yanlış veya boş tekrar yanıtı yok.</p>
         :<div className="stack">
           {data.remediationPriorities.map((x:any)=><div className="card" key={x.subject+'|'+x.topic} style={{margin:0}}>
             <div className="moduleHeaderRow">
               <strong>{x.subject} · {x.topic}</strong>
-              <span className="pill">{x.wrongCount}/{x.totalReviews} yanlış tekrar</span>
+              <span className="pill">{x.wrongCount||0} yanlış · {x.blankCount||0} boş / {x.totalReviews} tekrar</span>
             </div>
             <p><strong>Bildirilmiş neden:</strong> {x.primaryReason}</p>
             <p className="muted"><strong>Özgün mini alıştırmalar:</strong> {x.guidedAttempts||0} deneme · {x.guidedCorrect||0} doğru. Bunlar kalıcı öğrenme kanıtı sayılmaz.</p>
