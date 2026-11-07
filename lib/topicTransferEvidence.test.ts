@@ -51,7 +51,23 @@ describe('independent, distinct-question, multi-day topic retention evidence',()
    status:'NEEDS_NEW_QUESTIONS',newQuestions:0,delayedQuestions:0
   });
  });
- it('does not count same day or previously prepared quizzes as delayed independent evidence',()=>{
+ it('a question previously shown in an unsubmitted quiz is not a novel transfer question',()=>{
+  const trials=[
+   attempt('base','q0',0,'A'),attempt('first-completed','q1',2,'B')
+  ];
+  const result=summarizeTopicTransferEvidence(trials,[q('q0'),q('q1')],'my-student',{
+   asOf,
+   quizExposures:[
+    {createdAt:days(-1),questionIds:['q1']},
+    {createdAt:days(0),questionIds:['q0']},
+    {createdAt:days(2),questionIds:['q1']}
+   ]
+  });
+  expect(result.topics[0]).toMatchObject({
+   status:'NEEDS_NEW_QUESTIONS',newQuestions:0,delayedQuestions:0
+  });
+ });
+  it('does not count same day or previously prepared quizzes as delayed independent evidence',()=>{
   const sameDay=attempt('immediate','q1',0,'B');
   sameDay.createdAt=new Date(days(0).getTime()+60*60*1000);
   sameDay.quiz.createdAt=new Date(days(0).getTime()+30*60*1000);
