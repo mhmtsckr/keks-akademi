@@ -3,7 +3,7 @@ import {z} from 'zod';
 import {requireRole} from '@/lib/auth';
 import {readJson,withApiErrors} from '@/lib/apiGuard';
 import {db} from '@/lib/db';
-import {resolveLearningCurriculumContext} from '@/lib/curriculumPolicy2026';
+import {resolveLearningCurriculumContext,canonicalExamType} from '@/lib/curriculumPolicy2026';
 import {buildSubjectRecoveryPlan} from '@/lib/subjectRecoveryPlan';
 import {reasonForPersonalReview} from '@/lib/quizErrorLearning';
 import {chooseFreshSubjectPractice,SUBJECT_PRACTICE_DAILY_LIMIT,
@@ -41,6 +41,21 @@ async function POST__handler(req:Request){
     error:'Öğrencinin gerçek sınıfı veya sınav kapsamı belirli değil. Farklı soru sunmadan önce eğitim düzeyini doğrulayın.',
     code:'EDUCATION_LEVEL_UNRESOLVED',curriculum
   },{status:409});
+  // Adult / graduate candidates must choose the actual exam, not a catch-all
+  // GENEL label: otherwise unrelated questions look like an empty bank.
+  if(curriculum.framework==='OSYM'&&!canonicalExamType(origin.examType))
+    return NextResponse.json({
+      error:'Bu soruda sınav türü GENEL olarak kayıtlı. Önce TYT/AYT/YDT, AGS/ÖABT, KPSS, ALES, DGS, YDS veya YÖKDİL gibi gerçek sınav türünü belirle.',
+      code:'EXAM_TYPE_UNRESOLVED'
+    },{status:409});
+  if(origin.sourceKind.startsWith('STUDENT_WRONG:')&&
+     typeof originMeta.classificationConfidence==='number'&&
+     originMeta.classificationConfidence<0.65){
+    return NextResponse.json({
+      error:'Otomatik alt konu eşleşmesi güvenilir değil. Kişisel soru bankasından konuyu düzeltip doğruladıktan sonra yeni soru seç.',
+      code:'TOPIC_CONFIRMATION_REQUIRED'
+    },{status:409});
+  }
   // All previous generated quizzes count as exposure, even if never submitted.
   // Also avoid giving the student a question already in their personal review queue.
   const [priorQuizzes,reviewedQuestions,dailyCount,candidates]=await Promise.all([
