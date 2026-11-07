@@ -22,6 +22,12 @@ export async function loadTopicTransferEvidence(studentId:string){
    ?attempt.quiz.questionIds.filter((q):q is string=>typeof q==='string'&&q.length>0)
    :[]
  ))];
+ const exposureHistoryLimit=2000;
+ const allQuizExposures=selected.length?await db.practiceQuiz.findMany({
+  where:{studentId},orderBy:{createdAt:'desc'},
+  take:exposureHistoryLimit+1,
+  select:{createdAt:true,questionIds:true}
+ }):[];
  const questions=ids.length?await db.questionBankItem.findMany({
   where:{id:{in:ids}},
   select:{
@@ -30,6 +36,7 @@ export async function loadTopicTransferEvidence(studentId:string){
   }
  }):[];
  return summarizeTopicTransferEvidence(selected,questions,studentId,{
-  truncated:attempts.length>TOPIC_TRANSFER_ATTEMPT_LIMIT
+  truncated:attempts.length>TOPIC_TRANSFER_ATTEMPT_LIMIT||allQuizExposures.length>exposureHistoryLimit,
+  quizExposures:allQuizExposures.slice(0,exposureHistoryLimit)
  });
 }
