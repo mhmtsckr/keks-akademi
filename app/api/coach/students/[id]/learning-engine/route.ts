@@ -22,6 +22,7 @@ import {levelAwareErrorRecovery} from '@/lib/levelAwareErrorRecovery';
 import {buildAdvancedRecoveryProgram} from '@/lib/advancedRecoveryProgram';
 import {summarizeParagrafCoachEvidence} from '@/lib/paragrafCoachRemediation';
 import {summarizeAllLevelQuizCoachEvidence} from '@/lib/allLevelQuizCoachEvidence';
+import {loadTopicTransferEvidence} from '@/lib/topicTransferService';
 
 const simulationSchema=z.object({
   dailyMinutes:z.number().int().min(30).max(480),
@@ -40,7 +41,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
   const student=await ownedStudent(id,user.coachProfile.id);
   if(!student)return NextResponse.json({error:'Öğrenci bulunamadı.'},{status:404});
 
-  const [capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,resources,indicators]=await Promise.all([
+  const [capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,resources,indicators,topicTransfer]=await Promise.all([
     buildCapacityProfile(id),
     buildTopicMastery(id),
     buildSubjectLearningModels(id),
@@ -51,7 +52,8 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     buildExamKnowledgeMap(id),
     buildCoachStudentAlignmentSignals(id),
     listResourceTracking(id),
-    buildStudentIndicators(id)
+    buildStudentIndicators(id),
+    loadTopicTransferEvidence(id)
   ]);
 
   const recentLogs=await db.dailyLog.findMany({
@@ -166,7 +168,7 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     resources
   };
 
-  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,allLevelWrongBlankEvidence,resourceTracking:resourceSummary});
+  return NextResponse.json({ok:true,student,capacity,mastery,subjects,goal,impact,timeline,examReport,examMap,alignment,indicators,remediationPriorities,paragrafCoachEvidence,allLevelWrongBlankEvidence,topicTransfer,resourceTracking:resourceSummary});
 }
 
 async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>}){
