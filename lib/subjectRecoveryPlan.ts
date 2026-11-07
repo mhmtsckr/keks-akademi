@@ -3,6 +3,8 @@
  * An identified subject alone is not proof of a specific topic, official outcome or mastery.
  */
 import {levelAwareErrorRecovery} from './levelAwareErrorRecovery';
+import {buildAdvancedRecoveryProgram,type AdvancedRecoveryProgram} from './advancedRecoveryProgram';
+import type {RemediationReason} from './wrongQuestionRemediation';
 export type BankLearningReason='WRONG'|'BLANK'|'MARKED';
 export type LearningFamily='MATHEMATICS'|'TURKISH'|'LITERATURE'|'HISTORY'|'GEOGRAPHY'|'SCIENCE'|
  'ENGLISH'|'PHILOSOPHY'|'RELIGION'|'EDUCATION'|'LEGISLATION'|'OTHER';
@@ -11,6 +13,7 @@ export type RecoveryPlan={
   diagnosticQuestion:string;steps:string[];reviewDays:readonly number[];
   needsTopicConfirmation:boolean;contentStatus:'GUIDED_IF_AVAILABLE'|'METHOD_ONLY';
   adaptation:ReturnType<typeof levelAwareErrorRecovery>;
+  advancedProgram:AdvancedRecoveryProgram|null;
   note:string;
 };
 export const PERSONAL_RECOVERY_DAYS=[0,1,3,7,14,28] as const;
@@ -107,11 +110,17 @@ const SPECIFIC_TURKISH:readonly {pattern:RegExp;name:string;check:string;transfe
 ];
 export function buildSubjectRecoveryPlan(input:{
  subject:string;topic:string;bankReason?:string|null;classificationConfidence?:number|null;
- hasGuidedLesson?:boolean;gradeLevel?:string|null;examType?:string|null
+ hasGuidedLesson?:boolean;gradeLevel?:string|null;examType?:string|null;
+ academicTrack?:string|null;errorReason?:RemediationReason|null
 }):RecoveryPlan{
  const status:BankLearningReason=input.bankReason==='BLANK'?'BLANK':input.bankReason==='MARKED'?'MARKED':'WRONG';
  const adaptation=levelAwareErrorRecovery({
   gradeLevel:input.gradeLevel,examType:input.examType,bankReason:status
+ });
+ const advancedProgram=buildAdvancedRecoveryProgram({
+  band:adaptation.band,reason:input.errorReason||null,
+  bankReason:status,examType:input.examType,academicTrack:input.academicTrack,
+  subject:input.subject,topic:input.topic
  });
  const family=classifyRecoveryFamily(input.subject);
  const base=METHODS[family],topic=norm(input.topic||'');
@@ -127,7 +136,7 @@ export function buildSubjectRecoveryPlan(input:{
  const method=specific?.name||base.name;
  return {
   status,statusLabel:status==='BLANK'?'Boş bırakılan soru':status==='MARKED'?'İşaretlenen soru':'Yanlış yapılan soru',
-  family,method,diagnosticQuestion,adaptation,
+  family,method,diagnosticQuestion,adaptation,advancedProgram,
   steps:[
    first,
    needsTopicConfirmation?'Dersi ve alt beceriyi öğrenci/koç olarak doğrula; düşük güvenli sınıflandırmadan resmî kazanım üretme.':
