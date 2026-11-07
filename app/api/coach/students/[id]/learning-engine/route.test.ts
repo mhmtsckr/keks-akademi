@@ -51,7 +51,7 @@ describe('coach student learning evidence authorization',()=>{
   const r=await GET(request,ctx('otherStudent'));
   expect(r.status).toBe(404);
   expect(mocks.student).toHaveBeenCalledWith({where:{id:'otherStudent',coachId:'coach1'},
-   select:{id:true,fullName:true,studentCode:true}});
+   select:{id:true,fullName:true,studentCode:true,gradeLevel:true,academicTrack:true}});
   expect(mocks.logs).not.toHaveBeenCalled();
   expect(mocks.queues).not.toHaveBeenCalled();
   expect(mocks.quizAttempts).not.toHaveBeenCalled();
@@ -77,6 +77,24 @@ describe('coach student learning evidence authorization',()=>{
   expect(data.remediationPriorities).toHaveLength(1);
   expect(data.remediationPriorities[0]).toMatchObject({
    subject:'Matematik',topic:'Problemler',wrongCount:1,blankCount:1,totalReviews:3
+  });
+ });
+  it('tailors coach intervention to an adult professional exam when evidence includes exam type',async()=>{
+  mocks.student.mockResolvedValue({
+    id:'student1',fullName:'Adult Candidate',studentCode:'TEST-1',
+    gradeLevel:'Yetişkin',academicTrack:'DKAB'
+  });
+  mocks.logs.mockResolvedValue([{
+    date:new Date('2026-11-07T11:00:00Z'),
+    payload:{type:'REVIEW_RESULT',questionId:'question1',subject:'Din Kültürü',
+      topic:'Tefsir',examType:'ÖABT',correct:false,outcome:'WRONG',errorReason:'UNUTMA'}
+  }]);
+  const response=await GET(request,ctx('student1'));
+  expect(response.status).toBe(200);
+  const result=await response.json();
+  expect(result.remediationPriorities[0].advancedProgram).toMatchObject({
+    audience:'EXAM_CANDIDATE',examScope:expect.stringContaining('ÖABT'),
+    method:'ACTIVE_RECALL',totalMinutes:15
   });
  });
   it('never accesses data without a coach profile',async()=>{
