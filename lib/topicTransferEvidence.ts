@@ -28,6 +28,7 @@ export type TopicTransferRow={
  nextAction:string;independentTransferObserved:boolean;verifiedMastery:false;
 };
 type Classified={id:string;at:number;quizCreatedAt:number;outcome:'CORRECT'|'WRONG'|'BLANK'};
+export type TopicQuizExposure={createdAt:Date;questionIds:unknown};
 const object=(v:unknown):Record<string,unknown>=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
 const dayKey=(ts:number)=>new Intl.DateTimeFormat('en-CA',{
  timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'
@@ -39,11 +40,24 @@ function validDate(value:unknown):value is Date{
 
 export function summarizeTopicTransferEvidence(
  attempts:readonly TopicTransferAttempt[],questions:readonly TopicTransferQuestion[],
- studentId:string,opts:{truncated?:boolean;asOf?:Date}={}
+ studentId:string,opts:{truncated?:boolean;asOf?:Date;quizExposures?:readonly TopicQuizExposure[]}={}
 ){
  const now=validDate(opts.asOf)?opts.asOf!.getTime():Date.now();
  const cutoff=now-TOPIC_TRANSFER_WINDOW_DAYS*DAY;
  const byQuestion=new Map(questions.map(q=>[q.id,q]));
+ const firstKnownExposure=new Map<string,number>();
+ if(opts.quizExposures){
+  for(const quiz of opts.quizExposures){
+   if(!validDate(quiz.createdAt)||quiz.createdAt.getTime()>now||
+      !Array.isArray(quiz.questionIds))continue;
+   for(const id of quiz.questionIds){
+    if(typeof id!=='string'||!id)continue;
+    const at=quiz.createdAt.getTime();
+    const prior=firstKnownExposure.get(id);
+    if(prior===undefined||at<prior)firstKnownExposure.set(id,at);
+   }
+  }
+ }
  const seenQuizzes=new Set<string>();
  const seenQuestionIds=new Set<string>();
  const rows=new Map<string,{q:TopicTransferQuestion;events:Classified[]}>();
@@ -106,7 +120,9 @@ export function summarizeTopicTransferEvidence(
   const firstSession=ordered.filter(e=>e.at===baselineAt&&e.outcome!=='CORRECT');
   const baselineWrong=firstSession.filter(e=>e.outcome==='WRONG').length;
   const baselineBlank=firstSession.filter(e=>e.outcome==='BLANK').length;
-  const subsequent=ordered.filter(e=>e.at>baselineAt&&e.quizCreatedAt>baselineAt);
+  const subsequent=ordered.filter(e=>e.at>baselineAt&&e.quizCreatedAt>baselineAt&&(
+   !opts.quizExposures||(firstKnownExposure.has(e.id)&&firstKnownExposure.get(e.id)!>baselineAt)
+  ));
   const delayed=subsequent.filter(e=>e.at-baselineAt>=DAY);
   const days=new Set(delayed.map(e=>dayKey(e.at)));
   const delayedCorrect=delayed.filter(e=>e.outcome==='CORRECT').length;
@@ -175,6 +191,6 @@ export function summarizeTopicTransferEvidence(
   },
   evidenceType:'SERVER_REGRADED_IMMUTABLE_QUIZ_ATTEMPTS' as const,
   verifiedMastery:false as const,
-  note:'Bu ölçüm son 90 gündeki onaylı soru anahtarıyla yeniden değerlendirilen testlerden oluşur. Yeni soruların ilk kaydı ve en az 24 saat aralıklı, farklı günlere yayılmış sonuçlar esas alınır. Öğrenci yüklemeleri, yönlendirmeli örnekler, aynı soru tekrarları ve doğrulanamayan testler olumlu aktarım sayılmaz. Güçlü işaret bile kalıcı öğrenmeyi veya bir müdahalenin nedensel etkisini ispatlamaz.'
+  note:'Bu ölçüm son 90 gündeki onaylı soru anahtarıyla yeniden değerlendirilen testlerden oluşur. Yeni soruların kayıtlı testlerde ilk görülme zamanı ve en az 24 saat aralıklı, farklı günlere yayılmış sonuçlar esas alınır. Öğrenci yüklemeleri, yönlendirmeli örnekler, aynı soru tekrarları ve doğrulanamayan testler olumlu aktarım sayılmaz. Güçlü işaret bile kalıcı öğrenmeyi veya bir müdahalenin nedensel etkisini ispatlamaz.'
  };
 }
