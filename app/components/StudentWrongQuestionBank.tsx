@@ -35,6 +35,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   const [practiceFeedback,setPracticeFeedback]=useState<Array<{questionId:string;outcome:string;firstStep:string;method:string;level:string;blankReasonLabel?:string|null}>>([]);
   const [practiceResult,setPracticeResult]=useState<any|null>(null);
   const [practiceBusy,setPracticeBusy]=useState(false);
+  const [practiceError,setPracticeError]=useState('');
   const [guided,setGuided]=useState<any|null>(null);
   const [guidedAnswer,setGuidedAnswer]=useState('');
   const [guidedResult,setGuidedResult]=useState<any|null>(null);
@@ -151,16 +152,24 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
   }
 
   async function startPractice(reviewId:string){
-    setPracticeBusy(true);setMsg('');
+    setPracticeBusy(true);setMsg('');setPracticeError('');
     try{
       const r=await fetch('/api/student/reviews/practice',{
         method:'POST',headers:{'content-type':'application/json'},
         body:JSON.stringify({reviewId})
       });
       const j=await r.json();
-      if(!r.ok){setMsg('Hata: '+(j.error||'Pekiştirme testi oluşturulamadı.'));return;}
+      if(!r.ok){
+        const detail=j.error||'Pekiştirme testi oluşturulamadı.';
+        setPracticeError(detail);
+        setMsg('Bilgi: '+detail);
+        return;
+      }
       setPractice(j);setPracticeAnswers({});setPracticeBlankReasons({});setPracticeFeedback([]);setPracticeResult(null);
-    }catch{setMsg('Hata: Pekiştirme testi yüklenemedi.');}
+    }catch{
+      setPracticeError('Yeni sorular alınamadı. Bağlantıyı kontrol edip yeniden dene.');
+      setMsg('Hata: Pekiştirme testi yüklenemedi.');
+    }
     finally{setPracticeBusy(false)}
   }
 
@@ -184,6 +193,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
 
   function showSupportForPersonalQuestion(q:any){
     if(!q.review?.id)return;
+    setPracticeError('');
     setSupport({
       reviewId:q.review.id,subject:q.subject,topic:q.topic,
       topicConfirmationNeeded:(q.classificationConfidence||0)<0.65,
@@ -290,6 +300,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
         ?<div className="notice"><strong>Yüklenen çözüm notu (doğrulama gerektirebilir):</strong> {support.explanation}</div>
         :<div className="notice">Yüklenen soruya ait doğrulanmış bir çözüm yok. İlgili beceri için ayrı hazırlanmış bir çözümlü örnek varsa aşağıdan çalışabilirsin.</div>}
       <ol>{(support.steps||[]).map((step:string,i:number)=><li key={i}>{step}</li>)}</ol>
+      {practiceError&&<div className="notice" role="status"><strong>Yeni soru önerisi oluşturulamadı.</strong><p>{practiceError}</p></div>}
       <div className="row" style={{flexWrap:'wrap',marginTop:12}}>
         <button type="button" className="btn primary" disabled={guidedBusy} onClick={()=>startGuided(support.reviewId)}>
           {guidedBusy?'Hazırlanıyor…':'Çözümlü Örnek ve Mini Alıştırma'}
@@ -419,7 +430,13 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       <form className="wrongQuestionForm" onSubmit={submit}>
         <div className="field">
           <label>Sınav / grup</label>
-          <input name="examType" defaultValue={defaultExam} required/>
+          <input name="examType" list="keks-wrong-exams" defaultValue={defaultExam} required
+            placeholder="Örn. TYT, AYT, AGS, ÖABT, KPSS"/>
+          <datalist id="keks-wrong-exams">
+            {['OKUL','TYT','AYT','YDT','YKS','LGS','AGS','ÖABT','KPSS','EKPSS','ALES','DGS','YDS','YÖKDİL'].map(exam=>
+              <option value={exam} key={exam}/>)}
+          </datalist>
+          <small className="muted">Özellikle lise 12, mezun ve yetişkin sınav adaylarında gerçek sınavı seç. “GENEL” kaydı, sınavına özel yeni soruyla eşleştirilemez.</small>
         </div>
         <div className="field">
           <label>Kayıt nedeni</label>
