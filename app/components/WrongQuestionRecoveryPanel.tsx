@@ -1,6 +1,7 @@
 'use client';
 
 import {FormEvent,useEffect,useState} from 'react';
+import type {AdvancedRecoveryProgram} from '@/lib/advancedRecoveryProgram';
 
 const ERROR_REASONS=[
  ['BILGI_EKSIKLIGI','Bilgi eksikliği'],
@@ -33,11 +34,13 @@ type Recovery={questionId:string;stage:string;label:string;reflection:Reflection
  reviewAttempts:number;wrongReviews:number;blankReviews:number;consecutiveUnsuccessfulReviews:number;
  evidenceScope:string};
  nextTask:{code:string;title:string;instruction:string;freshQuestionTarget:number;maxSessionMinutes:number;coachSupportSuggested:boolean};
+ advancedProgram:AdvancedRecoveryProgram|null;
  adaptation:{band:string;stage:string};
  masteryStatusUnchanged:boolean;reviewScheduleUnchanged:boolean};
 type Snapshot={items:Recovery[];summary:{totalPersonalQuestions:number;withReflection:number;guidedCorrect:number;independentReviewCorrect:number;}};
-export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:{
- items:Question[];onStartGuided:(question:Question)=>void;refreshToken?:number
+export function WrongQuestionRecoveryPanel({items,onStartGuided,onStartPractice,refreshToken=0}:{
+ items:Question[];onStartGuided:(question:Question)=>void;
+ onStartPractice:(question:Question)=>void;refreshToken?:number
 }){
  const [snapshot,setSnapshot]=useState<Snapshot|null>(null);
  const [chosen,setChosen]=useState('');
@@ -142,6 +145,18 @@ export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:
       </small>
       {recovery.nextTask.coachSupportSuggested&&<small><strong>Koç/öğretmen kontrolü önerilir.</strong></small>}
      </div>}
+    {recovery?.advancedProgram&&<section className="card" style={{margin:0}} aria-label="Kişisel öğrenme protokolü">
+      <strong>{recovery.advancedProgram.heading}</strong>
+      <p className="muted">{recovery.advancedProgram.examScope}</p>
+      <p><strong>Öğrenme yöntemi:</strong> {recovery.advancedProgram.methodLabel}</p>
+      <ol>{recovery.advancedProgram.steps.map((step,i)=><li key={i}>
+        <strong>{step.title} · {step.minutes} dk</strong>
+        <p>{step.instruction}</p>
+      </li>)}</ol>
+      <p><strong>Kendini kontrol et:</strong> {recovery.advancedProgram.diagnosticCheck}</p>
+      <small className="muted">{recovery.advancedProgram.transferEvidenceRule}</small>
+      <small className="muted">{recovery.advancedProgram.note}</small>
+    </section>}
     <small className="muted">Bu göstergeler kesin kazanım hâkimiyeti veya doğrulanmış öğretmen çözümü değildir; kişisel tekrar takvimi ayrı çalışır. Yeni soru yalnız uygun, onaylı havuzda varsa sunulur.</small>
    </div>
    <form onSubmit={e=>void save(e)} className="stack">
@@ -172,6 +187,10 @@ export function WrongQuestionRecoveryPanel({items,onStartGuided,refreshToken=0}:
      {current.review?.id&&<button type="button" className="btn" onClick={()=>onStartGuided(current)}>
       Farklı Çözümlü Örnek Çalış
      </button>}
+     {current.review?.id&&recovery?.nextTask&&['GUIDED_PRACTICE','RELEARN','TRANSFER_CHECK'].includes(recovery.nextTask.code)&&
+      <button type="button" className="btn" onClick={()=>onStartPractice(current)}>
+       Havuzdan Yeni Onaylı Sorularla Dene
+      </button>}
      <button className="btn" type="button" onClick={()=>void load()} disabled={loading}>Sonuçları Yenile</button>
     </div>
     <small className="muted">Yazdığın kuralın doğruluğu otomatik onaylanmaz; gerektiğinde koçuna veya öğretmenine doğrulat.</small>
