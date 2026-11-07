@@ -6,7 +6,11 @@ import { WhatsAppContact } from '@/app/components/WhatsAppContact';
 export const metadata = {
   title: 'KEKS Akademi',
   description: 'Kazandıran Eğitim ve Koçluk Sistemi',
-  icons: { icon: '/keks-logo.svg', apple: '/keks-logo.svg' },
+  icons: {
+    icon: [{url:'/keks-official-2026.webp',type:'image/webp',sizes:'128x192'}],
+    shortcut: '/keks-official-2026.webp',
+    apple: '/keks-official-2026.webp',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
