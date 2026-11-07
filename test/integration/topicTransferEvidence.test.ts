@@ -49,7 +49,23 @@ describe('topic transfer PostgreSQL-backed student isolation',()=>{
    status:'NEEDS_NEW_QUESTIONS',newQuestions:0,verifiedMastery:false
   });
  });
- it('never treats a learner-entered private answer key as delayed approved transfer',async()=>{
+ it('excludes different questions already generated before the learner first failed',async()=>{
+  const s=await createStudent('TOPIC_PREVIEWED_D');
+  const baseline=await question('baseline-pre');
+  const existing=await question('already-seen');
+  await db.practiceQuiz.create({data:{
+   studentId:s.id,title:'Önceden oluşturulmuş test',examType:'TYT',
+   subject:'Matematik',topic:'Problemler',questionIds:[existing.id],
+   createdAt:time(16)
+  }});
+  await solve(s.id,baseline.id,15,'A');
+  await solve(s.id,existing.id,2,'B');
+  const evidence=await loadTopicTransferEvidence(s.id);
+  expect(evidence.topics[0]).toMatchObject({
+   status:'NEEDS_NEW_QUESTIONS',newQuestions:0,delayedQuestions:0
+  });
+ });
+  it('never treats a learner-entered private answer key as delayed approved transfer',async()=>{
   const s=await createStudent('TOPIC_PRIVATE_C');
   const baseline=await question('baseline');
   const privateQuestion=await db.questionBankItem.create({data:{
