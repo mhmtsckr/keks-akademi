@@ -57,9 +57,9 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     select:{date:true,payload:true},orderBy:{date:'desc'},take:500
   });
   const remediationMap=new Map<string,{
-    subject:string;topic:string;wrongCount:number;totalReviews:number;
+    subject:string;topic:string;wrongCount:number;blankCount:number;totalReviews:number;
     guidedAttempts:number;guidedCorrect:number;
-    lastWrongAt:string;reasonCounts:Record<string,number>;
+    lastDifficultyAt:string;reasonCounts:Record<string,number>;
   }>();
   for(const log of recentLogs){
     const p=(log.payload&&typeof log.payload==='object'&&!Array.isArray(log.payload))
@@ -68,9 +68,9 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
       ||typeof p.subject!=='string'||typeof p.topic!=='string')continue;
     const key=p.subject+'|'+p.topic;
     const row=remediationMap.get(key)||{
-      subject:p.subject,topic:p.topic,wrongCount:0,totalReviews:0,
+      subject:p.subject,topic:p.topic,wrongCount:0,blankCount:0,totalReviews:0,
       guidedAttempts:0,guidedCorrect:0,
-      lastWrongAt:'',reasonCounts:{} as Record<string,number>
+      lastDifficultyAt:'',reasonCounts:{} as Record<string,number>
     };
     if(p.type==='GUIDED_PRACTICE_RESULT'){
       row.guidedAttempts++;
@@ -80,20 +80,25 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
     }
     row.totalReviews++;
     if(p.correct===false){
-      row.wrongCount++;
-      if(!row.lastWrongAt)row.lastWrongAt=log.date.toISOString();
+      if(p.outcome==='BLANK'||p.blank===true)row.blankCount++;
+      else row.wrongCount++;
+      if(!row.lastDifficultyAt)row.lastDifficultyAt=log.date.toISOString();
       if(isRemediationReason(p.errorReason))row.reasonCounts[p.errorReason]=(row.reasonCounts[p.errorReason]||0)+1;
     }
     remediationMap.set(key,row);
   }
   const remediationPriorities=[...remediationMap.values()]
-    .filter(x=>x.wrongCount>0)
-    .sort((a,b)=>b.wrongCount-a.wrongCount||b.lastWrongAt.localeCompare(a.lastWrongAt))
+    .filter(x=>x.wrongCount+x.blankCount>0)
+    .sort((a,b)=>(b.wrongCount+b.blankCount)-(a.wrongCount+a.blankCount)||b.lastDifficultyAt.localeCompare(a.lastDifficultyAt))
     .slice(0,5).map(x=>{
       const strongest=Object.entries(x.reasonCounts).sort((a,b)=>b[1]-a[1])[0];
       const reason=strongest?REMEDIATION_REASONS[strongest[0] as keyof typeof REMEDIATION_REASONS]:null;
       return {...x,primaryReason:reason?.label||'Henüz sınıflandırılmadı',
-        recommendedAction:reason?.instruction||'Öğrencinin çözüm adımlarını kontrol et, konuyu kısa çalıştır ve yeni soru ile ölç.'};
+        recommendedAction:reason?.instruction||(
+          x.blankCount>x.wrongCount
+           ?'Boş bırakma nedenini (bilgi, süre, yöntem, soru kökü veya kararsızlık) öğrenciyle belirle; kısa bir örnekten sonra yeni onaylı soruda kontrol et.'
+           :'Öğrencinin çözüm adımlarını kontrol et, konuyu kısa çalıştır ve yeni onaylı soru ile ölç.'
+        )};
     });
 
   // The print-optical first attempt is stored as DailyLog.kind (not type).
