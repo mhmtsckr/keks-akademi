@@ -80,8 +80,8 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     return ()=>{alive=false};
   },[gradeSelection,defaultExam]);
   useEffect(()=>{
-    if(guided)document.getElementById('keks-guided-remediation')?.scrollIntoView({behavior:'smooth',block:'start'});
-  },[guided]);
+    if(guided||practice)document.getElementById('keks-guided-remediation')?.scrollIntoView({behavior:'smooth',block:'start'});
+  },[guided,practice]);
 
   async function submit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setBusy(true);setMsg('');
@@ -182,7 +182,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     finally{setPracticeBusy(false)}
   }
 
-  function openGuidedFromBank(q:any){
+  function showSupportForPersonalQuestion(q:any){
     if(!q.review?.id)return;
     setSupport({
       reviewId:q.review.id,subject:q.subject,topic:q.topic,
@@ -191,7 +191,17 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       instruction:'Konuyu ayrı hazırlanmış örnek üzerinde incele, ardından kendi soruna tekrar dön.',
       explanation:q.explanation||null,steps:[]
     });
+  }
+  function openGuidedFromBank(q:any){
+    if(!q.review?.id)return;
+    showSupportForPersonalQuestion(q);
     void startGuided(q.review.id);
+  }
+  function openPracticeFromBank(q:any){
+    if(!q.review?.id)return;
+    showSupportForPersonalQuestion(q);
+    setGuided(null);setGuidedResult(null);
+    void startPractice(q.review.id);
   }
 
   async function saveTopic(questionId:string,current:string){
@@ -465,7 +475,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       </form>
     </div>
 
-    <WrongQuestionRecoveryPanel items={items} onStartGuided={openGuidedFromBank} refreshToken={recoveryRefreshToken}/>
+    <WrongQuestionRecoveryPanel items={items} onStartGuided={openGuidedFromBank} onStartPractice={openPracticeFromBank} refreshToken={recoveryRefreshToken}/>
 
     <div className="card">
       <div className="moduleHeaderRow">
