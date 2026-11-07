@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { FormEvent,useEffect,useState } from 'react';
 import {StudentPerformanceTasks} from './StudentPerformanceTasks';
 import {WrongQuestionRecoveryPanel} from './WrongQuestionRecoveryPanel';
+import {StudentTopicTransferPanel} from './StudentTopicTransferPanel';
 import {BlankReasonPicker} from './BlankReasonPicker';
 import type {AdvancedRecoveryProgram} from '@/lib/advancedRecoveryProgram';
 
@@ -96,6 +97,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
     setMsg(j.message+' · Tekrar motoru 0–1–3–7–14–28 gün tabanlıdır; sonraki aralık performansına göre otomatik değişir.');
     form.reset();setSelectedSubject('');
     await load();
+    setRecoveryRefreshToken(x=>x+1);
   }
 
   async function answerReview(id:string,submitBlank=false){
@@ -188,6 +190,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       if(!r.ok){setMsg('Hata: '+(j.error||'Test kaydedilemedi.'));return;}
       setPracticeResult(j.attempt);setPracticeFeedback(j.feedback||[]);
       await load();
+      setRecoveryRefreshToken(x=>x+1);
     }catch{setMsg('Hata: Test sonucu kaydedilemedi.');}
     finally{setPracticeBusy(false)}
   }
@@ -501,6 +504,7 @@ export function StudentWrongQuestionBank({defaultExam}:{defaultExam:string}){
       </form>
     </div>
 
+    <StudentTopicTransferPanel refreshToken={recoveryRefreshToken}/>
     <WrongQuestionRecoveryPanel items={items} onStartGuided={openGuidedFromBank} onStartPractice={openPracticeFromBank} refreshToken={recoveryRefreshToken}/>
 
     <div className="card">
