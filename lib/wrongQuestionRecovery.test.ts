@@ -94,3 +94,71 @@ describe('Yanlıştan Öğrenmeye soruya bağlı düşünme ve kanıt',()=>{
   expect(RECOVERY_LABELS.GUIDED_CORRECT).not.toContain('Kalıcı');
  });
 });
+
+describe('Yanlış ve boş soru için kanıta dayalı sonraki görev önerisi',()=>{
+ it('boş tekrarı yanlış saymadan ayrı izler ve neden odaklı çalışma önerir',()=>{
+  const r=buildWrongRecovery('q-a',[
+   reflect(),
+   event('blank-review','REVIEW_RESULT','q-a','2026-10-11T12:00:00Z',{correct:false,blank:true,outcome:'BLANK'})
+  ],{bankReason:'BLANK',gradeLevel:'4. sınıf',examType:'GENEL',topic:'Kesirler',classificationConfidence:1});
+  expect(r.stage).toBe('REVIEW_BLANK');
+  expect(r.evidence.independentReview?.blank).toBe(true);
+  expect(r.evidence.blankReviews).toBe(1);
+  expect(r.evidence.wrongReviews).toBe(0);
+  expect(r.nextTask.code).toBe('RELEARN');
+  expect(r.nextTask.freshQuestionTarget).toBe(2);
+  expect(r.nextTask.maxSessionMinutes).toBe(7);
+  expect(r.nextTask.coachSupportSuggested).toBe(false);
+ });
+ it('aynı soruda iki ardışık başarısız bağımsız denemede koç kontrolüne yöneltir',()=>{
+  const r=buildWrongRecovery('q-a',[
+   reflect(),
+   event('wrong','REVIEW_RESULT','q-a','2026-10-11T12:00:00Z',{correct:false,outcome:'WRONG'}),
+   event('blank','REVIEW_RESULT','q-a','2026-10-12T12:00:00Z',{correct:false,blank:true,outcome:'BLANK'}),
+   event('guided','GUIDED_PRACTICE_RESULT','q-a','2026-10-13T12:00:00Z',{correct:true})
+  ],{bankReason:'WRONG',gradeLevel:'12. sınıf',examType:'TYT',topic:'Paragraf',classificationConfidence:1});
+  expect(r.evidence.consecutiveUnsuccessfulReviews).toBe(2);
+  expect(r.evidence.blankReviews).toBe(1);
+  expect(r.evidence.wrongReviews).toBe(1);
+  expect(r.nextTask.code).toBe('COACH_REVIEW');
+  expect(r.nextTask.coachSupportSuggested).toBe(true);
+  expect(r.reviewScheduleUnchanged).toBe(true);
+ });
+ it('yeni doğru bağımsız yanıt başarısızlık serisini sıfırlar; kalıcılık ilan etmez',()=>{
+  const r=buildWrongRecovery('q-a',[
+   reflect(),
+   event('wrong','REVIEW_RESULT','q-a','2026-10-11T12:00:00Z',{correct:false}),
+   event('blank','REVIEW_RESULT','q-a','2026-10-12T12:00:00Z',{correct:false,blank:true}),
+   event('correct','REVIEW_RESULT','q-a','2026-10-13T12:00:00Z',{correct:true})
+  ],{gradeLevel:'12. sınıf',examType:'AYT',topic:'Köklü Sayılar',classificationConfidence:0.9});
+  expect(r.evidence.consecutiveUnsuccessfulReviews).toBe(0);
+  expect(r.nextTask.code).toBe('TRANSFER_CHECK');
+  expect(r.nextTask.freshQuestionTarget).toBe(4);
+  expect(r.masteryStatusUnchanged).toBe(true);
+ });
+ it('belirsiz alt konuyu veya düzeyi doğrulamadan özgün soru yükü önermiyor',()=>{
+  const rows=[reflect()];
+  const unknown=buildWrongRecovery('q-a',rows,{gradeLevel:null,examType:'GENEL',topic:'Genel / Karma'});
+  expect(unknown.nextTask.code).toBe('VERIFY_LEVEL');
+  expect(unknown.nextTask.freshQuestionTarget).toBe(0);
+  const lowConfidence=buildWrongRecovery('q-a',rows,{gradeLevel:'8. sınıf',examType:'LGS',topic:'Paragraf',classificationConfidence:0.25});
+  expect(lowConfidence.nextTask.code).toBe('CONFIRM_TOPIC');
+  expect(lowConfidence.nextTask.coachSupportSuggested).toBe(true);
+ });
+ it('boş soruda öz bildirim öncesi kararsızlığı yanlış tanısı olarak dayatmaz',()=>{
+  const r=buildWrongRecovery('q-a',[],{bankReason:'BLANK',gradeLevel:'8. sınıf',examType:'LGS',topic:'Paragraf',classificationConfidence:1});
+  expect(r.nextTask.code).toBe('REFLECT');
+  expect(r.nextTask.title).toContain('Boş bırakma');
+  expect(r.evidence.reviewAttempts).toBe(0);
+  expect(r.reflection).toBeNull();
+ });
+ it('yeni analiz eski tekrar sonuçlarını ve başka soruyu dikkate almaz',()=>{
+  const r=buildWrongRecovery('q-a',[
+   reflect('q-a','2026-10-12T12:00:00Z'),
+   event('old','REVIEW_RESULT','q-a','2026-10-11T12:00:00Z',{correct:false}),
+   event('other','REVIEW_RESULT','q-b','2026-10-14T12:00:00Z',{correct:false})
+  ],{gradeLevel:'8. sınıf',examType:'LGS',topic:'Paragraf',classificationConfidence:1});
+  expect(r.evidence.reviewAttempts).toBe(0);
+  expect(r.nextTask.code).toBe('GUIDED_PRACTICE');
+ });
+});
