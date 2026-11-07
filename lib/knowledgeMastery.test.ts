@@ -213,7 +213,7 @@ describe('explainable mastery signals',()=>{
     expect(ui).toContain("NEW:'Yeni'");
     expect(ui).toContain("LEARNING:'Öğreniliyor'");
     expect(ui).toContain("REINFORCING:'Pekiştiriliyor'");
-    expect(ui).toContain("DURABLE:'Kalıcı'");
+    expect(ui).toContain("DURABLE:'Kalıcılık sinyali'");
     expect(ui).toContain("RISKY:'Riskli'");
     expect(ui).toContain('Riskli çünkü:');
     const lower=ui.toLocaleLowerCase('tr-TR');
