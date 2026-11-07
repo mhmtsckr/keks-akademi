@@ -159,6 +159,41 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
     <div className="card">
       <div className="moduleHeaderRow">
         <div>
+          <div className="moduleEyebrow">KEKS · YENİ SORU / FARKLI GÜN KANITI</div>
+          <h2>Konuyu gerçekten farklı soruda uygulayabiliyor mu?</h2>
+          <p className="muted">Son 90 günde soru anahtarıyla yeniden doğrulanan testler esas alınır. Aynı sorunun tekrarı ve öğrenci tarafından yüklenen doğrulanmamış cevap anahtarı aktarım kanıtı sayılmaz.</p>
+        </div>
+        <span className="pill">{data.topicTransfer?.summary?.topics||0} izlenen konu</span>
+      </div>
+      <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))'}}>
+        <div className="card"><strong>{data.topicTransfer?.summary?.needsSupport||0}</strong><small>Koç desteği gerekiyor</small></div>
+        <div className="card"><strong>{data.topicTransfer?.summary?.awaitingEvidence||0}</strong><small>Yeni soru / farklı gün bekliyor</small></div>
+        <div className="card"><strong>{data.topicTransfer?.summary?.progressing||0}</strong><small>İlerleme sinyali</small></div>
+        <div className="card"><strong>{data.topicTransfer?.summary?.strongSignals||0}</strong><small>Güçlü aktarım sinyali</small></div>
+      </div>
+      {!data.topicTransfer?.topics?.length
+       ?<p className="muted">Yeni sorularda farklı günlere yayılmış öğrenme karşılaştırması için yeterli doğrulanmış başlangıç verisi yok.</p>
+       :<div className="stack" style={{marginTop:12}}>
+         {data.topicTransfer.topics.slice(0,10).map((x:any)=><div className="card" key={[x.examType,x.subject,x.topic].join('|')} style={{margin:0}}>
+           <div className="moduleHeaderRow">
+             <strong>{x.examType} · {x.subject} · {x.topic}</strong>
+             <span className="pill">{x.statusLabel}</span>
+           </div>
+           <p>İlk zorlanma: {x.baselineWrong} yanlış · {x.baselineBlank} boş.
+             {' '}Sonraki yeni sorular: {x.newQuestions} · En az 24 saat sonra: {x.delayedQuestions} soru / {x.delayedDays} farklı gün.</p>
+           <p className="muted">Gecikmeli doğru: {x.delayedCorrect} · yanlış: {x.delayedWrong} · boş: {x.delayedBlank}
+             {' '}· Doğruluk: {x.accuracyPercent==null?'Henüz ölçülmedi':'%'+x.accuracyPercent}
+             {' '}· {x.hasDay7Evidence?'7+ gün kanıtı var':'7+ gün kanıtı bekleniyor'}</p>
+           <p><strong>Koç aksiyonu:</strong> {x.nextAction}</p>
+         </div>)}
+       </div>}
+      {data.topicTransfer?.truncated&&<div className="notice">Son test geçmişi kısmen incelenebildi; güçlü öğrenme sonucu gösterilmez.</div>}
+      <p className="muted">{data.topicTransfer?.note||''}</p>
+    </div>
+
+    <div className="card">
+      <div className="moduleHeaderRow">
+        <div>
           <div className="moduleEyebrow">TÜM EĞİTİM DÜZEYLERİ · YANLIŞ VE BOŞ KANITLARI</div>
           <h2>Koç için ders ve beceri bazlı eksik analizi</h2>
           <p className="muted">Son 60 günün öğrenci hesabında kayıtlı test yanıtları soru anahtarıyla yeniden değerlendirilir. Yanlış ve boş ayrıdır; tek doğru veya öğrencinin öz bildirimi kalıcı hâkimiyet sayılmaz.</p>
