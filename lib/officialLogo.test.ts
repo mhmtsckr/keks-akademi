@@ -3,19 +3,28 @@ import path from 'node:path';
 import {describe,expect,it} from 'vitest';
 
 const ROOT=process.cwd();
+const LOGO='/keks-official-2026.webp';
 const read=(file:string)=>fs.readFileSync(path.join(ROOT,file),'utf8');
 
-describe('KEKS compact logo usage',()=>{
-  it('uses the uploaded KEKS logo in navigation',()=>{
-    expect(read('app/components/PortalShell.tsx')).toContain('src="/keks-robot-logo.svg"');
-    expect(read('app/page.tsx')).toContain('src="/keks-robot-logo.svg"');
-  });
-  it('does not render the logo as a large hero photo',()=>{
-    expect(read('app/page.tsx')).not.toContain('homeHeroOfficialLogo');
-    expect(read('app/components/PortalShell.tsx')).not.toContain('portalHeroOfficialLogo');
-  });
-  it('PWA and metadata use the uploaded KEKS logo',()=>{
-    expect(read('app/layout.tsx')).toContain("icon: '/keks-logo.svg'");
-    expect(read('app/manifest.ts')).toContain("src:'/keks-logo.svg'");
-  });
+describe('KEKS Akademi official uploaded emblem',()=>{
+ it('uses the uploaded emblem at the very top of every main navigation',()=>{
+  expect(read('app/components/PortalShell.tsx')).toContain('src="'+LOGO+'"');
+  expect(read('app/page.tsx')).toContain('src="'+LOGO+'"');
+ });
+ it('retains the original artwork in a real, locally hosted image asset',()=>{
+  const bytes=fs.readFileSync(path.join(ROOT,'public/keks-official-2026.webp'));
+  expect(bytes.length).toBeGreaterThan(5000);
+  expect(bytes.toString('ascii',0,4)).toBe('RIFF');
+  expect(bytes.toString('ascii',8,12)).toBe('WEBP');
+ });
+ it('shows the logo in the navigation, not as a full hero photo',()=>{
+  expect(read('app/page.tsx')).not.toContain('homeHeroOfficialLogo');
+  expect(read('app/components/PortalShell.tsx')).not.toContain('portalHeroOfficialLogo');
+ });
+ it('points browser favicon and PWA identity at the same uploaded emblem',()=>{
+  expect(read('app/layout.tsx')).toContain("url:'/keks-official-2026.webp'");
+  expect(read('app/manifest.ts')).toContain("src:'/keks-official-2026.webp'");
+  expect(read('app/favicon.ico/route.ts')).toContain("'/keks-official-2026.webp'");
+  expect(fs.existsSync(path.join(ROOT,'app/icon.svg'))).toBe(false);
+ });
 });
