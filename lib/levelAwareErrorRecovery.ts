@@ -46,9 +46,14 @@ export function levelAwareErrorRecovery(input:{
 }):LevelAwareRecovery{
  const key=educationLevelKey(input.gradeLevel);
  const exam=canonicalExamType(input.examType);
- const band:RecoveryBand=key||(
-  exam&&EXAMS.has(exam)?'EXAM_CANDIDATE':'UNRESOLVED'
- );
+ // Professional/adult exams take precedence over an old school-grade label.
+ // A graduate recorded simply as "Mezun" can still be routed to YKS when the
+ // actual exam is known. A generic adult label must not invent a school grade.
+ const adultExam=Boolean(exam&&EXAMS.has(exam));
+ const graduateYks=!key&&/MEZUN/i.test(input.gradeLevel||'')
+   &&Boolean(exam&&['TYT','AYT','YDT','YKS'].includes(exam));
+ const band:RecoveryBand=adultExam?'EXAM_CANDIDATE'
+  :key||(graduateYks?'GRADUATE_YKS':'UNRESOLVED');
  const m=LEVEL_METHODS[band];
  return {
   band,stage:m.stage,guidedBy:m.guide,suggestedFreshQuestions:m.count,
