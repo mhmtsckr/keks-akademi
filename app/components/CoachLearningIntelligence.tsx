@@ -8,7 +8,7 @@ function masteryLabel(v:string){
   return v==='NEW'?'Yeni'
     :v==='LEARNING'?'Öğreniliyor'
     :v==='REINFORCING'?'Pekiştiriliyor'
-    :v==='DURABLE'?'Kalıcı'
+    :v==='DURABLE'?'Kalıcılık sinyali'
     :v==='RISKY'?'Riskli':'—';
 }
 
@@ -315,7 +315,7 @@ export function CoachLearningIntelligence({studentId}:{studentId:string}){
 
     <div className="card">
       <div className="moduleEyebrow">BİLGİ HÂKİMİYETİ · NETTEN BAĞIMSIZ</div>
-      <h2>Konu bazlı kalıcılık durumu</h2>
+      <h2>Konu bazlı kalıcılık sinyalleri</h2>
       <p className="muted">Durum; son test, tekrar başarısı, soru başına süre, baskın yanlış nedeni, kaynak verimliliği ve unutma riski birlikte değerlendirilerek oluşturulur.</p>
       {mastery.length===0?<p className="muted">Henüz tanımlı konu veya yeterli öğrenme kanıtı yok.</p>:<div className="stack">
         {mastery.map((x:any)=><div className="card" key={x.subject+'|'+x.topic} style={{margin:0}}>
