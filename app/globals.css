@@ -2216,3 +2216,12 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
  .keksStudentInformationForm .keksNativeContextGrid{grid-template-columns:minmax(0,1fr)}
 }
 @media(prefers-reduced-motion:reduce){.keksFormChoice,.keksOnboardingStep{transition:none}}
+
+
+/* Keep the native fields disabled until offline/server drafts have been reconciled. */
+.keksOnboardFieldset{display:contents;border:0;padding:0;margin:0;min-width:0}
+.keksOnboardFieldset:disabled{opacity:.82}
+.keksFocusScreening input:disabled,.keksFocusPreInterview input:disabled,
+.keksFocusPreInterview textarea:disabled,.keksFocusPreInterview select:disabled{
+ cursor:progress;opacity:.7
+}
