@@ -2225,3 +2225,20 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 .keksFocusPreInterview textarea:disabled,.keksFocusPreInterview select:disabled{
  cursor:progress;opacity:.7
 }
+
+
+/* KEKS Focus Pro — offline continuation indicator and question recovery */
+.keksFocusPreInterview .keksInterviewResume{background:linear-gradient(120deg,#0b223b,#173e58);border:1px solid #315268;
+ color:#edf5fa;border-radius:16px;padding:16px 18px;margin:14px 0 18px;display:grid;gap:10px}
+.keksFocusPreInterview .keksInterviewResumeTop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.keksFocusPreInterview .keksInterviewResumeTop strong{font-size:15px;color:#fff}
+.keksFocusPreInterview .keksInterviewResumeTop span{font-size:12px;color:#f0cf85;font-weight:700}
+.keksFocusPreInterview .keksInterviewProgress{height:8px;border-radius:999px;overflow:hidden;background:#395d73}
+.keksFocusPreInterview .keksInterviewProgress span{height:100%;display:block;transition:width .18s;background:linear-gradient(90deg,#24785d,#e8c374)}
+.keksFocusPreInterview .keksInterviewContinue.btn{background:#e8c374;color:#0b223b;border:1px solid #e8c374;font-weight:800;
+ border-radius:11px;width:max-content;max-width:100%;min-height:42px;display:inline-flex;gap:12px;align-items:center}
+.keksFocusPreInterview .keksInterviewContinue.btn:hover{background:#f2d79a}
+.keksFocusPreInterview .keksInterviewQuestion{scroll-margin-top:90px}
+@media(max-width:520px){.keksFocusPreInterview .keksInterviewResume{padding:14px}
+ .keksFocusPreInterview .keksInterviewContinue.btn{width:100%;justify-content:center}}
+@media(prefers-reduced-motion:reduce){.keksFocusPreInterview .keksInterviewProgress span{transition:none}}
