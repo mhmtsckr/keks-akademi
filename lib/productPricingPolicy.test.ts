@@ -10,7 +10,8 @@ describe('central product pricing wiring',()=>{
     const required:Record<string,string[]>={
       'app/api/admin/product-config/route.ts':['getKeksMonthlyProduct','getProductPricing'],
       'app/api/student/test/access/route.ts':['getKeksMonthlyProduct'],
-      'app/ogrenci/page.tsx':['getKeksMonthlyProduct','currentProduct.priceLabel'],
+      'app/ogrenci/page.tsx':['/ogrenci/egilim-taramasi'],
+      'app/ogrenci/egilim-taramasi/page.tsx':['StudentActions'],
       'app/page.tsx':['getKeksMonthlyProduct','product.priceLabel','product.listPriceLabel'],
       'app/components/StudentActions.tsx':['product?.priceLabel','product?.listPriceLabel']
     };
