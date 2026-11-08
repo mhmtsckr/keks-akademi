@@ -28,7 +28,7 @@ const contextData=z.object({
  teacherObservation:z.string().max(400),guidanceRead:z.boolean()
 }).strict();
 const screeningData=z.object({answers:z.record(z.string().max(100),z.number().int().min(1).max(5)),page:z.number().int().min(0).max(100)}).strict();
-const interviewData=z.object({answers:z.record(z.string().max(100),z.string().max(2500)),academicTrack:z.string().max(120)}).strict();
+const interviewData=z.object({answers:z.record(z.string().max(100),z.string().max(2500)),academicTrack:z.string().max(120),lastQuestionId:z.string().max(100).optional()}).strict();
 const inputSchema=z.object({
  kind:kindSchema,scope:scopeSchema,data:z.unknown()
 }).strict();
