@@ -5,18 +5,15 @@ import { currentUser } from '@/lib/auth';
 import { hasActiveSubscription } from '@/lib/subscriptionAccess';
 import { db } from '@/lib/db';
 import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForms';
-import { StudentActions } from '@/app/components/StudentActions';
 import { StudentProgressTools } from '@/app/components/StudentProgressTools';
 import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation';
 import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
 import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
 import { UnsubscribedStudentTechniques } from '@/app/components/UnsubscribedStudentTechniques';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
-import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { getStudentFeatureSnapshot } from '@/lib/systemConfig';
 import { StudentEngagementHub } from '@/app/components/StudentEngagementHub';
 import { StudentDailyTasks } from '@/app/components/StudentDailyTasks';
-import { StudentPreInterview } from '@/app/components/StudentPreInterview';
 import { StudentCommandCenter } from '@/app/components/StudentCommandCenter';
 import { StudentWrongQuestionBank } from '@/app/components/StudentWrongQuestionBank';
 import { StudentPersonalQuestionBank } from '@/app/components/StudentPersonalQuestionBank';
@@ -132,16 +129,6 @@ export default async function StudentPage() {
     buildLatestExamInterventionReport(student.id),
     buildStudentExamMap(student.id)
   ]);
-  const access = student.testAccesses[0];
-  const latestAssessment=student.assessments[0];
-  const latestReport=(latestAssessment?.report&&typeof latestAssessment.report==='object'&&!Array.isArray(latestAssessment.report)?latestAssessment.report:{}) as Record<string,any>;
-  const latestWorkflow=String(latestReport.workflowStatus||'');
-  const currentProduct=await getKeksMonthlyProduct();
-  const latestProductKey=latestAssessment?productKeyFromReport(latestAssessment.report,latestAssessment.completedAt):null;
-  const showPreInterview=Boolean(latestAssessment&&
-    ['PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED','COMPLETED'].includes(latestWorkflow)&&
-    (latestProductKey===currentProduct.key||['PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED'].includes(latestWorkflow))
-  );
   const activeTarget = student.targets[0];
   const grade=(student.gradeLevel||'').toLowerCase();
   const levelKey=educationLevelKey(student.gradeLevel);
@@ -323,7 +310,14 @@ export default async function StudentPage() {
 
     <section id="hesap-guvenligi" className="section section-anchor"><PortalSectionTitle eyebrow="HESAP & GÜVENLİK" title="Hesap Güvenliği" description="Şifrenizi, son girişlerinizi ve aktif oturumlarınızı yönetin."/><AccountSecurity loginPath="/ogrenci"/></section>
 
-    <section id="keks-egilim-taramasi" className="section section-anchor"><PortalSectionTitle eyebrow="KEKS AKADEMİ TEST ÜRÜNLERİ" title="Aylık KEKS Akademi Test Ürünü" description={'Ürün erişiminiz yoksa test soruları görünmez. Yönetici/koç kodu veya merkezi satış fiyatı '+currentProduct.priceLabel+' ile aylık ürünü hesabınıza tanımlayabilirsiniz.'}/><StudentActions hasAccess={Boolean(access)}/></section>
-    {showPreInterview&&<section className="section"><PortalSectionTitle eyebrow="ÜRÜN AŞAMASI 2/2" title="Eğitim Düzeyine Göre Ön Görüşme" description="Bu bölüm yalnızca aynı aylık ürünün KEKS Eğilim Taraması tamamlandıktan sonra açılır. Form bir kez tamamlanabilir."/><StudentPreInterview/></section>}
+    <section id="keks-egilim-taramasi" className="section section-anchor">
+      <PortalSectionTitle eyebrow="KEKS AKADEMİ · TEK UYGULAMA" title="Eğilim Taraması ve Ön Görüşme" description="Tarama, ön görüşme, koç değerlendirmesi ve kişisel çalışma planı artık tek bir KEKS Akademi sayfasında."/>
+      <div className="card keksNativeAssessmentShortcut">
+        <img src="/keks-official-2026.webp" alt="KEKS Akademi" width="54" height="81"/>
+        <div><h3>KEKS Focus Pro · Öğrenme Profilim</h3>
+        <p>Mevcut öğrenci bilgilerin, erişim kodun ve tamamladığın KEKS taramaları korunur. Ayrı bir siteye gitmen gerekmez.</p>
+        <a className="btn primary" href="/ogrenci/egilim-taramasi">Eğilim Taraması ve Ön Görüşmeyi Aç</a></div>
+      </div>
+    </section>
   </PortalShell>;
 }
