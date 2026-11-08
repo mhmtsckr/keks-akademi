@@ -31,6 +31,7 @@ export default async function StudentOnboardingPage(){
         description="Hedefin, eğitim düzeyin, gerçek kapasiten, zayıf derslerin, kaynakların, deneme verin, çalışma saatlerin ve koçun tek başlangıç profiline bağlanır."
       />
       <StudentOnboardingWizard
+        studentId={user.student.id}
         initialGradeLevel={user.student.gradeLevel||''}
         initialGoal={user.student.goal||''}
         initialAcademicTrack={user.student.academicTrack||''}

@@ -17,7 +17,7 @@ describe('StudentRegisterForm — ilk giriş akışı',()=>{
 
     expect(screen.queryByLabelText(/koçunu seç/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Koç seçimi zorunlu değil/i)).toBeInTheDocument();
-    expect(screen.getByRole('button',{name:/kaydı başlat/i})).toBeEnabled();
+    expect(screen.getByRole('button',{name:/keks kaydımı başlat/i})).toBeEnabled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
