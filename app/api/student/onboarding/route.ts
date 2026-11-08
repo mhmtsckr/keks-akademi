@@ -103,8 +103,8 @@ async function POST__handler(req:Request){
     academicTrack:effectiveAcademicTrack,
     currentCoachId:student.coachId
   });
-  const coach=partnerCoaches.find(x=>x.id===input.coachId)||null;
-  if(!coach)return NextResponse.json({error:'Seçilen Partner Koç bu eğitim düzeyi için uygun, aktif veya açık kontenjanlı değil.'},{status:400});
+  const coach=partnerCoaches.find(x=>x.id===input.coachId&&x.eligible)||null;
+  if(!coach)return NextResponse.json({error:'Seçilen Partner Koç aktif öğrenci kabul etmiyor veya kontenjanı dolu.'},{status:400});
 
   const allowedSubjects=subjectsForOnboarding(input.gradeLevel,effectiveAcademicTrack);
   const invalidWeak=input.weakSubjects.filter(x=>!allowedSubjects.includes(x));
