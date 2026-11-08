@@ -110,7 +110,7 @@ export function StudentPreInterview({studentId}:{studentId:string}){
     <KeksDraftIndicator status={draft.status} retry={()=>{void draft.retry()}}/>
     <div className="keksInformationSection"><span className="keksAssessmentKicker">KEKS AKADEMİ · ÖN GÖRÜŞME</span><strong>Cevapların güvende</strong><p>İşaretlemelerin ve açıklamaların otomatik saklanır. Kaldığın yerden devam edebilirsin.</p></div>
     <form className="form preInterviewForm" onSubmit={submit}>
-      {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required value={academicTrack} onChange={e=>setAcademicTrack(e.target.value)}><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
+      {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" disabled={!draft.ready} required value={academicTrack} onChange={e=>setAcademicTrack(e.target.value)}><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
       {data.form.educationBand==='YETISKIN_SINAV'&&/AGS|ÖABT|OABT/i.test(String(data.studentSelection?.gradeLevel||''))&&<div className="notice">
         <strong>{data.studentSelection?.gradeLevel||'Yetişkin Sınav Grubu'}</strong>
         <div className="muted">Hazırlık alanınız: {data.studentSelection?.academicTrack||'Alan bilgisi bulunamadı'}. Bu seçim kayıt sırasında belirlenir ve kişisel planınızda otomatik kullanılır.</div>
@@ -124,14 +124,14 @@ export function StudentPreInterview({studentId}:{studentId:string}){
         <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
         <div style={{flex:1}}><strong>{q.prompt}</strong>
         {q.responseType==='TEXT'
-          ?<textarea name={'q_'+q.id} rows={4} maxLength={2500} value={answers[q.id]||''} onChange={e=>setAnswers(x=>({...x,[q.id]:e.target.value}))} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
+          ?<textarea disabled={!draft.ready} name={'q_'+q.id} rows={4} maxLength={2500} value={answers[q.id]||''} onChange={e=>setAnswers(x=>({...x,[q.id]:e.target.value}))} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
           :q.responseType==='CHOICE'&&Array.isArray(q.options)
-            ?<fieldset className="keksFocusScreeningChoices"><legend>Bir seçenek işaretle</legend>{q.options.map((o:any)=><label key={String(o.value??o)} className="keksFocusOption"><input type="radio" name={'q_'+q.id} value={String(o.value??o)} checked={answers[q.id]===String(o.value??o)} onChange={()=>setAnswers(x=>({...x,[q.id]:String(o.value??o)}))} required={q.required}/><span>{String(o.label??o)}</span></label>)}</fieldset>
+            ?<fieldset className="keksFocusScreeningChoices"><legend>Bir seçenek işaretle</legend>{q.options.map((o:any)=><label key={String(o.value??o)} className="keksFocusOption"><input type="radio" disabled={!draft.ready} name={'q_'+q.id} value={String(o.value??o)} checked={answers[q.id]===String(o.value??o)} onChange={()=>setAnswers(x=>({...x,[q.id]:String(o.value??o)}))} required={q.required}/><span>{String(o.label??o)}</span></label>)}</fieldset>
             :<fieldset className="likertChecklist" style={{border:0,padding:0,margin:'12px 0 0'}}>
               {[1,2,3,4,5].map(n=>{
                 const label=['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1];
                 return <label key={n} className="likertChecklistOption keksFocusScale" style={{display:'flex',gap:10,alignItems:'center',padding:'9px 10px',border:'1px solid var(--line)',borderRadius:10,marginBottom:8,cursor:'pointer'}}>
-                  <input type="radio" name={'q_'+q.id} value={n} checked={answers[q.id]===String(n)} onChange={()=>setAnswers(x=>({...x,[q.id]:String(n)}))} required={q.required}/>
+                  <input type="radio" disabled={!draft.ready} name={'q_'+q.id} value={n} checked={answers[q.id]===String(n)} onChange={()=>setAnswers(x=>({...x,[q.id]:String(n)}))} required={q.required}/>
                   <span><strong>({n})</strong> {label}</span>
                 </label>;
               })}
