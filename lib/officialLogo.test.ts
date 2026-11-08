@@ -3,40 +3,43 @@ import path from 'node:path';
 import {describe,expect,it} from 'vitest';
 
 const ROOT=process.cwd();
-const LOGO='/keks-brand-navy-header.webp';
-const ICON='/keks-brand-navy-icon.webp';
+const LOGO='/keks-official-2026.webp';
+const MASK='/keks-logo-mask.svg';
 const read=(file:string)=>fs.readFileSync(path.join(ROOT,file),'utf8');
 
-describe('Approved navy KEKS Akademi branding',()=>{
-  it('uses the approved logo in both the homepage and all portal headers',()=>{
-    expect(read('app/components/PortalShell.tsx')).toContain('src="'+LOGO+'"');
-    expect(read('app/page.tsx')).toContain('src="'+LOGO+'"');
-    expect(read('app/globals.css')).toContain('border-radius:0;background:transparent;box-shadow:none');
-  });
-  it('serves actual optimized logo and square icon images from the repository',()=>{
-    for(const file of ['public'+LOGO,'public'+ICON]){
-      const bytes=fs.readFileSync(path.join(ROOT,file));
-      expect(bytes.length).toBeGreaterThan(3500);
-      expect(bytes.toString('ascii',0,4)).toBe('RIFF');
-      expect(bytes.toString('ascii',8,12)).toBe('WEBP');
-    }
-  });
-  it('does not render the logo as an oversized hero photograph',()=>{
-    expect(read('app/page.tsx')).not.toContain('homeHeroOfficialLogo');
-    expect(read('app/components/PortalShell.tsx')).not.toContain('portalHeroOfficialLogo');
-  });
-  it('points favicon and Apple identity at the navy icon; PWA provides installable 192/512 dimensions',()=>{
-    expect(read('app/layout.tsx')).toContain("url:'/keks-brand-navy-icon.webp'");
-    expect(read('app/layout.tsx')).toContain("apple: '/api/public/brand-icon?size=192'");
-    expect(read('app/manifest.ts')).toContain("src:'/api/public/brand-icon?size=192'");
-    expect(read('app/manifest.ts')).toContain("src:'/api/public/brand-icon?size=512'");
-    expect(read('app/favicon.ico/route.ts')).toContain("'/keks-brand-navy-icon.webp'");
-    expect(read('app/api/public/brand-icon/route.tsx')).toContain('keks-brand-navy-icon.webp');
-    expect(fs.existsSync(path.join(ROOT,'app/icon.svg'))).toBe(false);
-  });
-  it('ships a native Android launcher icon generator from the exact same approved square source',()=>{
-    expect(read('scripts/generate_android_icons.py')).toContain('keks-brand-navy-icon.webp');
-    expect(read('.github/workflows/mobile-android.yml')).toContain('python scripts/generate_android_icons.py');
-    expect(read('.github/workflows/mobile-android.yml')).toContain('assembleDebug');
-  });
+describe('KEKS Akademi seamless official logo',()=>{
+ it('shows the original user-approved artwork in the homepage and all portal headers',()=>{
+  expect(read('app/page.tsx')).toContain('src="'+LOGO+'"');
+  expect(read('app/components/PortalShell.tsx')).toContain('src="'+LOGO+'"');
+ });
+ it('isolates the logo silhouette and exposes the header gradient through its background',()=>{
+  const svg=read('public'+MASK);
+  expect(svg).toContain('<svg');
+  expect(svg).toContain('fill-rule="evenodd"');
+  const css=read('app/globals.css');
+  expect(css).toContain('-webkit-mask-image:url(\'/keks-logo-mask.svg\')');
+  expect(css).toContain('mask-image:url(\'/keks-logo-mask.svg\')');
+  expect(css).toContain('background:transparent!important');
+  expect(css).toContain('flex-direction:row');
+ });
+ it('renders the same real image in the app-install banner instead of the broken SVG',()=>{
+  const banner=read('app/components/MobileInstallBanner.tsx');
+  expect(banner).toContain('className="installBrandLogo"');
+  expect(banner).toContain('src="'+LOGO+'"');
+  expect(banner).not.toContain('/keks-logo.svg');
+ });
+ it('preserves browser/PWA identity and generated installable icons',()=>{
+  expect(read('app/layout.tsx')).toContain("url:'/keks-brand-navy-icon.webp'");
+  expect(read('app/manifest.ts')).toContain("src:'/api/public/brand-icon?size=192'");
+  expect(read('app/manifest.ts')).toContain("src:'/api/public/brand-icon?size=512'");
+  expect(fs.existsSync(path.join(ROOT,'app/icon.svg'))).toBe(false);
+ });
+ it('builds Android launcher icons using the same cutout mask and original emblem',()=>{
+  const android=read('scripts/generate_android_icons.py');
+  expect(android).toContain('keks-official-2026.webp');
+  expect(android).toContain('keks-logo-mask.svg');
+  expect(android).toContain('cairosvg.svg2png');
+  expect(read('.github/workflows/mobile-android.yml')).toContain('python scripts/generate_android_icons.py');
+  expect(read('.github/workflows/mobile-android.yml')).toContain('assembleDebug');
+ });
 });
