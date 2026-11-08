@@ -9,17 +9,21 @@ export function StudentPreInterview({studentId}:{studentId:string}){
   const [busy,setBusy]=useState(false);
   const [answers,setAnswers]=useState<Record<string,string>>({});
   const [academicTrack,setAcademicTrack]=useState('');
-  const draft=useKeksFormDraft<{answers:Record<string,string>;academicTrack:string}>({
+  const [lastQuestionId,setLastQuestionId]=useState('');
+  const [resumed,setResumed]=useState(false);
+  const draft=useKeksFormDraft<{answers:Record<string,string>;academicTrack:string;lastQuestionId?:string}>({
     kind:'INTERVIEW',scope:data?.assignment?.status==='ASSIGNED'?data.assignment.id:null,
     studentId,onRestore:restored=>{
       setAnswers(restored.answers||{});
       setAcademicTrack(restored.academicTrack||'');
+      if(restored.lastQuestionId)setLastQuestionId(restored.lastQuestionId);
+      setResumed(Boolean(Object.keys(restored.answers||{}).length));
     }
   });
   useEffect(()=>{
     if(!draft.ready||data?.assignment?.status!=='ASSIGNED')return;
-    draft.save({answers,academicTrack});
-  },[draft.ready,draft.save,data?.assignment?.status,answers,academicTrack]);
+    draft.save({answers,academicTrack,lastQuestionId});
+  },[draft.ready,draft.save,data?.assignment?.status,answers,academicTrack,lastQuestionId]);
 
   async function load(){
     try{
@@ -101,6 +105,10 @@ export function StudentPreInterview({studentId}:{studentId:string}){
     </div>;
   }
 
+  const items=Array.isArray(data.form.questions)?data.form.questions as Array<{id:string;required?:boolean}>:[];
+  const answered=items.filter(q=>String(answers[q.id]||'').trim().length>0).length;
+  const pendingItem=items.find(q=>!String(answers[q.id]||'').trim());
+  const resumeId=(pendingItem||items.find(q=>q.id===lastQuestionId)||items[0])?.id;
   return <div className="card keksProductCard keksProductActive keksFocusPreInterview keksStudentInformationForm">
     <div className="keksProductTop"><div className="moduleEyebrow">2/2 · ÖN GÖRÜŞME</div><span className="pill">TEK KULLANIMLIK</span></div>
     <div className="moduleHeaderRow">
@@ -108,6 +116,11 @@ export function StudentPreInterview({studentId}:{studentId:string}){
       
     </div>
     <KeksDraftIndicator status={draft.status} retry={()=>{void draft.retry()}}/>
+    <div className="keksInterviewResume" role="status">
+      <div className="keksInterviewResumeTop"><strong>{answered} / {items.length} soru cevaplandı</strong><span>%{items.length?Math.round(answered/items.length*100):0} tamamlandı</span></div>
+      <div className="keksInterviewProgress" role="progressbar" aria-label="Ön görüşme cevaplama ilerlemesi" aria-valuemin={0} aria-valuemax={items.length||1} aria-valuenow={answered}><span style={{width:(items.length?answered/items.length*100:0)+'%'}}/></div>
+      {resumed&&resumeId&&<button type="button" className="btn keksInterviewContinue" onClick={()=>document.getElementById('keks-interview-'+resumeId)?.scrollIntoView({behavior:'smooth',block:'center'})}>Kaldığım soruya git <span aria-hidden="true">↓</span></button>}
+    </div>
     <div className="keksInformationSection"><span className="keksAssessmentKicker">KEKS AKADEMİ · ÖN GÖRÜŞME</span><strong>Cevapların güvende</strong><p>İşaretlemelerin ve açıklamaların otomatik saklanır. Kaldığın yerden devam edebilirsin.</p></div>
     <form className="form preInterviewForm" onSubmit={submit}>
       {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" disabled={!draft.ready} required value={academicTrack} onChange={e=>setAcademicTrack(e.target.value)}><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
@@ -120,18 +133,18 @@ export function StudentPreInterview({studentId}:{studentId:string}){
         <div className="muted" style={{marginTop:8}}>(1) Hiç katılmıyorum · (2) Katılmıyorum · (3) Bazen / Kararsızım · (4) Katılıyorum · (5) Tamamen katılıyorum</div>
         <div className="muted" style={{marginTop:8}}>Açık uçlu sorularda ise kendi sözlerinle ve mümkünse somut örneklerle yanıt ver.</div>
       </div>
-      <div className="preInterviewQuestions keksFocusQuestions">{data.form.questions.map((q:any)=><div className="preInterviewQuestion" key={q.id}>
+      <div className="preInterviewQuestions keksFocusQuestions">{data.form.questions.map((q:any)=><div id={'keks-interview-'+q.id} className="preInterviewQuestion keksInterviewQuestion" key={q.id}>
         <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
         <div style={{flex:1}}><strong>{q.prompt}</strong>
         {q.responseType==='TEXT'
-          ?<textarea disabled={!draft.ready} name={'q_'+q.id} rows={4} maxLength={2500} value={answers[q.id]||''} onChange={e=>setAnswers(x=>({...x,[q.id]:e.target.value}))} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
+          ?<textarea disabled={!draft.ready} name={'q_'+q.id} rows={4} maxLength={2500} value={answers[q.id]||''} onChange={e=>{setLastQuestionId(q.id);setAnswers(x=>({...x,[q.id]:e.target.value}))}} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
           :q.responseType==='CHOICE'&&Array.isArray(q.options)
-            ?<fieldset className="keksFocusScreeningChoices"><legend>Bir seçenek işaretle</legend>{q.options.map((o:any)=><label key={String(o.value??o)} className="keksFocusOption"><input type="radio" disabled={!draft.ready} name={'q_'+q.id} value={String(o.value??o)} checked={answers[q.id]===String(o.value??o)} onChange={()=>setAnswers(x=>({...x,[q.id]:String(o.value??o)}))} required={q.required}/><span>{String(o.label??o)}</span></label>)}</fieldset>
+            ?<fieldset className="keksFocusScreeningChoices"><legend>Bir seçenek işaretle</legend>{q.options.map((o:any)=><label key={String(o.value??o)} className="keksFocusOption"><input type="radio" disabled={!draft.ready} name={'q_'+q.id} value={String(o.value??o)} checked={answers[q.id]===String(o.value??o)} onChange={()=>{setLastQuestionId(q.id);setAnswers(x=>({...x,[q.id]:String(o.value??o)}))}} required={q.required}/><span>{String(o.label??o)}</span></label>)}</fieldset>
             :<fieldset className="likertChecklist" style={{border:0,padding:0,margin:'12px 0 0'}}>
               {[1,2,3,4,5].map(n=>{
                 const label=['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1];
                 return <label key={n} className="likertChecklistOption keksFocusScale" style={{display:'flex',gap:10,alignItems:'center',padding:'9px 10px',border:'1px solid var(--line)',borderRadius:10,marginBottom:8,cursor:'pointer'}}>
-                  <input type="radio" disabled={!draft.ready} name={'q_'+q.id} value={n} checked={answers[q.id]===String(n)} onChange={()=>setAnswers(x=>({...x,[q.id]:String(n)}))} required={q.required}/>
+                  <input type="radio" disabled={!draft.ready} name={'q_'+q.id} value={n} checked={answers[q.id]===String(n)} onChange={()=>{setLastQuestionId(q.id);setAnswers(x=>({...x,[q.id]:String(n)}))}} required={q.required}/>
                   <span><strong>({n})</strong> {label}</span>
                 </label>;
               })}
