@@ -71,7 +71,7 @@ export default async function NativeStudentScreeningPage(){
    </section>
    <section className="section" id="egilim-taramasi">
      <div className="keksNativeSectionTitle"><span>01 · KEKS FOCUS PRO</span><h2>Eğilim Taraması</h2><p>Önce öğrenme profilini gözden geçir, ardından sana özel formda ilerle. Mevcut erişim hakların korunur.</p></div>
-     <NativeScreeningContext/>
+     <NativeScreeningContext studentId={student.id}/>
      {learningStage||last?<StudentActions hasAccess={false}/>:<div className="notice">Önce yukarıdaki öğrenme profilini kaydet. Böylece KEKS soruları eğitim ve gelişim düzeyine göre hazırlasın.</div>}
    </section>
    <section className="section" id="on-gorusme">
