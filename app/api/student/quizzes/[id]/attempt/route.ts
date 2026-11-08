@@ -159,4 +159,40 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
  });
 }
 
+
+async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>}){
+  const user=await requireRole(['STUDENT']);
+  if(!user.student)return NextResponse.json({error:'Öğrenci profili bulunamadı.'},{status:403});
+  const {id}=await params;
+  const quiz=await db.practiceQuiz.findFirst({where:{id,studentId:user.student.id}});
+  if(!quiz)return NextResponse.json({error:'Test bulunamadı.'},{status:404});
+  const attempt=await db.practiceQuizAttempt.findFirst({
+    where:{quizId:id,studentId:user.student.id},orderBy:{createdAt:'desc'}
+  });
+  if(!attempt)return NextResponse.json({error:'Test henüz teslim edilmedi.'},{status:404});
+  const ids=Array.isArray(quiz.questionIds)?quiz.questionIds.filter((x):x is string=>typeof x==='string'):[];
+  const questions=await db.questionBankItem.findMany({where:{id:{in:ids}}});
+  const byId=new Map(questions.map(q=>[q.id,q]));
+  const answers=attempt.answers&&typeof attempt.answers==='object'&&!Array.isArray(attempt.answers)?attempt.answers as Record<string,unknown>:{};
+  const topicMap=new Map<string,{subject:string;topic:string;correct:number;wrong:number;blank:number}>();
+  const details=ids.flatMap(qid=>{
+    const q=byId.get(qid);if(!q)return [];
+    const selected=typeof answers[qid]==='string'?answers[qid] as string:null;
+    const outcome=!selected?'BLANK':selected===q.correctAnswer?'CORRECT':'WRONG';
+    const key=q.subject+' · '+q.topic;
+    const s=topicMap.get(key)||{subject:q.subject,topic:q.topic,correct:0,wrong:0,blank:0};
+    if(outcome==='CORRECT')s.correct++;else if(outcome==='WRONG')s.wrong++;else s.blank++;
+    topicMap.set(key,s);
+    return [{questionId:q.id,subject:q.subject,topic:q.topic,outcome,selectedAnswer:selected,
+      correctAnswer:q.correctAnswer,explanation:q.explanation||null,
+      sourceVerified:!q.sourceKind.startsWith('STUDENT_WRONG:')}];
+  });
+  return NextResponse.json({ok:true,attempt:{id:attempt.id,correct:attempt.correct,
+    wrong:attempt.wrong,blank:attempt.blank,net:attempt.net},
+    details,topicAnalysis:[...topicMap.values()],feedback:[],
+    note:'Bu sınav tek bir gözlemdir; farklı günlerde yeni sorularla öğrenme yeniden ölçülmelidir.'});
+}
+
+export const GET=withApiErrors(GET__handler);
+
 export const POST=withApiErrors(POST__handler);
