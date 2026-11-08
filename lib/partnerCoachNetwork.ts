@@ -157,8 +157,7 @@ export async function buildPartnerCoachDirectory(student:{gradeLevel?:string|nul
       maxActiveStudents:true,acceptingStudents:true,partnerStatus:true,responseTargetHours:true,
       user:{select:{name:true}},
       _count:{select:{students:true}}
-    },
-    take:100
+    }
   });
   if(!coaches.length)return [] as PartnerCoachMatch[];
 
