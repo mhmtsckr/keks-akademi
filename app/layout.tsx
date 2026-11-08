@@ -9,7 +9,7 @@ export const metadata = {
   icons: {
     icon: [{url:'/keks-brand-navy-icon.webp',type:'image/webp',sizes:'160x160'}],
     shortcut: '/keks-brand-navy-icon.webp',
-    apple: '/keks-brand-navy-icon.webp',
+    apple: '/api/public/brand-icon?size=192',
   },
 };
 
