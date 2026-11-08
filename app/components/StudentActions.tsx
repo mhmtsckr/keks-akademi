@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { FormEvent,useEffect,useMemo,useState } from 'react';
 import { KEKS_MONTHLY_PRODUCT } from '@/lib/productCatalog';
+import {KeksDraftIndicator,useKeksFormDraft} from './useKeksFormDraft';
 
 type Question={id:string;orderNo:number;prompt:string;kind:'TENDENCY'|'HABIT';dimension:string};
 type FormDataState={title:string;version:string;educationBand:string;disclaimer:string;instruction:string;scale:string[];questionCount:number;questions:Question[]};
@@ -28,13 +29,25 @@ function ProductBrand(){
   </div>;
 }
 
-export function StudentActions({hasAccess}:{hasAccess:boolean}){
+export function StudentActions({hasAccess,studentId}:{hasAccess:boolean;studentId:string}){
   const [state,setState]=useState<ScreeningState|null>(null);
   const [answers,setAnswers]=useState<Record<string,number>>({});
   const [page,setPage]=useState(0);
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
   const [copied,setCopied]=useState(false);
+  const scope=state?.status==='READY'?state.form?.version||null:null;
+  const draft=useKeksFormDraft<{answers:Record<string,number>;page:number}>({
+    kind:'SCREENING',scope,studentId,
+    onRestore:({answers:restored,page:previousPage})=>{
+      setAnswers(restored||{});
+      setPage(Number.isInteger(previousPage)?Math.max(0,previousPage):0);
+    }
+  });
+  useEffect(()=>{
+    if(state?.status!=='READY'||!draft.ready)return;
+    draft.save({answers,page});
+  },[state?.status,draft.ready,draft.save,answers,page]);
 
   async function load(){
     try{
@@ -42,10 +55,27 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
       const j=await r.json();
       if(!r.ok)throw new Error(j.error||'Test ürünü yüklenemedi.');
       setState(j);
-      if(j.status==='READY')setPage(0);
+      if(j.status==='READY'){
+        setPage(0);
+        try{localStorage.setItem('keks:screening:form:'+studentId,JSON.stringify({
+          savedAt:Date.now(),data:{status:'READY',form:j.form,product:j.product}
+        }))}catch{}
+      }else if(j.status==='COMPLETED'){
+        try{localStorage.removeItem('keks:screening:form:'+studentId)}catch{}
+      }
     }catch(error:any){
-      setState({status:'ERROR'});
-      setMsg('Hata: '+(error?.message||'Test ürünü yüklenemedi.'));
+      let recovered=false;
+      try{
+        const raw=localStorage.getItem('keks:screening:form:'+studentId);
+        if(raw){
+          const cached=JSON.parse(raw);
+          if(cached.savedAt&&Date.now()-cached.savedAt<14*86400000&&cached.data?.form?.questions?.length){
+            setState(cached.data);recovered=true;
+            setMsg('Bağlantı yok. Daha önce açtığın tarama formundan devam edebilirsin; teslim için internet gerekir.');
+          }
+        }
+      }catch{}
+      if(!recovered){setState({status:'ERROR'});setMsg('Hata: '+(error?.message||'Test ürünü yüklenemedi.'))}
     }
   }
   useEffect(()=>{load()},[]);
@@ -92,12 +122,18 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
       educationBand:form.educationBand,
       answers:form.questions.map(q=>({questionId:q.id,value:answers[q.id]}))
     };
-    const r=await fetch('/api/student/test/submit',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
-    const j=await r.json();setBusy(false);
-    if(!r.ok)return setMsg('Hata: '+(j.error||'Tarama kaydedilemedi.'));
-    setMsg(j.message||'Tarama tamamlandı.');
-    await load();
-    setTimeout(()=>location.reload(),700);
+    try{
+      const r=await fetch('/api/student/test/submit',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+      const j=await r.json();
+      if(!r.ok)return setMsg('Hata: '+(j.error||'Tarama kaydedilemedi.'));
+      void draft.clear();
+      try{localStorage.removeItem('keks:screening:form:'+studentId)}catch{}
+      setMsg(j.message||'Tarama tamamlandı.');
+      await load();
+      setTimeout(()=>location.reload(),700);
+    }catch{
+      setMsg('Hata: İnternet bağlantısı kesildi. Cevapların taslak olarak korunuyor; bağlantı geldiğinde tekrar teslim et.');
+    }finally{setBusy(false)}
   }
 
   if(!state)return <div className="card"><p className="muted">KEKS Akademi aylık test ürünü yükleniyor…</p></div>;
@@ -134,6 +170,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
         </div>
       </div>
       <div className="notice" style={{marginTop:10}}><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
+      <KeksDraftIndicator status={draft.status} retry={()=>{void draft.retry()}}/>
       <div className="keksFocusHero">
         <div className="keksFocusHeroTop"><span className="keksFocusBrand">KEKS AKADEMİ <small>EĞİLİM TARAMASI</small></span><span>{answered}/{form.questionCount} yanıtlandı</span></div>
         <div className="keksFocusProgress" role="progressbar" aria-label="Yanıtlanan madde sayısı" aria-valuemin={0} aria-valuemax={form.questionCount} aria-valuenow={answered}><span style={{width:(answered/Math.max(1,form.questionCount)*100)+'%'}}/></div>
@@ -162,7 +199,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
       <div className="row keksFocusQuestionNav" style={{justifyContent:'space-between',marginTop:16}}>
         <button className="btn" disabled={page===0||busy} onClick={()=>{setPage(p=>Math.max(0,p-1));window.scrollTo({top:0,behavior:'smooth'})}}>← Önceki</button>
         <span className="pill">Sayfa {page+1} / {totalPages}</span>
-        {page<totalPages-1?<button className="btn primary" disabled={pageQuestions.some(q=>answers[q.id]==null)||busy} onClick={()=>{setPage(p=>Math.min(totalPages-1,p+1));window.scrollTo({top:0,behavior:'smooth'})}}>Sonraki →</button>:<button className="btn primary" disabled={answered!==form.questionCount||busy} onClick={submit}>{busy?'Kaydediliyor…':'1. Aşamayı Tamamla ve Ön Görüşmeye Geç'}</button>}
+        {page<totalPages-1?<button className="btn primary" disabled={pageQuestions.some(q=>answers[q.id]==null)||busy} onClick={()=>{setPage(p=>Math.min(totalPages-1,p+1));window.scrollTo({top:0,behavior:'smooth'})}}>Sonraki →</button>:<button className="btn primary" disabled={answered!==form.questionCount||busy||!draft.ready} onClick={submit}>{busy?'Kaydediliyor…':'1. Aşamayı Tamamla ve Ön Görüşmeye Geç'}</button>}
       </div>
       {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')} style={{marginTop:12}}>{msg}</div>}
     </div>;
