@@ -123,11 +123,11 @@ export function rankPartnerCoach(input:PartnerCoachRecord,student:{gradeLevel?:s
   const availableSlots=Math.max(0,input.maxActiveStudents-input.studentCount);
   const isCurrentCoach=Boolean(student.currentCoachId&&student.currentCoachId===input.id);
   const capacityEligible=availableSlots>0||isCurrentCoach;
-  const profileReady=input.profileCompleteness>=75&&input.supportedEducationLevels.length>0;
+  // A coach may support every education level even without an explicit level list.
+  // Profile completeness and specialties affect ranking, never student choice.
   const eligible=input.partnerStatus==='ACTIVE'
     &&capacityEligible
-    &&levelMatch
-    &&(isCurrentCoach||(input.acceptingStudents&&profileReady));
+    &&(isCurrentCoach||input.acceptingStudents);
   const fitReasons:string[]=[];
   let fitRank=0;
 
@@ -157,8 +157,7 @@ export async function buildPartnerCoachDirectory(student:{gradeLevel?:string|nul
       maxActiveStudents:true,acceptingStudents:true,partnerStatus:true,responseTargetHours:true,
       user:{select:{name:true}},
       _count:{select:{students:true}}
-    },
-    take:100
+    }
   });
   if(!coaches.length)return [] as PartnerCoachMatch[];
 
@@ -207,7 +206,8 @@ export async function buildPartnerCoachDirectory(student:{gradeLevel?:string|nul
     return rankPartnerCoach(record,student);
   });
 
-  return directory
-    .filter(x=>x.eligible)
-    .sort((a,b)=>b.fitRank-a.fitRank||a.studentCount-b.studentCount||a.name.localeCompare(b.name,'tr'));
+  // Show ALL approved active partners, including full/unavailable profiles.
+  // Eligibility controls assignment; the matching score only controls order.
+  return directory.sort((a,b)=>Number(b.eligible)-Number(a.eligible)||b.fitRank-a.fitRank||a.name.localeCompare(b.name,'tr'));
+
 }

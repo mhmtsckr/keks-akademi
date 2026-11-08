@@ -7,7 +7,7 @@ import {defaultExamTypeForOnboarding,subjectsForOnboarding} from '@/lib/studentO
 import {resolveEducationLevelProfile} from '@/lib/educationLevelProfile';
 
 type Coach={
-  id:string;name:string;studentCount:number;
+  id:string;name:string;studentCount:number;eligible:boolean;acceptingStudents:boolean;fitRank:number;
   displayTitle:string|null;specialties:string[];availableSlots:number;
   responseHours:number|null;responseTargetHours:number;
   sessionCompletionRate:number|null;profileCompleteness:number;fitReasons:string[];
@@ -45,6 +45,7 @@ export function StudentOnboardingWizard({
   const [gradeLevel,setGradeLevel]=useState(initialGradeLevel||'');
   const [academicTrack,setAcademicTrack]=useState(initialAcademicTrack||'');
   const [coachOptions,setCoachOptions]=useState<Coach[]>(coaches);
+  const [coachView,setCoachView]=useState<'all'|'recommended'>('all');
   const [coachLoading,setCoachLoading]=useState(false);
   const profile=useMemo(()=>resolveEducationLevelProfile(gradeLevel,academicTrack),[gradeLevel,academicTrack]);
   const trackSensitive=['HIGH_11','HIGH_12','GRADUATE_YKS'].includes(profile?.key||'');
@@ -123,6 +124,7 @@ export function StudentOnboardingWizard({
     if(step===6&&!preferredDays.length)return 'En az bir çalışma günü seç.';
     if(step===6&&studyEnd<=studyStart)return 'Bitiş saati başlangıç saatinden sonra olmalı.';
     if(step===7&&!coachId)return 'Bir koç seç.';
+    if(step===7&&!coachOptions.some(x=>x.id===coachId&&x.eligible))return 'Koç şu anda öğrenci kabul etmiyor. Lütfen başka bir koç seç.';
     return '';
   }
 
@@ -285,13 +287,17 @@ export function StudentOnboardingWizard({
 
       {step===7&&<>
         <label>KEKS Partner Koç eşleşmesi</label>
-        {coachLoading&&<div className="notice">Uygun Partner Koçlar güncelleniyor…</div>}
-        {!coachLoading&&coachOptions.length===0&&<div className="notice error"><strong>Şu anda bu düzey için açık kontenjanlı Partner Koç görünmüyor.</strong><div className="muted">KEKS ekibi yeni eşleşme açana kadar kayıt tamamlanamaz.</div></div>}
+        {coachLoading&&<div className="notice">Kayıtlı Partner Koçlar güncelleniyor…</div>}
+        {!coachLoading&&coachOptions.length===0&&<div className="notice error"><strong>Şu anda yönetici onaylı Partner Koç bulunmuyor.</strong><div className="muted">KEKS ekibi yeni eşleşme açana kadar kayıt tamamlanamaz.</div></div>}
+        <div className="row" style={{gap:8}}>
+          <button type="button" className={coachView==='all'?'btn primary':'btn'} onClick={()=>setCoachView('all')}>Tüm Partner Koçlar ({coachOptions.length})</button>
+          <button type="button" className={coachView==='recommended'?'btn primary':'btn'} onClick={()=>setCoachView('recommended')}>Önerilenler</button>
+        </div>
         <div className="stack">
-          {coachOptions.slice(0,5).map((coach,index)=><button type="button" key={coach.id} className={coachId===coach.id?'card btn primary':'card btn'} style={{textAlign:'left'}} onClick={()=>setCoachId(coach.id)}>
+          {(coachView==='recommended'?coachOptions.filter(x=>x.eligible).slice(0,5):coachOptions).map((coach,index)=><button type="button" key={coach.id} className={coachId===coach.id?'card btn primary':'card btn'} style={{textAlign:'left',opacity:coach.eligible?1:0.7}} disabled={!coach.eligible} onClick={()=>setCoachId(coach.id)}>
             <div className="row" style={{justifyContent:'space-between',gap:10,alignItems:'flex-start'}}>
-              <div><strong>{index===0?'Önerilen · ':''}{coach.name}</strong><div className="muted">{coach.displayTitle||'KEKS Partner Koç'}</div></div>
-              <span className="pill">{coach.availableSlots} kontenjan</span>
+              <div><strong>{index===0&&coachView==='recommended'?'Önerilen · ':''}{coach.name}</strong><div className="muted">{coach.displayTitle||'KEKS Partner Koç'}</div></div>
+              <span className="pill">{coach.eligible?coach.availableSlots+' açık kontenjan':coach.availableSlots===0?'Kontenjan dolu':'Öğrenci kabulü kapalı'}</span>
             </div>
             <div className="muted" style={{marginTop:8}}>{coach.specialties.slice(0,3).join(' · ')||'Uzmanlık profili tamamlanıyor'}</div>
             <div className="row" style={{marginTop:8,gap:8,flexWrap:'wrap'}}>
@@ -301,7 +307,7 @@ export function StudentOnboardingWizard({
             {coach.fitReasons.slice(0,3).map((reason,i)=><small key={i} style={{display:'block',marginTop:5}}>• {reason}</small>)}
           </button>)}
         </div>
-        <div className="notice"><strong>Eşleştirme nasıl yapılıyor?</strong><div className="muted">Eğitim düzeyi, alan/uzmanlık, açık kapasite, yanıt süresi ve görüşme tamamlama disiplini kullanılır. Bu sıralama tek başına bir “koç başarı puanı” değildir.</div></div>
+        <div className="notice"><strong>Eşleştirme nasıl yapılıyor?</strong><div className="muted">Yönetici tarafından onaylanmış bütün Partner Koçları görebilirsin. Eğitim düzeyi, alan/uzmanlık, kapasite, yanıt süresi ve görüşme disiplini yalnızca öneri sıralamasını belirler; uygun ve açık kontenjanlı koçlardan istediğini seçebilirsin.</div></div>
       </>}
 
       {error&&<div className="notice error" role="alert">{error}</div>}

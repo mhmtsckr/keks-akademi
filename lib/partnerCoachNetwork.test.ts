@@ -36,12 +36,12 @@ describe('Partner Koç eşleştirme ağı',()=>{
     expect(result.fitReasons.some(x=>x.includes('Görüşme tamamlama'))).toBe(true);
   });
 
-  it('takip etmediği eğitim düzeyine öğrenci önermez',()=>{
+  it('farklı eğitim düzeyindeki öğrenciye de koç seçme hakkı verir',()=>{
     const result=rankPartnerCoach(coach(),{
       gradeLevel:'Ortaokul 8 | Maarif Model',
       academicTrack:null
     });
-    expect(result.eligible).toBe(false);
+    expect(result.eligible).toBe(true);
   });
 
   it('kapasitesi dolu koçu yeni öğrenciye önermez fakat mevcut eşleşmeyi korur',()=>{
@@ -64,9 +64,9 @@ describe('Partner Koç eşleştirme ağı',()=>{
   it('eski eğitim düzeyi etiketlerini güncel düzeyle eşleyebilir',()=>{
     expect(coachSupportsEducationLevel(['8. Sınıf / LGS'],'Ortaokul 8 | Maarif Model')).toBe(true);
   });
-  it('profili kalite eşiğini tamamlamayan koçu yeni eşleşmeye açmaz',()=>{
+  it('eksik profil seçimden gizlenmez; yalnız öneri sıralamasına etki eder',()=>{
     const incomplete=coach({displayTitle:null,bio:null,specialties:[],supportedEducationLevels:[],profileCompleteness:0});
-    expect(rankPartnerCoach(incomplete,{gradeLevel:'Lise 12 | YKS',academicTrack:'EŞİT AĞIRLIK'}).eligible).toBe(false);
+    expect(rankPartnerCoach(incomplete,{gradeLevel:'Lise 12 | YKS',academicTrack:'EŞİT AĞIRLIK'}).eligible).toBe(true);
     expect(rankPartnerCoach(incomplete,{gradeLevel:'Lise 12 | YKS',academicTrack:'EŞİT AĞIRLIK',currentCoachId:'coach-1'}).eligible).toBe(true);
   });
 
