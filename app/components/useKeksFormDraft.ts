@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {createElement,useCallback,useEffect,useRef,useState} from 'react';
 
 export type KeksDraftKind='ONBOARDING'|'CONTEXT'|'SCREENING'|'INTERVIEW';
 export type KeksDraftStatus='loading'|'local'|'saving'|'saved'|'error';
@@ -124,9 +124,9 @@ export function KeksDraftIndicator({status,retry}:{status:KeksDraftStatus;retry:
   :status==='saving'?'Sunucuya kaydediliyor…'
   :status==='local'?'Bu cihazda korundu · Bağlantı geldiğinde eşitlenecek'
   :'Sunucuya ulaşılamadı · Yazdıkların bu cihazda korunmaya çalışılıyor';
- return <div className={'keksResumeStatus '+(status==='error'?'keksResumeError':'')} role="status" aria-live="polite">
-   <span aria-hidden="true">{status==='saved'?'✓':status==='error'?'!':'●'}</span>
-   <span>{label}</span>
-   {(status==='local'||status==='error')&&<button type="button" className="btn" onClick={retry}>Şimdi eşitle</button>}
- </div>;
+ return createElement('div',{className:'keksResumeStatus '+(status==='error'?'keksResumeError':''),role:'status','aria-live':'polite'},
+   createElement('span',{'aria-hidden':'true'},status==='saved'?'✓':status==='error'?'!':'●'),
+   createElement('span',null,label),
+   (status==='local'||status==='error')?createElement('button',{type:'button',className:'btn',onClick:retry},'Şimdi eşitle'):null
+ );
 }
