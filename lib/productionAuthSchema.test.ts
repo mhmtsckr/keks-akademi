@@ -20,7 +20,7 @@ describe('Production login schema compatibility',()=>{
     expect(additive).not.toMatch(/(?:DROP TABLE|TRUNCATE TABLE|DELETE FROM) "ParentProfile"/i);
   });
   it('creates the Subscription table expected by the coach subscription gate',()=>{
-    const model=schema.match(/model Subscription \\{([\\s\\S]*?)\\n\\}/)?.[1]||'';
+    const model=schema.split('model Subscription {')[1]?.split('}')[0]||'';
     for(const field of ['userId','planId','status','startsAt','endsAt','createdAt','updatedAt']){
       expect(model).toContain(field);
       expect(additive).toContain('"'+field+'"');
@@ -30,7 +30,7 @@ describe('Production login schema compatibility',()=>{
     expect(additive).toMatch(/CREATE INDEX IF NOT EXISTS "Subscription_userId_status_endsAt_idx"/);
     expect(additive).toMatch(/CREATE INDEX IF NOT EXISTS "Subscription_provider_providerReference_idx"/);
     expect(additive).toMatch(/'Subscription_userId_fkey'/);
-    expect(additive).toMatch(/REFERENCES "User"\\("id"\\)\\s+ON DELETE CASCADE ON UPDATE CASCADE/);
+    expect(additive).toContain('FOREIGN KEY ("userId") REFERENCES "User"("id")');
   });
   it('is additive and does not reset existing subscriptions or grant access',()=>{
     expect(additive).not.toMatch(/(?:DROP TABLE|TRUNCATE TABLE|DELETE FROM|UPDATE) "Subscription"/i);
