@@ -83,8 +83,11 @@ export function useKeksFormDraft<T>({
            last.current={data:remote.data as T,updatedAt:timestamp};
            restoreCallback.current(remote.data as T);
            setStatus('saved');
-         }
-       }else if(!local)setStatus('saved');
+         }else if(local.updatedAt>timestamp){
+           void persist(local);
+         }else setStatus('saved');
+       }else if(local){void persist(local)}
+       else setStatus('saved');
      }catch{
        if(mounted)setStatus(last.current?'local':'error');
      }finally{
@@ -113,4 +116,17 @@ export function useKeksFormDraft<T>({
  },[key,url]);
 
  return {ready,status,save,clear,retry:()=>last.current?persist(last.current):Promise.resolve()};
+}
+
+export function KeksDraftIndicator({status,retry}:{status:KeksDraftStatus;retry:()=>void}){
+ const label=status==='loading'?'Kayıtlar kontrol ediliyor…'
+  :status==='saved'?'✓ Sunucuya kaydedildi · Başka cihazdan devam edebilirsin'
+  :status==='saving'?'Sunucuya kaydediliyor…'
+  :status==='local'?'Bu cihazda korundu · Bağlantı geldiğinde eşitlenecek'
+  :'Sunucuya ulaşılamadı · Yazdıkların bu cihazda korunmaya çalışılıyor';
+ return <div className={'keksResumeStatus '+(status==='error'?'keksResumeError':'')} role="status" aria-live="polite">
+   <span aria-hidden="true">{status==='saved'?'✓':status==='error'?'!':'●'}</span>
+   <span>{label}</span>
+   {(status==='local'||status==='error')&&<button type="button" className="btn" onClick={retry}>Şimdi eşitle</button>}
+ </div>;
 }
