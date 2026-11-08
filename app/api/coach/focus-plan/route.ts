@@ -56,8 +56,16 @@ async function POST__handler(req:Request){
     if(unique.has(key))return NextResponse.json({error:'Aynı öğrenciye aynı gün aynı müdahale iki kez eklenemez.'},{status:400});
     unique.add(key);
   }
+  const bookedSessions=await db.coachingSession.findMany({
+    where:{coachId:user.coachProfile.id,status:'SCHEDULED',startsAt:{gte:new Date(today+'T00:00:00+03:00'),lte:maxDate}},
+    select:{startsAt:true,endsAt:true}
+  });
+  for(const session of bookedSessions){
+    const key=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(session.startsAt);
+    if(loads.has(key))loads.set(key,(loads.get(key)||0)+Math.max(0,Math.ceil((session.endsAt.getTime()-session.startsAt.getTime())/60000)));
+  }
   if([...loads.values()].some(v=>v>input.dailyCapacity))
-    return NextResponse.json({error:'En az bir günde koç kapasitesi aşıldı.'},{status:400});
+    return NextResponse.json({error:'Plan, mevcut koç görüşmeleriyle birlikte günlük kapasiteyi aşıyor.'},{status:400});
   const outcome=await db.$transaction(async tx=>{
     // Prevent overlapping approvals from creating duplicate records.
     await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${user.coachProfile!.id}), 2046) IS NULL AS locked`;
