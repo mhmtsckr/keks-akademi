@@ -12,7 +12,6 @@ describe('central product pricing wiring',()=>{
       'app/api/student/test/access/route.ts':['getKeksMonthlyProduct'],
       'app/ogrenci/page.tsx':['/ogrenci/egilim-taramasi'],
       'app/ogrenci/egilim-taramasi/page.tsx':['StudentActions'],
-      'app/page.tsx':['getKeksMonthlyProduct','product.priceLabel','product.listPriceLabel'],
       'app/components/StudentActions.tsx':['product?.priceLabel','product?.listPriceLabel']
     };
 
@@ -24,6 +23,17 @@ describe('central product pricing wiring',()=>{
       }
     }
     expect(missing,'Active price-sensitive surfaces must use the central runtime product.').toEqual([]);
+  });
+
+  it('does not advertise subscriptions or package prices on the home page',()=>{
+    const home=read('app/page.tsx');
+    const sections=read('app/components/HomeMarketingSections.tsx');
+    const menu=read('app/components/SiteMenu.tsx');
+    expect(home).not.toContain('getKeksMonthlyProduct');
+    expect(home).not.toContain('homeOfferSection');
+    expect(sections).not.toContain('homePlanShowcase');
+    expect(sections).not.toContain('STUDENT_TERM_PRICING');
+    expect(menu).not.toContain('href="/abonelik-planlari"');
   });
 
   it('keeps default product identity and price literals in one catalog',()=>{
