@@ -9,6 +9,9 @@ export async function GET(req:NextRequest){
     ok:true,
     coaches:coaches.map(coach=>({
       id:coach.id,
+      eligible:coach.eligible,
+      acceptingStudents:coach.acceptingStudents,
+      fitRank:coach.fitRank,
       name:coach.name,
       displayTitle:coach.displayTitle,
       bio:coach.bio,
