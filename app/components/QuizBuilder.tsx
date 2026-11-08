@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { EXAM_CATALOG, ExamType } from '@/lib/examCatalog';
+import {BLANK_REASON_CODES} from '@/lib/blankReasonEvidence';
 
 type Question={id:string;prompt:string;options:Record<string,string>;sourceKind:string;sourceYear?:number|null;officialSourceUrl?:string|null};
 type ReviewItem={
@@ -49,6 +50,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
   const [hydrated,setHydrated]=useState(false);
   const [saveState,setSaveState]=useState<'loading'|'saving'|'saved'|'error'>('loading');
   const [result,setResult]=useState<any>(null);
+  const [blankReasons,setBlankReasons]=useState<Record<string,string>>({});
   const [resultTab,setResultTab]=useState<'topics'|'questions'|'plan'>('topics');
   const saveQueue=useRef<Promise<void>>(Promise.resolve());
   const latest=useRef({answers:{} as Record<string,string>,marked:{} as Record<string,boolean>});
@@ -99,7 +101,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     const r=await fetch('/api/student/quizzes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({examType:exam,subject,topic:topic||undefined,count})});
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Test oluşturulamadı.'));return}
-    setQuiz(j.quiz);setQuestions(j.questions);setAnswers({});setActiveQuestion(0);setMarkedForReturn({});setShowFinishConfirm(false);setFinished(false);setResult(null);setHydrated(false);setMsg('');
+    setQuiz(j.quiz);setQuestions(j.questions);setAnswers({});setActiveQuestion(0);setMarkedForReturn({});setShowFinishConfirm(false);setFinished(false);setResult(null);setBlankReasons({});setHydrated(false);setMsg('');
   }
 
   async function toggleBookmark(questionId:string){
@@ -121,7 +123,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     let j:any;
     try{
       await persistDraft(quiz.id);
-      const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({answers})});
+      const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({answers,blankReasons:Object.fromEntries(Object.entries(blankReasons).filter(([id])=>!answers[id]))})});
       j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Sonuç kaydedilemedi.'));return}
     }catch{setMsg('Hata: Bağlantı kurulamadı. Sonuç kaydedilemedi.');return}
@@ -225,6 +227,16 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
           <h3>Testi teslim etmek istiyor musun?</h3>
           <p>{questions.filter(q=>Boolean(answers[q.id])).length} cevaplandı · {questions.filter(q=>!answers[q.id]).length} boş · {questions.filter(q=>markedForReturn[q.id]).length} işaretli soru.</p>
           <p>Boş sorular geçerlidir; teslimden sonra cevaplarını değiştiremezsin.</p>
+          {questions.filter(q=>!answers[q.id]).length>0&&<div className="keksFocusBlankReasons">
+            <strong>Boş bırakma nedenleri (isteğe bağlı)</strong>
+            <p>Yanlışlardan ayrı analiz edilir. Neden seçmek zorunda değilsin.</p>
+            {questions.filter(q=>!answers[q.id]).map((q,i)=><label className="field" key={q.id}>Soru {questions.findIndex(item=>item.id===q.id)+1} · Neden boş?
+              <select value={blankReasons[q.id]||''} onChange={e=>setBlankReasons(x=>({...x,[q.id]:e.target.value}))}>
+                <option value="">Belirtmek istemiyorum</option>
+                {Object.entries(BLANK_REASON_CODES).map(([code,label])=><option key={code} value={code}>{label}</option>)}
+              </select>
+            </label>)}
+          </div>}
           <div className="row"><button className="btn" type="button" onClick={()=>setShowFinishConfirm(false)}>Sorulara dön</button><button className="btn primary" disabled={submitting||!hydrated} type="button" onClick={finish}>{submitting?'Kaydediliyor…':'Teslimi onayla'}</button></div>
         </div>}
       </div></>}
