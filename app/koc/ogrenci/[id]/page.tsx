@@ -74,6 +74,15 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
   }
   const wrongTopicSummary=[...wrongTopicMap.values()].sort((a,b)=>b.count-a.count);
 
+  const screeningContext=student.profile&&typeof student.profile==='object'&&!Array.isArray(student.profile)
+    ?(student.profile as Record<string,unknown>).nativeScreeningContext:null;
+  const nativeContext=screeningContext&&typeof screeningContext==='object'&&!Array.isArray(screeningContext)
+    ?screeningContext as Record<string,unknown>:null;
+  const nativeText=(v:unknown)=>typeof v==='string'&&v.trim()?v.trim():'Belirtilmedi';
+  const learningStage=String(nativeContext?.learningStage||'');
+  const stageLabel=learningStage==='FOUNDATION'?'Yeni başlıyor / temel oluşturuyor':
+    learningStage==='DEVELOPING'?'Destekle uyguluyor / geliştiriyor':
+    learningStage==='INDEPENDENT'?'Bağımsız pekiştiriyor':'Belirtilmedi';
   return <PortalShell signedIn
     active="koc"
     eyebrow="KOÇ ÖĞRENCİ ÇALIŞMA ALANI"
@@ -174,6 +183,27 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
         })}
       </div>
     </section>
+    {nativeContext&&<section id="egilim-calisma-baglam" className="section section-anchor">
+      <div className="card keksNativeCoachContext">
+        <div className="moduleEyebrow">KEKS FOCUS PRO · ÖĞRENME PROFİLİ</div>
+        <h2>Öğrencinin öz bildirimli çalışma bağlamı</h2>
+        <p className="muted">Bu bilgiler öğrencinin kendi KEKS hesabından alınmıştır. Eğitimsel görüşmede doğrulanmalı; kesin kişilik/başarı değerlendirmesi olarak kullanılmamalıdır.</p>
+        <div className="keksNativeScreeningFacts">
+          <div><small>Öğrenme aşaması</small><strong>{stageLabel}</strong></div>
+          <div><small>Günlük / haftalık kapasite</small><strong>{Number(nativeContext.dailyMinutes)||0} dk · {Number(nativeContext.weeklyDays)||0} gün</strong></div>
+          <div><small>Ders zaman dengesi</small><strong>Sayısal %{Number(nativeContext.numericalShare)||0} · Sözel %{100-(Number(nativeContext.numericalShare)||0)}</strong></div>
+          <div><small>Son güncelleme</small><strong>{typeof nativeContext.updatedAt==='string'?new Date(nativeContext.updatedAt).toLocaleDateString('tr-TR'):'Belirtilmedi'}</strong></div>
+        </div>
+        <div className="keksNativeCoachNotes">
+          <p><strong>Sayısal eksikler:</strong> {nativeText(nativeContext.numericalGaps)}</p>
+          <p><strong>Sözel eksikler:</strong> {nativeText(nativeContext.verbalGaps)}</p>
+          <p><strong>Son değerlendirme:</strong> {nativeText(nativeContext.lastEvaluation)}</p>
+          <p><strong>Zor görev örneği:</strong> {nativeText(nativeContext.challengeExample)}</p>
+          <p><strong>Çalışma engelleri:</strong> {nativeText(nativeContext.obstacles)}</p>
+          <p><strong>Veli/öğretmen gözlemi:</strong> {nativeText(nativeContext.teacherObservation)}</p>
+        </div>
+      </div>
+    </section>}
     <section id="ongorusme" className="section section-anchor"><CoachPreInterviewSummary studentId={student.id}/></section>
     {showAgsStudyArithmetic&&<section id="ags-calisma-aritmetigi" className="section section-anchor"><AgsStudyArithmetic studentName={student.fullName} field={oabtField}/></section>}
     <section id="seans-akisi" className="section section-anchor"><CoachSessionWorkflow studentId={student.id}/></section>
