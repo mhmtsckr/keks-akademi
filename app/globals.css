@@ -2076,3 +2076,34 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
  .keksFocusScreening .keksFocusMapItem{min-width:39px;min-height:39px}
 }
 @media(prefers-reduced-motion:reduce){.keksAssessmentPrimary.btn,.keksAssessmentStepCard,.keksNativeScreeningSteps>div{transition:none}}
+
+
+/* Consistent second-stage and status surface treatments */
+.keksProductCard.keksFocusPreInterview{
+ background:#fff!important;border:1px solid #dee7ee!important;color:#173249!important;
+ box-shadow:0 12px 32px rgba(14,43,64,.065)!important
+}
+.keksFocusPreInterview:before{background:linear-gradient(#e8c374,#24785d)}
+.keksFocusPreInterview :is(h2,h3){color:#17334b}
+.keksFocusPreInterview .moduleEyebrow{color:#a17d34}
+.keksFocusPreInterview .muted{color:#61798d!important}
+.keksFocusPreInterview .keksProductTop .pill{background:#f9f0d8;color:#644c24;border:1px solid #ead6a6}
+.keksFocusPreInterview .notice{background:#f0f7f5;color:#254e40;border-color:#c4ded1}
+.keksFocusPreInterview .preInterviewQuestion{background:#fff!important;color:#1a354b!important;box-shadow:0 3px 14px rgba(10,38,61,.04)}
+.keksFocusPreInterview .keksFocusOption:has(input:checked),.keksFocusPreInterview .keksFocusScale:has(input:checked){
+ border-color:#24785d!important;background:#ebf7f1!important;box-shadow:inset 4px 0 #24785d
+}
+.keksFocusPreInterview .btn.primary{background:#0b223b!important;border-color:#0b223b!important;color:#fff!important;min-height:46px}
+.keksFocusPreInterview .btn.primary:hover{background:#19405c!important}
+.keksFocusPreInterview textarea,.keksFocusPreInterview select{color:#17364b!important}
+.preInterviewPending.keksProductCard,.preInterviewApproved{
+ background:radial-gradient(circle at 90% 10%,rgba(232,195,116,.11),transparent 35%),linear-gradient(135deg,#0a2036,#163c54)!important;
+ border:1px solid #37536b!important;color:#eff5f9!important
+}
+.preInterviewPending.keksProductCard :is(h2,h3),.preInterviewApproved :is(h2,h3){color:#fff!important}
+.preInterviewPending.keksProductCard p,.preInterviewApproved p{color:#d4e1e9!important}
+.preInterviewPending.keksProductCard .moduleEyebrow,.preInterviewApproved .moduleEyebrow{color:#e8c374!important}
+.preInterviewPending.keksProductCard .notice,.preInterviewApproved .notice{
+ background:rgba(232,195,116,.11)!important;border-color:rgba(232,195,116,.34)!important;color:#f3e8ce!important
+}
+.keksNativeCoachContext .keksNativeCoachNotes strong{color:#153b51}
