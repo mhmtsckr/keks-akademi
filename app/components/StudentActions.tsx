@@ -178,7 +178,7 @@ export function StudentActions({hasAccess,studentId}:{hasAccess:boolean;studentI
       <details className="keksFocusQuestionMapDetails">
         <summary>Soru haritası <span className="muted">{answered} cevaplandı · {form.questionCount-answered} yanıtlanmadı</span></summary>
         <div className="keksFocusMapLegend" aria-label="Soru haritası açıklaması"><span><i className="answered"/> Cevaplandı</span><span><i/> Yanıtlanmadı</span><span>Çerçeveli: Bulunduğun sayfa</span></div>
-        <div className="keksFocusScreeningMap" role="group" aria-label="Madde haritası">{form.questions.map((q,i)=><button type="button" key={q.id} aria-label={`Madde ${i+1}, ${answers[q.id]!=null?'yanıtlandı':'yanıtsız'}`} aria-current={Math.floor(i/PAGE_SIZE)===page?'step':undefined} className={'keksFocusMapItem '+(answers[q.id]!=null?'answered ':'')+(Math.floor(i/PAGE_SIZE)===page?'active':'')} onClick={()=>{setPage(Math.floor(i/PAGE_SIZE));document.getElementById('keks-screening-questions')?.scrollIntoView({behavior:'smooth',block:'start'})}}>{i+1}</button>)}</div>
+        <div className="keksFocusScreeningMap" role="group" aria-label="Madde haritası">{form.questions.map((q,i)=><button type="button" key={q.id} aria-label={`Madde ${i+1}, ${answers[q.id]!=null?'yanıtlandı':'yanıtsız'}`} aria-current={Math.floor(i/PAGE_SIZE)===page?'step':undefined} className={'keksFocusMapItem '+(answers[q.id]!=null?'answered ':'')+(Math.floor(i/PAGE_SIZE)===page?'active':'')} disabled={!draft.ready} onClick={()=>{setPage(Math.floor(i/PAGE_SIZE));document.getElementById('keks-screening-questions')?.scrollIntoView({behavior:'smooth',block:'start'})}}>{i+1}</button>)}</div>
       </details>
       <div className="keksFocusQuestionProgress"><span>İlerleme · <strong>%{Math.round(answered/Math.max(1,form.questionCount)*100)}</strong></span><span>Sayfa {page+1} / {totalPages}</span></div>
       <div className="stack" id="keks-screening-questions" style={{scrollMarginTop:90}}>
@@ -187,7 +187,7 @@ export function StudentActions({hasAccess,studentId}:{hasAccess:boolean;studentI
           <div style={{flex:1}}><strong>{q.prompt}</strong>
             <fieldset className="keksFocusScreeningChoices"><legend>Sana en uygun ifadeyi seç</legend>
               {[1,2,3,4,5].map(n=><label key={n} className={'keksFocusOption '+(answers[q.id]===n?'selected':'')}>
-                <input type="radio" name={q.id} value={n} checked={answers[q.id]===n} onChange={()=>setAnswers(a=>({...a,[q.id]:n}))}/>
+                <input type="radio" disabled={!draft.ready} name={q.id} value={n} checked={answers[q.id]===n} onChange={()=>setAnswers(a=>({...a,[q.id]:n}))}/>
                 <span className="keksFocusLetter" aria-hidden="true">{n}</span>
                 <span>{form.scale?.[n-1]||['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1]}</span>
               </label>)}
