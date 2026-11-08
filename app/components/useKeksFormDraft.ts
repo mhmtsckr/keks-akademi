@@ -35,7 +35,7 @@ export function useKeksFormDraft<T>({
    }
    setStatus('saving');
    const task=queue.current.catch(()=>undefined).then(async()=>{
-     if(!active.current||activeScope.current!==key)return;
+     if(!active.current||activeScope.current!==key||!pending.current)return;
      if(!navigator.onLine)throw new Error('Bağlantı yok.');
      // Read the newest snapshot AFTER earlier requests, so delayed writes never send stale answers.
      const latest=last.current;
