@@ -26,7 +26,7 @@ export function NativeScreeningContext(){
   let active=true;
   fetch('/api/student/screening-context',{cache:'no-store'})
    .then(async r=>{const j=await r.json();if(!r.ok)throw Error(j.error||'Bilgiler yüklenemedi.');return j})
-   .then(j=>{if(!active)return;const ctx=j.context||{};setData({...defaults,...ctx,guidanceRead:true});setRead(Boolean(ctx.guidanceRead));setLoading(false)})
+   .then(j=>{if(!active)return;const ctx=j.context||{};const safe={...defaults};for(const key of Object.keys(defaults) as Array<keyof Context>){if(ctx[key]!==undefined)(safe as any)[key]=ctx[key]}setData(safe);setRead(Boolean(ctx.guidanceRead));setLoading(false)})
    .catch(e=>{if(active){setLoading(false);setStatus('Hata: '+(e instanceof Error?e.message:'Bilgiler yüklenemedi.'))}});
   return ()=>{active=false};
  },[]);
