@@ -37,6 +37,7 @@ export default async function StudentOnboardingPage(){
         initialCoachId={user.student.coachId||''}
         coaches={coaches.map(coach=>({
           id:coach.id,name:coach.name,studentCount:coach.studentCount,
+          eligible:coach.eligible,acceptingStudents:coach.acceptingStudents,fitRank:coach.fitRank,
           displayTitle:coach.displayTitle,specialties:coach.specialties,
           availableSlots:coach.availableSlots,responseHours:coach.responseHours,
           responseTargetHours:coach.responseTargetHours,
