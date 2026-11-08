@@ -62,6 +62,7 @@ export function NativeScreeningContext({studentId}:{studentId:string}){
   <KeksDraftIndicator status={draft.status} retry={()=>{void draft.retry()}}/>
   {loading?<p>Çalışma profili yükleniyor…</p>:<form className="form" onSubmit={save}>
     <div className="keksFormGroupHeading"><span>01</span><div><strong>Çalışma alışkanlıkların</strong><small>Öğrenme aşaman ve haftalık zamanın</small></div></div>
+    <fieldset className="keksOnboardFieldset" disabled={!draft.ready}>
     <div className="grid keksNativeContextGrid">
      <label className="field">Şu anki öğrenme aşamam
        <select value={data.learningStage} onChange={e=>patch('learningStage',e.target.value as Context['learningStage'])}>{options.map(x=><option key={x.value} value={x.value}>{x.label}</option>)}</select>
@@ -98,6 +99,7 @@ export function NativeScreeningContext({studentId}:{studentId:string}){
     </div>
     <div className="notice keksInfoNotice"><strong>Bilgilendirme:</strong> Eğilim taraması bir eğitimsel öz değerlendirme aracıdır; psikolojik tanı veya kesin kişilik sınıflaması değildir. Yanıtlar koç görüşmesi ve performans verileriyle birlikte yorumlanır. Henüz bilimsel olarak doğrulanmış bir ölçek olarak sunulmaz.</div>
     <label className="keksNativeConsent"><input type="checkbox" checked={read} onChange={e=>setRead(e.target.checked)} required/>Bilgilendirmeyi okudum. Gerekirse veli ile birlikte gözden geçireceğim.</label>
+    </fieldset>
     <div className="row"><button className="btn primary" type="submit" disabled={busy||!read||!draft.ready}>{busy?'Kaydediliyor…':'Öğrenme profilini kaydet ve sorulara geç'}</button><span className="muted">Yalnızca KEKS Akademi hesabına kaydedilir.</span></div>
    </form>}
   {status&&<div className={'notice '+(status.startsWith('Hata')?'error':'')} role="status">{status}</div>}
