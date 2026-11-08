@@ -29,8 +29,8 @@ describe('Production login schema compatibility',()=>{
     expect(additive).toMatch(/"Subscription_pkey" PRIMARY KEY/);
     expect(additive).toMatch(/CREATE INDEX IF NOT EXISTS "Subscription_userId_status_endsAt_idx"/);
     expect(additive).toMatch(/CREATE INDEX IF NOT EXISTS "Subscription_provider_providerReference_idx"/);
-    expect(additive).toMatch(/'Subscription_userId_fkey'/);
-    expect(additive).toContain('FOREIGN KEY ("userId") REFERENCES "User"("id")');
+    expect(additive).toContain('CONSTRAINT "Subscription_userId_fkey" FOREIGN KEY ("userId")');
+    expect(additive).toContain('REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE');
   });
   it('is additive and does not reset existing subscriptions or grant access',()=>{
     expect(additive).not.toMatch(/(?:DROP TABLE|TRUNCATE TABLE|DELETE FROM|UPDATE) "Subscription"/i);
