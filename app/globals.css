@@ -1634,8 +1634,8 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
 
 /* Official user-supplied KEKS emblem: unchanged artwork, white margins trimmed only by display box. */
 .homeBrandLogo,.portalBrandLogo{
-  display:block;width:94px;height:104px;object-fit:cover;object-position:center;
-  border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.18);
+  display:block;width:94px;height:104px;object-fit:contain;object-position:center;
+  border-radius:0;background:transparent;box-shadow:none;
 }
 .homeNav{min-height:124px;padding:10px 0;}
 .portalNav{min-height:118px;height:auto;padding:7px 0;}
