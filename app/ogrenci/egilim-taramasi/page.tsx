@@ -43,39 +43,43 @@ export default async function NativeStudentScreeningPage(){
      <div className="keksNativeScreeningHero">
        <div className="keksNativeScreeningHeader">
          <img src="/keks-official-2026.webp" width="60" height="90" alt="KEKS Akademi resmî amblemi"/>
-         <div><div className="moduleEyebrow">KEKS FOCUS PRO · TEK UYGULAMA</div>
+         <div><div className="moduleEyebrow">KEKS FOCUS PRO · KİŞİSEL DEĞERLENDİRME</div>
           <h2>Öğrenme profilim</h2>
-          <p>Bu ekran KEKS Akademi'nin kendi sisteminde çalışır. Ayrı üyelik veya dış platform gerektirmez.</p></div>
+          <p>Eğilimlerin, çalışma alışkanlıkların ve koç desteğin KEKS Akademi'nin kendi sisteminde bir arada.</p>
+          <div className="keksNativeHeroActions">
+            <a href="#egilim-taramasi" className="btn keksAssessmentPrimary">Taramaya devam et <span aria-hidden="true">↓</span></a>
+            <a href="#on-gorusme" className="btn keksAssessmentSecondary">Ön görüşmeyi görüntüle</a>
+          </div></div>
        </div>
        <div className="keksNativeScreeningSteps" aria-label="Değerlendirme aşamaları">
-         <div><strong>01</strong><span>Eğitim profili</span><small>Tamamlandı</small></div>
-         <div><strong>02</strong><span>Eğilim taraması</span><small>{stage==='SCREENING_COMPLETED'?'Tamamlandı':'Erişim / cevaplama'}</small></div>
-         <div><strong>03</strong><span>Ön görüşme</span><small>{interviewDone?'Tamamlandı':interviewReady?'Açıldı':'Tarama sonrası'}</small></div>
-         <div><strong>04</strong><span>Koç değerlendirmesi</span><small>Kanıta dayalı takip</small></div>
+         <div className="keksAssessmentStepDone"><strong>01</strong><span>Eğitim profili</span><small>✓ Tamamlandı</small></div>
+         <div className={last?'keksAssessmentStepDone':'keksAssessmentStepCurrent'}><strong>02</strong><span>Eğilim taraması</span><small>{stage==='SCREENING_COMPLETED'?'✓ Tamamlandı':'Şu anki aşama'}</small></div>
+         <div className={interviewDone?'keksAssessmentStepDone':interviewReady?'keksAssessmentStepCurrent':'keksAssessmentStepPending'}><strong>03</strong><span>Ön görüşme</span><small>{interviewDone?'✓ Tamamlandı':interviewReady?'Görüşme açıldı':'Tarama sonrası'}</small></div>
+         <div className={interviewDone?'keksAssessmentStepCurrent':'keksAssessmentStepPending'}><strong>04</strong><span>Koç değerlendirmesi</span><small>Takip ve planlama</small></div>
        </div>
      </div>
      <div className="card keksNativeScreeningProfile">
-       <h3>Mevcut KEKS öğrenci profilim</h3>
+       <div className="keksNativeCardHeading"><span className="keksAssessmentKicker">PROFİL BİLGİLERİM</span><h3>KEKS öğrenci profilim</h3><p>Bilgilerini tekrar girmen gerekmiyor; tarama bu profili esas alır.</p></div>
        <div className="keksNativeScreeningFacts">
          <div><small>Eğitim düzeyi</small><strong>{student.gradeLevel||'Belirtilmedi'}</strong></div>
          <div><small>Alan / branş</small><strong>{student.academicTrack||'Genel'}</strong></div>
          <div><small>Öğrenme hedefi</small><strong>{student.goal||'Öğrenci profilimden belirlenebilir'}</strong></div>
          <div><small>Koç bağlantısı</small><strong>{student.coachId?'Bağlı':'Henüz bağlanmadı'}</strong></div>
        </div>
-       <p className="muted">Bu bilgileri yeniden girmen gerekmez. Eğitim düzeyinin seçtiği tarama formu: {form.questions.length} madde. Koçun kendi yetki alanındaki sonuçları ve ön görüşme bulgularını görür.</p>
+       <div className="keksNativeProfileFooter"><span><strong>{form.questions.length} madde</strong> · Eğitim ve öğrenme düzeyine göre form</span><span><strong>Güvenli paylaşım</strong> · Yalnızca yetkili koç</span></div>
      </div>
    </section>
    <section className="section" id="egilim-taramasi">
-     <div className="keksNativeSectionTitle"><span>1. AŞAMA</span><h2>KEKS Eğilim Taraması</h2><p>Form eğitim düzeyine göre oluşturulur; mevcut tek kullanımlık erişim ve sonuç kayıtları korunur.</p></div>
+     <div className="keksNativeSectionTitle"><span>01 · KEKS FOCUS PRO</span><h2>Eğilim Taraması</h2><p>Önce öğrenme profilini gözden geçir, ardından sana özel formda ilerle. Mevcut erişim hakların korunur.</p></div>
      <NativeScreeningContext/>
      {learningStage||last?<StudentActions hasAccess={false}/>:<div className="notice">Önce yukarıdaki öğrenme profilini kaydet. Böylece KEKS soruları eğitim ve gelişim düzeyine göre hazırlasın.</div>}
    </section>
    <section className="section" id="on-gorusme">
-     <div className="keksNativeSectionTitle"><span>2. AŞAMA</span><h2>Eğitim Düzeyine Göre Ön Görüşme</h2><p>Eğilim taraması ve yetkili atama tamamlandığında aynı sayfada devam et.</p></div>
+     <div className="keksNativeSectionTitle"><span>02 · KEKS FOCUS PRO</span><h2>Ön Görüşme</h2><p>Tarama tamamlandığında ve görüşme atandığında aynı KEKS hesabından devam et.</p></div>
      <StudentPreInterview/>
    </section>
    <section className="section">
-     <div className="card"><h3>Sonuçlarım ve koç takibi</h3>
+     <div className="card keksAssessmentResults"><span className="keksAssessmentKicker">03 · GELİŞİM TAKİBİ</span><h3>Sonuçlarım ve koç takibi</h3>
        <p>{last?'Son eğilim taraman KEKS hesabında kayıtlı.':'Henüz tamamlanmış KEKS eğilim taraman bulunmuyor.'} {interviewDone?'Ön görüşmen de kayıtlı.':'Ön görüşme durumu yukarıda gösteriliyor.'}</p>
        <p className="muted">{SCREENING_DISCLAIMER}</p>
        <div className="row"><Link href="/ogrenci" className="btn primary">Öğrenci gelişim paneline dön</Link><Link href="/ogrenci/testler" className="btn">Soru çözme merkezine git</Link></div>

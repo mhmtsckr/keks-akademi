@@ -8,27 +8,46 @@ export const metadata={
  description:'Eğitim düzeyine göre eğilim taraması, güvenli öğrenci hesabı, ön görüşme ve koç değerlendirmesi tek KEKS Akademi uygulamasında.'
 };
 
+const stages=[
+ {number:'01',title:'Profilini tanımla',description:'Eğitim düzeyini, alanını, hedefini ve çalışma alışkanlıklarını KEKS hesabında birleştir.'},
+ {number:'02',title:'Eğilim taramasını çöz',description:'Eğitim ve öğrenme aşamana göre seçilen maddelerde kendini değerlendir.'},
+ {number:'03',title:'Ön görüşmeye geç',description:'Yanıtların, koçunla yürütülecek bireysel değerlendirmeye ve çalışma planına temel olsun.'}
+];
+
 export default async function NativeAssessmentEntry(){
  const user=await currentUser();
  if(user?.role==='STUDENT'&&user.student)redirect('/ogrenci/egilim-taramasi');
  if(user?.role==='COACH'||user?.role==='ADMIN')redirect(user.role==='COACH'?'/koc':'/yonetici');
- return <PortalShell active="ogrenci" eyebrow="KEKS AKADEMİ" title="Eğilim Taraması ve Ön Görüşme" description="Öğrenci profili, eğitim düzeyine uygun sorular, değerlendirme, ön görüşme ve koç takibi artık KEKS Akademi bünyesinde, tek hesapta.">
-   <section className="section">
-     <div className="card keksUnifiedAssessmentIntro">
-       <img src="/keks-official-2026.webp" width="66" height="99" alt="KEKS Akademi amblemi"/>
-       <div className="stack">
-         <div className="moduleEyebrow">KEKS FOCUS PRO · TEK UYGULAMA</div>
-         <h2>Kendi öğrencilik ve öğrenme profilini oluştur.</h2>
-         <p>Mevcut KEKS öğrenci hesabınla giriş yap; tekrar kayıt veya ayrı bir öğrenci anahtarı gerekmez. Henüz hesabın yoksa öğrenci kaydını tamamla.</p>
-         <div className="row"><Link className="btn primary" href="/ogrenci">Öğrenci girişi / kayıt</Link><Link className="btn" href="/koc">Koç paneline giriş</Link></div>
+ return <PortalShell active="ogrenci" eyebrow="KEKS FOCUS PRO" title="Eğilim Taraması ve Ön Görüşme" description="Eğilimlerini keşfet, çalışma düzenini anlamlandır ve koçunla daha güçlü bir öğrenme planı oluştur." wide>
+   <section className="section keksAssessmentLanding" aria-label="KEKS değerlendirme merkezi">
+     <div className="keksAssessmentLandingHero">
+       <div className="keksAssessmentLandingCopy">
+         <div className="keksAssessmentEyebrow"><span className="keksAssessmentEyebrowDot"/> KEKS AKADEMİ · DEĞERLENDİRME MERKEZİ</div>
+         <h2>Öğrenmeni tanı.<br/><span>Gelişimini yönet.</span></h2>
+         <p>KEKS Akademi'nin kendi sistemi içinde eğitim düzeyine uygun tarama, kişisel ön görüşme ve koç takibi. Hepsi tek öğrenci hesabında.</p>
+         <div className="keksAssessmentHeroActions">
+           <Link className="btn keksAssessmentPrimary" href="/ogrenci">Öğrenci olarak başla <span aria-hidden="true">→</span></Link>
+           <Link className="btn keksAssessmentSecondary" href="/koc">Koç paneline geç</Link>
+         </div>
+         <div className="keksAssessmentHeroFoot">
+           <span>✓ Tek KEKS hesabı</span><span>✓ Düzeye uygun içerik</span><span>✓ Koçla bütünleşik takip</span>
+         </div>
+       </div>
+       <div className="keksAssessmentLandingEmblem" aria-label="KEKS Akademi amblemi">
+         <img src="/keks-official-2026.webp" width="184" height="270" alt="KEKS Akademi resmî amblemi"/>
+         <div className="keksAssessmentEmblemCaption">Çalışmanı veriye, veriyi başarıya dönüştür.</div>
        </div>
      </div>
-     <div className="grid">
-       <div className="card"><h3>1 · Eğitim düzeyini belirle</h3><p>İlkokuldan yetişkin sınavlarına kadar kendi profiline uygun içerik.</p></div>
-       <div className="card"><h3>2 · Eğilim taramasını tamamla</h3><p>Kendini değerlendirme soruları; sınav notu veya psikolojik tanı değildir.</p></div>
-       <div className="card"><h3>3 · Ön görüşmeye geç</h3><p>Koçun, hedeflerini ve öğrenme alışkanlıklarını aynı KEKS öğrenci hesabında inceler.</p></div>
+     <div className="keksAssessmentSteps">
+       <div className="keksAssessmentSectionHeading"><span>SÜREÇ NASIL İŞLER?</span><h2>Tek platformda üç adım</h2><p>Öğrenciye ek bir uygulama veya yeni giriş anahtarı gerekmez.</p></div>
+       <div className="keksAssessmentStepGrid">{stages.map(s=><article className="keksAssessmentStepCard" key={s.number}>
+         <span className="keksAssessmentStepNumber">{s.number}</span><h3>{s.title}</h3><p>{s.description}</p>
+       </article>)}</div>
      </div>
-     <p className="muted">Eğilim taraması aylık KEKS test ürünü erişimine tabidir. Mevcut erişim kodların ve tamamlanan KEKS değerlendirmelerin korunur. Başka bir sitede daha önce doldurduğun kayıtlar otomatik taşınmaz.</p>
+     <div className="keksAssessmentInfoBar">
+       <div><strong>Mevcut öğrenciler için</strong><p>KEKS hesabındaki tarama sonuçların ve tanımlı ürün erişimlerin korunur. Tarama, mevcut aylık ürün koşullarına tabidir.</p></div>
+       <div><strong>Bilimsel kullanım sınırı</strong><p>Bu araç eğitimsel öz değerlendirme içindir; psikolojik tanı koymaz. Önceki bağımsız sitedeki kayıtlar otomatik aktarılmaz.</p></div>
+     </div>
    </section>
  </PortalShell>;
 }

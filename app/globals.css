@@ -1933,3 +1933,177 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
  .keksUnifiedAssessmentIntro,.keksNativeScreeningHeader,.keksNativeAssessmentShortcut{align-items:flex-start;flex-direction:column}
  .keksNativeScreeningHero{padding:15px}
 }
+
+
+/* KEKS Akademi • First-party Inclination Screening | Unified brand treatment */
+.keksAssessmentLanding{--keks-assessment-navy:#0b223b;--keks-assessment-gold:#e8c374;--keks-assessment-green:#24785d;max-width:1240px;margin:0 auto}
+.keksAssessmentLandingHero{position:relative;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(240px,.8fr);gap:28px;align-items:center;min-height:400px;padding:clamp(26px,4.5vw,56px);overflow:hidden;
+ background:radial-gradient(ellipse at 90% 14%,rgba(232,195,116,.14),transparent 38%),linear-gradient(125deg,#091d33 0%,#0e2c48 75%,#164b45 130%);
+ border:1px solid #294763;border-radius:25px;box-shadow:0 20px 60px rgba(12,34,57,.14);color:#f8fbff}
+.keksAssessmentLandingHero:before{content:"";position:absolute;width:400px;height:400px;right:-175px;bottom:-270px;border-radius:50%;border:1px solid rgba(232,195,116,.25);pointer-events:none}
+.keksAssessmentLandingCopy{position:relative;z-index:1}
+.keksAssessmentEyebrow,.keksAssessmentKicker{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:850;letter-spacing:.1em;color:#c3974c}
+.keksAssessmentLandingHero .keksAssessmentEyebrow{color:#f0cd83}
+.keksAssessmentEyebrowDot{height:8px;width:8px;display:inline-block;border-radius:50%;background:#e8c374;box-shadow:0 0 0 5px rgba(232,195,116,.12)}
+.keksAssessmentLandingHero h2{font-size:clamp(30px,4.4vw,56px);line-height:1.09;letter-spacing:-.035em;color:#fff;margin:22px 0 14px}
+.keksAssessmentLandingHero h2 span{color:#e8c374}
+.keksAssessmentLandingHero p{max-width:640px;margin:0;color:#d8e4ec;line-height:1.7;font-size:clamp(14px,1.4vw,17px)}
+.keksAssessmentHeroActions,.keksNativeHeroActions{display:flex;flex-wrap:wrap;gap:11px;margin:24px 0 0}
+.keksAssessmentPrimary.btn,.keksAssessmentLandingHero .keksAssessmentPrimary.btn,.keksNativeHeroActions .keksAssessmentPrimary.btn{
+ display:inline-flex;align-items:center;justify-content:center;gap:15px;min-height:46px;
+ padding:11px 20px;border-radius:12px;background:#e8c374!important;color:#0b223b!important;border:1px solid #e8c374!important;font-weight:850;
+ box-shadow:0 5px 18px rgba(7,24,41,.12);transition:transform .15s,background .15s}
+.keksAssessmentPrimary.btn:hover{transform:translateY(-1px);background:#f4d692!important}
+.keksAssessmentSecondary.btn,.keksAssessmentLandingHero .keksAssessmentSecondary.btn,.keksNativeHeroActions .keksAssessmentSecondary.btn{
+ display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 18px;border:1px solid rgba(224,236,246,.35);
+ border-radius:12px;background:rgba(255,255,255,.07);color:#fff;font-weight:750
+}
+.keksAssessmentSecondary.btn:hover{background:rgba(255,255,255,.14)}
+.keksAssessmentHeroFoot{display:flex;flex-wrap:wrap;gap:10px 20px;margin-top:24px;color:#c9d8e5;font-size:12px;font-weight:700}
+.keksAssessmentLandingEmblem{position:relative;display:grid;justify-items:center;gap:16px;padding:25px 15px}
+.keksAssessmentLandingEmblem:before{content:"";position:absolute;inset:9% 10%;border-radius:48%;border:1px solid rgba(232,195,116,.27);background:radial-gradient(circle,rgba(232,195,116,.14),transparent 68%)}
+.keksAssessmentLandingEmblem img{position:relative;max-width:100%;width:min(184px,100%);height:auto;max-height:270px;object-fit:contain;background:transparent;filter:drop-shadow(0 16px 25px rgba(0,0,0,.22))}
+.keksAssessmentEmblemCaption{position:relative;max-width:210px;text-align:center;font-size:12px;font-weight:750;color:#e7c980;line-height:1.5}
+.keksAssessmentSteps{padding-top:28px}
+.keksAssessmentSectionHeading{margin-bottom:17px}
+.keksAssessmentSectionHeading>span{font-weight:850;letter-spacing:.09em;font-size:11px;color:#ae8232}
+.keksAssessmentSectionHeading h2{margin:6px 0;color:#0e2b43;font-size:clamp(23px,3vw,31px)}
+.keksAssessmentSectionHeading p{margin:0;color:#64798b}
+.keksAssessmentStepGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.keksAssessmentStepCard{background:#fff;border:1px solid #dce5ee;border-top:3px solid #dfbe7b;border-radius:16px;padding:22px;box-shadow:0 8px 26px rgba(19,51,77,.05)}
+.keksAssessmentStepNumber{font-weight:900;font-size:32px;line-height:1;color:#b18433}
+.keksAssessmentStepCard h3{margin:16px 0 9px;color:#102d44;font-size:17px}
+.keksAssessmentStepCard p{margin:0;line-height:1.65;color:#5e7386;font-size:14px}
+.keksAssessmentInfoBar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:19px}
+.keksAssessmentInfoBar>div{background:#f1f6f7;border:1px solid #dbe7e6;padding:16px 18px;border-radius:13px;color:#1d3b50}
+.keksAssessmentInfoBar strong{font-size:13px}
+.keksAssessmentInfoBar p{margin:7px 0 0;color:#5f7483;line-height:1.6;font-size:13px}
+
+/* Student progress, profile and context */
+.keksNativeScreeningHero{border-radius:23px;padding:clamp(18px,3vw,32px);background:radial-gradient(circle at 97% 4%,rgba(232,195,116,.13),transparent 38%),linear-gradient(130deg,#091f35,#133a52)}
+.keksNativeScreeningHeader img{max-width:95px;object-fit:contain;background:transparent}
+.keksNativeScreeningHeader h2{font-size:clamp(25px,3.1vw,36px);letter-spacing:-.025em}
+.keksNativeScreeningHeader p{max-width:700px;line-height:1.65}
+.keksNativeHeroActions{margin-top:17px}
+.keksNativeHeroActions .btn{font-size:13px}
+.keksNativeScreeningSteps>div{position:relative;transition:background .15s,border-color .15s}
+.keksNativeScreeningSteps .keksAssessmentStepDone{border-color:rgba(106,196,157,.6);background:rgba(37,120,93,.26)}
+.keksNativeScreeningSteps .keksAssessmentStepDone strong{color:#a5e7c5}
+.keksNativeScreeningSteps .keksAssessmentStepCurrent{border:1px solid #e8c374;background:rgba(232,195,116,.13);box-shadow:inset 0 -3px #e8c374}
+.keksNativeScreeningSteps .keksAssessmentStepCurrent small{color:#f0cf8a}
+.keksNativeScreeningSteps .keksAssessmentStepPending{opacity:.68}
+.keksNativeScreeningProfile,.keksNativeContext,.keksAssessmentResults{box-shadow:0 6px 25px rgba(17,47,70,.045)}
+.keksNativeCardHeading{display:grid;gap:6px}
+.keksNativeCardHeading h3{margin:3px 0;color:#12344d;font-size:20px}
+.keksNativeCardHeading p{margin:0;color:#63798b;font-size:13px}
+.keksNativeScreeningFacts strong{font-size:15px;line-height:1.45}
+.keksNativeProfileFooter{display:flex;flex-wrap:wrap;justify-content:space-between;gap:9px;border-top:1px solid #e0e9ee;padding-top:15px;color:#677d8c;font-size:12px}
+.keksNativeProfileFooter strong{color:#24785d}
+.keksNativeSectionTitle{position:relative;border-left:4px solid #d4ab5c;padding-left:14px;margin:0 0 18px}
+.keksNativeSectionTitle h2{font-size:clamp(23px,3vw,29px)}
+.keksNativeContext{background:#fff!important;color:#1c354b!important}
+.keksNativeContext .moduleEyebrow{color:#b28533}
+.keksNativeContext h3{color:#112c43;font-size:20px}
+.keksNativeContext .keksNativeContextGrid{gap:18px}
+.keksNativeContext label.field{color:#233e51;font-weight:700;font-size:13px;gap:8px}
+.keksNativeContext :is(input,textarea,select){font:inherit;font-weight:500}
+.keksNativeContext .btn.primary,.keksAssessmentResults .btn.primary{background:#0b223b!important;color:#fff!important;border-color:#0b223b!important;min-height:45px}
+.keksNativeContext .btn.primary:hover,.keksAssessmentResults .btn.primary:hover{background:#173a55!important}
+.keksNativeContext .notice{color:#284f43;background:#eef8f2;border-color:#b9d9c6}
+.keksNativeContext .keksNativeConsent{font-weight:650}
+.keksAssessmentResults{border-left:4px solid #e8c374!important}
+.keksAssessmentResults h3{color:#122e45;margin:8px 0}
+
+/* Focus Pro test: ensure navy storefront does NOT give white question fields a dark-text collision */
+.keksProductCard.keksFocusScreening{background:#fff!important;color:#173249!important;border:1px solid #dfe8ee!important}
+.keksProductCard.keksFocusScreening:before{background:linear-gradient(#f1ce7c,#287a60)}
+.keksFocusScreening :is(h2,h3){color:#122d46}
+.keksFocusScreening .keksProductBrand,.keksFocusScreening .portalBrandText strong{color:#12314b}
+.keksFocusScreening .moduleEyebrow{color:#9f762b}
+.keksFocusScreening .keksProductTop .pill,.keksFocusScreening .moduleHeaderRow>.pill{background:#f8efd9;color:#5d461c;border:1px solid #e5cd8d}
+.keksFocusScreening .notice{background:#f0f6f8;color:#29475d;border-color:#dae7ee}
+.keksFocusScreening .notice .muted,.keksFocusScreening .muted{color:#657d8f}
+.keksFocusScreening .keksFocusHero{margin-top:20px;background:linear-gradient(115deg,#0b223b,#153a53)!important;color:#fff!important}
+.keksFocusScreening .keksFocusHero .keksFocusBrand{color:#e8c374}
+.keksFocusScreening .keksFocusHeroTop{color:#ecf4f8}
+.keksFocusScreening .keksFocusScreeningQuestion{background:#fff;border:1px solid #dde7ed;border-radius:16px;box-shadow:0 3px 12px rgba(12,38,61,.045)}
+.keksFocusScreeningQuestion>div:last-child>strong{display:block;color:#18344b;font-size:16px;line-height:1.62}
+.keksFocusScreeningChoices legend{color:#6d8191}
+.keksFocusScreening .keksFocusOption{border-color:#dae5eb;line-height:1.45}
+.keksFocusScreening .keksFocusOption:has(input:checked){border-color:#267d5f;background:#ebf7f0;box-shadow:inset 4px 0 #24785d}
+.keksFocusScreening .keksFocusMapItem{min-width:42px;min-height:42px}
+.keksFocusScreening .keksFocusMapItem.active{outline:2px solid #0b223b;outline-offset:2px}
+.keksFocusScreening .keksFocusMapItem.answered{border-color:#b0d7c0}
+.keksFocusScreening .btn.primary{background:#0b223b!important;border-color:#0b223b!important;color:#fff!important;min-height:44px}
+.keksFocusScreening .btn.primary:hover{background:#173b57!important}
+.keksFocusScreening .keksFocusQuestionMapDetails{margin:18px 0;border:1px solid #dee8ee;border-radius:15px;padding:14px 16px;background:#f9fbfc}
+.keksFocusQuestionMapDetails summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;color:#213b50;font-weight:800;list-style:none}
+.keksFocusQuestionMapDetails summary::-webkit-details-marker{display:none}
+.keksFocusQuestionMapDetails summary:after{content:"+";font-size:24px;line-height:1;color:#b08742}
+.keksFocusQuestionMapDetails[open] summary:after{content:"−"}
+.keksFocusScreening .keksFocusScreeningMap{margin:14px 0 6px;max-height:300px;overflow:auto;padding:4px}
+.keksFocusMapLegend{display:flex;gap:12px;flex-wrap:wrap;margin-top:9px;font-size:12px;font-weight:600;color:#607789}
+.keksFocusMapLegend span{display:flex;align-items:center;gap:7px}
+.keksFocusMapLegend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid #cad7e0;background:#eff3f7}
+.keksFocusMapLegend i.answered{background:#d8f0e3;border-color:#88c5a7}
+.keksFocusScreening .keksFocusQuestionProgress{margin:14px 0 18px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:#647c8b;font-size:13px}
+.keksFocusScreening .keksFocusQuestionProgress strong{color:#226b51}
+.keksFocusScreening .keksFocusQuestionNav{padding-top:15px;border-top:1px solid #e4ebf0}
+.keksFocusScreening .keksFocusQuestionNav>.pill{background:#eff3f7;color:#2c465b}
+
+/* Pre-interview form shares colors and readable surfaces */
+.keksFocusPreInterview .preInterviewQuestion{border-top:2px solid #e8c374}
+.keksFocusPreInterview .preInterviewQuestion>div:last-child>strong{color:#17354c;line-height:1.65}
+.keksFocusPreInterview .keksFocusScreeningChoices{margin-top:15px}
+.keksFocusPreInterview .keksFocusOption{font-size:14px}
+.keksFocusPreInterview .btn.primary{border-radius:12px;padding:12px 20px}
+@media(max-width:800px){
+ .keksAssessmentLandingHero{grid-template-columns:minmax(0,1fr);gap:12px}
+ .keksAssessmentLandingEmblem{display:none}
+ .keksAssessmentStepGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .keksAssessmentLandingHero{min-height:0}
+}
+@media(max-width:580px){
+ .keksAssessmentLandingHero{padding:22px 18px;border-radius:18px}
+ .keksAssessmentLandingHero h2{font-size:33px}
+ .keksAssessmentStepGrid,.keksAssessmentInfoBar{grid-template-columns:minmax(0,1fr)}
+ .keksAssessmentStepCard{padding:18px}
+ .keksAssessmentHeroActions,.keksNativeHeroActions{align-items:stretch}
+ .keksAssessmentHeroActions>.btn,.keksNativeHeroActions>.btn{flex:1 1 100%}
+ .keksNativeScreeningSteps>div{padding:11px}
+ .keksFocusScreening .keksFocusQuestionMapDetails{padding:12px}
+ .keksFocusScreening .keksFocusScreeningMap{max-height:260px}
+ .keksFocusScreening .keksFocusMapItem{min-width:39px;min-height:39px}
+}
+@media(prefers-reduced-motion:reduce){.keksAssessmentPrimary.btn,.keksAssessmentStepCard,.keksNativeScreeningSteps>div{transition:none}}
+
+
+/* Consistent second-stage and status surface treatments */
+.keksProductCard.keksFocusPreInterview{
+ background:#fff!important;border:1px solid #dee7ee!important;color:#173249!important;
+ box-shadow:0 12px 32px rgba(14,43,64,.065)!important
+}
+.keksFocusPreInterview:before{background:linear-gradient(#e8c374,#24785d)}
+.keksFocusPreInterview :is(h2,h3){color:#17334b}
+.keksFocusPreInterview .moduleEyebrow{color:#a17d34}
+.keksFocusPreInterview .muted{color:#61798d!important}
+.keksFocusPreInterview .keksProductTop .pill{background:#f9f0d8;color:#644c24;border:1px solid #ead6a6}
+.keksFocusPreInterview .notice{background:#f0f7f5;color:#254e40;border-color:#c4ded1}
+.keksFocusPreInterview .preInterviewQuestion{background:#fff!important;color:#1a354b!important;box-shadow:0 3px 14px rgba(10,38,61,.04)}
+.keksFocusPreInterview .keksFocusOption:has(input:checked),.keksFocusPreInterview .keksFocusScale:has(input:checked){
+ border-color:#24785d!important;background:#ebf7f1!important;box-shadow:inset 4px 0 #24785d
+}
+.keksFocusPreInterview .btn.primary{background:#0b223b!important;border-color:#0b223b!important;color:#fff!important;min-height:46px}
+.keksFocusPreInterview .btn.primary:hover{background:#19405c!important}
+.keksFocusPreInterview textarea,.keksFocusPreInterview select{color:#17364b!important}
+.preInterviewPending.keksProductCard,.preInterviewApproved{
+ background:radial-gradient(circle at 90% 10%,rgba(232,195,116,.11),transparent 35%),linear-gradient(135deg,#0a2036,#163c54)!important;
+ border:1px solid #37536b!important;color:#eff5f9!important
+}
+.preInterviewPending.keksProductCard :is(h2,h3),.preInterviewApproved :is(h2,h3){color:#fff!important}
+.preInterviewPending.keksProductCard p,.preInterviewApproved p{color:#d4e1e9!important}
+.preInterviewPending.keksProductCard .moduleEyebrow,.preInterviewApproved .moduleEyebrow{color:#e8c374!important}
+.preInterviewPending.keksProductCard .notice,.preInterviewApproved .notice{
+ background:rgba(232,195,116,.11)!important;border-color:rgba(232,195,116,.34)!important;color:#f3e8ce!important
+}
+.keksNativeCoachContext .keksNativeCoachNotes strong{color:#153b51}
