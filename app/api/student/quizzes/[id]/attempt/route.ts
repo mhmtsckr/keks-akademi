@@ -187,9 +187,34 @@ async function GET__handler(_req:Request,{params}:{params:Promise<{id:string}>})
       correctAnswer:q.correctAnswer,explanation:q.explanation||null,
       sourceVerified:!q.sourceKind.startsWith('STUDENT_WRONG:')}];
   });
+  const evidence=await db.dailyLog.findFirst({
+    where:{studentId:user.student.id,payload:{path:['attemptId'],equals:attempt.id}},
+    orderBy:{createdAt:'desc'}
+  });
+  const evidencePayload=evidence?.payload&&typeof evidence.payload==='object'&&!Array.isArray(evidence.payload)?evidence.payload as Record<string,unknown>:{};
+  const outcomes=Array.isArray(evidencePayload.outcomes)?evidencePayload.outcomes:[];
+  const recordedReasons=new Map<string,keyof typeof BLANK_REASON_CODES>();
+  for(const event of outcomes){
+    if(!event||typeof event!=='object')continue;
+    const item=event as Record<string,unknown>;
+    if(typeof item.questionId==='string'&&typeof item.blankReason==='string'&&Object.prototype.hasOwnProperty.call(BLANK_REASON_CODES,item.blankReason))
+      recordedReasons.set(item.questionId,item.blankReason as keyof typeof BLANK_REASON_CODES);
+  }
+  const feedback=details.filter(d=>d.outcome!=='CORRECT').map(d=>{
+    const reason=d.outcome==='BLANK'?recordedReasons.get(d.questionId)||null:null;
+    const plan=buildSubjectRecoveryPlan({
+      subject:d.subject,topic:d.topic,bankReason:d.outcome==='BLANK'?'BLANK':'WRONG',
+      gradeLevel:user.student!.gradeLevel,examType:quiz.examType,
+      academicTrack:user.student!.academicTrack,errorReason:reason
+    });
+    return {questionId:d.questionId,subject:d.subject,topic:d.topic,
+      outcome:d.outcome,blankReason:reason,blankReasonLabel:reason?BLANK_REASON_CODES[reason]:null,
+      firstStep:d.outcome==='BLANK'?blankReasonAction(reason):'Hatanın oluştuğu çözüm adımını belirle.',
+      method:plan.method,recommendedQuestions:plan.adaptation.suggestedFreshQuestions};
+  });
   return NextResponse.json({ok:true,attempt:{id:attempt.id,correct:attempt.correct,
     wrong:attempt.wrong,blank:attempt.blank,net:attempt.net},
-    details,topicAnalysis:[...topicMap.values()],feedback:[],
+    details,topicAnalysis:[...topicMap.values()],feedback,
     note:'Bu sınav tek bir gözlemdir; farklı günlerde yeni sorularla öğrenme yeniden ölçülmelidir.'});
 }
 
