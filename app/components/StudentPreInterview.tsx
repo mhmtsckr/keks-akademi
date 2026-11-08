@@ -86,7 +86,7 @@ export function StudentPreInterview(){
         {q.responseType==='TEXT'
           ?<textarea name={'q_'+q.id} rows={4} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
           :q.responseType==='CHOICE'&&Array.isArray(q.options)
-            ?<select name={'q_'+q.id} required={q.required}><option value="">Seçiniz</option>{q.options.map((o:any)=><option key={String(o.value??o)} value={String(o.value??o)}>{String(o.label??o)}</option>)}</select>
+            ?<fieldset className="keksFocusScreeningChoices"><legend>Bir seçenek işaretle</legend>{q.options.map((o:any)=><label key={String(o.value??o)} className="keksFocusOption"><input type="radio" name={'q_'+q.id} value={String(o.value??o)} required={q.required}/><span>{String(o.label??o)}</span></label>)}</fieldset>
             :<fieldset className="likertChecklist" style={{border:0,padding:0,margin:'12px 0 0'}}>
               {[1,2,3,4,5].map(n=>{
                 const label=['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1];
