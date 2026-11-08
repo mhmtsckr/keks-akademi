@@ -121,7 +121,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
   }
 
   if(state.status==='READY'&&form){
-    return <div className="card keksProductCard keksProductActive">
+    return <div className="card keksProductCard keksProductActive keksFocusScreening">
       <div className="keksProductTop"><ProductBrand/><div className="row"><span className="pill">1/2 · EĞİLİM TARAMASI</span><span className="pill">TEK KULLANIMLIK</span></div></div>
       <div className="moduleHeaderRow">
         <div><div className="moduleEyebrow">{product?.name||'AYLIK KEKS TEST ÜRÜNÜ'}</div><h2>{form.title}</h2><p className="muted">{form.questionCount} madde · Eğitim düzeyinize özgü işaretlemeli form. Bu aşama tamamlandıktan sonra aynı ürünün ön görüşme formu otomatik açılır.</p></div>
@@ -134,19 +134,26 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
         </div>
       </div>
       <div className="notice" style={{marginTop:10}}><strong>Bilimsel kullanım sınırı:</strong> {form.disclaimer}</div>
+      <div className="keksFocusHero">
+        <div className="keksFocusHeroTop"><span className="keksFocusBrand">KEKS AKADEMİ <small>EĞİLİM TARAMASI</small></span><span>{answered}/{form.questionCount} yanıtlandı</span></div>
+        <div className="keksFocusProgress" role="progressbar" aria-label="Yanıtlanan madde sayısı" aria-valuemin={0} aria-valuemax={form.questionCount} aria-valuenow={answered}><span style={{width:(answered/Math.max(1,form.questionCount)*100)+'%'}}/></div>
+      </div>
+      <div className="keksFocusScreeningMap" role="group" aria-label="Madde haritası">{form.questions.map((q,i)=><button type="button" key={q.id} aria-label={`Madde ${i+1}, ${answers[q.id]!=null?'yanıtlandı':'yanıtsız'}`} aria-current={Math.floor(i/PAGE_SIZE)===page?'step':undefined} className={'keksFocusMapItem '+(answers[q.id]!=null?'answered ':'')+(Math.floor(i/PAGE_SIZE)===page?'active':'')} onClick={()=>setPage(Math.floor(i/PAGE_SIZE))}>{i+1}</button>)}</div>
       <div style={{margin:'14px 0'}}>
         <div className="muted">İlerleme · %{Math.round(answered/Math.max(1,form.questionCount)*100)}</div>
         <div style={{height:8,background:'var(--line)',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:(answered/Math.max(1,form.questionCount)*100)+'%',background:'currentColor'}}/></div>
       </div>
       <div className="stack">
-        {pageQuestions.map(q=><div className="preInterviewQuestion" key={q.id}>
+        {pageQuestions.map(q=><div className="preInterviewQuestion keksFocusScreeningQuestion" key={q.id}>
           <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
           <div style={{flex:1}}><strong>{q.prompt}</strong>
-            <div className="likertRow">
-              {[1,2,3,4,5].map(n=><label key={n} title={form.scale?.[n-1]||['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1]}>
-                <input type="radio" name={q.id} value={n} checked={answers[q.id]===n} onChange={()=>setAnswers(a=>({...a,[q.id]:n}))}/><span>{n}</span>
+            <fieldset className="keksFocusScreeningChoices"><legend>Sana en uygun ifadeyi seç</legend>
+              {[1,2,3,4,5].map(n=><label key={n} className={'keksFocusOption '+(answers[q.id]===n?'selected':'')}>
+                <input type="radio" name={q.id} value={n} checked={answers[q.id]===n} onChange={()=>setAnswers(a=>({...a,[q.id]:n}))}/>
+                <span className="keksFocusLetter" aria-hidden="true">{n}</span>
+                <span>{form.scale?.[n-1]||['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1]}</span>
               </label>)}
-            </div>
+            </fieldset>
             <div className="muted" style={{fontSize:12,marginTop:4}}>1 Hiç katılmıyorum · 2 Katılmıyorum · 3 Bazen / Kararsızım · 4 Katılıyorum · 5 Tamamen katılıyorum</div>
           </div>
         </div>)}
