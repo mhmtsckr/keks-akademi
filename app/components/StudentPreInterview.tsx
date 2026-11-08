@@ -63,7 +63,7 @@ export function StudentPreInterview(){
     </div>;
   }
 
-  return <div className="card keksProductCard keksProductActive">
+  return <div className="card keksProductCard keksProductActive keksFocusPreInterview">
     <div className="keksProductTop"><div className="moduleEyebrow">2/2 · ÖN GÖRÜŞME</div><span className="pill">TEK KULLANIMLIK</span></div>
     <div className="moduleHeaderRow">
       <div><div className="moduleEyebrow">{data.product?.name||'TARAMA SONRASI OTOMATİK AÇILDI'}</div><h2>{data.form.title}</h2><p className="muted">Bu form eğitim ve gelişim düzeyinize göre otomatik seçildi. Davranış sorularını işaretleyebilir, açıklama isteyen soruları kendi sözlerinizle yanıtlayabilirsiniz. Sonuçlar çalışma planının girdisi olur ve plan taslağı önce yönetici onayına gider.</p></div>
@@ -80,7 +80,7 @@ export function StudentPreInterview(){
         <div className="muted" style={{marginTop:8}}>(1) Hiç katılmıyorum · (2) Katılmıyorum · (3) Bazen / Kararsızım · (4) Katılıyorum · (5) Tamamen katılıyorum</div>
         <div className="muted" style={{marginTop:8}}>Açık uçlu sorularda ise kendi sözlerinle ve mümkünse somut örneklerle yanıt ver.</div>
       </div>
-      <div className="preInterviewQuestions">{data.form.questions.map((q:any)=><div className="preInterviewQuestion" key={q.id}>
+      <div className="preInterviewQuestions keksFocusQuestions">{data.form.questions.map((q:any)=><div className="preInterviewQuestion" key={q.id}>
         <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
         <div style={{flex:1}}><strong>{q.prompt}</strong>
         {q.responseType==='TEXT'
@@ -90,7 +90,7 @@ export function StudentPreInterview(){
             :<fieldset className="likertChecklist" style={{border:0,padding:0,margin:'12px 0 0'}}>
               {[1,2,3,4,5].map(n=>{
                 const label=['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1];
-                return <label key={n} className="likertChecklistOption" style={{display:'flex',gap:10,alignItems:'center',padding:'9px 10px',border:'1px solid var(--line)',borderRadius:10,marginBottom:8,cursor:'pointer'}}>
+                return <label key={n} className="likertChecklistOption keksFocusScale" style={{display:'flex',gap:10,alignItems:'center',padding:'9px 10px',border:'1px solid var(--line)',borderRadius:10,marginBottom:8,cursor:'pointer'}}>
                   <input type="radio" name={'q_'+q.id} value={n} required={q.required}/>
                   <span><strong>({n})</strong> {label}</span>
                 </label>;
