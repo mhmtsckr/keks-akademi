@@ -76,7 +76,7 @@ export default async function NativeStudentScreeningPage(){
    </section>
    <section className="section" id="on-gorusme">
      <div className="keksNativeSectionTitle"><span>02 · KEKS FOCUS PRO</span><h2>Ön Görüşme</h2><p>Tarama tamamlandığında ve görüşme atandığında aynı KEKS hesabından devam et.</p></div>
-     <StudentPreInterview/>
+     <StudentPreInterview studentId={student.id}/>
    </section>
    <section className="section">
      <div className="card keksAssessmentResults"><span className="keksAssessmentKicker">03 · GELİŞİM TAKİBİ</span><h3>Sonuçlarım ve koç takibi</h3>
