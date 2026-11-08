@@ -37,7 +37,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
     if(r.ok)setTasks(x=>x.map(t=>t.id===id?{...t,status:'COMPLETED'}:t));
   }
 
-  return <div className="stack">
+  return <div className="stack keksFocusCoach">
     <CoachPerformanceQueue/>
     <div className="coachCommandKpis">
       <div className="card"><div className="moduleEyebrow">BUGÜN / YAKIN</div><div className="kpi">{agenda.length}</div><span className="muted">planlı seans</span></div>

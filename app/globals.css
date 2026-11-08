@@ -1701,3 +1701,113 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .homeHeroHeadline{font-size:clamp(25px,7vw,36px)}
 }
 
+
+
+/* KEKS Focus Pro — unified learning and coaching interface */
+.keksFocusArea,.keksFocusOnboarding,.keksFocusPreInterview,.keksFocusCoach{
+  --keks-navy:#0b223b;--keks-gold:#e8c374;--keks-green:#24785d;
+  --keks-ink:#1b334a;--keks-muted:#64778b;--keks-border:#dfe7ee;
+}
+.keksFocusArea>.card,.keksFocusOnboarding>.card,.keksFocusPreInterview,.keksFocusCoach .card{
+  border:1px solid var(--keks-border);border-radius:19px;
+  box-shadow:0 8px 28px rgba(16,37,59,.06);
+}
+.keksFocusArea h1,.keksFocusOnboarding h2,.keksFocusPreInterview h2,.keksFocusCoach h2{letter-spacing:-.025em}
+.keksFocusStepHeader,.keksFocusHero{
+  background:linear-gradient(120deg,#0b223b,#153752)!important;color:#fff!important;
+  border:1px solid #29445f!important;border-radius:18px!important;
+}
+.keksFocusStepHeader h2,.keksFocusStepHeader .portalEyebrow,.keksFocusStepHeader strong{color:#f3d28b!important}
+.keksFocusStepHeader>div:nth-child(2){background:#29445f!important}
+.keksFocusStepHeader>div:nth-child(2)>div{background:#e8c374!important}
+.keksFocusForm input:not([type=checkbox]):not([type=radio]):not([type=range]),.keksFocusForm select,.keksFocusForm textarea,
+.keksFocusPreInterview input:not([type=radio]):not([type=checkbox]),.keksFocusPreInterview select,.keksFocusPreInterview textarea{
+  border:1px solid #cfdbe5;border-radius:12px;min-height:44px;
+  background:#fff;color:#183248;
+}
+.keksFocusForm input:focus-visible,.keksFocusForm textarea:focus-visible,.keksFocusForm select:focus-visible,
+.keksFocusPreInterview :is(input,textarea,select):focus-visible{
+  outline:3px solid rgba(232,195,116,.65);outline-offset:2px;
+}
+.keksFocusForm .btn.primary,.keksFocusPreInterview .btn.primary{
+  background:#0b223b;color:#fff;border-color:#0b223b;border-radius:12px;min-height:44px;
+}
+.keksFocusForm .btn.primary:hover,.keksFocusPreInterview .btn.primary:hover{background:#173c57}
+.keksFocusPreInterview .preInterviewQuestion{
+  border:1px solid #e1e8ee;border-radius:17px;background:#fff;
+  padding:17px;margin-bottom:13px;
+}
+.keksFocusPreInterview .likertChecklistOption.keksFocusScale{
+  min-height:48px;display:flex!important;align-items:center!important;
+  gap:12px!important;border:1px solid #dce5ec!important;
+  background:#fff!important;border-radius:12px!important;
+  padding:11px 14px!important;transition:border-color .15s,background .15s;
+}
+.keksFocusPreInterview .keksFocusScale:has(input:checked){
+  background:#e9f6ef!important;border-color:#24785d!important;
+  box-shadow:inset 3px 0 #24785d;
+}
+.keksFocusPreInterview .keksFocusScale input{accent-color:#24785d}
+.keksFocusPreInterview .keksFocusScale:focus-within{outline:2px solid #d7ac5a;outline-offset:2px}
+.keksFocusPreInterview .moduleEyebrow{color:#c89d48}
+.keksFocusHero{padding:20px 22px;margin-bottom:18px}
+.keksFocusHero h2{color:#fff!important;margin:10px 0 14px}
+.keksFocusHeroTop,.keksFocusQuestionHeader,.keksFocusQuestionFooter,.keksFocusNavHead,.keksFocusActions{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.keksFocusHeroTop{color:#d9e5ef;font-size:13px}
+.keksFocusBrand{color:#e8c374;font-weight:800;letter-spacing:.08em}
+.keksFocusBrand small{color:#c6d5e1;margin-left:7px;letter-spacing:.04em}
+.keksFocusProgress{height:7px;border-radius:99px;background:#304b65;overflow:hidden}
+.keksFocusProgress>span{display:block;height:100%;background:#e8c374;border-radius:99px;transition:width .2s}
+.keksFocusQuestion{
+  background:#fff;border:1px solid #e1e8ef;border-radius:17px;padding:20px;margin-bottom:18px;
+}
+.keksFocusQuestionHeader{margin-bottom:14px}
+.keksFocusKicker{color:#24785d;font-size:12px;letter-spacing:.08em;font-weight:800}
+.keksFocusPrompt{font-weight:600;font-size:clamp(15px,1.5vw,18px);line-height:1.8;color:#183149;white-space:pre-wrap}
+.keksFocusOptions{border:0;padding:0;margin:18px 0 12px;display:grid;gap:10px;min-width:0}
+.keksFocusOptions legend{font-weight:700;color:#61778d;font-size:12px;letter-spacing:.03em;padding-bottom:10px}
+.keksFocusOption{display:flex;align-items:center;gap:12px;min-height:54px;
+  padding:11px 14px;border:1px solid #dfe7ee;border-radius:13px;
+  background:#fff;color:#23394d;cursor:pointer;transition:background .15s,border-color .15s;
+}
+.keksFocusOption:hover{border-color:#9dbdad}
+.keksFocusOption.selected,.keksFocusOption:has(input:checked){
+  background:#edf8f1;border-color:#24785d;color:#153c30;
+}
+.keksFocusOption:focus-within{outline:3px solid rgba(232,195,116,.7);outline-offset:2px}
+.keksFocusOption input[type=radio]{accent-color:#24785d;flex-shrink:0}
+.keksFocusLetter{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:9px;background:#eef2f6;color:#385267;font-weight:800;flex-shrink:0}
+.keksFocusOption.selected .keksFocusLetter,.keksFocusOption:has(input:checked) .keksFocusLetter{background:#24785d;color:#fff}
+.keksFocusQuestionFooter{color:#667b90;font-size:13px;border-top:1px solid #e8edf2;padding-top:12px}
+.keksFocusNavigation{padding:2px 0}
+.keksFocusNavHead{color:#203b53;margin:0 0 12px}
+.keksFocusNavHead span{font-size:12px;color:#718499}
+.keksFocusMap{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.keksFocusMapItem{position:relative;min-width:43px;min-height:43px;background:#f1f4f7;
+  color:#4e6478;border:1px solid #dbe4ed;border-radius:10px;cursor:pointer;font-weight:750}
+.keksFocusMapItem.answered{background:#e6f5eb;color:#206d52}
+.keksFocusMapItem.flagged{border:2px solid #c49a4d}
+.keksFocusMapItem.active{outline:3px solid #0b223b;outline-offset:1px}
+.keksFocusMapItem span{position:absolute;top:1px;right:3px;font-size:9px;color:#b18028}
+.keksFocusMapItem:focus-visible{outline:3px solid #d7a84d}
+.keksFocusActions{margin-bottom:14px}
+.keksFocusConfirm{background:#fff6e8;border:1px solid #dfbd7b;border-radius:15px;
+  padding:18px;color:#493a23;margin:14px 0}
+.keksFocusConfirm h3{color:#523f1c}
+.keksFocusConfirm .btn.primary{background:#0b223b;color:#fff}
+.keksFocusReview{border-radius:15px!important}
+.keksFocusReview .keksFocusOption{margin:8px 0}
+.keksFocusCoach .coachCommandKpis .card{border-top:3px solid #e8c374}
+.keksFocusCoach .coachCommandGrid>.card{border-radius:19px}
+.keksFocusCoach .priorityStudent{border-radius:13px}
+.keksFocusCoach .priorityStudent:hover{box-shadow:0 5px 20px rgba(16,37,59,.12)}
+@media(max-width:640px){
+  .keksFocusHero{padding:16px}
+  .keksFocusQuestion{padding:14px}
+  .keksFocusOption{padding:11px;align-items:flex-start}
+  .keksFocusOption input[type=radio]{margin-top:9px}
+  .keksFocusNavigation .btn{flex:1}
+}

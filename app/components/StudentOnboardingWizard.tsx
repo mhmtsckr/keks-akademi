@@ -171,7 +171,7 @@ export function StudentOnboardingWizard({
   }
 
   if(result?.plan){
-    return <div className="stack">
+    return <div className="stack keksFocusOnboarding">
       <div className="notice">
         <strong>Başlangıç profilin hazır.</strong>
         <div className="muted">{result.plan.explanation}</div>
@@ -199,8 +199,8 @@ export function StudentOnboardingWizard({
     </div>;
   }
 
-  return <div className="stack">
-    <div className="card">
+  return <div className="stack keksFocusOnboarding">
+    <div className="card keksFocusStepHeader">
       <div className="row" style={{justifyContent:'space-between',gap:16,alignItems:'center'}}>
         <div>
           <span className="portalEyebrow">İLK GİRİŞ SİHİRBAZI</span>
@@ -213,7 +213,7 @@ export function StudentOnboardingWizard({
       </div>
     </div>
 
-    <div className="card form">
+    <div className="card form keksFocusForm">
       {step===0&&<>
         <label>Bu dönem ana hedefin ne?</label>
         <textarea value={goal} onChange={e=>setGoal(e.target.value)} rows={5} maxLength={240} placeholder="Örn. LGS’de nitelikli bir proje okuluna yerleşmek / Hukuk kazanmak / Matematik temelimi güçlendirmek"/>
