@@ -123,7 +123,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     let j:any;
     try{
       await persistDraft(quiz.id);
-      const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({answers,blankReasons:Object.fromEntries(Object.entries(blankReasons).filter(([id])=>!answers[id]))})});
+      const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({answers,blankReasons:Object.fromEntries(Object.entries(blankReasons).filter(([id,value])=>!answers[id]&&Boolean(value)))})});
       j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Sonuç kaydedilemedi.'));return}
     }catch{setMsg('Hata: Bağlantı kurulamadı. Sonuç kaydedilemedi.');return}
