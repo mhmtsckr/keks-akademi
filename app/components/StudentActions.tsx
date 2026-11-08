@@ -23,7 +23,7 @@ function workflowCopy(status?:string){
 
 function ProductBrand(){
   return <div className="keksProductBrand" aria-label="KEKS Akademi">
-    <span className="portalBrandMark"><span className="portalBrandOrbit"/><span className="portalBrandCore">K</span></span>
+    <img className="portalBrandLogo" src="/keks-official-2026.webp" width="56" height="84" alt="KEKS Akademi resmî amblemi"/>
     <span className="portalBrandText"><strong>KEKS</strong><small>AKADEMİ</small></span>
   </div>;
 }
