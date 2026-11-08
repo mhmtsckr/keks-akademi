@@ -199,7 +199,7 @@ export function StudentOnboardingWizard({
     </div>;
   }
 
-  return <div className="stack">
+  return <div className="stack keksFocusOnboarding">
     <div className="card keksFocusStepHeader">
       <div className="row" style={{justifyContent:'space-between',gap:16,alignItems:'center'}}>
         <div>
