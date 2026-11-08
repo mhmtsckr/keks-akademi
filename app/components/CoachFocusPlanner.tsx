@@ -9,12 +9,13 @@ type Student={
   overdueActions:number;dueReviews:number;openAlerts:number;
 };
 type Planned={studentId:string;studentName:string;date:string;kind:'PRACTICE'|'REVIEW'|'COACH_CHECK';minutes:number;priority:'HIGH'|'MEDIUM'|'LOW';reason:string};
+type AgendaItem={id:string;studentId:string;studentName:string;title:string;startsAt:string;endsAt:string;meetingUrl:string|null};
 const dateKey=(d:Date)=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
 const dayLabel=(date:string)=>new Date(date+'T12:00:00+03:00').toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul',weekday:'short',day:'2-digit',month:'short'});
 const upcoming=()=>Array.from({length:7},(_,i)=>dateKey(new Date(Date.now()+i*86400000)));
 const taskName=(kind:Planned['kind'])=>kind==='REVIEW'?'Gecikmeli tekrar':kind==='PRACTICE'?'Yeni soruyla ölçüm':'Koç değerlendirmesi';
 
-export function CoachFocusPlanner({students}:{students:Student[]}){
+export function CoachFocusPlanner({students,agenda}:{students:Student[];agenda:AgendaItem[]}){
   const router=useRouter();
   const [days,setDays]=useState<string[]>([]);
   const [capacity,setCapacity]=useState(60);
@@ -32,8 +33,9 @@ export function CoachFocusPlanner({students}:{students:Student[]}){
     return ()=>clearInterval(timer);
   },[router]);
   const dates=useMemo(()=>upcoming(),[now]);
+  const booked=useMemo(()=>Object.fromEntries(dates.map(d=>[d,agenda.filter(a=>dateKey(new Date(a.startsAt))===d).reduce((sum,a)=>sum+Math.max(0,Math.ceil((new Date(a.endsAt).getTime()-new Date(a.startsAt).getTime())/60000)),0)])),[agenda,dates]);
   const proposed=useMemo(()=>{
-    const loads:Record<string,number>=Object.fromEntries(dates.map(d=>[d,0]));
+    const loads:Record<string,number>={...booked};
     const planned:Planned[]=[];
     const unassigned:Student[]=[];
     const eligible=students.filter(s=>s.priorityScore>0||s.dueReviews>0||s.overdueActions>0);
@@ -48,8 +50,9 @@ export function CoachFocusPlanner({students}:{students:Student[]}){
       planned.push({studentId:s.id,studentName:s.fullName,date,kind,minutes,priority:s.priorityLevel,reason:s.reasons.join(' · ').slice(0,240)||s.suggestedAction||'Rutin öğrenme kontrolü'});
     }
     return {planned,unassigned,loads};
-  },[students,days,capacity,override,dates]);
+  },[students,days,capacity,override,dates,booked]);
   const total=proposed.planned.reduce((s,t)=>s+t.minutes,0);
+  const bookedMinutes=Object.values(booked).reduce((a,b)=>a+b,0);
   const overloaded=proposed.unassigned.length>0;
   const overdue=existing.filter(x=>x.status==='OPEN'&&x.dueAt&&new Date(x.dueAt).getTime()<Date.now());
   async function approve(){
@@ -89,11 +92,12 @@ export function CoachFocusPlanner({students}:{students:Student[]}){
       </div>
       <div className="keksFocusStats">
         <div><strong>{proposed.planned.length}</strong><span>Planlanan iş</span></div>
-        <div><strong>{total}</strong><span>Koç dakikası</span></div>
+        <div><strong>{total+bookedMinutes}</strong><span>Toplam yük (dk)</span></div>
         <div><strong>{proposed.unassigned.length}</strong><span>Yerleştirilemeyen</span></div>
         <div><strong>{existing.filter(x=>x.status==='OPEN').length}</strong><span>Onaylı açık iş</span></div>
       </div>
       {overloaded&&<div className="notice error" role="alert">{proposed.unassigned.length} öğrenci için kapasite bulunamadı: {proposed.unassigned.map(s=>s.fullName).join(', ')}. Gün veya süre değiştirin.</div>}
+      <p className="muted">Mevcut görüşmeler: {bookedMinutes} dakika. Yeni müdahaleler: {total} dakika. Yerleştirmede mevcut görüşmeler de hesaba katılır.</p>
       <div className="keksFocusResultList">{proposed.planned.map(t=><article className="keksFocusResultRow" key={t.studentId}>
         <div className="moduleHeaderRow"><div><strong>{t.studentName}</strong><div className="muted">{taskName(t.kind)} · {t.minutes} dk · {t.priority==='HIGH'?'Yüksek':t.priority==='MEDIUM'?'Orta':'Rutin'} öncelik</div></div>
         <label>Gün
@@ -108,7 +112,7 @@ export function CoachFocusPlanner({students}:{students:Student[]}){
     {tab==='load'&&<div className="keksFocusResultList">{dates.map(d=><div className="keksFocusResultRow" key={d}>
       <div className="moduleHeaderRow"><strong>{dayLabel(d)}</strong><span>{proposed.loads[d]||0} / {days.includes(d)?capacity:0} dk</span></div>
       <div className="keksFocusProgress"><span style={{width:days.includes(d)?Math.min(100,(proposed.loads[d]||0)/capacity*100)+'%':'0%'}}/></div>
-      <small>{proposed.planned.filter(t=>t.date===d).map(t=>t.studentName).join(' · ')||'Planlı iş yok'}</small>
+      <small>{booked[d]?booked[d]+' dk önceden planlı görüşme · ':''}{proposed.planned.filter(t=>t.date===d).map(t=>t.studentName).join(' · ')||'Yeni müdahale yok'}</small>
     </div>)}</div>}
     {tab==='alerts'&&<div className="keksFocusResultList">
       <h3>Gecikme ve öğrenme uyarıları</h3>
