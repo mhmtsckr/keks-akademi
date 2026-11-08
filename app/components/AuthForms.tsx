@@ -274,6 +274,10 @@ export function CoachRegisterForm() {
 
 export function StudentRegisterForm() {
   const [msg,setMsg]=useState('');
+  const [fullName,setFullName]=useState('');
+  const [email,setEmail]=useState('');
+  const [rememberIdentity,setRememberIdentity]=useState(false);
+  const [draftReady,setDraftReady]=useState(false);
   const [gradeLevel,setGradeLevel]=useState('');
   const [academicTrack,setAcademicTrack]=useState('');
   const [coachId,setCoachId]=useState('');
@@ -286,6 +290,32 @@ export function StudentRegisterForm() {
   const levelKey=educationLevelKey(gradeLevel);
   const isYksTrack=['HIGH_11','HIGH_12','GRADUATE_YKS'].includes(levelKey||'');
   const recommendedPlan=recommendedStudentPlanForEducationLevel(gradeLevel);
+  useEffect(()=>{
+    try{
+      const raw=localStorage.getItem('keks:registration:v1');
+      if(raw){
+        const d=JSON.parse(raw);
+        if(d.savedAt&&Date.now()-d.savedAt<86400000){
+          if(typeof d.gradeLevel==='string')setGradeLevel(d.gradeLevel);
+          if(typeof d.academicTrack==='string')setAcademicTrack(d.academicTrack);
+          if(typeof d.coachId==='string')setCoachId(d.coachId);
+          if(d.rememberIdentity===true){
+            setRememberIdentity(true);
+            if(typeof d.fullName==='string')setFullName(d.fullName);
+            if(typeof d.email==='string')setEmail(d.email);
+          }
+        }else localStorage.removeItem('keks:registration:v1');
+      }
+    }catch{/* Private browsing can block local storage */}
+    setDraftReady(true);
+  },[]);
+  useEffect(()=>{
+    if(!draftReady)return;
+    try{localStorage.setItem('keks:registration:v1',JSON.stringify({
+      savedAt:Date.now(),gradeLevel,academicTrack,coachId,rememberIdentity,
+      ...(rememberIdentity?{fullName,email}:{})
+    }))}catch{}
+  },[draftReady,gradeLevel,academicTrack,coachId,rememberIdentity,fullName,email]);
 
   useEffect(()=>{
     if(!gradeLevel){setCoachOptions([]);setCoachId('');return}
@@ -310,20 +340,26 @@ export function StudentRegisterForm() {
     if(errors.length)return setMsg('Hata: '+errors[0]);
     const form=e.currentTarget;const fd=new FormData(form);
     if(password!==String(fd.get('passwordConfirm')||''))return setMsg('Hata: Şifreler eşleşmiyor.');
-    const email=String(fd.get('email')||'');
+    const emailValue=String(fd.get('email')||'');
+    try{
     const r=await fetch('/api/auth/student-register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-      fullName:fd.get('fullName'),email,gradeLevel:fd.get('gradeLevel'),
+      fullName:fd.get('fullName'),email:emailValue,gradeLevel:fd.get('gradeLevel'),
       academicTrack:isAgsYds?'YDS':(academicTrack||null),coachId:coachId||null,password
     })});
     const j=await r.json();
     if(!r.ok)return setMsg('Hata: '+(j.error||'Başvuru oluşturulamadı.'));
-    if(j.verificationRequired){setVerification({email:j.email||email,challenge:j.verificationChallenge||null});return}
-    form.reset();setGradeLevel('');setAcademicTrack('');setCoachId('');setCoachOptions([]);setPassword('');setMsg(j.message||'Kaydınız tamamlandı.');
+    try{localStorage.removeItem('keks:registration:v1')}catch{}
+    if(j.verificationRequired){setVerification({email:j.email||emailValue,challenge:j.verificationChallenge||null});return}
+    form.reset();setGradeLevel('');setAcademicTrack('');setCoachId('');setCoachOptions([]);setPassword('');setFullName('');setEmail('');setMsg(j.message||'Kaydınız tamamlandı.');
+    }catch{setMsg('Hata: İnternet bağlantısı kesildi. Eğitim ve alan seçimlerin korunuyor; şifreni yeniden girerek tekrar dene.')}
   }
 
-  return <form className="form" onSubmit={submit}>
-    <div className="field"><label>Ad soyad</label><input name="fullName" required autoComplete="name"/></div>
-    <div className="field"><label>Gmail adresi</label><input name="email" type="email" placeholder="ornek@gmail.com" required autoComplete="email"/></div>
+  return <form className="form keksStudentRegistrationForm" onSubmit={submit}>
+    <div className="keksRegistrationHeader"><img src="/keks-official-2026.webp" width="43" height="65" alt="KEKS Akademi amblemi"/>
+      <div><span className="keksAssessmentKicker">KEKS AKADEMİ · ÖĞRENCİ KAYDI</span><strong>Öğrenme yolculuğuna katıl.</strong></div></div>
+    <div className="keksRegistrationSaveNotice">Bağlantı koparsa eğitim/alan seçimlerin bu cihazda 24 saat korunur. Güvenliğin için şifre hiçbir zaman kaydedilmez.</div>
+    <div className="field"><label>Ad soyad</label><input name="fullName" value={fullName} onChange={e=>setFullName(e.target.value)} required autoComplete="name"/></div>
+    <div className="field"><label>Gmail adresi</label><input name="email" value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="ornek@gmail.com" required autoComplete="email"/></div>
     <div className="field"><label>Şifre</label><input name="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={12} required autoComplete="new-password"/></div>
     <div className="field"><label>Şifre tekrar</label><input name="passwordConfirm" type="password" minLength={12} required autoComplete="new-password"/></div>
     <PasswordRules password={password}/>
@@ -352,8 +388,9 @@ export function StudentRegisterForm() {
       </div>}
     </div>}
     <div className="notice"><strong>Koç seçimi zorunlu değil.</strong><div className="muted">Burada önerilen Partner Koçu seçebilir veya e-posta doğrulamasından sonraki başlangıç sihirbazında eşleşmeni yeniden değerlendirebilirsin.</div></div>
+    <label className="keksNativeConsent"><input type="checkbox" checked={rememberIdentity} onChange={e=>setRememberIdentity(e.target.checked)}/>Ad ve e-postamın da 24 saat bu cihazda korunmasını istiyorum. Paylaşımlı cihazlarda işaretlemeyin.</label>
     <div className="notice">Kayıt sırası: <strong>Bilgiler → e-posta doğrulama → ilk giriş sihirbazı → İlk 7 Günlük Başlangıç Planı</strong>.</div>
-    <button className="btn" type="submit">Kaydı Başlat</button>
+    <button className="btn primary" type="submit">KEKS Kaydımı Başlat</button>
     <Message value={msg}/>
   </form>;
 }
