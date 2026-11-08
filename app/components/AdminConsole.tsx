@@ -19,7 +19,7 @@ type Tab='overview'|'sales'|'workflow'|'users'|'academic'|'payments'|'security';
 
 const TAB_META:Record<Tab,{eyebrow:string;label:string;description:string}>={
   overview:{eyebrow:'SİSTEM DURUMU',label:'Genel Bakış',description:'Operasyon, kullanım ve ödeme göstergeleri'},
-  sales:{eyebrow:'SATIŞ & CRM',label:'Lead & Satış',description:'Talep hunisi, paket önerisi ve kazanılan satışlar'},
+  sales:{eyebrow:'SATIŞ & CRM',label:'Lead & Satış',description:'İletişim talepleri ve kullanıcı geri bildirimleri'},
   workflow:{eyebrow:'ONAY AKIŞI',label:'Değerlendirme & Plan',description:'Eğilim raporu ve kişisel çalışma planı onay merkezi'},
   users:{eyebrow:'HESAP & ROL',label:'Kullanıcı Yönetimi',description:'Koç, öğrenci, veli ve yönetici hesapları'},
   academic:{eyebrow:'AKADEMİK İÇERİK',label:'İçerik & Soru Bankası',description:'Soru onayı, kalite ve mikro içerik yönetimi'},

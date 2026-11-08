@@ -63,10 +63,10 @@ export default function AboutPage(){
       <PortalSectionTitle
         eyebrow="KİMLER İÇİN?"
         title="Öğrenci, veli ve profesyonel koç için aynı ekosistem."
-        description="İlkokuldan sınav hazırlık gruplarına kadar farklı eğitim düzeyleri için öğrenci planları; profesyonel takip yapmak isteyen koçlar için KEKS Partner Koç lisansları bulunur."
+        description="İlkokuldan sınav hazırlık gruplarına kadar farklı eğitim düzeyleri için kişisel takip araçları; koçlar ve veliler için rolüne uygun çalışma ekranları bulunur."
       />
       <div className="homeConversionActions">
-        <a className="btn primary" href="/abonelik-planlari">Paketleri İncele</a>
+        <a className="btn primary" href="/ozellikler">Özellikleri İncele</a>
         <a className="btn" href="/kayit">Kaydol</a>
         <a className="btn" href="/giris">Giriş Yap</a>
       </div>
