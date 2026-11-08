@@ -205,7 +205,7 @@ export function StudentActions({hasAccess,studentId}:{hasAccess:boolean;studentI
     </div>;
   }
 
-  if(state.status==='ERROR'&&hasAccess)return <div className="card"><div className="notice error">{msg||'Test ürünü açılamadı.'}</div><button className="btn primary" onClick={load}>Tekrar Dene</button></div>;
+  if(state.status==='ERROR')return <div className="card keksFocusScreening"><div className="notice error" role="alert">{msg||'Tarama yüklenemedi. Ağ bağlantını kontrol et.'}</div><button className="btn primary" onClick={load}>Tekrar Dene</button></div>;
 
   return <div className="card keksProductCard keksProductStorefront">
     <div className="keksProductTop"><ProductBrand/><span className="pill">AYLIK DİJİTAL ÜRÜN</span></div>
