@@ -39,7 +39,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
   }
 
   return <div className="stack keksFocusCoach">
-    <CoachFocusPlanner students={students}/>
+    <CoachFocusPlanner students={students} agenda={agenda}/>
     <CoachPerformanceQueue/>
     <div className="coachCommandKpis">
       <div className="card"><div className="moduleEyebrow">BUGÜN / YAKIN</div><div className="kpi">{agenda.length}</div><span className="muted">planlı seans</span></div>
