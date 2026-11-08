@@ -1,35 +1,73 @@
 'use client';
 
 import { FormEvent,useEffect,useState } from 'react';
+import {KeksDraftIndicator,useKeksFormDraft} from './useKeksFormDraft';
 
-export function StudentPreInterview(){
+export function StudentPreInterview({studentId}:{studentId:string}){
   const [data,setData]=useState<any>(null);
   const [msg,setMsg]=useState('');
   const [busy,setBusy]=useState(false);
+  const [answers,setAnswers]=useState<Record<string,string>>({});
+  const [academicTrack,setAcademicTrack]=useState('');
+  const draft=useKeksFormDraft<{answers:Record<string,string>;academicTrack:string}>({
+    kind:'INTERVIEW',scope:data?.assignment?.status==='ASSIGNED'?data.assignment.id:null,
+    studentId,onRestore:restored=>{
+      setAnswers(restored.answers||{});
+      setAcademicTrack(restored.academicTrack||'');
+    }
+  });
+  useEffect(()=>{
+    if(!draft.ready||data?.assignment?.status!=='ASSIGNED')return;
+    draft.save({answers,academicTrack});
+  },[draft.ready,draft.save,data?.assignment?.status,answers,academicTrack]);
 
   async function load(){
-    const r=await fetch('/api/student/pre-interview',{cache:'no-store'});
-    const j=await r.json();
-    setData(j);
+    try{
+      const r=await fetch('/api/student/pre-interview',{cache:'no-store'});
+      const j=await r.json();
+      if(!r.ok)throw new Error(j.error||'Ön görüşme yüklenemedi.');
+      setData(j);
+      if(j.form&&j.assignment?.status==='ASSIGNED'){
+        try{localStorage.setItem('keks:interview:form:'+studentId,JSON.stringify({
+          savedAt:Date.now(),data:{ok:true,locked:false,form:j.form,assignment:j.assignment,studentSelection:j.studentSelection,product:j.product}
+        }))}catch{}
+      }else if(j.assignment?.status!=='ASSIGNED'){
+        try{localStorage.removeItem('keks:interview:form:'+studentId)}catch{}
+      }
+    }catch{
+      let resumed=false;
+      try{
+        const saved=localStorage.getItem('keks:interview:form:'+studentId);
+        if(saved){
+          const cached=JSON.parse(saved);
+          if(Date.now()-cached.savedAt<14*86400000&&cached.data?.form){
+            setData(cached.data);setMsg('Bağlantı yok. Ön görüşme cevaplarını doldurmaya devam edebilirsin; teslim için internet gerekir.');
+            resumed=true;
+          }
+        }
+      }catch{}
+      if(!resumed)setData({locked:true,reason:'Ön görüşme yüklenemedi. İnternet bağlantını kontrol edip sayfayı yeniden aç.'});
+    }
   }
   useEffect(()=>{load()},[]);
 
   async function submit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setMsg('');setBusy(true);
-    const form=e.currentTarget;
-    const fd=new FormData(form);
-    const answers:Record<string,unknown>={};
-    for(const q of data.form.questions)answers[q.id]=fd.get('q_'+q.id);
-    const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand);
-    const r=await fetch('/api/student/pre-interview',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-      academicTrack:requiresTrack?fd.get('academicTrack'):'GENERAL',
-      answers
-    })});
-    const j=await r.json();setBusy(false);
-    if(!r.ok)return setMsg('Hata: '+(j.error||'Form kaydedilemedi.'));
-    setMsg(j.message||'Ön görüşme yönetici onayına gönderildi.');
-    await load();
-    setTimeout(()=>location.reload(),700);
+    try{
+      const requiresTrack=['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand);
+      const r=await fetch('/api/student/pre-interview',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+        academicTrack:requiresTrack?academicTrack:'GENERAL',answers
+      })});
+      const j=await r.json();
+      if(!r.ok)return setMsg('Hata: '+(j.error||'Form kaydedilemedi.'));
+      void draft.clear();
+      try{localStorage.removeItem('keks:interview:form:'+studentId)}catch{}
+      setMsg(j.message||'Ön görüşme yönetici onayına gönderildi.');
+      await load();
+      setTimeout(()=>location.reload(),700);
+    }catch{
+      setMsg('Hata: İnternet bağlantısı kesildi. Cevapların korunuyor; bağlantı geldiğinde tekrar teslim edebilirsin.');
+    }finally{setBusy(false)}
   }
 
   if(!data)return <div className="card"><p className="muted">Ön görüşme yükleniyor…</p></div>;
@@ -63,14 +101,16 @@ export function StudentPreInterview(){
     </div>;
   }
 
-  return <div className="card keksProductCard keksProductActive keksFocusPreInterview">
+  return <div className="card keksProductCard keksProductActive keksFocusPreInterview keksStudentInformationForm">
     <div className="keksProductTop"><div className="moduleEyebrow">2/2 · ÖN GÖRÜŞME</div><span className="pill">TEK KULLANIMLIK</span></div>
     <div className="moduleHeaderRow">
       <div><div className="moduleEyebrow">{data.product?.name||'TARAMA SONRASI OTOMATİK AÇILDI'}</div><h2>{data.form.title}</h2><p className="muted">Bu form eğitim ve gelişim düzeyinize göre otomatik seçildi. Davranış sorularını işaretleyebilir, açıklama isteyen soruları kendi sözlerinizle yanıtlayabilirsiniz. Sonuçlar çalışma planının girdisi olur ve plan taslağı önce yönetici onayına gider.</p></div>
       
     </div>
+    <KeksDraftIndicator status={draft.status} retry={()=>{void draft.retry()}}/>
+    <div className="keksInformationSection"><span className="keksAssessmentKicker">KEKS AKADEMİ · ÖN GÖRÜŞME</span><strong>Cevapların güvende</strong><p>İşaretlemelerin ve açıklamaların otomatik saklanır. Kaldığın yerden devam edebilirsin.</p></div>
     <form className="form preInterviewForm" onSubmit={submit}>
-      {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
+      {['LISE_11_12','YETISKIN_MEZUN'].includes(data.form.educationBand)&&<div className="field"><label>Hazırlık alanım</label><select name="academicTrack" required value={academicTrack} onChange={e=>setAcademicTrack(e.target.value)}><option value="">Seçiniz</option><option value="SAYISAL">Sayısal</option><option value="ESIT_AGIRLIK">Eşit Ağırlık</option><option value="SOZEL">Sözel</option></select></div>}
       {data.form.educationBand==='YETISKIN_SINAV'&&/AGS|ÖABT|OABT/i.test(String(data.studentSelection?.gradeLevel||''))&&<div className="notice">
         <strong>{data.studentSelection?.gradeLevel||'Yetişkin Sınav Grubu'}</strong>
         <div className="muted">Hazırlık alanınız: {data.studentSelection?.academicTrack||'Alan bilgisi bulunamadı'}. Bu seçim kayıt sırasında belirlenir ve kişisel planınızda otomatik kullanılır.</div>
@@ -84,21 +124,21 @@ export function StudentPreInterview(){
         <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
         <div style={{flex:1}}><strong>{q.prompt}</strong>
         {q.responseType==='TEXT'
-          ?<textarea name={'q_'+q.id} rows={4} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
+          ?<textarea name={'q_'+q.id} rows={4} maxLength={2500} value={answers[q.id]||''} onChange={e=>setAnswers(x=>({...x,[q.id]:e.target.value}))} required={q.required} placeholder="Kendi sözlerinle açıklayarak yanıtla…"/>
           :q.responseType==='CHOICE'&&Array.isArray(q.options)
-            ?<fieldset className="keksFocusScreeningChoices"><legend>Bir seçenek işaretle</legend>{q.options.map((o:any)=><label key={String(o.value??o)} className="keksFocusOption"><input type="radio" name={'q_'+q.id} value={String(o.value??o)} required={q.required}/><span>{String(o.label??o)}</span></label>)}</fieldset>
+            ?<fieldset className="keksFocusScreeningChoices"><legend>Bir seçenek işaretle</legend>{q.options.map((o:any)=><label key={String(o.value??o)} className="keksFocusOption"><input type="radio" name={'q_'+q.id} value={String(o.value??o)} checked={answers[q.id]===String(o.value??o)} onChange={()=>setAnswers(x=>({...x,[q.id]:String(o.value??o)}))} required={q.required}/><span>{String(o.label??o)}</span></label>)}</fieldset>
             :<fieldset className="likertChecklist" style={{border:0,padding:0,margin:'12px 0 0'}}>
               {[1,2,3,4,5].map(n=>{
                 const label=['Hiç katılmıyorum','Katılmıyorum','Bazen / Kararsızım','Katılıyorum','Tamamen katılıyorum'][n-1];
                 return <label key={n} className="likertChecklistOption keksFocusScale" style={{display:'flex',gap:10,alignItems:'center',padding:'9px 10px',border:'1px solid var(--line)',borderRadius:10,marginBottom:8,cursor:'pointer'}}>
-                  <input type="radio" name={'q_'+q.id} value={n} required={q.required}/>
+                  <input type="radio" name={'q_'+q.id} value={n} checked={answers[q.id]===String(n)} onChange={()=>setAnswers(x=>({...x,[q.id]:String(n)}))} required={q.required}/>
                   <span><strong>({n})</strong> {label}</span>
                 </label>;
               })}
             </fieldset>}
         </div>
       </div>)}</div>
-      <button className="btn primary" disabled={busy}>{busy?'Plan hazırlanıyor…':'2. Aşamayı Tamamla ve Ürünü Bitir'}</button>
+      <button className="btn primary" disabled={busy||!draft.ready}>{busy?'Plan hazırlanıyor…':'2. Aşamayı Tamamla ve Ürünü Bitir'}</button>
       {msg&&<div className={'notice '+(msg.startsWith('Hata:')?'error':'')}>{msg}</div>}
     </form>
   </div>;
