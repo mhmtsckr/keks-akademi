@@ -72,7 +72,7 @@ export function MobileInstallBanner(){
     color:'#fff',borderBottom:'1px solid rgba(232,187,76,.28)',
     boxShadow:'0 8px 24px rgba(0,0,0,.18)'
   }} role="region" aria-label="KEKS Akademi mobil uygulama kurulumu">
-    <img src="/keks-logo.svg" alt="" width="52" height="40" style={{objectFit:'contain',flex:'0 0 auto'}}/>
+    <img className="installBrandLogo" src="/keks-official-2026.webp" alt="" width="36" height="54" style={{objectFit:'fill',flex:'0 0 auto'}}/>
     <div style={{minWidth:0,flex:1}}>
       <strong style={{display:'block',fontSize:13,lineHeight:1.25}}>KEKS Akademi’yi telefonuna yükle</strong>
       <span style={{display:'block',fontSize:11,color:'#aebfd0',marginTop:2}}>Daha hızlı erişim · Ana ekrandan tek dokunuş</span>
