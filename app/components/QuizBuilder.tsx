@@ -60,7 +60,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     setHydrated(false);setSaveState('loading');
     fetch('/api/student/quizzes/'+currentQuizId+'/draft',{cache:'no-store'})
       .then(async r=>{const data=await r.json();if(!r.ok)throw new Error(data.error||'Taslak yüklenemedi.');return data})
-      .then(data=>{if(!active)return;setAnswers(data.answers||{});setMarkedForReturn(data.marked||{});setFinished(Boolean(data.submitted));setSaveState('saved');setHydrated(true)})
+      .then(async data=>{if(!active)return;setAnswers(data.answers||{});setMarkedForReturn(data.marked||{});setFinished(Boolean(data.submitted));setSaveState('saved');setHydrated(true);if(data.submitted){const r=await fetch('/api/student/quizzes/'+currentQuizId+'/attempt',{cache:'no-store'});if(r.ok){const info=await r.json();if(active)setResult(info)}}})
       .catch(()=>{if(active){setSaveState('error');setHydrated(true)}});
     return ()=>{active=false};
   },[currentQuizId]);
