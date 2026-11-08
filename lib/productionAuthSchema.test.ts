@@ -19,4 +19,23 @@ describe('Production login schema compatibility',()=>{
     expect(additive).toMatch(/"allowReports" BOOLEAN NOT NULL DEFAULT false/);
     expect(additive).not.toMatch(/(?:DROP TABLE|TRUNCATE TABLE|DELETE FROM) "ParentProfile"/i);
   });
+  it('creates the Subscription table expected by the coach subscription gate',()=>{
+    const model=schema.split('model Subscription {')[1]?.split('}')[0]||'';
+    for(const field of ['userId','planId','status','startsAt','endsAt','createdAt','updatedAt']){
+      expect(model).toContain(field);
+      expect(additive).toContain('"'+field+'"');
+    }
+    expect(additive).toMatch(/CREATE TABLE IF NOT EXISTS "Subscription"/);
+    expect(additive).toMatch(/"Subscription_pkey" PRIMARY KEY/);
+    expect(additive).toMatch(/CREATE INDEX IF NOT EXISTS "Subscription_userId_status_endsAt_idx"/);
+    expect(additive).toMatch(/CREATE INDEX IF NOT EXISTS "Subscription_provider_providerReference_idx"/);
+    expect(additive).toContain('CONSTRAINT "Subscription_userId_fkey" FOREIGN KEY ("userId")');
+    expect(additive).toContain('REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE');
+  });
+  it('is additive and does not reset existing subscriptions or grant access',()=>{
+    expect(additive).not.toMatch(/(?:DROP TABLE|TRUNCATE TABLE|DELETE FROM|UPDATE) "Subscription"/i);
+    expect(additive).not.toMatch(/INSERT INTO "Subscription"/i);
+    expect(additive).not.toMatch(/CREATE TABLE "Subscription"/);
+  });
+
 });
