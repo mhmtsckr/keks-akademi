@@ -17,34 +17,56 @@ export function useKeksFormDraft<T>({
  const queue=useRef<Promise<unknown>>(Promise.resolve());
  const last=useRef<Draft<T>|null>(null);
  const changed=useRef(0);
+ const pending=useRef(false);
+ const localAvailable=useRef(true);
+ const activeScope=useRef<string|null>(null);
  const active=useRef(true);
  const restoreCallback=useRef(onRestore);
  restoreCallback.current=onRestore;
  const key=scope&&studentId?'keks:form:v1:'+studentId+':'+kind+':'+scope:null;
  const url=scope?endpoint+'?kind='+encodeURIComponent(kind)+'&scope='+encodeURIComponent(scope):null;
 
- const persist=useCallback((item:Draft<T>)=>{
-   if(!url||!active.current)return Promise.resolve();
-   const revision=changed.current;
-   setStatus(typeof navigator!=='undefined'&&!navigator.onLine?'local':'saving');
+ const persist=useCallback((_item:Draft<T>)=>{
+   if(!url||!key||!active.current||activeScope.current!==key)return Promise.resolve();
+   if(!navigator.onLine){
+     pending.current=true;
+     setStatus(localAvailable.current?'local':'error');
+     return Promise.resolve();
+   }
+   setStatus('saving');
    const task=queue.current.catch(()=>undefined).then(async()=>{
-     if(!active.current||!navigator.onLine)return;
+     if(!active.current||activeScope.current!==key)return;
+     if(!navigator.onLine)throw new Error('Bağlantı yok.');
+     // Read the newest snapshot AFTER earlier requests, so delayed writes never send stale answers.
+     const latest=last.current;
+     if(!latest)return;
+     const revision=changed.current;
      const response=await fetch(endpoint,{method:'PUT',headers:{'content-type':'application/json'},
-       body:JSON.stringify({kind,scope,data:item.data}),credentials:'same-origin'});
+       body:JSON.stringify({kind,scope,data:latest.data}),credentials:'same-origin'});
      if(!response.ok)throw new Error('Sunucu taslağı kaydetmedi.');
-     if(active.current&&revision===changed.current)setStatus('saved');
+     if(active.current&&activeScope.current===key&&last.current===latest&&revision===changed.current){
+       pending.current=false;
+       setStatus('saved');
+     }
    });
    queue.current=task;
-   return task.catch(()=>{if(active.current&&revision===changed.current)setStatus('local')});
- },[kind,scope,url]);
+   return task.catch(()=>{
+     if(active.current&&activeScope.current===key){
+       pending.current=true;
+       setStatus(localAvailable.current?'local':'error');
+     }
+   });
+ },[key,kind,scope,url]);
 
  const save=useCallback((data:T)=>{
    if(!key)return;
    changed.current++;
    const item={data,updatedAt:Date.now()};
    last.current=item;
-   try{localStorage.setItem(key,JSON.stringify(item))}catch{/* server sync remains available */}
-   setStatus('local');
+   pending.current=true;
+   try{localStorage.setItem(key,JSON.stringify(item));localAvailable.current=true}
+   catch{localAvailable.current=false}
+   setStatus(localAvailable.current?'local':'error');
    if(saveTimer.current)clearTimeout(saveTimer.current);
    saveTimer.current=setTimeout(()=>{void persist(item)},650);
  },[key,persist]);
@@ -52,8 +74,9 @@ export function useKeksFormDraft<T>({
  useEffect(()=>{
    if(!key||!url)return;
    let mounted=true;
-   active.current=true;
-   changed.current=0;last.current=null;setStatus('loading');setReady(false);
+   active.current=true;activeScope.current=key;
+   changed.current=0;pending.current=false;localAvailable.current=true;
+   last.current=null;setStatus('loading');setReady(false);
    let local:Draft<T>|null=null;
    try{
      const stored=localStorage.getItem(key);
@@ -62,6 +85,7 @@ export function useKeksFormDraft<T>({
        if(Number.isFinite(parsed.updatedAt)&&Date.now()-parsed.updatedAt<AGE_LIMIT){
          local=parsed;
          last.current=parsed;
+         pending.current=true;
          restoreCallback.current(parsed.data);
          setStatus('local');
        }else localStorage.removeItem(key);
@@ -79,26 +103,45 @@ export function useKeksFormDraft<T>({
        if(!mounted||changed.current!==loadedRevision)return;
        if(remote&&remote.data){
          const timestamp=new Date(remote.updatedAt).getTime();
-         if(!local||timestamp>local.updatedAt){
-           last.current={data:remote.data as T,updatedAt:timestamp};
-           restoreCallback.current(remote.data as T);
+         if(!local||timestamp>=local.updatedAt){
+           const recovered={data:remote.data as T,updatedAt:timestamp};
+           last.current=recovered;
+           pending.current=false;
+           // Keep the browser fallback aligned with the last server-confirmed answers.
+           try{localStorage.setItem(key,JSON.stringify(recovered));localAvailable.current=true}
+           catch{localAvailable.current=false}
+           restoreCallback.current(recovered.data);
            setStatus('saved');
          }else if(local.updatedAt>timestamp){
+           pending.current=true;
            void persist(local);
-         }else setStatus('saved');
-       }else if(local){void persist(local)}
-       else setStatus('saved');
+         }
+       }else if(local){pending.current=true;void persist(local)}
+       else{pending.current=false;setStatus('saved')}
      }catch{
-       if(mounted)setStatus(last.current?'local':'error');
+       if(mounted)setStatus(last.current?(localAvailable.current?'local':'error'):'error');
      }finally{
        clearTimeout(timeout);
        if(mounted)setReady(true);
      }
    })();
-   const onOnline=()=>{if(last.current)void persist(last.current)};
-   window.addEventListener('online',onOnline);
-   return ()=>{mounted=false;active.current=false;controller.abort();clearTimeout(timeout);
-     if(saveTimer.current)clearTimeout(saveTimer.current);window.removeEventListener('online',onOnline)};
+   const retryPending=()=>{
+     if(mounted&&pending.current&&last.current&&navigator.onLine)void persist(last.current);
+   };
+   const onVisibility=()=>{if(document.visibilityState==='visible')retryPending()};
+   // navigator.onLine can stay true on captive portals. Retry while visible and when a tab is reopened.
+   const interval=window.setInterval(()=>{
+     if(document.visibilityState==='visible')retryPending();
+   },20000);
+   window.addEventListener('online',retryPending);
+   window.addEventListener('focus',retryPending);
+   document.addEventListener('visibilitychange',onVisibility);
+   return ()=>{mounted=false;active.current=false;activeScope.current=null;
+     controller.abort();clearTimeout(timeout);window.clearInterval(interval);
+     if(saveTimer.current)clearTimeout(saveTimer.current);
+     window.removeEventListener('online',retryPending);
+     window.removeEventListener('focus',retryPending);
+     document.removeEventListener('visibilitychange',onVisibility)};
  },[key,url,persist]);
 
  const clear=useCallback(async()=>{
@@ -106,6 +149,7 @@ export function useKeksFormDraft<T>({
    if(saveTimer.current)clearTimeout(saveTimer.current);
    try{localStorage.removeItem(key)}catch{}
    changed.current++;
+   pending.current=false;
    last.current=null;
    try{
      await queue.current.catch(()=>undefined);
