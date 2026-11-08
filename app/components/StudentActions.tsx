@@ -138,14 +138,15 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
         <div className="keksFocusHeroTop"><span className="keksFocusBrand">KEKS AKADEMİ <small>EĞİLİM TARAMASI</small></span><span>{answered}/{form.questionCount} yanıtlandı</span></div>
         <div className="keksFocusProgress" role="progressbar" aria-label="Yanıtlanan madde sayısı" aria-valuemin={0} aria-valuemax={form.questionCount} aria-valuenow={answered}><span style={{width:(answered/Math.max(1,form.questionCount)*100)+'%'}}/></div>
       </div>
-      <div className="keksFocusScreeningMap" role="group" aria-label="Madde haritası">{form.questions.map((q,i)=><button type="button" key={q.id} aria-label={`Madde ${i+1}, ${answers[q.id]!=null?'yanıtlandı':'yanıtsız'}`} aria-current={Math.floor(i/PAGE_SIZE)===page?'step':undefined} className={'keksFocusMapItem '+(answers[q.id]!=null?'answered ':'')+(Math.floor(i/PAGE_SIZE)===page?'active':'')} onClick={()=>setPage(Math.floor(i/PAGE_SIZE))}>{i+1}</button>)}</div>
-      <div style={{margin:'14px 0'}}>
-        <div className="muted">İlerleme · %{Math.round(answered/Math.max(1,form.questionCount)*100)}</div>
-        <div style={{height:8,background:'var(--line)',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:(answered/Math.max(1,form.questionCount)*100)+'%',background:'currentColor'}}/></div>
-      </div>
-      <div className="stack">
+      <details className="keksFocusQuestionMapDetails">
+        <summary>Soru haritası <span className="muted">{answered} cevaplandı · {form.questionCount-answered} yanıtlanmadı</span></summary>
+        <div className="keksFocusMapLegend" aria-label="Soru haritası açıklaması"><span><i className="answered"/> Cevaplandı</span><span><i/> Yanıtlanmadı</span><span>Çerçeveli: Bulunduğun sayfa</span></div>
+        <div className="keksFocusScreeningMap" role="group" aria-label="Madde haritası">{form.questions.map((q,i)=><button type="button" key={q.id} aria-label={`Madde ${i+1}, ${answers[q.id]!=null?'yanıtlandı':'yanıtsız'}`} aria-current={Math.floor(i/PAGE_SIZE)===page?'step':undefined} className={'keksFocusMapItem '+(answers[q.id]!=null?'answered ':'')+(Math.floor(i/PAGE_SIZE)===page?'active':'')} onClick={()=>{setPage(Math.floor(i/PAGE_SIZE));document.getElementById('keks-screening-questions')?.scrollIntoView({behavior:'smooth',block:'start'})}}>{i+1}</button>)}</div>
+      </details>
+      <div className="keksFocusQuestionProgress"><span>İlerleme · <strong>%{Math.round(answered/Math.max(1,form.questionCount)*100)}</strong></span><span>Sayfa {page+1} / {totalPages}</span></div>
+      <div className="stack" id="keks-screening-questions" style={{scrollMarginTop:90}}>
         {pageQuestions.map(q=><div className="preInterviewQuestion keksFocusScreeningQuestion" key={q.id}>
-          <div className="questionMeta"><span>{q.orderNo}</span><small>{q.dimension}</small></div>
+          <div className="questionMeta"><span>{form.questions.findIndex(item=>item.id===q.id)+1}</span><small>{q.dimension}</small></div>
           <div style={{flex:1}}><strong>{q.prompt}</strong>
             <fieldset className="keksFocusScreeningChoices"><legend>Sana en uygun ifadeyi seç</legend>
               {[1,2,3,4,5].map(n=><label key={n} className={'keksFocusOption '+(answers[q.id]===n?'selected':'')}>
@@ -158,7 +159,7 @@ export function StudentActions({hasAccess}:{hasAccess:boolean}){
           </div>
         </div>)}
       </div>
-      <div className="row" style={{justifyContent:'space-between',marginTop:16}}>
+      <div className="row keksFocusQuestionNav" style={{justifyContent:'space-between',marginTop:16}}>
         <button className="btn" disabled={page===0||busy} onClick={()=>{setPage(p=>Math.max(0,p-1));window.scrollTo({top:0,behavior:'smooth'})}}>← Önceki</button>
         <span className="pill">Sayfa {page+1} / {totalPages}</span>
         {page<totalPages-1?<button className="btn primary" disabled={pageQuestions.some(q=>answers[q.id]==null)||busy} onClick={()=>{setPage(p=>Math.min(totalPages-1,p+1));window.scrollTo({top:0,behavior:'smooth'})}}>Sonraki →</button>:<button className="btn primary" disabled={answered!==form.questionCount||busy} onClick={submit}>{busy?'Kaydediliyor…':'1. Aşamayı Tamamla ve Ön Görüşmeye Geç'}</button>}
