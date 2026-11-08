@@ -53,6 +53,9 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
   const [blankReasons,setBlankReasons]=useState<Record<string,string>>({});
   const [resultTab,setResultTab]=useState<'topics'|'questions'|'plan'>('topics');
   const saveQueue=useRef<Promise<void>>(Promise.resolve());
+  const saveVersion=useRef(0);
+  const activeQuizRef=useRef<string|null>(null);
+  activeQuizRef.current=quiz?.id||null;
   const latest=useRef({answers:{} as Record<string,string>,marked:{} as Record<string,boolean>});
   latest.current={answers,marked:markedForReturn};
   const currentQuizId=quiz?.id;
@@ -68,6 +71,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
   },[currentQuizId]);
   function persistDraft(id:string){
     const snapshot={...latest.current,answers:{...latest.current.answers},marked:{...latest.current.marked}};
+    const version=saveVersion.current;
     setSaveState('saving');
     const next=saveQueue.current.catch(()=>undefined).then(async()=>{
       const response=await fetch('/api/student/quizzes/'+id+'/draft',{
@@ -76,11 +80,13 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
       if(!response.ok)throw new Error('Taslak sunucuda doğrulanamadı.');
     });
     saveQueue.current=next;
-    next.then(()=>{if(quiz?.id===id)setSaveState('saved')}).catch(()=>{if(quiz?.id===id)setSaveState('error')});
+    next.then(()=>{if(activeQuizRef.current===id&&version===saveVersion.current)setSaveState('saved')}).catch(()=>{if(activeQuizRef.current===id&&version===saveVersion.current)setSaveState('error')});
     return next;
   }
   useEffect(()=>{
     if(!currentQuizId||!hydrated||finished||submitting)return;
+    saveVersion.current++;
+    setSaveState('saving');
     const timer=setTimeout(()=>{void persistDraft(currentQuizId)},650);
     return ()=>clearTimeout(timer);
   },[currentQuizId,answers,markedForReturn,hydrated,finished,submitting]);
