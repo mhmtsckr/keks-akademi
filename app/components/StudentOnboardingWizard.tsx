@@ -258,6 +258,7 @@ export function StudentOnboardingWizard({
     </div>
 
     <div className="card form keksFocusForm keksStudentFormCard">
+      <fieldset className="keksOnboardFieldset" disabled={!draft.ready}>
       {step===0&&<>
         <label>Bu dönem ana hedefin ne?</label>
         <textarea value={goal} onChange={e=>setGoal(e.target.value)} rows={5} maxLength={240} placeholder="Örn. LGS’de nitelikli bir proje okuluna yerleşmek / Hukuk kazanmak / Matematik temelimi güçlendirmek"/>
@@ -354,6 +355,7 @@ export function StudentOnboardingWizard({
         <div className="notice"><strong>Eşleştirme nasıl yapılıyor?</strong><div className="muted">Yönetici tarafından onaylanmış bütün Partner Koçları görebilirsin. Eğitim düzeyi, alan/uzmanlık, kapasite, yanıt süresi ve görüşme disiplini yalnızca öneri sıralamasını belirler; uygun ve açık kontenjanlı koçlardan istediğini seçebilirsin.</div></div>
       </>}
 
+      </fieldset>
       {error&&<div className="notice error" role="alert">{error}</div>}
 
       <div className="row" style={{justifyContent:'space-between',gap:12}}>
