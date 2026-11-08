@@ -97,7 +97,7 @@ export function CoachFocusPlanner({students}:{students:Student[]}){
       <div className="keksFocusResultList">{proposed.planned.map(t=><article className="keksFocusResultRow" key={t.studentId}>
         <div className="moduleHeaderRow"><div><strong>{t.studentName}</strong><div className="muted">{taskName(t.kind)} · {t.minutes} dk · {t.priority==='HIGH'?'Yüksek':t.priority==='MEDIUM'?'Orta':'Rutin'} öncelik</div></div>
         <label>Gün
-          <select aria-label={t.studentName+' için gün seç'} value={t.date} onChange={e=>{setOverride(x=>({...x,[t.studentId]:e.target.value}));setConfirmed(false)}}>{days.sort().map(d=><option key={d} value={d}>{dayLabel(d)}</option>)}</select>
+          <select aria-label={t.studentName+' için gün seç'} value={t.date} onChange={e=>{setOverride(x=>({...x,[t.studentId]:e.target.value}));setConfirmed(false)}}>{[...days].sort().map(d=><option key={d} value={d}>{dayLabel(d)}</option>)}</select>
         </label></div>
         <small>{t.reason}</small>
       </article>)}</div>
