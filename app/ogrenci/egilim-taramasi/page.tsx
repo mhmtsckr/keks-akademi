@@ -8,6 +8,8 @@ import {getScreeningForm,SCREENING_DISCLAIMER} from '@/lib/screeningForms';
 import {PortalShell} from '@/app/components/PortalShell';
 import {StudentActions} from '@/app/components/StudentActions';
 import {StudentPreInterview} from '@/app/components/StudentPreInterview';
+import {NativeScreeningContext} from '@/app/components/NativeScreeningContext';
+import {readScreeningStage} from '@/lib/screeningForms';
 
 export const metadata={title:'Eğilim Taraması ve Ön Görüşme | KEKS Akademi'};
 
@@ -17,7 +19,7 @@ export default async function NativeStudentScreeningPage(){
  if(isStudentOnboardingRequired(user.student.profile))redirect('/ogrenci/baslangic');
  const student=await db.student.findUnique({
    where:{id:user.student.id},
-   select:{id:true,studentCode:true,fullName:true,gradeLevel:true,academicTrack:true,
+   select:{id:true,studentCode:true,fullName:true,gradeLevel:true,academicTrack:true,profile:true,
      goal:true,coachId:true,assessments:{orderBy:{completedAt:'desc'},take:1,select:{id:true,completedAt:true,report:true}},
      preInterviewAttempts:{orderBy:{completedAt:'desc'},take:1,select:{id:true,completedAt:true}}
    }
@@ -27,7 +29,8 @@ export default async function NativeStudentScreeningPage(){
  const details=last?.report&&typeof last.report==='object'&&!Array.isArray(last.report)?last.report as Record<string,unknown>:{};
  const currentStage=String(details.workflowStatus||'');
  const band=detectEducationBand(student.gradeLevel);
- const form=getScreeningForm(band);
+ const learningStage=readScreeningStage(student.profile);
+ const form=getScreeningForm(band,learningStage);
  const stage=last?'SCREENING_COMPLETED':'SCREENING_READY';
  const interviewReady=['PRE_INTERVIEW_ASSIGNED','PLAN_ADMIN_REVIEW','PLAN_ADMIN_APPROVED','COMPLETED'].includes(currentStage);
  const interviewDone=Boolean(student.preInterviewAttempts[0]);
@@ -64,7 +67,8 @@ export default async function NativeStudentScreeningPage(){
    </section>
    <section className="section" id="egilim-taramasi">
      <div className="keksNativeSectionTitle"><span>1. AŞAMA</span><h2>KEKS Eğilim Taraması</h2><p>Form eğitim düzeyine göre oluşturulur; mevcut tek kullanımlık erişim ve sonuç kayıtları korunur.</p></div>
-     <StudentActions hasAccess={false}/>
+     <NativeScreeningContext/>
+     {learningStage||last?<StudentActions hasAccess={false}/>:<div className="notice">Önce yukarıdaki öğrenme profilini kaydet. Böylece KEKS soruları eğitim ve gelişim düzeyine göre hazırlasın.</div>}
    </section>
    <section className="section" id="on-gorusme">
      <div className="keksNativeSectionTitle"><span>2. AŞAMA</span><h2>Eğitim Düzeyine Göre Ön Görüşme</h2><p>Eğilim taraması ve yetkili atama tamamlandığında aynı sayfada devam et.</p></div>
