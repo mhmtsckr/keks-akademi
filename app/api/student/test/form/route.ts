@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { withApiErrors } from '@/lib/apiGuard';
 import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
-import { getScreeningForm } from '@/lib/screeningForms';
+import { getScreeningForm,readScreeningStage } from '@/lib/screeningForms';
 import { decryptPrivateCode } from '@/lib/security';
 
 async function GET__handler(){
@@ -61,7 +61,8 @@ async function GET__handler(){
   }
   const product=await getKeksMonthlyProduct(acquiredAt);
   const educationBand=detectEducationBand(user.student.gradeLevel);
-  const form=getScreeningForm(educationBand);
+  const learningStage=readScreeningStage(user.student.profile);
+  const form=getScreeningForm(educationBand,learningStage);
   return NextResponse.json({
     ok:true,
     status:'READY',
@@ -71,6 +72,7 @@ async function GET__handler(){
       title:form.title,
       version:form.version,
       educationBand:form.educationBand,
+      learningStage:learningStage||null,
       disclaimer:form.disclaimer,
       instruction:form.instruction,
       scale:form.scale,
