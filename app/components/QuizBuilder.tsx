@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { EXAM_CATALOG, ExamType } from '@/lib/examCatalog';
 
 type Question={id:string;prompt:string;options:Record<string,string>;sourceKind:string;sourceYear?:number|null;officialSourceUrl?:string|null};
@@ -46,6 +46,42 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
   const [showFinishConfirm,setShowFinishConfirm]=useState(false);
   const [submitting,setSubmitting]=useState(false);
   const [finished,setFinished]=useState(false);
+  const [hydrated,setHydrated]=useState(false);
+  const [saveState,setSaveState]=useState<'loading'|'saving'|'saved'|'error'>('loading');
+  const [result,setResult]=useState<any>(null);
+  const [resultTab,setResultTab]=useState<'topics'|'questions'|'plan'>('topics');
+  const saveQueue=useRef<Promise<void>>(Promise.resolve());
+  const latest=useRef({answers:{} as Record<string,string>,marked:{} as Record<string,boolean>});
+  latest.current={answers,marked:markedForReturn};
+  const currentQuizId=quiz?.id;
+  useEffect(()=>{
+    if(!currentQuizId)return;
+    let active=true;
+    setHydrated(false);setSaveState('loading');
+    fetch('/api/student/quizzes/'+currentQuizId+'/draft',{cache:'no-store'})
+      .then(async r=>{const data=await r.json();if(!r.ok)throw new Error(data.error||'Taslak yüklenemedi.');return data})
+      .then(data=>{if(!active)return;setAnswers(data.answers||{});setMarkedForReturn(data.marked||{});setFinished(Boolean(data.submitted));setSaveState('saved');setHydrated(true)})
+      .catch(()=>{if(active){setSaveState('error');setHydrated(true)}});
+    return ()=>{active=false};
+  },[currentQuizId]);
+  function persistDraft(id:string){
+    const snapshot={...latest.current,answers:{...latest.current.answers},marked:{...latest.current.marked}};
+    setSaveState('saving');
+    const next=saveQueue.current.catch(()=>undefined).then(async()=>{
+      const response=await fetch('/api/student/quizzes/'+id+'/draft',{
+        method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(snapshot)
+      });
+      if(!response.ok)throw new Error('Taslak sunucuda doğrulanamadı.');
+    });
+    saveQueue.current=next;
+    next.then(()=>{if(quiz?.id===id)setSaveState('saved')}).catch(()=>{if(quiz?.id===id)setSaveState('error')});
+    return next;
+  }
+  useEffect(()=>{
+    if(!currentQuizId||!hydrated||finished||submitting)return;
+    const timer=setTimeout(()=>{void persistDraft(currentQuizId)},650);
+    return ()=>clearTimeout(timer);
+  },[currentQuizId,answers,markedForReturn,hydrated,finished,submitting]);
   const subjects=Object.keys(EXAM_CATALOG[exam]||{});
   const topics=useMemo(()=>((EXAM_CATALOG[exam] as any)?.[subject]||[]) as string[],[exam,subject]);
 
@@ -63,7 +99,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     const r=await fetch('/api/student/quizzes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({examType:exam,subject,topic:topic||undefined,count})});
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Test oluşturulamadı.'));return}
-    setQuiz(j.quiz);setQuestions(j.questions);setAnswers({});setActiveQuestion(0);setMarkedForReturn({});setShowFinishConfirm(false);setFinished(false);setMsg('');
+    setQuiz(j.quiz);setQuestions(j.questions);setAnswers({});setActiveQuestion(0);setMarkedForReturn({});setShowFinishConfirm(false);setFinished(false);setResult(null);setHydrated(false);setMsg('');
   }
 
   async function toggleBookmark(questionId:string){
@@ -81,15 +117,16 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
   async function finish(){
     if(!quiz||submitting||finished)return;
     setSubmitting(true);
-    setMsg('Sonuç hesaplanıyor...');
+    setMsg('Cevapların doğrulanıyor...');
     let j:any;
     try{
+      await persistDraft(quiz.id);
       const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({answers})});
       j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Sonuç kaydedilemedi.'));return}
     }catch{setMsg('Hata: Bağlantı kurulamadı. Sonuç kaydedilemedi.');return}
     finally{setSubmitting(false)}
-    setFinished(true);setShowFinishConfirm(false);
+    setFinished(true);setShowFinishConfirm(false);setResult(j);
     setMsg('Test tamamlandı · Doğru '+j.attempt.correct+' · Yanlış '+j.attempt.wrong+' · Boş '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.reviewAdded+' yanlış soru 0. gün tekrar kuyruğuna eklendi.':'')+' · Koç raporu oluşturuldu.');
     await loadReviews();
   }
@@ -141,7 +178,25 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
         <h2>{quiz.title}</h2>
         <div className="keksFocusProgress" role="progressbar" aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={questions.filter(q=>Boolean(answers[q.id])).length} aria-label="Cevaplanan soru sayısı"><span style={{width:(questions.length?questions.filter(q=>Boolean(answers[q.id])).length/questions.length*100:0)+'%'}}/></div>
       </div>
-      {finished?<div className="notice" role="status">Test teslim edildi. Sonuçlar kaydedildi; tekrar kuyruğu güncellendi.</div>:questions[activeQuestion]&&<article className="keksFocusQuestion" key={questions[activeQuestion].id}>
+      {finished?<div className="keksFocusResult" role="status">
+        <h3>Test sonucu ve öğrenme analizi</h3>
+        {result?.attempt?<><div className="keksFocusStats">
+          <div><strong>{result.attempt.correct}</strong><span>Doğru</span></div>
+          <div><strong>{result.attempt.wrong}</strong><span>Yanlış</span></div>
+          <div><strong>{result.attempt.blank}</strong><span>Boş</span></div>
+          <div><strong>{Number(result.attempt.net).toLocaleString('tr-TR')}</strong><span>Net</span></div>
+        </div>
+        <div className="row">
+          <button className={'btn '+(resultTab==='topics'?'primary':'')} onClick={()=>setResultTab('topics')}>Konu analizi</button>
+          <button className={'btn '+(resultTab==='questions'?'primary':'')} onClick={()=>setResultTab('questions')}>Soru inceleme</button>
+          <button className={'btn '+(resultTab==='plan'?'primary':'')} onClick={()=>setResultTab('plan')}>Öğrenme planı</button>
+        </div>
+        {resultTab==='topics'&&<div className="keksFocusResultList">{(result.topicAnalysis||[]).map((t:any)=><div className="keksFocusResultRow" key={t.subject+'-'+t.topic}><strong>{t.subject} · {t.topic}</strong><span>{t.correct} doğru · {t.wrong} yanlış · {t.blank} boş</span><small>Bu tek sınavdır; kalıcı öğrenme kanıtı değildir.</small></div>)}</div>}
+        {resultTab==='questions'&&<div className="keksFocusResultList">{(result.details||[]).map((d:any,i:number)=><details className="keksFocusResultRow" key={d.questionId}><summary>Soru {i+1} · {d.topic} · {d.outcome==='CORRECT'?'Doğru':d.outcome==='WRONG'?'Yanlış':'Boş'}</summary><p>Senin cevabın: {d.selectedAnswer||'Boş'} · Doğru seçenek: {d.correctAnswer}</p>{d.explanation&&<p>{d.explanation}</p>}{!d.sourceVerified&&<p>Bu sorunun cevap anahtarı bağımsız doğrulama gerektirir.</p>}</details>)}</div>}
+        {resultTab==='plan'&&<div className="keksFocusResultList">{(result.feedback||[]).map((f:any)=><div className="keksFocusResultRow" key={f.questionId}><strong>{f.subject} · {f.topic} · {f.outcome==='BLANK'?'Boş':'Yanlış'}</strong><p>{f.firstStep}</p><p>{f.method}</p><small>Yeni soru önerisi: {f.recommendedQuestions}. 0–1–3–7–14–28. gün tekrarlarıyla yeniden ölç.</small></div>)}</div>}
+        </>:<p>Test daha önce teslim edilmiş. Mevcut sonuçlarını koç raporlarında inceleyebilirsin.</p>}
+        <p>Yalnızca bu testteki performans değerlendirilmiştir; öğrenme düzeyi farklı günlerde tekrar ölçülmelidir.</p>
+      </div>:questions[activeQuestion]&&<article className="keksFocusQuestion" key={questions[activeQuestion].id}>
         <div className="keksFocusQuestionHeader">
           <span className="keksFocusKicker">SORU {activeQuestion+1} / {questions.length}</span>
           <div className="row">
@@ -159,7 +214,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
         {questions[activeQuestion].officialSourceUrl&&<p><a href={questions[activeQuestion].officialSourceUrl} target="_blank" rel="noreferrer">Resmî kaynak</a></p>}
         <div className="keksFocusQuestionFooter"><span>{answers[questions[activeQuestion].id]?'Cevap seçildi':'Bu soru boş'}</span><button className="btn" type="button" onClick={()=>setAnswers(a=>{const n={...a};delete n[questions[activeQuestion].id];return n})}>Boş bırak</button></div>
       </article>}
-      {!finished&&<div className="keksFocusNavigation">
+      {!finished&&<><div className="keksFocusSaveStatus" role="status" aria-live="polite">{saveState==='loading'?'Cevap taslağı yükleniyor…':saveState==='saving'?'Sunucuya kaydediliyor…':saveState==='saved'?'✓ Cevaplar sunucuda kaydedildi':'Kayıt doğrulanamadı. Bağlantını kontrol et ve tekrar dene.'}{saveState==='error'&&quiz&&<button className="btn" type="button" onClick={()=>void persistDraft(quiz.id)}>Yeniden kaydet</button>}</div><div className="keksFocusNavigation">
         <div className="keksFocusNavHead"><strong>Soru haritası</strong><span>Yeşil: cevaplandı · Altın: işaretli</span></div>
         <div className="keksFocusMap" aria-label="Soru haritası">{questions.map((q,i)=><button type="button" key={q.id} aria-label={`Soru ${i+1}, ${answers[q.id]?'cevaplandı':'boş'}${markedForReturn[q.id]?', işaretli':''}`} aria-current={activeQuestion===i?'step':undefined} className={'keksFocusMapItem '+(answers[q.id]?'answered ':'')+(markedForReturn[q.id]?'flagged ':'')+(activeQuestion===i?'active':'')} onClick={()=>{setActiveQuestion(i);setShowFinishConfirm(false)}}>{i+1}{markedForReturn[q.id]?<span aria-hidden="true">★</span>:null}</button>)}</div>
         <div className="keksFocusActions">
@@ -170,9 +225,9 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
           <h3>Testi teslim etmek istiyor musun?</h3>
           <p>{questions.filter(q=>Boolean(answers[q.id])).length} cevaplandı · {questions.filter(q=>!answers[q.id]).length} boş · {questions.filter(q=>markedForReturn[q.id]).length} işaretli soru.</p>
           <p>Boş sorular geçerlidir; teslimden sonra cevaplarını değiştiremezsin.</p>
-          <div className="row"><button className="btn" type="button" onClick={()=>setShowFinishConfirm(false)}>Sorulara dön</button><button className="btn primary" disabled={submitting} type="button" onClick={finish}>{submitting?'Kaydediliyor…':'Teslimi onayla'}</button></div>
+          <div className="row"><button className="btn" type="button" onClick={()=>setShowFinishConfirm(false)}>Sorulara dön</button><button className="btn primary" disabled={submitting||!hydrated} type="button" onClick={finish}>{submitting?'Kaydediliyor…':'Teslimi onayla'}</button></div>
         </div>}
-      </div>}
+      </div></>}
     </section>}
 
     <div className="card">
