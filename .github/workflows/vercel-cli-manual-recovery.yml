@@ -1,0 +1,100 @@
+name: KEKS - Vercel CLI Manuel Uretim Yedegi
+
+# Manual-only fallback: do not double-deploy on every main push.
+on:
+  workflow_dispatch:
+    inputs:
+      approve_release:
+        description: "CI-onayli main surumunu keksakademi.com.tr alan adina yayinlamayi onayliyorum"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keks-vercel-cli-production-fallback
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ github.repository == 'mhmtsckr/keks-akademi' && github.ref == 'refs/heads/main' && inputs.approve_release }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    # Configure environment protection BEFORE adding VERCEL_TOKEN:
+    # Settings > Environments > production > required reviewers, allowed branch main.
+    environment: production
+
+    env:
+      VERCEL_ORG_ID: team_BK4Ds9K80dGgUs0ZrEUISgXX
+      VERCEL_PROJECT_ID: prj_6CPV0q5U4rcGZcqQC0bOydwerR9I
+      VERCEL_CLI_VERSION: "65.12.1"
+
+    steps:
+      - name: Checkout CI-approved main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify production approval marker matches checked-out commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          message="$(git log -1 --format=%s)"
+          case "$message" in
+            'ci: deploy approved '*) ;;
+            *) echo "::error::Only a CI-approved production marker commit may be deployed."; exit 1 ;;
+          esac
+          test -f deploy-trigger.txt || { echo "::error::Production approval marker not found."; exit 1; }
+          source_sha="$(sed -n 's/^CI-approved source: //p' deploy-trigger.txt)"
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Invalid approved source SHA."; exit 1; }
+          test "$(git rev-parse HEAD^)" = "$source_sha" || {
+            echo "::error::Approval marker does not match parent commit."; exit 1;
+          }
+          echo "Approved release source: $source_sha"
+
+      - name: Prepare pinned Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+
+      - name: Install pinned Vercel CLI
+        shell: bash
+        run: npm install --global "vercel@${VERCEL_CLI_VERSION}" --no-audit --no-fund
+
+      - name: Link ONLY the existing KEKS Vercel project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+
+      - name: Verify protected production token is configured
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo "::error::VERCEL_TOKEN missing. Add it as a GitHub Actions production ENVIRONMENT secret; never add it to the repository, chat, or workflow file."
+            exit 1
+          fi
+
+      # Remote production build: production environment secrets stay in Vercel.
+      # The Vercel CLI does NOT bypass deployment API usage or daily quotas.
+      - name: Deploy reviewed production build via Vercel CLI
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          vercel deploy --prod --yes
+
+      - name: Record successful manual release
+        shell: bash
+        run: |
+          echo '## KEKS Akademi production CLI deployment completed' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Target: https://www.keksakademi.com.tr/' >> "$GITHUB_STEP_SUMMARY"
+          echo "Release marker: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
