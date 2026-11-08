@@ -6,7 +6,7 @@ import { buildReport, scoreAssessment } from '@/lib/scoring';
 import { sendAssessmentReport } from '@/lib/mailer';
 import { getKeksMonthlyProduct,productKeyFromReport } from '@/lib/monthlyProduct';
 import { detectEducationBand } from '@/lib/taskEvaluation';
-import { getScreeningForm,SCREENING_DISCLAIMER } from '@/lib/screeningForms';
+import { getScreeningForm,readScreeningStage,SCREENING_DISCLAIMER } from '@/lib/screeningForms';
 import { readJson, withApiErrors } from '@/lib/apiGuard';
 import { writeAudit } from '@/lib/audit';
 import { encryptPrivateCode, hashSecret, randomCode } from '@/lib/security';
@@ -46,7 +46,8 @@ async function POST__handler(req:Request){
   }
 
   const educationBand=detectEducationBand(user.student.gradeLevel);
-  const form=getScreeningForm(educationBand);
+  const learningStage=readScreeningStage(user.student.profile);
+  const form=getScreeningForm(educationBand,learningStage);
   if(body.formVersion!==form.version||body.educationBand!==educationBand){
     return NextResponse.json({error:'Tarama formu güncellendi. Sayfayı yenileyip yeniden deneyin.'},{status:409});
   }
@@ -79,6 +80,7 @@ async function POST__handler(req:Request){
   const report={
     ...baseReport,
     educationBand,
+    learningStage:learningStage||null,
     questionCount:form.questions.length,
     source:'KEKS_NATIVE',
     validationStatus:'EDUCATIONAL_SCREENING',
