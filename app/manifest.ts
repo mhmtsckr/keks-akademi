@@ -13,7 +13,8 @@ export default function manifest():MetadataRoute.Manifest{
     lang:'tr',
     categories:['education','productivity'],
     icons:[
-      {src:'/keks-official-2026-square.webp',sizes:'192x192',type:'image/webp',purpose:'any'}
+      {src:'/api/public/brand-icon?size=192',sizes:'192x192',type:'image/png',purpose:'any'},
+      {src:'/api/public/brand-icon?size=512',sizes:'512x512',type:'image/png',purpose:'any'}
     ],
     shortcuts:[
       {name:'Bugünün Görevleri',short_name:'Görevler',url:'/ogrenci/bugun#gunluk-gorevler'},
