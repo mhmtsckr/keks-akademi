@@ -12,7 +12,7 @@ const ROLE_COPY:Record<string,{left:string[];right:string[]}> = {
 
 export function KeksBrand({compact=false}:{compact?:boolean}){
   return <a href="/" className={compact?'portalBrand portalBrandCompact':'portalBrand'} aria-label="KEKS Akademi ana sayfa">
-    <img className="portalBrandLogo" src="/keks-official-2026.webp" width="96" height="104" fetchPriority="high" alt="KEKS Akademi" />
+    <img className="portalBrandLogo" src="/keks-brand-navy-header.webp" width="96" height="104" fetchPriority="high" alt="KEKS Akademi" />
   </a>;
 }
 
