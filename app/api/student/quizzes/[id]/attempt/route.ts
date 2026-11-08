@@ -131,7 +131,24 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
        observation:'Bu kayıt bir tekrar ihtiyacı gösterir; kalıcı öğrenme veya doğrulanmış kazanım değildir.'
      };
    });
-   return {attempt:{id:attempt.id,correct:grade.correct,wrong:grade.wrong,blank:grade.blank,net},
+   const reviewDetails=ordered.map(q=>{
+     const selected=grade.answers[q.id]||null;
+     const outcome=grade.blankIds.includes(q.id)?'BLANK':grade.wrongIds.includes(q.id)?'WRONG':'CORRECT';
+     return {questionId:q.id,subject:q.subject,topic:q.topic,outcome,
+       selectedAnswer:selected,correctAnswer:q.correctAnswer,explanation:q.explanation||null,
+       sourceVerified:!q.sourceKind.startsWith('STUDENT_WRONG:')};
+   });
+   const topicMap=new Map<string,{subject:string;topic:string;correct:number;wrong:number;blank:number}>();
+   for(const detail of reviewDetails){
+     const key=detail.subject+' · '+detail.topic;
+     const stats=topicMap.get(key)||{subject:detail.subject,topic:detail.topic,correct:0,wrong:0,blank:0};
+     if(detail.outcome==='CORRECT')stats.correct++;
+     else if(detail.outcome==='WRONG')stats.wrong++;
+     else stats.blank++;
+     topicMap.set(key,stats);
+   }
+   return {details:reviewDetails,topicAnalysis:[...topicMap.values()],
+     attempt:{id:attempt.id,correct:grade.correct,wrong:grade.wrong,blank:grade.blank,net},
      feedback,reportId:report.id,wrongAdded:grade.wrongIds.length,blankAdded:grade.blankIds.length};
  });
  return NextResponse.json({
