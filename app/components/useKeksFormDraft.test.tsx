@@ -73,6 +73,7 @@ describe('KEKS resumable form drafts',()=>{
    await waitFor(()=>expect(result.current.status).toBe('saved'));
    const put=fetch.mock.calls.find((args:any)=>args[1]?.method==='PUT');
    expect(put).toBeDefined();
+   if(!put)throw new Error('PUT taslağı gönderilmedi.');
    expect(JSON.parse(put[1].body).data).toEqual(unsynced);
  });
 });
