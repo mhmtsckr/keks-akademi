@@ -1811,3 +1811,40 @@ linear-gradient(135deg,#06172a 0%,#0b2747 55%,#0b1d32 100%)}
   .keksFocusOption input[type=radio]{margin-top:9px}
   .keksFocusNavigation .btn{flex:1}
 }
+
+
+/* KEKS Focus Pro: server-backed quiz feedback and coach planning */
+.keksFocusSaveStatus{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  padding:11px 14px;border:1px solid #dce7e1;border-radius:12px;background:#f0f7f2;
+  color:#23654f;font-size:13px;margin:0 0 16px}
+.keksFocusResult{display:grid;gap:18px;margin:14px 0 18px;padding:18px;
+  border-radius:16px;border:1px solid #dfe7ee;background:#fff;color:#23394e}
+.keksFocusResult h3{color:#17334c;margin:0}
+.keksFocusStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.keksFocusStats>div{background:#f3f7f9;border:1px solid #e0e8ee;border-radius:12px;
+  padding:14px;display:grid;gap:5px}
+.keksFocusStats strong{color:#12324a;font-size:25px;font-weight:800}
+.keksFocusStats span{color:#687d90;font-size:12px}
+.keksFocusResultList{display:grid;gap:12px;padding:4px 0}
+.keksFocusResultRow{display:grid;gap:7px;padding:14px 16px;border:1px solid #e0e7ee;
+  border-radius:14px;background:#fafcfd;color:#284158}
+.keksFocusResultRow strong,.keksFocusResultRow summary{color:#19374c}
+.keksFocusResultRow summary{cursor:pointer;font-weight:700}
+.keksFocusResultRow p{margin:5px 0;color:#4a6176}
+.keksFocusResultRow small{color:#738599}
+.keksFocusPlanner{border:1px solid #dfe7ee;border-radius:20px;overflow:hidden}
+.keksFocusPlanner .keksFocusHero{margin:0 0 16px}
+.keksFocusPlannerControls{display:grid;gap:16px;margin:16px 0}
+.keksFocusPlannerControls>label,.keksFocusPlannerControls fieldset{display:grid;gap:8px}
+.keksFocusPlannerControls fieldset{border:1px solid #e0e8ee;border-radius:12px;padding:12px}
+.keksFocusPlannerControls legend{font-weight:700;color:#415a70;padding:0 6px}
+.keksFocusDayOption{display:flex;gap:6px;align-items:center;padding:8px;
+  border:1px solid #dce6ed;border-radius:10px;font-size:12px}
+.keksFocusDayOption input{accent-color:#24785d}
+.keksFocusPlanner .keksFocusResultRow select{min-width:145px}
+.keksFocusPlanner .btn.primary{background:#12324a;color:#fff;border-color:#12324a}
+.keksFocusPlanner .btn.primary:hover{background:#20445f}
+@media(max-width:650px){.keksFocusStats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .keksFocusPlanner .moduleHeaderRow{display:grid;gap:10px}
+  .keksFocusPlanner .keksFocusResultRow select{width:100%}
+}
