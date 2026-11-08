@@ -4,6 +4,8 @@ import {useEffect,useState} from 'react';
 
 export function AdminPartnerCoachNetwork(){
   const [coaches,setCoaches]=useState<any[]>([]);
+  const [students,setStudents]=useState<any[]>([]);
+  const [selectedStudent,setSelectedStudent]=useState<Record<string,string>>({});
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState('');
   const [msg,setMsg]=useState('');
@@ -15,6 +17,10 @@ export function AdminPartnerCoachNetwork(){
       const j=await r.json();
       if(!r.ok){setMsg('Hata: '+(j.error||'Partner Koç ağı yüklenemedi.'));return}
       setCoaches(j.coaches||[]);
+      const sr=await fetch('/api/admin/partner-coach-assignments',{cache:'no-store'});
+      const sj=await sr.json();
+      if(sr.ok)setStudents(sj.students||[]);
+      else setMsg('Hata: '+(sj.error||'Öğrenciler yüklenemedi.'));
     }finally{setLoading(false)}
   }
 
@@ -33,6 +39,26 @@ export function AdminPartnerCoachNetwork(){
       setMsg('Partner Koç ağ durumu güncellendi.');
       await load();
     }finally{setBusy('')}
+  }
+
+  async function assign(coachId:string){
+    const studentId=selectedStudent[coachId];
+    if(!studentId){setMsg('Hata: Önce bir öğrenci seçin.');return}
+    const student=students.find(x=>x.id===studentId);
+    const coach=coaches.find(x=>x.id===coachId);
+    if(!window.confirm((student?.fullName||'Öğrenci')+' öğrencisini '+(coach?.user.name||'Partner Koç')+' hesabına atamak istiyor musunuz? Mevcut koçu varsa değişecektir.'))return;
+    setBusy(coachId+'assign');setMsg('');
+    try{
+      const r=await fetch('/api/admin/partner-coach-assignments',{
+        method:'PATCH',headers:{'content-type':'application/json'},
+        body:JSON.stringify({studentId,coachId})
+      });
+      const j=await r.json();
+      if(!r.ok){setMsg('Hata: '+(j.error||'Öğrenci atanamadı.'));return}
+      setMsg('Öğrenci Partner Koç hesabına atandı.');
+      await load();
+    }catch{setMsg('Hata: Atama isteği tamamlanamadı.')}
+    finally{setBusy('')}
   }
 
   const active=coaches.filter(x=>x.partnerStatus==='ACTIVE').length;
@@ -66,6 +92,18 @@ export function AdminPartnerCoachNetwork(){
         </div>
         <div className="muted" style={{marginTop:10}}><strong>Düzeyler:</strong> {coach.supportedEducationLevels.join(' · ')||'Tanımlanmadı'}</div>
         <div className="muted"><strong>Uzmanlık:</strong> {coach.specialties.join(' · ')||'Tanımlanmadı'}</div>
+        <div className="form" style={{marginTop:12}}>
+          <label htmlFor={'student-assign-'+coach.id}>Öğrenci ata / koç değiştir</label>
+          <div className="row">
+            <select id={'student-assign-'+coach.id} value={selectedStudent[coach.id]||''} onChange={e=>setSelectedStudent(prev=>({...prev,[coach.id]:e.target.value}))}>
+              <option value="">Öğrenci seçin</option>
+              {students.map(student=><option key={student.id} value={student.id}>
+                {student.fullName} ({student.studentCode}) · {student.gradeLevel||'Düzey belirtilmedi'} · {student.coachName||'Atanmamış'}
+              </option>)}
+            </select>
+            <button className="btn primary" disabled={Boolean(busy)||!selectedStudent[coach.id]||coach.partnerStatus!=='ACTIVE'||!coach.acceptingStudents||coach.availableSlots<=0} onClick={()=>assign(coach.id)}>Öğrenciyi Ata</button>
+          </div>
+        </div>
         <div className="row" style={{marginTop:12}}>
           <button className="btn primary" disabled={Boolean(busy)} onClick={()=>update(coach.id,'ACTIVE')}>Ağa Aç</button>
           <button className="btn" disabled={Boolean(busy)} onClick={()=>update(coach.id,'REVIEW')}>İncelemeye Al</button>
