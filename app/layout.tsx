@@ -7,9 +7,9 @@ export const metadata = {
   title: 'KEKS Akademi',
   description: 'Kazandıran Eğitim ve Koçluk Sistemi',
   icons: {
-    icon: [{url:'/keks-official-2026-square.webp',type:'image/webp',sizes:'192x192'}],
-    shortcut: '/keks-official-2026-square.webp',
-    apple: '/keks-official-2026-square.webp',
+    icon: [{url:'/keks-brand-navy-icon.webp',type:'image/webp',sizes:'160x160'}],
+    shortcut: '/keks-brand-navy-icon.webp',
+    apple: '/keks-brand-navy-icon.webp',
   },
 };
 
