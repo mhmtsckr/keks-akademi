@@ -107,9 +107,7 @@ export function PortalShell({
       <div className={wide?'portalWrap portalWrapWide':'portalWrap'}>
         <div className="portalFooterBrand"><strong>KEKS AKADEMİ</strong><span>© 2026 Keks Akademi. Tüm Hakları Saklıdır.</span></div>
         <div className="legalFooterLinks" aria-label="Yasal sayfalar">
-          <a href="/mesafeli-satis-sozlesmesi">Mesafeli Satış Sözleşmesi</a>
           <a href="/gizlilik-guvenlik">Gizlilik &amp; Güvenlik</a>
-          <a href="/iptal-iade">İptal &amp; İade</a>
           <a href="/iletisim">İletişim</a>
         </div>
       </div>

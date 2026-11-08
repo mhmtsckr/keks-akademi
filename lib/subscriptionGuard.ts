@@ -1,11 +1,10 @@
-import { AuthError } from './apiGuard';
 import { requireRole } from './auth';
 import { getActiveSubscription } from './subscriptionAccess';
 
+// Pilot kullanımı: kimlik doğrulama ve rol kontrolü korunur; üyelik satın alma şartı aranmaz.
+// Eski abonelik verileri veri bütünlüğü için okunabilir kalır.
 export async function requireSubscribedRole(roles:Array<'COACH'|'STUDENT'>){
- const user=await requireRole(roles);
- const active=await getActiveSubscription(user.id);
- if(!active)throw new AuthError(403,'Aktif KEKS aboneliği gerekiyor.');
- if(!roles.includes(active.plan.audience as 'COACH'|'STUDENT'))throw new AuthError(403,'Abonelik türü bu alan için uygun değil.');
- return {...user,activeSubscription:active};
+  const user=await requireRole(roles);
+  const active=await getActiveSubscription(user.id);
+  return {...user,activeSubscription:active};
 }

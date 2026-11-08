@@ -14,9 +14,14 @@ describe('KeksNav',()=>{
 
   it('ana menü bağlantılarını taşır',()=>{
     const {container}=render(<KeksNav/>);
-    for(const href of ['/abonelik-planlari','/sistem','/kayit#ogrenci','/giris#ogrenci','/hakkimizda']){
+    for(const href of ['/sistem','/kayit#ogrenci','/giris#ogrenci','/hakkimizda']){
       expect(container.querySelector(`a[href="${href}"]`)).toBeInTheDocument();
     }
+  });
+
+  it('paket ve abonelik sayfasına yönlendirme göstermez',()=>{
+    const {container}=render(<KeksNav/>);
+    expect(container.querySelector('a[href="/abonelik-planlari"]')).not.toBeInTheDocument();
   });
 
   it('öğrenci, koç ve veli kayıt/giriş bağlantılarını ayrı ayrı sunar',()=>{

@@ -1,17 +1,8 @@
 import Image from 'next/image';
 import {CallbackRequestForm} from '@/app/abonelik-planlari/CallbackRequestForm';
 import {COACHING_COMPARISON,FIRST_30_DAYS,KEKS_GUARANTEES,MARKETING_FAQ} from '@/lib/marketingContent';
-import {STUDENT_TERM_PRICING} from '@/lib/subscriptionPlans';
 import {HOME_PHOTOS} from '@/lib/homePhotos';
 import {HomeVerifiedTestimonials} from '@/app/components/HomeVerifiedTestimonials';
-
-function minFirstMonth(){
-  const values=Object.values(STUDENT_TERM_PRICING).map(x=>x.firstMonth);
-  return Math.min(...values);
-}
-function minTermPrice(key:'threeMonths'|'sixMonths'|'annual'){
-  return Math.min(...Object.values(STUDENT_TERM_PRICING).map(x=>x[key]));
-}
 
 function cell(value:string,highlight=false){
   if(value==='Var')return <span className={highlight?'homeCompareCheck keks':'homeCompareCheck'}>✓</span>;
@@ -30,59 +21,7 @@ function MilestoneIcon({index}:{index:number}){
 }
 
 export function HomeMarketingSections(){
-  const startingPrice=minFirstMonth().toLocaleString('tr-TR')+' TL’den';
-  const threeMonth=minTermPrice('threeMonths');
-  const sixMonth=minTermPrice('sixMonths');
-  const annual=minTermPrice('annual');
   return <>
-    <section className="homeConversionSection homePlanShowcase" id="paketler">
-      <div className="homeConversionHead homePlanShowcaseHead">
-        <span>ABONELİK PLANLARI</span>
-        <h2>Hedefine uygun süreyi seç, KEKS sistemine başla.</h2>
-        <p>Fiyatlar eğitim düzeyi ve sınav türüne göre farklılaşır. Aşağıdaki tutarlar öğrenci planlarının en düşük başlangıç fiyatlarını gösterir.</p>
-      </div>
-      <div className="homePlanRail">
-        <a className="homePlanCard monthly" href="/abonelik-planlari">
-          <span className="homePlanArt"><i className="homeCalendarIcon"><b>1</b><small>AY</small></i></span>
-          <small>ESNEK BAŞLANGIÇ</small>
-          <h3>Aylık Plan</h3>
-          <p>İlk ay özel başlangıç fiyatıyla dene; sonraki aylarda standart ücretle devam et.</p>
-          <strong>{startingPrice}</strong>
-          <em>Her ay yenilenir · istediğin zaman iptal</em>
-          <b>Detayları Gör →</b>
-        </a>
-        <a className="homePlanCard camp featured" href="/abonelik-planlari">
-          <span className="homePlanRibbon">EN ÇOK TERCİH EDİLEN</span>
-          <span className="homePlanArt"><i className="homeTargetIcon">◎</i></span>
-          <small>90 GÜNLÜK RİTİM</small>
-          <h3>3 Aylık KEKS Kamp</h3>
-          <p>Çalışma düzenini kurmak, takip döngüsünü oturtmak ve ivme kazanmak için.</p>
-          <strong>{threeMonth.toLocaleString('tr-TR')} TL’den</strong>
-          <em>Eğitim düzeyine göre toplam paket</em>
-          <b>Detayları Gör →</b>
-        </a>
-        <a className="homePlanCard growth" href="/abonelik-planlari">
-          <span className="homePlanArt"><i className="homeGrowthIcon">↗</i></span>
-          <small>ORTA VADELİ GELİŞİM</small>
-          <h3>6 Aylık Güçlenme</h3>
-          <p>Yeni döneme, sınıf geçişine veya sınav sürecine daha sağlam hazırlanmak için.</p>
-          <strong>{sixMonth.toLocaleString('tr-TR')} TL’den</strong>
-          <em>6 aylık takip ve gelişim döngüsü</em>
-          <b>Detayları Gör →</b>
-        </a>
-        <a className="homePlanCard annual" href="/abonelik-planlari">
-          <span className="homePlanRibbon advantage">EN AVANTAJLI</span>
-          <span className="homePlanArt"><i className="homeCrownIcon">✦</i></span>
-          <small>12 AYLIK KEKS 360</small>
-          <h3>Yıllık Plan</h3>
-          <p>Uzun vadeli planlama, takip ve tekrar sistemini tek dönemde kesintisiz yürüt.</p>
-          <strong>{annual.toLocaleString('tr-TR')} TL’den</strong>
-          <em>Tek seferlik yıllık paket</em>
-          <b>Detayları Gör →</b>
-        </a>
-      </div>
-    </section>
-
     <section className="homeConversionSection homeCompareSection" id="karsilastirma">
       <div className="homeConversionHead">
         <span>KARŞILAŞTIRMA</span>
@@ -95,11 +34,7 @@ export function HomeMarketingSections(){
           <div className="homeCompareHeader standard">Standart<br/>online koçluk</div>
           <div className="homeCompareHeader keks">KEKS Akademi</div>
 
-          <div className="homeCompareFeature">Erişilebilir başlangıç fiyatı</div>
-          <div className="homeCompareCell">{cell('Hizmet sağlayıcıya göre değişir')}</div>
-          <div className="homeCompareCell keks">{cell(startingPrice,true)}</div>
-
-          {COACHING_COMPARISON.slice(1).map(row=><div className="homeCompareRow" key={row.feature}>
+          {COACHING_COMPARISON.map(row=><div className="homeCompareRow" key={row.feature}>
             <div className="homeCompareFeature">{row.feature}</div>
             <div className="homeCompareCell">{cell(row.standard)}</div>
             <div className="homeCompareCell keks">{cell(row.keks,true)}</div>
@@ -108,7 +43,7 @@ export function HomeMarketingSections(){
       </div>
       <div className="homeCompareFootnote">“Standart online koçluk” sütunu tek bir kurumun ürünü değildir; piyasadaki hizmetlerin kapsamı koça ve sağlayıcıya göre değişebilir. KEKS sütunu platformun mevcut sistem özelliklerini gösterir.</div>
       <div className="homeConversionActions">
-        <a className="homeBtn homeBtnGold" href="/abonelik-planlari">Paketleri İncele</a>
+        <a className="homeBtn homeBtnGold" href="/ozellikler">Özellikleri Keşfet</a>
         <a className="homeBtn homeBtnGhost" href="#sizi-arayalim">Sizi Arayalım</a>
       </div>
     </section>
@@ -169,15 +104,15 @@ export function HomeMarketingSections(){
     <section className="homeConversionSection" id="sizi-arayalim">
       <div className="homeConversionHead">
         <span>SİZİ ARAYALIM</span>
-        <h2>Doğru KEKS planını birlikte netleştirelim.</h2>
+        <h2>KEKS Akademi ile tanışalım.</h2>
         <p>Öğrenci, veli veya Partner Koç olarak bilgilerinizi bırakın; seçtiğiniz zaman aralığında KEKS Akademi ekibi sizinle iletişime geçsin.</p>
       </div>
       <div className="homeCallbackShell">
         <div className="homeCallbackPitch">
           <small>ÜCRETSİZ ÖN BİLGİLENDİRME</small>
-          <h3>Kısa bir görüşmede ihtiyacınızı netleştirin.</h3>
-          <p>Eğitim düzeyi, sınav hedefi, çalışma düzeni veya Partner Koç kapasitesi üzerinden en uygun seçenek birlikte değerlendirilir.</p>
-          <div><span>✓ Paket ve süre karşılaştırması</span><span>✓ Öğrenci / veli ihtiyaç değerlendirmesi</span><span>✓ KEKS Partner Koç lisans bilgisi</span></div>
+          <h3>Kısa bir görüşmede ihtiyaçlarınızı belirleyelim.</h3>
+          <p>Eğitim düzeyinizi, hedeflerinizi ve çalışma ihtiyaçlarınızı birlikte değerlendirelim.</p>
+          <div><span>✓ Öğrenci ve veli ihtiyaç değerlendirmesi</span><span>✓ Eğitim hedefleri ve çalışma düzeni</span><span>✓ KEKS dijital takip sistemi tanıtımı</span></div>
           <div className="homeCallbackVisual">
             <Image className="homeRealPhoto homeSectionPhoto" src={HOME_PHOTOS.callback} alt="Öğrencinin çalışmasını yakından takip eden eğitim koçu" width={1100} height={760} sizes="(max-width: 900px) 82vw, 34vw"/>
           </div>
@@ -196,7 +131,7 @@ export function HomeMarketingSections(){
           <div className="homeConversionHead">
             <span>SIKÇA SORULAN SORULAR</span>
             <h2>Karar vermeden önce bilmek isteyebileceğiniz her şey.</h2>
-            <p>Paketler, ilk 30 gün, MİZA, iptal ve KEKS Partner Koç modeliyle ilgili temel sorular.</p>
+            <p>İlk 30 gün, MİZA, kayıt süreci ve KEKS Partner Koç modeliyle ilgili temel sorular.</p>
           </div>
           <div className="homeFaqList">
             {MARKETING_FAQ.map(([question,answer])=><details className="homeFaqItem" key={question}>
@@ -213,7 +148,7 @@ export function HomeMarketingSections(){
       <h2>Çalışmanı veriye, veriyi başarıya dönüştür.</h2>
       <p>Ölç → Planla → Uygulat → Kaydet → Tekrar Ettir → Yeniden Ölç → Koça Aksiyon Öner.</p>
       <div>
-        <a className="homeBtn homeBtnGold" href="/abonelik-planlari">Paketleri İncele</a>
+        <a className="homeBtn homeBtnGold" href="/ozellikler">Özellikleri Keşfet</a>
         <a className="homeBtn homeBtnGhost" href="#sizi-arayalim">Beni Arayın</a>
       </div>
     </section>

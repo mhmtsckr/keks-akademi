@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import { getKeksMonthlyProduct } from '@/lib/monthlyProduct';
 import { KeksCoreLoop } from '@/app/components/KeksCoreLoop';
 import { KEKS_CORE_SENTENCE } from '@/lib/keksCore';
 import { HomeMarketingSections } from '@/app/components/HomeMarketingSections';
@@ -8,8 +7,7 @@ import { HOME_PHOTOS } from '@/lib/homePhotos';
 
 export const dynamic='force-dynamic';
 
-export default async function Home() {
-  const product=await getKeksMonthlyProduct();
+export default function Home() {
   return <main className="home">
     <section className="homeHero">
       <nav className="homeNav">
@@ -51,7 +49,7 @@ export default async function Home() {
           <h1 className="homeHeroHeadline">Çalışmanı veriye, veriyi başarıya dönüştür.</h1>
           <p className="homeTagline">{KEKS_CORE_SENTENCE}</p>
           <div className="homeActions">
-            <a className="homeBtn homeBtnGold" href="/abonelik-planlari">Paketleri İncele</a>
+            <a className="homeBtn homeBtnGold" href="/ozellikler">Özellikleri Keşfet</a>
             <a className="homeBtn homeBtnGhost" href="#sizi-arayalim">Sizi Arayalım</a>
           </div>
           <div className="homeTrust">
@@ -105,24 +103,6 @@ export default async function Home() {
       </div>
     </section>
 
-    <section className="homeFeatures homeOfferSection" aria-label="KEKS aylık ürün kampanyası">
-      <div className="homeFeature homeFeatureLarge homeOfferCard">
-        <span className="homeFeatureIcon">%</span>
-        <div className="homeOfferCopy">
-          <small>{product.monthName} AYI ÜRÜNÜ</small>
-          <h3>{product.name}</h3>
-          <p>Liste fiyatı <strong>{product.listPriceLabel}</strong>. Güncel satış fiyatı <strong>{product.priceLabel}</strong>{product.discountPercent>0?' · %'+product.discountPercent+' indirim':''}. Fiyat yönetici panelindeki tek merkezi kaynaktan gelir.</p>
-          <a className="homeBtn homeBtnGold" href="/ogrenci">Ürünü Gör ve Eriş</a>
-        </div>
-        <div className="homeOfferVisual" aria-hidden="true">
-          <span className="homeOfferBadge">{product.discountPercent>0?'%'+product.discountPercent:'KEKS'}</span>
-          <div className="homeOfferCalendar"><b>{product.monthName.slice(0,3)}</b><strong>30</strong><span>günlük gelişim odağı</span></div>
-          <i className="homeOfferSpark homeOfferSparkOne"/>
-          <i className="homeOfferSpark homeOfferSparkTwo"/>
-        </div>
-      </div>
-    </section>
-
     <HomeMarketingSections/>
 
     <section className="homePortal homePortalVisualized">
@@ -147,9 +127,7 @@ export default async function Home() {
     <footer className="homeFooter">
       <div><strong>KEKS AKADEMİ</strong><span>© 2026 Keks Akademi. Tüm Hakları Saklıdır.</span></div>
       <div className="legalFooterLinks" aria-label="Yasal sayfalar">
-        <a href="/mesafeli-satis-sozlesmesi">Mesafeli Satış Sözleşmesi</a>
         <a href="/gizlilik-guvenlik">Gizlilik &amp; Güvenlik</a>
-        <a href="/iptal-iade">İptal &amp; İade</a>
         <a href="/iletisim">İletişim</a>
       </div>
     </footer>

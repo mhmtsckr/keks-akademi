@@ -2,14 +2,12 @@ import {redirect} from 'next/navigation';
 import { StudentMicroLearning } from '@/app/components/StudentMicroLearning';
 import { StudentWeeklyReflection } from '@/app/components/StudentWeeklyReflection';
 import { currentUser } from '@/lib/auth';
-import { hasActiveSubscription } from '@/lib/subscriptionAccess';
 import { db } from '@/lib/db';
 import { StudentLoginForm, StudentRegisterForm } from '@/app/components/AuthForms';
 import { StudentProgressTools } from '@/app/components/StudentProgressTools';
 import { AdaptiveRecommendation } from '@/app/components/AdaptiveRecommendation';
 import { SmartCoachDashboard } from '@/app/components/SmartCoachDashboard';
 import { StudyTechniqueLab } from '@/app/components/StudyTechniqueLab';
-import { UnsubscribedStudentTechniques } from '@/app/components/UnsubscribedStudentTechniques';
 import { PortalSectionTitle, PortalShell } from '@/app/components/PortalShell';
 import { getStudentFeatureSnapshot } from '@/lib/systemConfig';
 import { StudentEngagementHub } from '@/app/components/StudentEngagementHub';
@@ -79,30 +77,6 @@ export default async function StudentPage() {
   }
 
   if(isStudentOnboardingRequired(user.student.profile))redirect('/ogrenci/baslangic');
-
-  const hasSubscription=await hasActiveSubscription(user.id,'STUDENT');
-
-  if (!hasSubscription) {
-    const techniqueOnlyStudent=await db.student.findUnique({
-      where:{id:user.student.id},
-      select:{
-        fullName:true,
-        techniquePreferences:{},
-        plans:{
-          where:{title:'İlk 7 Günlük Başlangıç Planı',active:true},
-          orderBy:{createdAt:'desc'},
-          take:1,
-          select:{payload:true}
-        }
-      }
-    });
-    if(!techniqueOnlyStudent)return null;
-    return <UnsubscribedStudentTechniques
-      fullName={techniqueOnlyStudent.fullName}
-      initialPreferences={techniqueOnlyStudent.techniquePreferences}
-      starterPlan={techniqueOnlyStudent.plans[0]?.payload||null}
-    />;
-  }
 
   const student = await db.student.findUnique({
     where:{id:user.student.id},

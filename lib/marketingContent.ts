@@ -15,17 +15,15 @@ export const KEKS_GUARANTEES=[
 
 export const MARKETING_FAQ=[
   ['KEKS Akademi tam olarak nedir?','KEKS; ölçüm, kişisel planlama, uygulama takibi, yanlış soru yönetimi, tekrar, gelişim raporlama ve koç aksiyonlarını tek sistemde birleştiren eğitim ve koçluk platformudur.'],
-  ['İlk 30 günde kesin net artışı olur mu?','KEKS belirli bir net, puan veya sıralama sonucu garanti etmez. İlk 30 günün amacı çalışma düzenini ölçülebilir hâle getirmek, kişisel sistemi kurmak ve sonraki müdahaleler için güvenilir veri oluşturmaktır.'],
-  ['Aylık paketi istediğim zaman iptal edebilir miyim?','Aylık paket her ay yenilenir. Yenileme öncesinde iptal talebi verebilirsiniz. Güncel iptal ve iade koşulları İptal & İade sayfasında yer alır.'],
-  ['3, 6 ve 12 aylık paketlerin farkı nedir?','Temel KEKS çalışma mantığı aynı kalır; süre uzadıkça takip döngüsü daha uzun bir gelişim dönemini kapsar ve toplam fiyat avantajı artar.'],
-  ['MİZA insan koçun yerini mi alıyor?','Hayır. MİZA veri analizi, hatırlatma ve karar desteği sağlar. KEKS Partner Koç ise görüşme, takip, yorumlama ve gerekli insan müdahalesini yürütür.'],
-  ['KEKS Partner Koç nedir?','KEKS ana markası ve metodolojisi içinde çalışan profesyonel koçtur. Öğrenci deneyimi, MİZA, ölçüm, planlama, tekrar ve raporlama KEKS Akademi altyapısıyla yürütülür.'],
-  ['Hangi eğitim ve sınav grupları destekleniyor?','İlkokul, ortaokul, LGS, lise, YKS/mezun, KPSS/EKPSS, DGS, ALES, YDS/YÖKDİL, AGS/YDS ve AGS/ÖABT grupları için farklılaştırılmış planlar bulunur.'],
-  ['Paket seçmeden önce görüşebilir miyim?','Evet. Sizi Arayalım formunu doldurabilir veya sayfadaki WhatsApp butonundan doğrudan KEKS Akademi ile iletişime geçebilirsiniz.']
+  ['İlk 30 günde kesin net artışı olur mu?','KEKS belirli bir net, puan veya sıralama sonucu garanti etmez. İlk 30 günün amacı çalışma düzenini ölçülebilir hâle getirmek ve öğrencinin ihtiyaçlarını belirlemektir.'],
+  ['KEKS Akademi’ye nasıl kayıt olabilirim?','Öğrenci ve koç hesapları kayıt sayfasından oluşturulur. Koç hesabının etkinleşmesi yönetici onayına bağlıdır.'],
+  ['MİZA insan koçun yerini mi alıyor?','Hayır. MİZA veri analizi, hatırlatma ve karar desteği sağlar. KEKS Partner Koç ise görüşme, takip, yorumlama ve insan müdahalesini yürütür.'],
+  ['KEKS Partner Koç nedir?','KEKS metodolojisini ve dijital öğrenci takip araçlarını kullanan, öğrencinin gelişimini takip eden koçtur.'],
+  ['Hangi eğitim ve sınav grupları destekleniyor?','İlkokul, ortaokul, LGS, lise, YKS/mezun, KPSS/EKPSS, DGS, ALES, YDS/YÖKDİL, AGS/YDS ve AGS/ÖABT grupları desteklenir.'],
+  ['Sistem hakkında nasıl bilgi alabilirim?','Sizi Arayalım formundan iletişim talebi bırakabilir veya İletişim sayfasını kullanabilirsiniz.']
 ] as const;
 
 export const COACHING_COMPARISON=[
-  {feature:'Başlangıç fiyatı',standard:'Hizmet sağlayıcıya göre değişir',keks:'Düzeye göre indirimli ilk ay'},
   {feature:'Kişiye özel çalışma planı',standard:'Var',keks:'Var'},
   {feature:'Günlük görev ekranı',standard:'Koça göre değişir',keks:'Var'},
   {feature:'Kaçan görevleri kapasiteye göre yeniden dağıtma',standard:'Genellikle manuel',keks:'Var'},

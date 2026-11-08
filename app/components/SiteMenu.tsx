@@ -15,7 +15,6 @@ export function SiteMenu({signedIn=false}:{signedIn?:boolean}){
       </div>
 
       <nav className="siteMenuNav" aria-label="Ana menü">
-        <a href="/abonelik-planlari">Paketler <span>→</span></a>
         <a href="/sistem">Sistem <span>→</span></a>
 
         <details className="siteMenuGroup">
