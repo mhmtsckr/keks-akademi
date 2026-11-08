@@ -7,6 +7,10 @@ on:
         description: "Reason for invoking the manual production fallback"
         required: true
         type: string
+  workflow_run:
+    workflows: ["CI & Production Gate"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -18,7 +22,12 @@ concurrency:
 jobs:
   deploy:
     name: Approved KEKS production deployment via CLI
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -27,6 +36,8 @@ jobs:
       VERCEL_TELEMETRY_DISABLED: "1"
       VERCEL_ORG_ID: team_BK4Ds9K80dGgUs0ZrEUISgXX
       VERCEL_PROJECT_ID: prj_6CPV0q5U4rcGZcqQC0bOydwerR9I
+      CI_EVENT: ${{ github.event_name }}
+      CI_APPROVED_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
 
     steps:
       - name: Checkout approved production branch
@@ -46,6 +57,10 @@ jobs:
           ACTUAL="$(git log -1 --pretty=%s)"
           [[ "$ACTUAL" == "$EXPECTED" ]] || { echo 'Main HEAD has no matching CI production approval.' >&2; exit 1; }
           git cat-file -e "$APPROVED_SHA^{commit}"
+          if [[ "$CI_EVENT" == "workflow_run" && "$CI_APPROVED_SOURCE_SHA" != "$APPROVED_SHA" ]]; then
+            echo 'Workflow run SHA does not match the currently approved production release.' >&2
+            exit 1
+          fi
           echo "CI approval verified for $APPROVED_SHA"
 
       - name: Check protected Vercel token is configured
