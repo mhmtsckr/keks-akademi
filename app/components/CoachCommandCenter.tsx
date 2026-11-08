@@ -3,6 +3,7 @@
 import { useMemo,useState } from 'react';
 import { normalizeLegacyEducationLevel } from '@/lib/educationLevels';
 import {CoachPerformanceQueue} from './CoachPerformanceQueue';
+import {CoachFocusPlanner} from './CoachFocusPlanner';
 
 type PriorityStudent={
   id:string;fullName:string;studentCode:string;gradeLevel:string|null;
@@ -38,6 +39,7 @@ export function CoachCommandCenter({students,agenda,initialTasks}:{students:Prio
   }
 
   return <div className="stack keksFocusCoach">
+    <CoachFocusPlanner students={students}/>
     <CoachPerformanceQueue/>
     <div className="coachCommandKpis">
       <div className="card"><div className="moduleEyebrow">BUGÜN / YAKIN</div><div className="kpi">{agenda.length}</div><span className="muted">planlı seans</span></div>
