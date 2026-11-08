@@ -173,7 +173,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
           <div className="row"><button className="btn" type="button" onClick={()=>setShowFinishConfirm(false)}>Sorulara dön</button><button className="btn primary" disabled={submitting} type="button" onClick={finish}>{submitting?'Kaydediliyor…':'Teslimi onayla'}</button></div>
         </div>}
       </div>}
-    </section>
+    </section>}
 
     <div className="card">
       <div className="moduleHeaderRow">
