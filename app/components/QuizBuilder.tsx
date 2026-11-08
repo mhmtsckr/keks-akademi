@@ -41,6 +41,11 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
   const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [reviewBusy,setReviewBusy]=useState('');
   const [bookmarked,setBookmarked]=useState<Record<string,boolean>>({});
+  const [activeQuestion,setActiveQuestion]=useState(0);
+  const [markedForReturn,setMarkedForReturn]=useState<Record<string,boolean>>({});
+  const [showFinishConfirm,setShowFinishConfirm]=useState(false);
+  const [submitting,setSubmitting]=useState(false);
+  const [finished,setFinished]=useState(false);
   const subjects=Object.keys(EXAM_CATALOG[exam]||{});
   const topics=useMemo(()=>((EXAM_CATALOG[exam] as any)?.[subject]||[]) as string[],[exam,subject]);
 
@@ -58,7 +63,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     const r=await fetch('/api/student/quizzes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({examType:exam,subject,topic:topic||undefined,count})});
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Test oluşturulamadı.'));return}
-    setQuiz(j.quiz);setQuestions(j.questions);setAnswers({});setMsg('');
+    setQuiz(j.quiz);setQuestions(j.questions);setAnswers({});setActiveQuestion(0);setMarkedForReturn({});setShowFinishConfirm(false);setFinished(false);setMsg('');
   }
 
   async function toggleBookmark(questionId:string){
@@ -74,11 +79,17 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
   }
 
   async function finish(){
-    if(!quiz)return;
+    if(!quiz||submitting||finished)return;
+    setSubmitting(true);
     setMsg('Sonuç hesaplanıyor...');
-    const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({answers})});
-    const j=await r.json();
-    if(!r.ok){setMsg('Hata: '+(j.error||'Sonuç kaydedilemedi.'));return}
+    let j:any;
+    try{
+      const r=await fetch('/api/student/quizzes/'+quiz.id+'/attempt',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({answers})});
+      j=await r.json();
+      if(!r.ok){setMsg('Hata: '+(j.error||'Sonuç kaydedilemedi.'));return}
+    }catch{setMsg('Hata: Bağlantı kurulamadı. Sonuç kaydedilemedi.');return}
+    finally{setSubmitting(false)}
+    setFinished(true);setShowFinishConfirm(false);
     setMsg('Test tamamlandı · Doğru '+j.attempt.correct+' · Yanlış '+j.attempt.wrong+' · Boş '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.reviewAdded+' yanlış soru 0. gün tekrar kuyruğuna eklendi.':'')+' · Koç raporu oluşturuldu.');
     await loadReviews();
   }
@@ -109,7 +120,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     return [...groups.entries()];
   },[reviews]);
 
-  return <div className="stack">
+  return <div className="stack keksFocusArea">
     <div className="card">
       <h1>Konu Bazlı Test Oluştur</h1>
       <p className="muted">Sistem özgün veya lisanslı soru bankasından test oluşturur. Resmî çıkmış sorular için kaynak bağlantısı gösterilebilir.</p>
@@ -124,13 +135,45 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
       <button className="btn primary" onClick={build}>Testi Oluştur</button>
     </div>
 
-    {quiz&&<div className="card"><h2>{quiz.title}</h2>{questions.map((q,i)=><article key={q.id} style={{padding:'18px 0',borderBottom:'1px solid var(--line)'}}>
-      <div className="moduleHeaderRow">
-        <strong>{i+1}. {q.prompt}</strong>
-        <button className="btn" type="button" onClick={()=>toggleBookmark(q.id)}>{bookmarked[q.id]?'★ Bankamda':'☆ Soru Bankama Ekle'}</button>
+    {quiz&&<section className="card keksFocusExam" aria-label="KEKS Focus Pro sınav">
+      <div className="keksFocusHero">
+        <div className="keksFocusHeroTop"><span className="keksFocusBrand">KEKS AKADEMİ <small>FOCUS PRO</small></span><span>{questions.filter(q=>Boolean(answers[q.id])).length} / {questions.length} cevaplandı</span></div>
+        <h2>{quiz.title}</h2>
+        <div className="keksFocusProgress" role="progressbar" aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={questions.filter(q=>Boolean(answers[q.id])).length} aria-label="Cevaplanan soru sayısı"><span style={{width:(questions.length?questions.filter(q=>Boolean(answers[q.id])).length/questions.length*100:0)+'%'}}/></div>
       </div>
-      <div className="stack" style={{marginTop:12}}>{Object.entries(q.options).map(([key,val])=><label key={key} style={{display:'flex',gap:10,alignItems:'flex-start'}}><input type="radio" name={q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(a=>({...a,[q.id]:key}))}/><span><strong>{key}</strong>) {val}</span></label>)}</div>{q.officialSourceUrl&&<p><a href={q.officialSourceUrl} target="_blank" rel="noreferrer">Resmî kaynak</a></p>}
-    </article>)}<button className="btn primary" onClick={finish} style={{marginTop:16}}>Testi Bitir ve Sonucu Kaydet</button></div>}
+      {finished?<div className="notice" role="status">Test teslim edildi. Sonuçlar kaydedildi; tekrar kuyruğu güncellendi.</div>:questions[activeQuestion]&&<article className="keksFocusQuestion" key={questions[activeQuestion].id}>
+        <div className="keksFocusQuestionHeader">
+          <span className="keksFocusKicker">SORU {activeQuestion+1} / {questions.length}</span>
+          <div className="row">
+            <button className="btn" type="button" aria-pressed={Boolean(markedForReturn[questions[activeQuestion].id])} onClick={()=>setMarkedForReturn(x=>({...x,[questions[activeQuestion].id]:!x[questions[activeQuestion].id]}))}>{markedForReturn[questions[activeQuestion].id]?'★ Tekrar bakacağım':'☆ İşaretle'}</button>
+            <button className="btn" type="button" onClick={()=>toggleBookmark(questions[activeQuestion].id)}>{bookmarked[questions[activeQuestion].id]?'★ Bankamda':'☆ Soru bankama ekle'}</button>
+          </div>
+        </div>
+        <p className="keksFocusPrompt">{questions[activeQuestion].prompt}</p>
+        <fieldset className="keksFocusOptions"><legend>Bir cevap seç</legend>
+          {Object.entries(questions[activeQuestion].options).map(([key,val])=><label className={'keksFocusOption '+(answers[questions[activeQuestion].id]===key?'selected':'')} key={key}>
+            <input type="radio" name={questions[activeQuestion].id} value={key} checked={answers[questions[activeQuestion].id]===key} onChange={()=>setAnswers(a=>({...a,[questions[activeQuestion].id]:key}))}/>
+            <span className="keksFocusLetter" aria-hidden="true">{key}</span><span>{val}</span>
+          </label>)}
+        </fieldset>
+        {questions[activeQuestion].officialSourceUrl&&<p><a href={questions[activeQuestion].officialSourceUrl} target="_blank" rel="noreferrer">Resmî kaynak</a></p>}
+        <div className="keksFocusQuestionFooter"><span>{answers[questions[activeQuestion].id]?'Cevap seçildi':'Bu soru boş'}</span><button className="btn" type="button" onClick={()=>setAnswers(a=>{const n={...a};delete n[questions[activeQuestion].id];return n})}>Boş bırak</button></div>
+      </article>}
+      {!finished&&<div className="keksFocusNavigation">
+        <div className="keksFocusNavHead"><strong>Soru haritası</strong><span>Yeşil: cevaplandı · Altın: işaretli</span></div>
+        <div className="keksFocusMap" aria-label="Soru haritası">{questions.map((q,i)=><button type="button" key={q.id} aria-label={`Soru ${i+1}, ${answers[q.id]?'cevaplandı':'boş'}${markedForReturn[q.id]?', işaretli':''}`} aria-current={activeQuestion===i?'step':undefined} className={'keksFocusMapItem '+(answers[q.id]?'answered ':'')+(markedForReturn[q.id]?'flagged ':'')+(activeQuestion===i?'active':'')} onClick={()=>{setActiveQuestion(i);setShowFinishConfirm(false)}}>{i+1}{markedForReturn[q.id]?<span aria-hidden="true">★</span>:null}</button>)}</div>
+        <div className="keksFocusActions">
+          <button className="btn" type="button" disabled={activeQuestion===0} onClick={()=>setActiveQuestion(i=>Math.max(0,i-1))}>← Önceki soru</button>
+          {activeQuestion<questions.length-1?<button className="btn primary" type="button" onClick={()=>setActiveQuestion(i=>Math.min(questions.length-1,i+1))}>Sonraki soru →</button>:<button className="btn primary" type="button" onClick={()=>setShowFinishConfirm(true)}>Testi bitir</button>}
+        </div>
+        {showFinishConfirm&&<div className="keksFocusConfirm" role="group" aria-label="Test teslim onayı">
+          <h3>Testi teslim etmek istiyor musun?</h3>
+          <p>{questions.filter(q=>Boolean(answers[q.id])).length} cevaplandı · {questions.filter(q=>!answers[q.id]).length} boş · {questions.filter(q=>markedForReturn[q.id]).length} işaretli soru.</p>
+          <p>Boş sorular geçerlidir; teslimden sonra cevaplarını değiştiremezsin.</p>
+          <div className="row"><button className="btn" type="button" onClick={()=>setShowFinishConfirm(false)}>Sorulara dön</button><button className="btn primary" disabled={submitting} type="button" onClick={finish}>{submitting?'Kaydediliyor…':'Teslimi onayla'}</button></div>
+        </div>}
+      </div>}
+    </section>
 
     <div className="card">
       <div className="moduleHeaderRow">
@@ -144,16 +187,16 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
             {items.map(item=>{
               const due=item.status==='DUE';
               const day=reviewStage(item.stepIndex);
-              return <article className="card" key={item.id} style={{padding:14}}>
+              return <article className="card keksFocusReview" key={item.id} style={{padding:14}}>
                 <div className="moduleHeaderRow">
                   <div><strong>{item.question.topic||'Karma'} · {day}. gün tekrarı</strong><div className="muted">Tekrar tarihi: {trDate(item.dueAt)} · {due?'Bugün çözülmeli':'Yaklaşan tekrar'}</div></div>
                   <span className="pill">{due?'SIRA GELDİ':day+'. GÜN'}</span>
                 </div>
                 <p><strong>{item.question.prompt}</strong></p>
                 <div className="stack">
-                  {Object.entries(item.question.options||{}).map(([key,val])=><label key={key} style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+                  {Object.entries(item.question.options||{}).map(([key,val])=><label className={"keksFocusOption "+(reviewAnswers[item.id]===key?"selected":"")} key={key}>
                     <input type="radio" name={'review-'+item.id} checked={reviewAnswers[item.id]===key} onChange={()=>setReviewAnswers(a=>({...a,[item.id]:key}))} disabled={!due}/>
-                    <span><strong>{key}</strong>) {String(val)}</span>
+                    <span className="keksFocusLetter" aria-hidden="true">{key}</span><span>{String(val)}</span>
                   </label>)}
                 </div>
                 <button className="btn primary" style={{marginTop:12}} disabled={!due||reviewBusy===item.id||!reviewAnswers[item.id]} onClick={()=>submitReview(item)}>
