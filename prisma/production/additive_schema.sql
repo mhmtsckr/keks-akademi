@@ -191,6 +191,40 @@ CREATE TABLE IF NOT EXISTS "EditorialRevision" (
 CREATE UNIQUE INDEX IF NOT EXISTS "EditorialRevision_questionId_revision_key"
   ON "EditorialRevision"("questionId","revision");
 
+-- Koç/öğrenci abonelik geçidi: legacy production veritabanı migration geçmişini
+-- tutmadığından 20261002_subscription_access migration'ı otomatik uygulanmadı.
+-- Prisma P2021 (digest 2779946914) hatasını veri silmeden düzeltir.
+CREATE TABLE IF NOT EXISTS "Subscription" (
+  "id" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "planId" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'PENDING',
+  "provider" TEXT,
+  "providerReference" TEXT,
+  "startsAt" TIMESTAMP(3),
+  "endsAt" TIMESTAMP(3),
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "Subscription_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "Subscription_userId_status_endsAt_idx"
+  ON "Subscription" ("userId", "status", "endsAt");
+CREATE INDEX IF NOT EXISTS "Subscription_provider_providerReference_idx"
+  ON "Subscription" ("provider", "providerReference");
+DO $
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'Subscription_userId_fkey'
+      AND conrelid = '"Subscription"'::regclass
+  ) THEN
+    ALTER TABLE "Subscription"
+      ADD CONSTRAINT "Subscription_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id")
+      ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $;
+
 -- Oturum açma P2022 düzeltmesi: Prisma currentUser() ParentProfile ilişkisini
 -- okurken aşağıdaki sütunları bekler. Eski production şemasında yoklardı.
 -- Veri silmeden ve mevcut erişim izinlerini genişletmeden eklenir.
