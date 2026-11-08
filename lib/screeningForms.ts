@@ -29,12 +29,39 @@ const FORM_DATA_KEYS:Record<EducationBand,string>={
 
 export const SCREENING_FORM_LABELS:Record<EducationBand,string>={...SCREENING_EDUCATION_LABELS};
 
-export function getScreeningForm(band:EducationBand):ScreeningForm{
+export type ScreeningLearningStage='FOUNDATION'|'DEVELOPING'|'INDEPENDENT';
+
+export function readScreeningStage(profile:unknown):ScreeningLearningStage|undefined{
+  if(!profile||typeof profile!=='object'||Array.isArray(profile))return undefined;
+  const context=(profile as Record<string,unknown>).nativeScreeningContext;
+  if(!context||typeof context!=='object'||Array.isArray(context))return undefined;
+  const stage=(context as Record<string,unknown>).learningStage;
+  return stage==='FOUNDATION'||stage==='DEVELOPING'||stage==='INDEPENDENT'?stage:undefined;
+}
+function selectStageQuestions<T extends {dimension:string;orderNo:number}>(source:readonly T[],limit:number):T[]{
+  if(source.length<=limit)return [...source];
+  // Round robin keeps coverage across dimensions instead of truncating one domain.
+  const byDimension=new Map<string,T[]>();
+  for(const q of source){const list=byDimension.get(q.dimension)||[];list.push(q);byDimension.set(q.dimension,list)}
+  const selected:T[]=[];
+  while(selected.length<limit){
+    let progressed=false;
+    for(const list of byDimension.values()){
+      const next=list.shift();
+      if(next){selected.push(next);progressed=true;if(selected.length===limit)break}
+    }
+    if(!progressed)break;
+  }
+  return selected.sort((a,b)=>a.orderNo-b.orderNo);
+}
+export function getScreeningForm(band:EducationBand,stage?:ScreeningLearningStage):ScreeningForm{
   const dataKey=FORM_DATA_KEYS[band]||'LISE_9_10';
   const source=PROFESSIONAL_BASELINE_FORMS[dataKey];
   if(!source)throw new Error('SCREENING_FORM_NOT_FOUND:'+band);
-
-  const questions:ScreeningQuestion[]=source.questions.map(row=>{
+  const entryCount=band==='LISE_9_10'||band==='LISE_11_12'||band==='YETISKIN_MEZUN'?72:64;
+  const requested=stage==='FOUNDATION'?entryCount:stage==='DEVELOPING'?82:stage==='INDEPENDENT'?100:source.questions.length;
+  const selectedRows=stage?selectStageQuestions(source.questions,requested):source.questions;
+  const questions:ScreeningQuestion[]=selectedRows.map(row=>{
     const kind=row.section==='Kişilik/Eğilim'?'TENDENCY' as const:'HABIT' as const;
     return {
       id:`KEKS-PRO-V1-${band}-${row.orderNo}`,
@@ -50,7 +77,7 @@ export function getScreeningForm(band:EducationBand):ScreeningForm{
 
   return {
     title:'KEKS – Eğitsel Çalışma ve Öz-Düzenleme Eğilimleri Taraması',
-    version:`KEKS_PRO_SERIES_V1_BASELINE_${band}`,
+    version:`KEKS_PRO_SERIES_V1_BASELINE_${band}${stage?'_STAGE_'+stage+'_Q'+questions.length:''}`,
     educationBand:band,
     questions,
     disclaimer:SCREENING_DISCLAIMER,
