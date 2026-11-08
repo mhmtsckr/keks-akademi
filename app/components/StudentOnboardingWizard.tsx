@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect,useMemo,useState} from 'react';
+import {KeksDraftIndicator,useKeksFormDraft} from './useKeksFormDraft';
 import {ADULT_EXAM_GROUPS} from '@/lib/agsExamOptions';
 import {EDUCATION_LEVEL_OPTIONS} from '@/lib/educationLevels';
 import {defaultExamTypeForOnboarding,subjectsForOnboarding} from '@/lib/studentOnboarding';
@@ -32,12 +33,14 @@ export function StudentOnboardingWizard({
   initialGoal,
   initialAcademicTrack,
   initialCoachId,
+  studentId,
   coaches
 }:{
   initialGradeLevel:string;
   initialGoal:string;
   initialAcademicTrack:string;
   initialCoachId:string;
+  studentId:string;
   coaches:Coach[];
 }){
   const [step,setStep]=useState(0);
@@ -66,6 +69,36 @@ export function StudentOnboardingWizard({
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
   const [result,setResult]=useState<any>(null);
+  const restoreDraft=(draft:any)=>{
+    if(!draft||typeof draft!=='object')return;
+    if(Number.isInteger(draft.step))setStep(draft.step);
+    if(typeof draft.goal==='string')setGoal(draft.goal);
+    if(typeof draft.gradeLevel==='string')setGradeLevel(draft.gradeLevel);
+    if(typeof draft.academicTrack==='string')setAcademicTrack(draft.academicTrack);
+    if(Number.isFinite(draft.dailyMinutes))setDailyMinutes(draft.dailyMinutes);
+    if(Array.isArray(draft.weakSubjects))setWeakSubjects(draft.weakSubjects);
+    if(Array.isArray(draft.resources))setResources(draft.resources);
+    if(typeof draft.noResources==='boolean')setNoResources(draft.noResources);
+    if(draft.resourceDraft)setResourceDraft(draft.resourceDraft);
+    if(typeof draft.hasExam==='boolean')setHasExam(draft.hasExam);
+    if(typeof draft.examType==='string')setExamType(draft.examType);
+    if(typeof draft.totalNet==='string')setTotalNet(draft.totalNet);
+    if(typeof draft.durationMinutes==='string')setDurationMinutes(draft.durationMinutes);
+    if(Array.isArray(draft.preferredDays))setPreferredDays(draft.preferredDays);
+    if(typeof draft.studyStart==='string')setStudyStart(draft.studyStart);
+    if(typeof draft.studyEnd==='string')setStudyEnd(draft.studyEnd);
+    if(typeof draft.coachId==='string')setCoachId(draft.coachId);
+  };
+  const draft=useKeksFormDraft<any>({kind:'ONBOARDING',scope:'first-visit-v1',studentId,onRestore:restoreDraft});
+  useEffect(()=>{
+    if(!draft.ready||result?.plan)return;
+    draft.save({step,goal,gradeLevel,academicTrack,dailyMinutes,weakSubjects,resources,
+      noResources,resourceDraft,hasExam,examType,totalNet,durationMinutes,
+      preferredDays,studyStart,studyEnd,coachId});
+  },[draft.ready,draft.save,result?.plan,step,goal,gradeLevel,academicTrack,dailyMinutes,
+    weakSubjects,resources,noResources,resourceDraft,hasExam,examType,totalNet,
+    durationMinutes,preferredDays,studyStart,studyEnd,coachId]);
+
 
   useEffect(()=>{
     if(!gradeLevel)return;
@@ -164,6 +197,7 @@ export function StudentOnboardingWizard({
       });
       const json=await response.json();
       if(!response.ok){setError(json.error||'Başlangıç planı oluşturulamadı.');return}
+      void draft.clear();
       setResult(json);
     }catch{
       setError('Bağlantı hatası oluştu. Bilgileriniz kaydedilemedi.');
@@ -199,7 +233,14 @@ export function StudentOnboardingWizard({
     </div>;
   }
 
-  return <div className="stack keksFocusOnboarding">
+  return <div className="stack keksFocusOnboarding keksStudentFormJourney">
+    <div className="keksStudentFormIntro">
+      <img src="/keks-official-2026.webp" width="54" height="82" alt="KEKS Akademi amblemi"/>
+      <div><span className="keksAssessmentKicker">KEKS FOCUS PRO · İLK GİRİŞ</span>
+      <h2>Öğrenme yolculuğunu birlikte planlayalım.</h2>
+      <p>Bilgilerin her adımda korunur. Bağlantı kesilirse aynı cihazdan veya sunucuya eşitlendiyse hesabından devam edebilirsin.</p></div>
+    </div>
+    <KeksDraftIndicator status={draft.status} retry={()=>{void draft.retry()}}/>
     <div className="card keksFocusStepHeader">
       <div className="row" style={{justifyContent:'space-between',gap:16,alignItems:'center'}}>
         <div>
@@ -208,12 +249,15 @@ export function StudentOnboardingWizard({
         </div>
         <strong>%{Math.round((step+1)/STEPS.length*100)}</strong>
       </div>
-      <div style={{height:8,borderRadius:999,overflow:'hidden',background:'rgba(255,255,255,.08)'}}>
-        <div style={{height:'100%',width:((step+1)/STEPS.length*100)+'%',background:'currentColor'}}/>
+      <div className="keksFocusProgress" role="progressbar" aria-label="İlk giriş adımları" aria-valuemin={0} aria-valuemax={STEPS.length} aria-valuenow={step+1}>
+        <span style={{width:((step+1)/STEPS.length*100)+'%'}}/>
+      </div>
+      <div className="keksOnboardingSteps" aria-label="İlk giriş adımları">
+        {STEPS.map((name,i)=><button key={name} type="button" disabled={i>step||busy} className={'keksOnboardingStep '+(i===step?'current':i<step?'completed':'upcoming')} onClick={()=>{if(i<=step){setError('');setStep(i)}}} aria-current={i===step?'step':undefined}><span>{i<step?'✓':i+1}</span><small>{name}</small></button>)}
       </div>
     </div>
 
-    <div className="card form keksFocusForm">
+    <div className="card form keksFocusForm keksStudentFormCard">
       {step===0&&<>
         <label>Bu dönem ana hedefin ne?</label>
         <textarea value={goal} onChange={e=>setGoal(e.target.value)} rows={5} maxLength={240} placeholder="Örn. LGS’de nitelikli bir proje okuluna yerleşmek / Hukuk kazanmak / Matematik temelimi güçlendirmek"/>
@@ -239,16 +283,16 @@ export function StudentOnboardingWizard({
 
       {step===2&&<>
         <label>Her gün gerçekten sürdürebileceğin net çalışma süresi</label>
-        <div className="kpi">{dailyMinutes} dk</div>
-        <input type="range" min={30} max={profile?.study.maxDailyMinutes||360} step={15} value={dailyMinutes} onChange={e=>setDailyMinutes(Number(e.target.value))}/>
-        <input type="number" min={30} max={profile?.study.maxDailyMinutes||480} step={15} value={dailyMinutes} onChange={e=>setDailyMinutes(Number(e.target.value))}/>
+        <div className="keksTimeValue">{dailyMinutes} dk <small>günlük hedef</small></div>
+        <input aria-label="Günlük çalışma süresi kaydırıcısı" type="range" min={30} max={profile?.study.maxDailyMinutes||360} step={15} value={dailyMinutes} onChange={e=>setDailyMinutes(Number(e.target.value))}/>
+        <input aria-label="Günlük çalışma süresi dakika" type="number" min={30} max={profile?.study.maxDailyMinutes||480} step={15} value={dailyMinutes} onChange={e=>setDailyMinutes(Number(e.target.value))}/>
         <small className="muted">İdealini değil, kötü bir günde bile büyük ölçüde sürdürebileceğin süreyi seç.</small>
       </>}
 
       {step===3&&<>
         <label>Şu an en çok zorlandığın dersler</label>
         <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))'}}>
-          {subjects.map(subject=><button type="button" className={weakSubjects.includes(subject)?'btn primary':'btn'} key={subject} onClick={()=>toggleWeak(subject)}>{subject}</button>)}
+          {subjects.map(subject=><button type="button" aria-pressed={weakSubjects.includes(subject)} className={'keksFormChoice '+(weakSubjects.includes(subject)?'selected':'')} key={subject} onClick={()=>toggleWeak(subject)}><span aria-hidden="true">{weakSubjects.includes(subject)?'✓':'+'}</span>{subject}</button>)}
         </div>
         <small className="muted">En fazla 5 ders. İlk 7 günlük plan bu derslere daha fazla ağırlık verecek.</small>
       </>}
@@ -277,7 +321,7 @@ export function StudentOnboardingWizard({
       {step===6&&<>
         <label>Genellikle hangi günler çalışabilirsin?</label>
         <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))'}}>
-          {DAYS.map(day=><button type="button" className={preferredDays.includes(day)?'btn primary':'btn'} key={day} onClick={()=>toggleDay(day)}>{day}</button>)}
+          {DAYS.map(day=><button type="button" aria-pressed={preferredDays.includes(day)} className={'keksFormChoice '+(preferredDays.includes(day)?'selected':'')} key={day} onClick={()=>toggleDay(day)}><span aria-hidden="true">{preferredDays.includes(day)?'✓':'+'}</span>{day}</button>)}
         </div>
         <div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
           <div className="field"><label>Başlangıç</label><input type="time" value={studyStart} onChange={e=>setStudyStart(e.target.value)}/></div>
@@ -294,7 +338,7 @@ export function StudentOnboardingWizard({
           <button type="button" className={coachView==='recommended'?'btn primary':'btn'} onClick={()=>setCoachView('recommended')}>Önerilenler</button>
         </div>
         <div className="stack">
-          {(coachView==='recommended'?coachOptions.filter(x=>x.eligible).slice(0,5):coachOptions).map((coach,index)=><button type="button" key={coach.id} className={coachId===coach.id?'card btn primary':'card btn'} style={{textAlign:'left',opacity:coach.eligible?1:0.7}} disabled={!coach.eligible} onClick={()=>setCoachId(coach.id)}>
+          {(coachView==='recommended'?coachOptions.filter(x=>x.eligible).slice(0,5):coachOptions).map((coach,index)=><button type="button" key={coach.id} className={'card btn keksCoachSelect '+(coachId===coach.id?'selected':'')} style={{textAlign:'left',opacity:coach.eligible?1:0.7}} disabled={!coach.eligible} onClick={()=>setCoachId(coach.id)}>
             <div className="row" style={{justifyContent:'space-between',gap:10,alignItems:'flex-start'}}>
               <div><strong>{index===0&&coachView==='recommended'?'Önerilen · ':''}{coach.name}</strong><div className="muted">{coach.displayTitle||'KEKS Partner Koç'}</div></div>
               <span className="pill">{coach.eligible?coach.availableSlots+' açık kontenjan':coach.availableSlots===0?'Kontenjan dolu':'Öğrenci kabulü kapalı'}</span>
@@ -315,8 +359,8 @@ export function StudentOnboardingWizard({
       <div className="row" style={{justifyContent:'space-between',gap:12}}>
         <button className="btn" type="button" disabled={step===0||busy} onClick={()=>{setError('');setStep(x=>Math.max(0,x-1))}}>Geri</button>
         {step<STEPS.length-1
-          ?<button className="btn primary" type="button" onClick={next}>Devam Et</button>
-          :<button className="btn primary" type="button" disabled={busy} onClick={complete}>{busy?'Plan hazırlanıyor…':'İlk 7 Günlük Planımı Oluştur'}</button>}
+          ?<button className="btn primary" type="button" disabled={!draft.ready} onClick={next}>Devam Et</button>
+          :<button className="btn primary" type="button" disabled={busy||!draft.ready} onClick={complete}>{busy?'Plan hazırlanıyor…':'İlk 7 Günlük Planımı Oluştur'}</button>}
       </div>
     </div>
   </div>;
