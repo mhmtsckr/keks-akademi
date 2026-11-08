@@ -1,0 +1,95 @@
+name: Manual Vercel CLI Production Fallback
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for invoking the manual production fallback"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keks-vercel-cli-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Approved KEKS production deployment via CLI
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      CI: "1"
+      VERCEL_TELEMETRY_DISABLED: "1"
+      VERCEL_ORG_ID: team_BK4Ds9K80dGgUs0ZrEUISgXX
+      VERCEL_PROJECT_ID: prj_6CPV0q5U4rcGZcqQC0bOydwerR9I
+
+    steps:
+      - name: Checkout approved production branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify release was approved by CI and targets main
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f deploy-trigger.txt
+          APPROVED_SHA="$(sed -n 's/^CI-approved source: //p' deploy-trigger.txt | head -n 1)"
+          [[ "$APPROVED_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo 'Missing valid CI-approved commit.' >&2; exit 1; }
+          EXPECTED="ci: deploy approved $APPROVED_SHA [skip ci]"
+          ACTUAL="$(git log -1 --pretty=%s)"
+          [[ "$ACTUAL" == "$EXPECTED" ]] || { echo 'Main HEAD has no matching CI production approval.' >&2; exit 1; }
+          git cat-file -e "$APPROVED_SHA^{commit}"
+          echo "CI approval verified for $APPROVED_SHA"
+
+      - name: Check protected Vercel token is configured
+        shell: bash
+        env:
+          TOKEN_CONFIGURED: ${{ secrets.VERCEL_TOKEN != '' }}
+        run: |
+          if [[ "$TOKEN_CONFIGURED" != "true" ]]; then
+            echo 'The GitHub production environment is missing VERCEL_TOKEN.' >&2
+            echo 'Add a Vercel access token as a GitHub Actions environment secret; do not commit or paste it into logs.' >&2
+            exit 1
+          fi
+
+      - name: Configure Node.js for reviewed Vercel CLI
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+
+      - name: Install pinned Vercel CLI
+        shell: bash
+        run: |
+          npm install --global --no-audit --no-fund vercel@65.12.1
+          vercel --version
+
+      - name: Link the existing KEKS project without storing a credential
+        shell: bash
+        run: |
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+
+      - name: Build and deploy approved main branch to production
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          vercel deploy --yes --prod
+
+      - name: Check public KEKS assessment entry responds
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module -e '
+            const response=await fetch("https://www.keksakademi.com.tr/egilim-taramasi",{redirect:"follow"});
+            console.log("KEKS production assessment HTTP status:",response.status);
+            if(!response.ok)process.exit(1);
+          '
