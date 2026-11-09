@@ -148,7 +148,7 @@ export function StudentDailyTasks(){
         <div className="dailyTaskGrid">{list.map((a:any,index:number)=>{
           const status=a.dailyStatus||'INCOMPLETE';
           const submitted=Boolean(a.submission);
-          const formAllowed=!submitted&&['ACTIVE','COMPLETED'].includes(a.status)&&status!=='UPCOMING';
+          const formAllowed=!submitted&&['ACTIVE','COMPLETED','RESCHEDULED'].includes(a.status)&&status!=='UPCOMING';
           return <div
             id={isToday&&index===list.findIndex((x:any)=>!x.submission)?'ilk-bekleyen-gorev':undefined}
             className={'dailyTaskCard '+(status==='LATE_COMPLETED'?'late':'')} key={a.id}>
@@ -189,7 +189,7 @@ export function StudentDailyTasks(){
             {formAllowed&&<TaskEntryForm action={a} busy={busy===a.id}
               onSave={result=>void submit(a,result)}/>}
             {!submitted&&a.status==='RESCHEDULED'&&
-              <p className="muted">Bu görev tamamlanmadan yeniden planlandı. Yeni tarihli görevi ayrı kaydedebilirsiniz.</p>}
+              <p className="muted">Bu görev daha önce telafi programına aktarılmıştı. Geç teslim yapabilirsiniz; telafi için oluşturulan yeni görevler ayrı kayıtlardır.</p>}
             {!submitted&&status==='UPCOMING'&&<p className="muted">Görev günü geldiğinde sonuç girebilirsiniz.</p>}
           </div>;
         })}</div>
