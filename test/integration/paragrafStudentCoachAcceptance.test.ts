@@ -31,7 +31,7 @@ async function assign(id=studentId){
 }
 async function submit(actionId:string){
  return studentTaskPOST(req('http://localhost/api/student/task-submissions',{
-  actionId,totalQuestions:2,correct:1,wrong:1,blank:0,errorReason:'SORU_KOKU'
+  actionId,confirmed:true,totalQuestions:2,wrong:1,blank:0,errorReason:'SORU_KOKU'
  }));
 }
 beforeEach(async()=>{
