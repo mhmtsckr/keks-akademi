@@ -111,7 +111,7 @@ function compareSentence(label:string,current:number|null,previous:number|null){
 
 function periodStats(e:StudentIndicatorEvidence,w:Window){
   const actions=e.actions.filter(x=>x.taskDate&&inWindow(x.taskDate,w)&&x.status!=='CANCELLED');
-  const completedActions=actions.filter(x=>Boolean(x.submission)||x.status==='COMPLETED');
+  const completedActions=actions.filter(x=>Boolean(x.submission));
 
   const practice=e.practice.filter(x=>inWindow(x.date,w));
   const totalQuestions=practice.reduce((n,x)=>n+x.total,0);
