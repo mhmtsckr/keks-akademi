@@ -2,6 +2,12 @@
 -- The production database predates Prisma migration tracking.
 -- This file is intentionally additive and idempotent: no DROP, TRUNCATE, RENAME or destructive rewrites.
 
+-- Legacy Assessment rows predate versioned scoring/report metadata.
+-- Keep Prisma Assessment reads compatible without rewriting historic test data.
+ALTER TABLE "Assessment"
+  ADD COLUMN IF NOT EXISTS "scoringVersion" TEXT NOT NULL DEFAULT 'legacy-unspecified',
+  ADD COLUMN IF NOT EXISTS "reportVersion" TEXT NOT NULL DEFAULT 'legacy-unspecified';
+
 ALTER TABLE "CoachProfile"
   ADD COLUMN IF NOT EXISTS "displayTitle" TEXT,
   ADD COLUMN IF NOT EXISTS "bio" TEXT,
