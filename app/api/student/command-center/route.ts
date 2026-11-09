@@ -61,7 +61,7 @@ async function POST__handler(req:Request){
     db.reviewQueueItem.findMany({where:{studentId:user.student.id,updatedAt:{gte:start,lt:end}}})
   ]);
   const totalTasks=actions.length;
-  const completedTasks=actions.filter(x=>x.submission||x.status==='COMPLETED').length;
+  const completedTasks=actions.filter(x=>Boolean(x.submission)).length;
   const completionRate=totalTasks?Math.round(completedTasks/totalTasks*100):0;
   const totalQ=submissions.reduce((n,x)=>n+x.totalQuestions,0);
   const correct=submissions.reduce((n,x)=>n+x.correct,0);
