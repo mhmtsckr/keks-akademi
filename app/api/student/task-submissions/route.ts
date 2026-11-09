@@ -71,10 +71,23 @@ async function POST__handler(req:Request){
   },now);
   const late=dailyStatus==='LATE_COMPLETED';
   const paragraphCoachAction=action.planSource===PARAGRAF_COACH_ACTION_SOURCE;
-  const evaluation=evaluateTaskSubmission({
-    totalQuestions:input.totalQuestions,correct,wrong:input.wrong,blank:input.blank,
-    targetValue:action.targetValue,late
-  });
+  const evaluation=action.metricType==='QUESTIONS'
+    ?evaluateTaskSubmission({
+      totalQuestions:input.totalQuestions,correct,wrong:input.wrong,blank:input.blank,
+      targetValue:action.targetValue,late
+    })
+    :input.totalQuestions>0
+      ?evaluateTaskSubmission({
+        totalQuestions:input.totalQuestions,correct,wrong:input.wrong,blank:input.blank,
+        targetValue:input.totalQuestions,late
+      })
+      :{
+        net:0,accuracy:0,completionRate:100,
+        flags:late?['23.00 sonrası geç giriş']:[],
+        level:'İYİ',
+        summary:'Soru içermeyen görev, öğrenci tarafından tamamlandı olarak bildirildi.',
+        late
+      };
   const subject=action.subject||action.title;
   const topic=action.topic||null;
   const content=[
@@ -116,7 +129,7 @@ async function POST__handler(req:Request){
       if(!paragraphCoachAction){
         await tx.coachingAction.update({
           where:{id:action.id},
-          data:{currentValue:Math.min(input.totalQuestions,action.targetValue),status:'COMPLETED'}
+          data:{currentValue:action.metricType==='QUESTIONS'?Math.min(input.totalQuestions,action.targetValue):action.targetValue,status:'COMPLETED'}
         });
       }
       await tx.practiceLog.create({data:{
@@ -147,7 +160,7 @@ async function POST__handler(req:Request){
     throw error;
   }
 
-  if(input.totalQuestions>=action.targetValue){
+  if(action.metricType!=='QUESTIONS'||input.totalQuestions>=action.targetValue){
     try{await awardXp(user.student.id,'ACTION_SUBMISSION',submission.id,late?25:50);}
     catch(error){console.error('TASK_XP_AWARD_FAILED',{actionId:action.id,error});}
   }
