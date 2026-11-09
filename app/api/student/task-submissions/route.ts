@@ -52,7 +52,7 @@ async function POST__handler(req:Request){
   });
   if(!action)return NextResponse.json({error:'Görev bulunamadı.'},{status:404});
   if(action.submission)return NextResponse.json({error:'Bu görev daha önce kaydedildi. Öğrenci tamamlanma durumunu veya teslim zamanını değiştiremez.'},{status:409});
-  if(!['ACTIVE','COMPLETED'].includes(action.status)){
+  if(!['ACTIVE','COMPLETED','RESCHEDULED'].includes(action.status)){
     return NextResponse.json({error:'Bu görev artık teslim almıyor.'},{status:409});
   }
   if(action.metricType==='QUESTIONS'&&input.totalQuestions===0){
