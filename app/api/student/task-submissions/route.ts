@@ -96,7 +96,9 @@ async function POST__handler(req:Request){
     'Ders: '+subject+(topic?' · Konu: '+topic:''),
     'Toplam soru: '+input.totalQuestions,
     'Doğru: '+correct+' · Yanlış: '+input.wrong+' · Boş: '+input.blank,
-    'Net: '+evaluation.net+' · Doğruluk: %'+evaluation.accuracy+' · Hedef ilerlemesi: %'+evaluation.completionRate,
+    input.totalQuestions>0
+      ?'Net: '+evaluation.net+' · Doğruluk: %'+evaluation.accuracy+' · Hedef ilerlemesi: %'+evaluation.completionRate
+      :'Soru çözümü bildirilmedi; tamamlanma onayı ve teslim zamanı kaydedildi.',
     'Değerlendirme: '+evaluation.level+' — '+evaluation.summary,
     evaluation.flags.length?'Sinyaller: '+evaluation.flags.join(', '):'Sinyal yok.',
     'Veri kaynağı: Öğrenci beyanı. Görev durumu ve teslim zamanı sistem tarafından belirlenmiştir.'
@@ -140,7 +142,7 @@ async function POST__handler(req:Request){
       await tx.studentReport.create({data:{
         studentId:user.student!.id,
         title:'Görev Değerlendirmesi · '+action.title,
-        summary:(late?'GEÇ TAMAMLANDI · ':'TAMAMLANDI · ')+'%'+evaluation.accuracy+' doğruluk · '+evaluation.net+' net',
+        summary:(late?'GEÇ TAMAMLANDI · ':'TAMAMLANDI · ')+(input.totalQuestions>0?'%'+evaluation.accuracy+' doğruluk · '+evaluation.net+' net':'Soru kaydı yok'),
         content,createdByUserId:user.id,visibleToStudent:true,visibleToParent:false
       }});
       if(late||evaluation.level!=='İYİ'){
