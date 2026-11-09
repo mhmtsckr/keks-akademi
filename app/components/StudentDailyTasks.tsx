@@ -145,7 +145,7 @@ export function StudentDailyTasks(){
         <div className="dailyTaskGrid">{list.map((a:any,index:number)=>{
           const status=a.dailyStatus||'INCOMPLETE';
           const submitted=Boolean(a.submission);
-          const formAllowed=!submitted&&a.status==='ACTIVE'&&status!=='UPCOMING';
+          const formAllowed=!submitted&&['ACTIVE','COMPLETED'].includes(a.status)&&status!=='UPCOMING';
           return <div
             id={isToday&&index===list.findIndex((x:any)=>!x.submission)?'ilk-bekleyen-gorev':undefined}
             className={'dailyTaskCard '+(status==='LATE_COMPLETED'?'late':'')} key={a.id}>
