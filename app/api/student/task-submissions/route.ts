@@ -1,27 +1,23 @@
-import { readJson, withApiErrors } from '@/lib/apiGuard';
+import { HttpError,readJson,withApiErrors } from '@/lib/apiGuard';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { dailyTaskStatus } from '@/lib/dailyTaskStatus';
 import { evaluateTaskSubmission } from '@/lib/taskEvaluation';
 import { awardXp } from '@/lib/gamification';
 import { PARAGRAF_COACH_ACTION_SOURCE } from '@/lib/paragrafInterventionImpact';
-import { HttpError } from '@/lib/apiGuard';
 
 const schema=z.object({
-  actionId:z.string(),
+  actionId:z.string().min(1),
+  confirmed:z.literal(true),
   totalQuestions:z.number().int().min(0).max(2000),
-  correct:z.number().int().min(0).max(2000),
   wrong:z.number().int().min(0).max(2000),
-  blank:z.number().int().min(0).max(2000)
-  ,errorReason:z.enum(['BILGI_EKSIKLIGI','ISLEM_HATASI','DIKKAT','SORU_KOKU','SURE','YONTEM_BILMEME','UNUTMA','SORUYU_ANLAMA','STRATEJI','DIGER']).nullable().optional()
+  blank:z.number().int().min(0).max(2000),
+  // Accepted only for compatibility with older clients; never trusted to calculate results.
+  correct:z.number().int().min(0).max(2000).optional(),
+  errorReason:z.enum(['BILGI_EKSIKLIGI','ISLEM_HATASI','DIKKAT','SORU_KOKU','SURE','YONTEM_BILMEME','UNUTMA','SORUYU_ANLAMA','STRATEJI','DIGER']).nullable().optional()
 });
-
-function deadlineForAction(action:{taskDate:Date|null;periodEnd:Date}){
-  const base=action.taskDate||action.periodEnd;
-  const y=base.getUTCFullYear(),m=base.getUTCMonth(),d=base.getUTCDate();
-  return new Date(Date.UTC(y,m,d,20,0,0)); // 23:00 Europe/Istanbul
-}
 
 async function GET__handler(){
   const user=await requireRole(['STUDENT']);
@@ -32,114 +28,136 @@ async function GET__handler(){
     orderBy:{submittedAt:'desc'},
     take:100
   });
-  return NextResponse.json({ok:true,rows});
+  return NextResponse.json({ok:true,rows:rows.map(row=>({
+    ...row,
+    dailyStatus:dailyTaskStatus({
+      taskDate:row.action.taskDate,periodEnd:row.action.periodEnd,submittedAt:row.submittedAt
+    })
+  }))},{headers:{'Cache-Control':'private, no-store'}});
 }
 
 async function POST__handler(req:Request){
   const user=await requireRole(['STUDENT']);
   if(!user.student)return NextResponse.json({error:'Öğrenci profili yok.'},{status:400});
-  const input=await readJson(req, schema);
-  if(input.correct+input.wrong+input.blank!==input.totalQuestions){
-    return NextResponse.json({error:'Doğru + yanlış + boş toplamı, toplam soru sayısına eşit olmalıdır.'},{status:400});
+  const input=await readJson(req,schema);
+  const correct=input.totalQuestions-input.wrong-input.blank;
+
+  if(correct<0||(input.correct!==undefined&&input.correct!==correct)){
+    return NextResponse.json({error:'Yanlış ve boş toplamı, çözülen toplam soru sayısını aşamaz. Doğru sayısı otomatik hesaplanır.'},{status:400});
   }
+
   const action=await db.coachingAction.findFirst({
     where:{id:input.actionId,studentId:user.student.id},
     include:{submission:true}
   });
   if(!action)return NextResponse.json({error:'Görev bulunamadı.'},{status:404});
-  const paragraphCoachAction=action.planSource===PARAGRAF_COACH_ACTION_SOURCE;
-  if(paragraphCoachAction&&action.status!=='ACTIVE')
-    return NextResponse.json({error:'Bu paragraf müdahalesi koç tarafından kapatılmış; yeni öz bildirim alınamaz.'},{status:409});
+  if(action.submission)return NextResponse.json({error:'Bu görev daha önce kaydedildi. Öğrenci tamamlanma durumunu veya teslim zamanını değiştiremez.'},{status:409});
+  if(!['ACTIVE','COMPLETED'].includes(action.status)){
+    return NextResponse.json({error:'Bu görev artık teslim almıyor.'},{status:409});
+  }
+  if(action.metricType==='QUESTIONS'&&input.totalQuestions===0){
+    return NextResponse.json({error:'Soru çözme görevini onaylamak için en az bir soru sonucu girmelisiniz.'},{status:400});
+  }
+
+  // The server decides both the timestamp and the completion state; no client-provided
+  // completed/late/status/date field is ever accepted or persisted.
   const now=new Date();
-  const lateNow=now>deadlineForAction(action);
-  const late=Boolean(action.submission?.late||lateNow);
-  const evaluation=evaluateTaskSubmission({...input,targetValue:action.targetValue,late});
+  const before=dailyTaskStatus({taskDate:action.taskDate,periodEnd:action.periodEnd,submittedAt:null},now);
+  if(before==='UPCOMING'){
+    return NextResponse.json({error:'İleri tarihli görevler görev günü geldiğinde kaydedilebilir.'},{status:409});
+  }
+  const dailyStatus=dailyTaskStatus({
+    taskDate:action.taskDate,periodEnd:action.periodEnd,submittedAt:now
+  },now);
+  const late=dailyStatus==='LATE_COMPLETED';
+  const paragraphCoachAction=action.planSource===PARAGRAF_COACH_ACTION_SOURCE;
+  const evaluation=evaluateTaskSubmission({
+    totalQuestions:input.totalQuestions,correct,wrong:input.wrong,blank:input.blank,
+    targetValue:action.targetValue,late
+  });
   const subject=action.subject||action.title;
   const topic=action.topic||null;
-
-  const submission=await db.$transaction(async tx=>{
-    // A student's self-reported count must never close a coach-reviewed paragraph
-    // intervention. Guard the ACTIVE status in the same transaction as submission.
-    if(paragraphCoachAction){
-      const open=await tx.coachingAction.updateMany({
-        where:{id:action.id,studentId:user.student!.id,status:'ACTIVE'},
-        data:{currentValue:Math.min(input.totalQuestions,action.targetValue)}
-      });
-      if(!open.count)throw new HttpError(409,'Koç müdahalesi başka bir işlemde kapatıldı.');
-    }
-    const saved=await tx.taskSubmission.upsert({
-    where:{actionId:action.id},
-    create:{
-      actionId:action.id,studentId:user.student!.id,subject,topic,
-      totalQuestions:input.totalQuestions,correct:input.correct,wrong:input.wrong,blank:input.blank,
-      errorReason:input.errorReason||null,
-      net:evaluation.net,accuracy:evaluation.accuracy,completionRate:evaluation.completionRate,
-      submittedAt:now,late,alarmLevel:late?'RED':evaluation.level==='MÜDAHALE GEREKLİ'?'HIGH':evaluation.level==='İZLEM'?'MEDIUM':'NORMAL',
-      evaluation
-    },
-    update:{
-      subject,topic,totalQuestions:input.totalQuestions,correct:input.correct,wrong:input.wrong,blank:input.blank,
-      errorReason:input.errorReason||null,
-      net:evaluation.net,accuracy:evaluation.accuracy,completionRate:evaluation.completionRate,
-      submittedAt:now,late,alarmLevel:late?'RED':evaluation.level==='MÜDAHALE GEREKLİ'?'HIGH':evaluation.level==='İZLEM'?'MEDIUM':'NORMAL',
-      evaluation
-    }
-  });
-    if(!paragraphCoachAction){
-      await tx.coachingAction.update({where:{id:action.id},data:{
-        currentValue:Math.min(input.totalQuestions,action.targetValue),
-        status:input.totalQuestions>=action.targetValue?'COMPLETED':'ACTIVE'
-      }});
-    }
-    return saved;
-  });
-
-  await db.practiceLog.upsert({where:{taskSubmissionId:submission.id},create:{
-    taskSubmissionId:submission.id,studentId:user.student.id,examType:'GÖREV',subject,topic,
-    correct:input.correct,wrong:input.wrong,blank:input.blank,total:input.totalQuestions,net:evaluation.net,errorReason:input.errorReason||null,date:now
-  },update:{correct:input.correct,wrong:input.wrong,blank:input.blank,total:input.totalQuestions,net:evaluation.net,errorReason:input.errorReason||null,date:now}});
-
   const content=[
-    late?'KIRMIZI ALARM: Öğrenci görevi 23.00 sonrasında kaydetti.':'Teslim zamanında kaydedildi.',
+    late?'Geç tamamlandı: Öğrenci görevi Türkiye saatiyle 23.00 veya sonrasında kaydetti.':'Tamamlandı: Görev 23.00 öncesinde kaydedildi.',
     'Görev: '+action.title,
     'Ders: '+subject+(topic?' · Konu: '+topic:''),
     'Toplam soru: '+input.totalQuestions,
-    'Doğru: '+input.correct+' · Yanlış: '+input.wrong+' · Boş: '+input.blank,
-    'Net: '+evaluation.net+' · Doğruluk: %'+evaluation.accuracy+' · Hedef tamamlama: %'+evaluation.completionRate,
+    'Doğru: '+correct+' · Yanlış: '+input.wrong+' · Boş: '+input.blank,
+    'Net: '+evaluation.net+' · Doğruluk: %'+evaluation.accuracy+' · Hedef ilerlemesi: %'+evaluation.completionRate,
     'Değerlendirme: '+evaluation.level+' — '+evaluation.summary,
-    evaluation.flags.length?'Sinyaller: '+evaluation.flags.join(', '):'Sinyal yok.'
+    evaluation.flags.length?'Sinyaller: '+evaluation.flags.join(', '):'Sinyal yok.',
+    'Veri kaynağı: Öğrenci beyanı. Görev durumu ve teslim zamanı sistem tarafından belirlenmiştir.'
   ].join('\n');
 
-  await db.studentReport.create({data:{
-    studentId:user.student.id,
-    title:'Görev Değerlendirmesi · '+action.title,
-    summary:(late?'KIRMIZI ALARM · ':'')+'%'+evaluation.accuracy+' doğruluk · '+evaluation.net+' net',
-    content,
-    createdByUserId:user.id,
-    visibleToStudent:true,
-    visibleToParent:false
-  }});
-
-  if(late||evaluation.level!=='İYİ'){
-    const kind='TASK_SUBMISSION:'+action.id+':'+submission.id;
-    const existing=await db.coachAlert.findFirst({where:{studentId:user.student.id,kind,resolved:false}});
-    if(!existing)await db.coachAlert.create({data:{
-      studentId:user.student.id,kind,
-      severity:late||evaluation.level==='MÜDAHALE GEREKLİ'?'HIGH':'MEDIUM',
-      title:(late?'Geç görev teslimi':'Görev performansı izlem gerektiriyor')+' · '+action.title,
-      message:content
-    }});
+  let submission;
+  try{
+    submission=await db.$transaction(async tx=>{
+      // Paragraph remediation is only closed by a coach; the student's task receipt
+      // can be completed while the separate intervention remains open.
+      if(paragraphCoachAction){
+        const open=await tx.coachingAction.updateMany({
+          where:{id:action.id,studentId:user.student!.id,status:'ACTIVE'},
+          data:{currentValue:Math.min(input.totalQuestions,action.targetValue)}
+        });
+        if(!open.count)throw new HttpError(409,'Koç müdahalesi zaten kapatılmış.');
+      }
+      // Unique actionId ensures concurrent POSTs cannot overwrite the first receipt.
+      const saved=await tx.taskSubmission.create({
+        data:{
+          actionId:action.id,studentId:user.student!.id,subject,topic,
+          totalQuestions:input.totalQuestions,correct,wrong:input.wrong,blank:input.blank,
+          errorReason:input.errorReason||null,
+          net:evaluation.net,accuracy:evaluation.accuracy,completionRate:evaluation.completionRate,
+          submittedAt:now,late,
+          alarmLevel:late?'RED':evaluation.level==='MÜDAHALE GEREKLİ'?'HIGH':evaluation.level==='İZLEM'?'MEDIUM':'NORMAL',
+          evaluation
+        }
+      });
+      if(!paragraphCoachAction){
+        await tx.coachingAction.update({
+          where:{id:action.id},
+          data:{currentValue:Math.min(input.totalQuestions,action.targetValue),status:'COMPLETED'}
+        });
+      }
+      await tx.practiceLog.create({data:{
+        taskSubmissionId:saved.id,studentId:user.student!.id,examType:'GÖREV',subject,topic,
+        correct,wrong:input.wrong,blank:input.blank,total:input.totalQuestions,
+        net:evaluation.net,errorReason:input.errorReason||null,date:now
+      }});
+      await tx.studentReport.create({data:{
+        studentId:user.student!.id,
+        title:'Görev Değerlendirmesi · '+action.title,
+        summary:(late?'GEÇ TAMAMLANDI · ':'TAMAMLANDI · ')+'%'+evaluation.accuracy+' doğruluk · '+evaluation.net+' net',
+        content,createdByUserId:user.id,visibleToStudent:true,visibleToParent:false
+      }});
+      if(late||evaluation.level!=='İYİ'){
+        await tx.coachAlert.create({data:{
+          studentId:user.student!.id,kind:'TASK_SUBMISSION:'+action.id+':'+saved.id,
+          severity:late||evaluation.level==='MÜDAHALE GEREKLİ'?'HIGH':'MEDIUM',
+          title:(late?'Geç tamamlanan görev':'Görev performansı izlem gerektiriyor')+' · '+action.title,
+          message:content
+        }});
+      }
+      return saved;
+    });
+  }catch(error){
+    if((error as {code?:string})?.code==='P2002'){
+      return NextResponse.json({error:'Bu görev zaten kaydedilmiş. Mevcut teslim durumu değiştirilemez.'},{status:409});
+    }
+    throw error;
   }
 
-  if(input.totalQuestions>=action.targetValue)await awardXp(user.student.id,'ACTION_SUBMISSION',submission.id,late?25:50);
-  return NextResponse.json({ok:true,submission,evaluation,late,
+  if(input.totalQuestions>=action.targetValue){
+    try{await awardXp(user.student.id,'ACTION_SUBMISSION',submission.id,late?25:50);}
+    catch(error){console.error('TASK_XP_AWARD_FAILED',{actionId:action.id,error});}
+  }
+  return NextResponse.json({
+    ok:true,submission,evaluation,dailyStatus,late,
     requiresCoachClosure:paragraphCoachAction,
     evidenceSource:'STUDENT_SELF_REPORT',
-    note:paragraphCoachAction?
-      'Çalışma öz bildirim olarak kaydedildi. Koçun müdahaleyi kapatması ve farklı sorularda gözlem yapılması ayrı süreçlerdir.':
-      null
-  });
+    note:paragraphCoachAction?'Öz bildirim tamamlandı; paragraf müdahalesinin koç tarafından kapatılması ayrı bir süreçtir.':null
+  },{headers:{'Cache-Control':'private, no-store'}});
 }
 
-export const GET = withApiErrors(GET__handler);
-export const POST = withApiErrors(POST__handler);
+export const GET=withApiErrors(GET__handler);
+export const POST=withApiErrors(POST__handler);
