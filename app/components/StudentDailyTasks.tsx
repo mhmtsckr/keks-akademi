@@ -62,6 +62,9 @@ function TaskEntryForm({action,busy,onSave}:{action:any;busy:boolean;onSave:(res
       <input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>
       <span>Bu görevi yaptığımı ve girdiğim sonuçların doğru olduğunu onaylıyorum.</span>
     </label>
+    {action.metricType!=='QUESTIONS'&&<p className="muted">
+      Bu görevde soru çözmediyseniz soru sayısını 0 bırakabilirsiniz; çalışmayı yaptığınızı yine de onaylamalısınız.
+    </p>}
     <p className="muted" style={{fontSize:12}}>
       Görev durumunu sistem belirler. Türkiye saatiyle 23.00 ve sonrasında kaydedilen görevler
       “Geç Tamamlandı” olur. Onaylanan teslim kaydı öğrenci tarafından değiştirilemez.
@@ -177,7 +180,9 @@ export function StudentDailyTasks(){
               <span><b>{a.submission.wrong}</b> yanlış</span>
               <span><b>{a.submission.blank}</b> boş</span>
               <span><b>{a.submission.net}</b> net</span>
-              <span><b>%{a.submission.accuracy}</b> doğruluk</span>
+              {a.submission.totalQuestions>0
+                ?<span><b>%{a.submission.accuracy}</b> doğruluk</span>
+                :<span>Soru çözümü bildirimi yok</span>}
               <small>Sistem teslim zamanı: {timeTr(a.submission.submittedAt)}</small>
               <small>Bu kayıt öğrenci tarafından değiştirilemez.</small>
             </div>}
