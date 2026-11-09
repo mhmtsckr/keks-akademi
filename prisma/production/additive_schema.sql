@@ -8,6 +8,49 @@ ALTER TABLE "Assessment"
   ADD COLUMN IF NOT EXISTS "scoringVersion" TEXT NOT NULL DEFAULT 'legacy-unspecified',
   ADD COLUMN IF NOT EXISTS "reportVersion" TEXT NOT NULL DEFAULT 'legacy-unspecified';
 
+-- Student dashboard compatibility: all missing fields found by comparing the
+-- deployed Prisma models to information_schema on 2026-11-09.
+ALTER TABLE "PracticeLog"
+  ADD COLUMN IF NOT EXISTS "taskSubmissionId" TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS "PracticeLog_taskSubmissionId_key"
+  ON "PracticeLog"("taskSubmissionId");
+
+ALTER TABLE "CoachAlert"
+  ADD COLUMN IF NOT EXISTS "resolvedAt" TIMESTAMP(3);
+
+ALTER TABLE "TaskSubmission"
+  ADD COLUMN IF NOT EXISTS "errorReason" TEXT;
+
+ALTER TABLE "WeeklyReflection"
+  ADD COLUMN IF NOT EXISTS "planRealistic" INTEGER;
+
+-- The coach-code onboarding model exists in Prisma but was absent from
+-- the legacy production DB. Add the table and indexes without touching users.
+CREATE TABLE IF NOT EXISTS "CoachAccessCode" (
+  "id" TEXT NOT NULL,
+  "studentId" TEXT NOT NULL,
+  "codeHash" TEXT NOT NULL,
+  "codeHint" TEXT NOT NULL,
+  "codeCiphertext" TEXT NOT NULL,
+  "active" BOOLEAN NOT NULL DEFAULT true,
+  "expiresAt" TIMESTAMP(3) NOT NULL,
+  "usedAt" TIMESTAMP(3),
+  "claimedByCoachId" TEXT,
+  "assessmentId" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "CoachAccessCode_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "CoachAccessCode_studentId_fkey" FOREIGN KEY ("studentId")
+    REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "CoachAccessCode_claimedByCoachId_fkey" FOREIGN KEY ("claimedByCoachId")
+    REFERENCES "CoachProfile"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "CoachAccessCode_codeHash_key"
+  ON "CoachAccessCode"("codeHash");
+CREATE INDEX IF NOT EXISTS "CoachAccessCode_studentId_active_idx"
+  ON "CoachAccessCode"("studentId","active");
+CREATE INDEX IF NOT EXISTS "CoachAccessCode_claimedByCoachId_createdAt_idx"
+  ON "CoachAccessCode"("claimedByCoachId","createdAt");
+
 ALTER TABLE "CoachProfile"
   ADD COLUMN IF NOT EXISTS "displayTitle" TEXT,
   ADD COLUMN IF NOT EXISTS "bio" TEXT,
