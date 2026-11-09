@@ -32,6 +32,13 @@ describe('student daily tasks: server-only Istanbul deadline',()=>{
       new Date('2026-11-08T18:00:00Z'))).toBe('UPCOMING');
   });
 
+  it('assigns midnight-after-local tasks to the correct Istanbul day',()=>{
+    // An action assigned at 00:30 Istanbul is still the prior UTC calendar day.
+    const at=new Date('2026-11-08T21:30:00.000Z');
+    expect(dailyTaskDateKey(at,periodEnd)).toBe('2026-11-09');
+    expect(dailyTaskDeadline(at,periodEnd).toISOString()).toBe('2026-11-09T20:00:00.000Z');
+  });
+
   it('uses the period end only for unscheduled legacy tasks',()=>{
     expect(dailyTaskDeadline(null,periodEnd).toISOString()).toBe('2026-11-10T20:00:00.000Z');
   });
