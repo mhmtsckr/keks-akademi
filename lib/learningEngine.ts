@@ -392,7 +392,7 @@ export async function buildCapacityProfile(studentId:string,now=new Date()){
     const key=weekdayKey(action.taskDate);
     const x=weekdayStats.get(key)||{total:0,completed:0};
     x.total++;
-    if(action.submission||action.status==='COMPLETED')x.completed++;
+    if(action.submission)x.completed++;
     weekdayStats.set(key,x);
   }
   const lowCompletionDays=[...weekdayStats.entries()]
@@ -1046,7 +1046,7 @@ export async function buildTodayLearningPlan(studentId:string,now=new Date()){
   for(const action of actions){
     const topic=action.topic||'Genel/Karma';
     const m=masteryMap.get((action.subject||action.title)+'|'+topic);
-    const done=Boolean(action.submission||action.status==='COMPLETED');
+    const done=Boolean(action.submission);
     const titleKey=normalizedPlanText(action.title);
     actionTitleKeys.add(titleKey);
     const item={
@@ -1337,7 +1337,7 @@ async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningP
     })
   ]);
 
-  const completedActions=new Set(actions.filter(x=>x.status==='COMPLETED'||Boolean(x.submission)).map(x=>x.id));
+  const completedActions=new Set(actions.filter(x=>Boolean(x.submission)).map(x=>x.id));
   const reviewStatus=new Map(reviews.map(x=>[x.id,x.status]));
   const completedTopics=new Set(topics.filter(x=>x.completed).map(x=>x.subject+'|'+x.topic));
   const practiceTotals=new Map<string,number>();
@@ -2170,7 +2170,7 @@ export async function buildCoachStudentAlignmentSignals(studentId:string,now=new
     })
   ]);
   const assigned=actions.length;
-  const completed=actions.filter(x=>x.submission||x.status==='COMPLETED').length;
+  const completed=actions.filter(x=>Boolean(x.submission)).length;
   const rescheduled=actions.filter(x=>x.status==='RESCHEDULED'||x.planSource==='CAPACITY_AWARE_RESCHEDULE').length;
   const followThrough=assigned?Math.round(completed/assigned*100):null;
   const held=sessions.filter(x=>x.status==='COMPLETED').length;
