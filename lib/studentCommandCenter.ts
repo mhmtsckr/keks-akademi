@@ -95,7 +95,7 @@ export async function buildStudentCommandCenter(studentId:string){
   }
   const difference=targetValue!=null&&currentValue!=null?Number((targetValue-currentValue).toFixed(2)):null;
 
-  const completedToday=todayTasks.filter(x=>x.submission||x.status==='COMPLETED').length;
+  const completedToday=todayTasks.filter(x=>Boolean(x.submission)).length;
   const totalQuestions=submissions.reduce((n,x)=>n+x.totalQuestions,0);
   const correct=submissions.reduce((n,x)=>n+x.correct,0);
   const accuracy=totalQuestions?Math.round(correct/totalQuestions*100):0;
