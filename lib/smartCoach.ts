@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import {buildCoachEvidence} from '@/lib/coachEvidence';
+import {buildLearningDiagnostics} from '@/lib/learningDiagnostics';
 import { buildCapacityProfile,buildSubjectLearningModels,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
 import {publicEducationContext,resolveEducationLevelProfile,scalePracticeQuestionsForEducationLevel,subjectMatchesEducationLevel} from '@/lib/educationLevelProfile';
 
@@ -72,6 +73,7 @@ export async function buildWeeklyPlan(studentId:string){
   const eligiblePractice=educationProfile?practice.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile)):practice;
   const eligibleTopics=educationProfile?topics.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile)):topics;
   const evidence=buildCoachEvidence(eligiblePractice);
+  const topicDiagnostics=buildLearningDiagnostics(eligiblePractice);
   // A single bad question is not enough to label a subject weak.
   const weak=evidence.subjects.filter(x=>x.confidence!=='LOW')
     .map(x=>({subject:x.subject,accuracy:x.accuracy/100,questions:x.questions,priority:x.priority,reason:x.reason}));
@@ -176,6 +178,7 @@ export async function buildWeeklyPlan(studentId:string){
   return {
     educationContext:publicEducationContext(educationProfile),
     evidence:{windowDays:evidence.windowDays,confidence:evidence.confidence,message:evidence.message,eligibleRecords:evidence.eligibleRecords,subjects:evidence.subjects.slice(0,8)},
+    topicDiagnostics,
     goal,
     capacityProfile:{
       plannedMinutes:capacity.plannedMinutes,
