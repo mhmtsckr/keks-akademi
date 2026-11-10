@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { buildExamNetChange,previousSessionDecisions,summarizeSessionActions,summarizeSessionReviews } from '@/lib/coachSessionPrep';
 import { classifyCoachDecision } from '@/lib/coachInterventionImpact';
+import {buildLearningDiagnostics} from '@/lib/learningDiagnostics';
 
 const postSchema=z.discriminatedUnion('action',[
   z.object({action:z.literal('prepare'),sessionId:z.string()}),
@@ -65,6 +66,7 @@ async function buildBrief(studentId:string){
     return {subjects,totalQuestions,accuracy:totalQuestions?Math.round(totalCorrect/totalQuestions*100):0};
   }
 
+  const topicDiagnostics=buildLearningDiagnostics([...practice,...previousPractice],now,6);
   const currentPractice=practiceSummary(practice);
   const previousPracticeSummary=practiceSummary(previousPractice);
   const previousBySubject=new Map(previousPracticeSummary.subjects.map(x=>[x.subject,x]));
@@ -89,6 +91,8 @@ async function buildBrief(studentId:string){
   else if(lastSession?.nextStep)agenda.push('Geçen görüşmenin sonraki adımı: '+lastSession.nextStep);
   if(actionSummary.notCompletedCount)agenda.push(actionSummary.notCompletedCount+' görev yapılmadı/gecikti.');
   if(regressedArea)agenda.push(regressedArea.subject+' doğruluğu önceki haftaya göre '+Math.abs(regressedArea.delta||0)+' puan geriledi.');
+  const attentionTopic=topicDiagnostics.find(x=>x.signal==='REGRESSING'||x.signal==='AT_RISK');
+  if(attentionTopic)agenda.push(attentionTopic.subject+' · '+attentionTopic.topic+': '+attentionTopic.reason);
   if(reviewSummary.overdueCount)agenda.push(reviewSummary.overdueCount+' tekrar gecikti.');
   if(reviewSummary.dueTodayCount)agenda.push(reviewSummary.dueTodayCount+' tekrar bugün tamamlanmalı.');
 
@@ -113,6 +117,7 @@ async function buildBrief(studentId:string){
   const decisionSuggestions:string[]=[];
   if(actionSummary.notCompletedCount)decisionSuggestions.push('Görev hacmini gerçek kapasiteye göre yeniden dağıt.');
   if(regressedArea)decisionSuggestions.push(regressedArea.subject+' için 10–15 soruluk tanılayıcı kontrol seti uygula.');
+  if(attentionTopic)decisionSuggestions.push(attentionTopic.subject+' · '+attentionTopic.topic+': '+attentionTopic.nextAction);
   if(reviewSummary.overdueCount||reviewSummary.dueTodayCount)decisionSuggestions.push('Tekrar kuyruğunu günlük planda önceliklendir.');
   if(netChange?.delta!=null&&netChange.delta<0)decisionSuggestions.push(netChange.examType+' denemesi sonrası yanlış nedeni analizi yap.');
   if(!decisionSuggestions.length)decisionSuggestions.push('Mevcut planı bir hafta daha sürdür ve aynı ölçütlerle yeniden değerlendir.');
@@ -132,6 +137,7 @@ async function buildBrief(studentId:string){
       notCompletedCount:actionSummary.notCompletedCount
     },
     netChange,
+    topicDiagnostics,
     reviews:reviewSummary,
     weeklyChange:{
       questions:{current:currentPractice.totalQuestions,previous:previousPracticeSummary.totalQuestions,delta:currentPractice.totalQuestions-previousPracticeSummary.totalQuestions},
