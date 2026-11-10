@@ -1,3 +1,5 @@
+import {mizaLearningGuidance,type MizaLearningGuidance} from '@/lib/mizaActionGuidance';
+
 export type MizaResultMode=
   |'ACTION_QUESTIONS'
   |'ACTION_PROGRESS'
@@ -28,6 +30,8 @@ export type MizaTodayTask={
   actionId:string|null;
   reviewIds:string[];
   resultMode:MizaResultMode;
+  dailyStatus:'COMPLETED'|'LATE_COMPLETED'|'INCOMPLETE'|'UPCOMING'|null;
+  guidance:MizaLearningGuidance;
   masteryStatus:string|null;
   masteryScore:number|null;
   masteryRiskReasons:string[];
@@ -87,7 +91,7 @@ function resultMode(item:any):MizaResultMode{
 }
 
 export function buildMizaTodayOrchestration(today:any,rebalance?:any){
-  const tasks:MizaTodayTask[]=(Array.isArray(today?.plan)?today.plan:[]).map((item:any,index:number)=>({
+  const tasks:MizaTodayTask[]=(Array.isArray(today?.plan)?today.plan:[]).map((item:any,index:number)=>{const task={
     id:String(item.id),
     order:Number(item.order||index+1),
     source:String(item.source||'UNKNOWN'),
@@ -103,16 +107,17 @@ export function buildMizaTodayOrchestration(today:any,rebalance?:any){
     actionId:typeof item.actionId==='string'?item.actionId:null,
     reviewIds:Array.isArray(item.reviewIds)?item.reviewIds.map(String):[],
     resultMode:resultMode(item),
+    dailyStatus:['COMPLETED','LATE_COMPLETED','INCOMPLETE','UPCOMING'].includes(item.dailyStatus)?item.dailyStatus:null,
     masteryStatus:typeof item.masteryStatus==='string'?item.masteryStatus:null,
-    masteryScore:Number.isFinite(Number(item.masteryScore))?Number(item.masteryScore):null,
+    masteryScore:typeof item.masteryScore==='number'&&Number.isFinite(item.masteryScore)?item.masteryScore:null,
     masteryRiskReasons:Array.isArray(item.masteryRiskReasons)?item.masteryRiskReasons.map(String).slice(0,3):[],
     forgettingRisk:Boolean(item.forgettingRisk),
-    forgettingRiskScore:Number.isFinite(Number(item.forgettingRiskScore))?Number(item.forgettingRiskScore):null,
+    forgettingRiskScore:typeof item.forgettingRiskScore==='number'&&Number.isFinite(item.forgettingRiskScore)?item.forgettingRiskScore:null,
     primaryErrorReasonLabel:typeof item.primaryErrorReasonLabel==='string'?item.primaryErrorReasonLabel:null,
-    avgSecondsPerQuestion:Number.isFinite(Number(item.avgSecondsPerQuestion))?Number(item.avgSecondsPerQuestion):null,
-    targetSecondsPerQuestion:Number.isFinite(Number(item.targetSecondsPerQuestion))?Number(item.targetSecondsPerQuestion):null,
+    avgSecondsPerQuestion:typeof item.avgSecondsPerQuestion==='number'&&Number.isFinite(item.avgSecondsPerQuestion)?item.avgSecondsPerQuestion:null,
+    targetSecondsPerQuestion:typeof item.targetSecondsPerQuestion==='number'&&Number.isFinite(item.targetSecondsPerQuestion)?item.targetSecondsPerQuestion:null,
     resourceEfficiencyStatus:typeof item.resourceEfficiencyStatus==='string'?item.resourceEfficiencyStatus:null
-  }));
+  };return {...task,guidance:mizaLearningGuidance(task)};});
 
   const remaining=tasks.filter(x=>!x.completed);
   const coachTasks=remaining.filter(x=>x.source==='ACTION').length;
