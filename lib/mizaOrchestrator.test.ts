@@ -24,6 +24,8 @@ describe('MİZA günlük orkestrasyon',()=>{
     expect(x.dueReviews).toBe(2);
     expect(x.plannedMinutes).toBe(38);
     expect(x.tasks[0].resultMode).toBe('ACTION_QUESTIONS');
+    expect(x.tasks[0].guidance.confidence).toBe('MULTIPLE_SIGNALS');
+    expect(x.tasks[0].dailyStatus).toBeNull();
     expect(x.tasks[0].masteryStatus).toBe('RISKY');
     expect(x.tasks[0].masteryRiskReasons[0]).toContain('tekrar gecikmiş');
     expect(x.tasks[0].forgettingRiskScore).toBe(72);
@@ -31,6 +33,15 @@ describe('MİZA günlük orkestrasyon',()=>{
     expect(x.tasks[1].resultMode).toBe('REVIEW_FLOW');
     expect(x.coachBoundary.authority).toBe('COACH_OVERRIDES_MIZA');
     expect(formatMizaTodayReply(x)).toContain('Toplam yaklaşık süre: 38 dk');
+    const sparse=buildMizaTodayOrchestration({
+      date:'2026-11-10',
+      plan:[{id:'action:late',source:'ACTION',order:1,title:'Türkçe',
+        targetValue:10,metricType:'QUESTIONS',completed:true,
+        dailyStatus:'LATE_COMPLETED',masteryScore:null,forgettingRiskScore:null}]
+    });
+    expect(sparse.tasks[0].masteryScore).toBeNull();
+    expect(sparse.tasks[0].forgettingRiskScore).toBeNull();
+    expect(sparse.tasks[0].dailyStatus).toBe('LATE_COMPLETED');
   });
 
   it('kapasiteye sığmayan kaçırılmış görevi koça eskale eder',()=>{
