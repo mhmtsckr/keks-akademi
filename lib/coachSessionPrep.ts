@@ -5,12 +5,12 @@ export type SessionActionEvidence={
 
 export function summarizeSessionActions(rows:SessionActionEvidence[],now=new Date()){
   const since=new Date(now.getTime()-7*86400000);
+  // Workflow state is not student evidence: only an actual, immutable receipt counts.
   const completed=rows.filter(x=>
-    Boolean(x.submission)&&x.submission!.submittedAt>=since||
-    x.status==='COMPLETED'&&x.updatedAt>=since
+    Boolean(x.submission)&&x.submission!.submittedAt>=since
   );
   const notCompleted=rows.filter(x=>
-    x.status==='ACTIVE'&&!x.submission&&x.periodEnd<now
+    !x.submission&&x.status!=='CANCELLED'&&x.periodEnd<now
   );
   return {
     completed:completed.map(x=>({id:x.id,title:x.title,at:x.submission?.submittedAt||x.updatedAt})),
