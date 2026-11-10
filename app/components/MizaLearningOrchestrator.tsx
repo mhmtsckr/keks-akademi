@@ -76,6 +76,8 @@ export function MizaLearningOrchestrator(){
   const [reviews,setReviews]=useState<any[]>([]);
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState('');
+  const [learningTopics,setLearningTopics]=useState<any[]>([]);
+  const [learningMsg,setLearningMsg]=useState('');
 
   const reviewIds=useMemo(()=>new Set((orchestration?.tasks||[]).flatMap(x=>x.reviewIds||[])),[orchestration]);
   const nextTask=useMemo(()=>orchestration?.tasks?.find(x=>!x.completed)||null,[orchestration]);
@@ -105,7 +107,17 @@ export function MizaLearningOrchestrator(){
     await applyPayload(j);
   }
 
-  useEffect(()=>{void loadToday()},[]);
+  async function loadDiagnostics(){
+    try{
+      const r=await fetch('/api/student/learning-diagnostics',{cache:'no-store'});
+      const j=await r.json();
+      if(!r.ok)throw new Error(j.error||'Konu analizi yüklenemedi.');
+      setLearningTopics(j.topics||[]);
+      setLearningMsg(j.limitedRows?'Son 500 kayıt kullanıldı; daha eski kayıtlar bu karşılaştırmaya dahil edilmedi.':'');
+    }catch{setLearningMsg('Konu analizi şu anda görüntülenemiyor.');}
+  }
+
+  useEffect(()=>{void loadToday();void loadDiagnostics()},[]);
 
   async function ask(e?:FormEvent){
     e?.preventDefault();
@@ -125,7 +137,7 @@ export function MizaLearningOrchestrator(){
 
   async function refreshed(message:string){
     setMsg(message);
-    await loadToday();
+    await Promise.all([loadToday(),loadDiagnostics()]);
   }
 
   return <div className="card mizaOrchestrator">
@@ -202,6 +214,26 @@ export function MizaLearningOrchestrator(){
         <span><strong>{orchestration.dueReviews}</strong> gecikmiş tekrar</span>
         <span><strong>{orchestration.coachTasks}</strong> koç görevi</span>
       </div>
+
+      {(learningTopics.length>0||learningMsg)&&<div className="card" style={{margin:'12px 0'}}>
+        <div className="moduleEyebrow">MİZA · ÖĞRENME İZLEME</div>
+        <h3>Farklı günlerde aynı konu nasıl ilerliyor?</h3>
+        <p className="muted">Soru sayısı tek başına öğrenme göstergesi değildir. Son 35 günde aynı konunun farklı günlerdeki sonuçlarını karşılaştırır.</p>
+        {learningMsg&&<p className="muted">{learningMsg}</p>}
+        <div className="stack">
+          {learningTopics.slice(0,4).map((x:any)=><div className="notice" key={x.subject+'|'+x.topic}>
+            <div className="row" style={{justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+              <strong>{x.subject} · {x.topic}</strong>
+              <span className="pill">{x.signal==='REGRESSING'?'Gerileme':x.signal==='AT_RISK'?'Desteğe ihtiyaç':
+                x.signal==='IMPROVING'?'Gelişme':x.signal==='CONSISTENT'?'İstikrarlı':
+                x.signal==='MIXED'?'Değişken':'Kanıt yetersiz'}</span>
+            </div>
+            <p className="muted">{x.reason}</p>
+            <p><strong>Şimdi ne yapmalı?</strong> {x.nextAction}</p>
+          </div>)}
+        </div>
+        <small className="muted">Bu sinyaller öğrenci beyanlarından ve çalışma kayıtlarından hesaplanır; kesin öğrenme tanısı değildir.</small>
+      </div>}
 
       {orchestration.notifications?.length>0&&<div className="mizaSignals">
         {orchestration.notifications.map((x,i)=><span key={i}>{x}</span>)}
