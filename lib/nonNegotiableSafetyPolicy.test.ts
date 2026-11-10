@@ -96,11 +96,15 @@ describe('KEKS non-negotiable production safety rules',()=>{
 
   it('requires explainable AI and adaptive recommendations',()=>{
     const smartCoach=read('lib/smartCoach.ts');
+    const allocator=read('lib/weeklyPlanPriorities.ts');
     const adaptive=read('app/api/student/adaptive/route.ts');
     const coachbot=read('app/api/student/coachbot/route.ts');
 
-    expect(smartCoach).toContain("explanation:'Bu plan;");
-    expect(smartCoach).toContain("reason:'Bu soruların tekrar tarihi bugün olduğu için plana alındı.'");
+    expect(smartCoach).toContain("explanation:'Bu öneri taslağı;");
+    expect(smartCoach).toContain('allocateWeeklyPriorities(');
+    expect(smartCoach).toContain('coachTasksNeedingDecision:priorities.unallocatedCoachTasks');
+    expect(allocator).toContain('Tekrar kuyruğunun en eski vadesi gelen soruları; gerçek tekrar tarihi ve durumu değiştirilmedi.');
+    expect(allocator).toContain("if(slot.reservedMinutes+minutes>budget)");
     expect(adaptive).toContain('reason:insights.suggestion');
     expect(coachbot).toContain("const basis='Dayanak:");
     expect(coachbot).toContain('açıklamasız karar verme');
