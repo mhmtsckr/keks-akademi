@@ -49,7 +49,7 @@ describe('Sonraki En Doğru Aksiyon motoru',()=>{
     const miza=read('app/components/MizaLearningOrchestrator.tsx');
     expect(miza).toContain("const nextTask=useMemo(()=>orchestration?.tasks?.find(x=>!x.completed)||null");
     expect(miza).toContain('MİZA · ŞİMDİ UYGULA');
-    expect(miza).toContain('<TaskControls task={nextTask}');
+    expect(miza).toContain('<TaskControls key={nextTask.id} task={nextTask}');
     expect(miza).toContain("task.id!==nextTask?.id");
   });
 
