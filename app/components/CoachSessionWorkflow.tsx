@@ -103,6 +103,19 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
           </BriefBlock>
         </div>
 
+        {brief.topicDiagnostics?.length>0&&<div className="card">
+          <div className="moduleEyebrow">ÖĞRENME KANITI · SON 14 GÜN</div>
+          <h3>Farklı günlerdeki konu sonuçları</h3>
+          <p className="muted">Öğrenci görev beyanları tek başına kalıcı öğrenme kanıtı sayılmaz. En az dört ayrı gün ve iki dönem karşılaştırması gerekir.</p>
+          <div className="stack">
+            {brief.topicDiagnostics.slice(0,5).map((x:any)=><div key={x.subject+'|'+x.topic} className="notice">
+              <strong>{x.subject} · {x.topic}</strong>
+              <p className="muted">{x.reason}</p>
+              <p><strong>Koç için öneri:</strong> {x.nextAction}</p>
+            </div>)}
+          </div>
+        </div>}
+
         {brief.agenda?.length>0&&<div className="briefAgenda"><h3>GÖRÜŞME GÜNDEMİ</h3>{brief.agenda.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
         {brief.questions?.length>0&&<div className="briefAgenda"><h3>SORULMASI GEREKEN 5 SORU</h3>{brief.questions.map((x:string,i:number)=><div key={i}><span>{i+1}</span><p>{x}</p></div>)}</div>}
       </>}
