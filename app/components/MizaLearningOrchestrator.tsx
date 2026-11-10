@@ -77,6 +77,7 @@ export function MizaLearningOrchestrator(){
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState('');
   const [learningTopics,setLearningTopics]=useState<any[]>([]);
+  const [learningFollowUps,setLearningFollowUps]=useState<any[]>([]);
   const [learningMsg,setLearningMsg]=useState('');
 
   const reviewIds=useMemo(()=>new Set((orchestration?.tasks||[]).flatMap(x=>x.reviewIds||[])),[orchestration]);
@@ -113,6 +114,7 @@ export function MizaLearningOrchestrator(){
       const j=await r.json();
       if(!r.ok)throw new Error(j.error||'Konu analizi yüklenemedi.');
       setLearningTopics(j.topics||[]);
+      setLearningFollowUps(j.followUps||[]);
       setLearningMsg(j.limitedRows?'Son 500 kayıt kullanıldı; daha eski kayıtlar bu karşılaştırmaya dahil edilmedi.':'');
     }catch{setLearningMsg('Konu analizi şu anda görüntülenemiyor.');}
   }
@@ -230,9 +232,16 @@ export function MizaLearningOrchestrator(){
             </div>
             <p className="muted">{x.reason}</p>
             <p><strong>Şimdi ne yapmalı?</strong> {x.nextAction}</p>
+            {learningFollowUps.find((p:any)=>p.subject===x.subject&&p.topic===x.topic)&&(()=>{
+              const plan=learningFollowUps.find((p:any)=>p.subject===x.subject&&p.topic===x.topic);
+              return <div className="muted">
+                <small><strong>Önerilen yeniden ölçüm:</strong> {plan.questionCount} yeni soru · {new Date(plan.dueDate+'T12:00:00+03:00').toLocaleDateString('tr-TR')}</small>
+                <small style={{display:'block'}}>{plan.sourceNote}</small>
+              </div>;
+            })()}
           </div>)}
         </div>
-        <small className="muted">Bu sinyaller öğrenci beyanlarından ve çalışma kayıtlarından hesaplanır; kesin öğrenme tanısı değildir.</small>
+        <small className="muted">Bunlar öneridir; koç onayı olmadan öğrenciye yeni görev atanmaz. Sinyaller öğrenci beyanları ve çalışma kayıtlarından hesaplanır, kesin öğrenme tanısı değildir.</small>
       </div>}
 
       {orchestration.notifications?.length>0&&<div className="mizaSignals">
