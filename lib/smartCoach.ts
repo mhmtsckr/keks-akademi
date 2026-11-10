@@ -77,12 +77,17 @@ export async function buildWeeklyPlan(studentId:string){
     .map(x=>({subject:x.subject,accuracy:x.accuracy/100,questions:x.questions,priority:x.priority,reason:x.reason}));
   const incomplete=eligibleTopics.filter(x=>!x.completed);
   const subjectModelMap=new Map(subjectModels.map(x=>[x.subject,x]));
-  const today=new Date();today.setHours(0,0,0,0);
+  // Date arithmetic is anchored at Istanbul-local noon, not the Vercel server timezone.
+  const dayKey=(d:Date)=>new Intl.DateTimeFormat('en-CA',{
+    timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'
+  }).format(d);
+  const [year,month,day]=dayKey(new Date()).split('-').map(Number);
+  const today=new Date(Date.UTC(year,month-1,day,12,0,0));
   const lowCompletion=new Map((capacity.lowCompletionDays||[]).map(x=>[x.day,x.completionRate]));
   const weekday=(date:Date)=>new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Istanbul',weekday:'short'}).format(date);
   const days=[] as any[];
   for(let i=0;i<7;i++){
-    const date=new Date(today);date.setDate(date.getDate()+i);
+    const date=new Date(today);date.setUTCDate(date.getUTCDate()+i);
     const historicalCompletion=lowCompletion.get(weekday(date))??null;
     const dayFactor=historicalCompletion!=null&&historicalCompletion<60?.75:historicalCompletion!=null&&historicalCompletion<75?.9:1;
     const dayBudget=Math.max(30,Math.round(capacity.suggestedDailyMinutes*dayFactor));
@@ -92,7 +97,7 @@ export async function buildWeeklyPlan(studentId:string){
       if(used+task.duration>dayBudget)return false;
       tasks.push(task);used+=task.duration;return true;
     };
-    const due=reviews.filter(r=>new Date(r.dueAt).toDateString()===date.toDateString());
+    const due=reviews.filter(r=>i===0?dayKey(r.dueAt)<=dayKey(date):dayKey(r.dueAt)===dayKey(date));
     if(due.length)add({type:'REVIEW',title:`${Math.min(due.length,4)} yanlış soru tekrarı`,duration:Math.min(20,Math.max(8,due.length*4)),reason:'Bu soruların tekrar tarihi bugün olduğu için plana alındı.'});
     const weakSub=weak[i%Math.max(weak.length,1)];
     const topic=incomplete.find(t=>!weakSub||t.subject===weakSub.subject)||incomplete[i%Math.max(incomplete.length,1)];
