@@ -14,6 +14,7 @@ const schema=z.object({
   totalQuestions:z.number().int().min(0).max(2000),
   wrong:z.number().int().min(0).max(2000),
   blank:z.number().int().min(0).max(2000),
+  achievedValue:z.number().int().min(0).max(10000).optional(),
   // Accepted only for compatibility with older clients; never trusted to calculate results.
   correct:z.number().int().min(0).max(2000).optional(),
   errorReason:z.enum(['BILGI_EKSIKLIGI','ISLEM_HATASI','DIKKAT','SORU_KOKU','SURE','YONTEM_BILMEME','UNUTMA','SORUYU_ANLAMA','STRATEJI','DIGER']).nullable().optional()
@@ -71,6 +72,12 @@ async function POST__handler(req:Request){
   },now);
   const late=dailyStatus==='LATE_COMPLETED';
   const paragraphCoachAction=action.planSource===PARAGRAF_COACH_ACTION_SOURCE;
+  if(action.metricType==='QUESTIONS'&&input.achievedValue!==undefined){
+    return NextResponse.json({error:'Soru görevlerinde ilerleme, sunucu tarafından soru toplamından hesaplanır.'},{status:400});
+  }
+  const achievedValue=action.metricType==='QUESTIONS'
+    ?input.totalQuestions
+    :input.achievedValue??action.targetValue;
   const evaluation=action.metricType==='QUESTIONS'
     ?evaluateTaskSubmission({
       totalQuestions:input.totalQuestions,correct,wrong:input.wrong,blank:input.blank,
@@ -95,6 +102,7 @@ async function POST__handler(req:Request){
     'Görev: '+action.title,
     'Ders: '+subject+(topic?' · Konu: '+topic:''),
     'Toplam soru: '+input.totalQuestions,
+    'Gerçekleşen hedef miktarı: '+achievedValue+' / '+action.targetValue+' '+(action.metricType==='MINUTES'?'dakika':'birim'),
     'Doğru: '+correct+' · Yanlış: '+input.wrong+' · Boş: '+input.blank,
     input.totalQuestions>0
       ?'Net: '+evaluation.net+' · Doğruluk: %'+evaluation.accuracy+' · Hedef ilerlemesi: %'+evaluation.completionRate
@@ -125,13 +133,13 @@ async function POST__handler(req:Request){
           net:evaluation.net,accuracy:evaluation.accuracy,completionRate:evaluation.completionRate,
           submittedAt:now,late,
           alarmLevel:late?'RED':evaluation.level==='MÜDAHALE GEREKLİ'?'HIGH':evaluation.level==='İZLEM'?'MEDIUM':'NORMAL',
-          evaluation
+          evaluation:{...evaluation,achievedValue,metricType:action.metricType,source:'STUDENT_SELF_REPORT'}
         }
       });
       if(!paragraphCoachAction){
         await tx.coachingAction.update({
           where:{id:action.id},
-          data:{currentValue:action.metricType==='QUESTIONS'?Math.min(input.totalQuestions,action.targetValue):action.targetValue,status:'COMPLETED'}
+          data:{currentValue:Math.min(achievedValue,action.targetValue),status:'COMPLETED'}
         });
       }
       await tx.practiceLog.create({data:{
@@ -167,7 +175,7 @@ async function POST__handler(req:Request){
     catch(error){console.error('TASK_XP_AWARD_FAILED',{actionId:action.id,error});}
   }
   return NextResponse.json({
-    ok:true,submission,evaluation,dailyStatus,late,
+    ok:true,submission,evaluation,dailyStatus,late,achievedValue,
     requiresCoachClosure:paragraphCoachAction,
     evidenceSource:'STUDENT_SELF_REPORT',
     note:paragraphCoachAction?'Öz bildirim tamamlandı; paragraf müdahalesinin koç tarafından kapatılması ayrı bir süreçtir.':null
