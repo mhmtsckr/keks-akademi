@@ -15,7 +15,15 @@ async function POST__handler(_req:Request,{params}:{params:Promise<{id:string}>}
     return NextResponse.json({error:'Akıllı Koç bu öğrenci için feature flag ile kapalı.'},{status:403});
   }
   const plan=await buildWeeklyPlan(id);
-  const row=await db.studyPlan.create({data:{studentId:id,title:'Akıllı Haftalık Program · '+new Date().toLocaleDateString('tr-TR'),payload:plan,active:true}});
+  // Keep historical plans without leaving multiple incompatible plans active.
+  // This is a coach-only action; the student preview never activates a plan.
+  const row=await db.$transaction(async tx=>{
+    await tx.studyPlan.updateMany({where:{studentId:id,active:true},data:{active:false}});
+    return tx.studyPlan.create({data:{
+      studentId:id,title:'Akıllı Haftalık Program · '+new Date().toLocaleDateString('tr-TR'),
+      payload:plan,active:true
+    }});
+  });
   return NextResponse.json({ok:true,row,plan});
 }
 
