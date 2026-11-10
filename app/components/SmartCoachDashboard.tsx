@@ -144,7 +144,30 @@ export function SmartCoachDashboard(){
       </div>
     </div>}
 
-    {plan&&<div className="card weeklyPlanCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">7 GÜNLÜK PLAN</div><h2>Bu haftanın çalışma akışı</h2></div><span className="moduleIcon">▦</span></div>{plan.explanation&&<div className="notice"><strong>Plan neden böyle?</strong><div className="muted">{plan.explanation}</div></div>}<div className="weeklyPlanGrid">{plan.days.map((d:any)=><div className="dayPlan" key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR',{weekday:'long'})}</strong><span className="dayDate">{new Date(d.date).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}</span>{d.tasks.length===0?<p className="muted">Dinlenme / telafi</p>:d.tasks.map((t:any,i:number)=><div className="dayTask" key={i}><span>{t.type}</span><b>{t.title}</b><small>{t.duration} dk{t.questions?' · '+t.questions+' soru':''}</small>{t.reason&&<small className="muted">{t.reason}</small>}</div>)}</div>)}</div></div>}
+    {plan?.prioritySummary&&<div className="card">
+      <div className="moduleEyebrow">AKILLI KİŞİSEL ÇALIŞMA PLANI · GERÇEK KAPASİTE</div>
+      <h3>Koç görevleri ve tekrarlar önce planlandı</h3>
+      <div className="row" style={{gap:12,flexWrap:'wrap'}}>
+        <span className="pill">{plan.prioritySummary.coachTasksIncluded} koç görevi taslakta</span>
+        <span className="pill">{plan.prioritySummary.allocatedReviewCount} tekrar önerilen günlere dağıtıldı</span>
+        <span className="pill">Günlük öneri: {plan.capacityProfile?.suggestedDailyMinutes||'—'} dk</span>
+      </div>
+      <p className="muted">Bunlar yalnızca taslak önceliklerdir. Gerçek koç görevlerinin ve tekrarların tarihleri değişmedi; yeni görevler öğrenci hesabına otomatik eklenmedi.</p>
+      {plan.prioritySummary.coachTasksNeedingDecision?.length>0&&<div className="notice error">
+        <strong>Kapasiteyi aşan {plan.prioritySummary.coachTasksNeedingDecision.length} koç görevi var</strong>
+        <p className="muted">Bu görevler gizlenmedi veya kendiliğinden ertelenmedi. Koçun yeniden planlama kararı gerekir.</p>
+        {plan.prioritySummary.coachTasksNeedingDecision.slice(0,5).map((x:any)=>
+          <p key={x.id}><strong>{x.title}</strong>: {x.minutes} dk — {x.reason}</p>)}
+      </div>}
+      {plan.prioritySummary.pendingReviewCount>0&&<div className="notice">
+        <strong>Henüz taslağa sığmayan {plan.prioritySummary.pendingReviewCount} tekrar var.</strong>
+        <p className="muted">Bu sorular tamamlandı kabul edilmez. Mevcut tekrar kuyruğunda durur; koçla kapasite düzenlenebilir.</p>
+      </div>}
+      {(plan.prioritySummary.reviewQueueTruncated||plan.prioritySummary.coachQueueTruncated)&&
+        <p className="muted">Veri sınırına ulaşıldı. Bu plan, mevcut tüm görevleri veya tekrarları kapsamıyor olabilir.</p>}
+    </div>}
+
+    {plan&&<div className="card weeklyPlanCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">7 GÜNLÜK PLAN</div><h2>Bu haftanın çalışma akışı</h2></div><span className="moduleIcon">▦</span></div>{plan.explanation&&<div className="notice"><strong>Plan neden böyle?</strong><div className="muted">{plan.explanation}</div></div>}<div className="weeklyPlanGrid">{plan.days.map((d:any)=><div className="dayPlan" key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR',{weekday:'long'})}</strong><span className="dayDate">{new Date(d.date).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}</span><small className="muted">Plan: {d.plannedMinutes} / {d.capacityMinutes} dk · Kalan {d.availableMinutes??Math.max(0,d.capacityMinutes-d.plannedMinutes)} dk</small>{d.tasks.length===0?<p className="muted">Dinlenme / telafi</p>:d.tasks.map((t:any,i:number)=><div className="dayTask" key={i}><span>{t.type==='COACH_ACTION'?'KOÇ GÖREVİ':t.type==='REVIEW'?'TEKRAR':t.type==='TOPIC'?'KONU':t.type==='PRACTICE'?'SORU':'ÇALIŞMA'}</span><b>{t.title}</b><small>{t.duration} dk{t.questions?' · '+t.questions+' soru':''}</small>{t.reason&&<small className="muted">{t.reason}</small>}</div>)}</div>)}</div></div>}
 
     <div className="card trendCard">
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">NET TRENDLERİ</div><h2>Ders bazlı gelişim</h2></div><span className="moduleIcon">⌁</span></div>
