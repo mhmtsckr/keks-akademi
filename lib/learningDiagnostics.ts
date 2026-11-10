@@ -12,6 +12,8 @@ export type TopicDiagnostic={
   subject:string;topic:string;signal:LearningSignal;
   confidence:'INSUFFICIENT'|'MULTI_DAY';
   totalQuestions:number;studyDays:number;
+  lastEvidenceDay:string;
+  otherPracticeQuestions:number;
   earlyAccuracy:number|null;recentAccuracy:number|null;
   earlyBlankRate:number|null;recentBlankRate:number|null;
   deltaPoints:number|null;
@@ -94,6 +96,8 @@ export function buildLearningDiagnostics(
       subject:group.subject,topic:group.topic,signal,
       confidence:sufficient?'MULTI_DAY':'INSUFFICIENT',
       totalQuestions:totals.q,studyDays:days.length,
+      lastEvidenceDay:days[days.length-1][0],
+      otherPracticeQuestions:totals.q-totals.selfReported,
       earlyAccuracy:sufficient?earlyAccuracy:null,recentAccuracy:sufficient?recentAccuracy:null,
       earlyBlankRate:sufficient?earlyBlankRate:null,recentBlankRate:sufficient?recentBlankRate:null,
       deltaPoints,studentReportedQuestions:totals.selfReported,
