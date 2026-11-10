@@ -28,6 +28,11 @@ type MizaTask={
   avgSecondsPerQuestion:number|null;
   targetSecondsPerQuestion:number|null;
   resourceEfficiencyStatus:string|null;
+  dailyStatus:'COMPLETED'|'LATE_COMPLETED'|'INCOMPLETE'|'UPCOMING'|null;
+  guidance:{
+    confidence:'LIMITED'|'SUPPORTED'|'MULTIPLE_SIGNALS';
+    nextStep:string;rationale:string;evidence:string[];
+  };
 };
 
 type Orchestration={
@@ -161,6 +166,17 @@ export function MizaLearningOrchestrator(){
         <div className="moduleEyebrow">MİZA · ŞİMDİ UYGULA</div>
         <h3>{nextTask.title}</h3>
         <p className="muted">{nextTask.why||'KEKS verisine göre şu anda en yüksek öncelikli görev.'}</p>
+        {nextTask.guidance&&<div className="notice" style={{marginBottom:10}}>
+          <strong>MİZA'nın önerdiği mikro adım</strong>
+          <p>{nextTask.guidance.nextStep}</p>
+          <small className="muted">{nextTask.guidance.rationale}</small>
+          <details style={{marginTop:7}}>
+            <summary>Kararın dayandığı veriler · {nextTask.guidance.confidence==='LIMITED'?'Sınırlı kanıt':nextTask.guidance.confidence==='SUPPORTED'?'Bir gözlem':'Birden çok gözlem'}</summary>
+            {(nextTask.guidance.evidence||[]).length
+              ?<ul>{nextTask.guidance.evidence.map((x,i)=><li key={i}>{x}</li>)}</ul>
+              :<p className="muted">Konuya özel yeterli ölçüm yok; öneri görev türüne dayanıyor.</p>}
+          </details>
+        </div>}
         {nextTask.masteryStatus==='RISKY'&&<div className="notice error" style={{marginBottom:10}}>
           <strong>Riskli çünkü:</strong> {(nextTask.masteryRiskReasons||[]).slice(0,2).join(' ')||'Konuya ait öğrenme sinyalleri zayıf.'}
           <div className="muted" style={{marginTop:6}}>
@@ -176,7 +192,7 @@ export function MizaLearningOrchestrator(){
           <span className="pill">{nextTask.source==='ACTION'?'KOÇ ÖNCELİĞİ':nextTask.source==='REVIEW_BATCH'?'GECİKMİŞ TEKRAR':'SIRADAKİ AKSİYON'}</span>
         </div>
         <div style={{marginTop:12}}>
-          <TaskControls task={nextTask} reviews={reviews.filter(x=>nextTask.reviewIds.includes(x.id))} onSaved={refreshed}/>
+          <TaskControls key={nextTask.id} task={nextTask} reviews={reviews.filter(x=>nextTask.reviewIds.includes(x.id))} onSaved={refreshed}/>
         </div>
       </div>}
 
@@ -200,9 +216,14 @@ export function MizaLearningOrchestrator(){
                 <strong>{task.title}</strong>
                 <span>{taskTarget(task)}{task.estimatedMinutes?' · ~'+task.estimatedMinutes+' dk':''}</span>
               </div>
-              <span className="pill">{task.completed?'TAMAMLANDI':task.source==='ACTION'?'KOÇ GÖREVİ':task.source==='REVIEW_BATCH'?'TEKRAR':'MİZA SIRASI'}</span>
+              <span className="pill">{task.dailyStatus==='LATE_COMPLETED'?'GEÇ TAMAMLANDI':task.completed?'TAMAMLANDI':task.source==='ACTION'?'KOÇ GÖREVİ':task.source==='REVIEW_BATCH'?'TEKRAR':'MİZA SIRASI'}</span>
             </div>
             {task.why&&<details><summary>Neden bu görev?</summary><p className="muted">{task.why}</p></details>}
+            {!task.completed&&task.guidance&&<details>
+              <summary>MİZA öğrenme adımı</summary>
+              <p>{task.guidance.nextStep}</p>
+              <small className="muted">{task.guidance.rationale}</small>
+            </details>}
             {!task.completed&&task.id!==nextTask?.id&&<TaskControls task={task} reviews={reviews.filter(x=>task.reviewIds.includes(x.id))} onSaved={refreshed}/>}
           </div>
         </article>)}
