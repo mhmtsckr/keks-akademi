@@ -12,6 +12,7 @@ export function SmartCoachDashboard(){
   const [reviews,setReviews]=useState<any[]>([]);
   const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [msg,setMsg]=useState('');
+  const [reviewBusy,setReviewBusy]=useState(false);
 
   async function load(){
     const [m,p,r]=await Promise.all([
@@ -26,11 +27,25 @@ export function SmartCoachDashboard(){
   useEffect(()=>{load()},[]);
 
   async function savePlan(){
-    setMsg('Haftalık program oluşturuluyor...');
-    const r=await fetch('/api/student/smart-plan',{method:'POST'});
-    const j=await r.json();
-    if(!r.ok){setMsg('Hata: '+(j.error||'Program oluşturulamadı.'));return}
-    setPlan(j.plan);setMsg('Akıllı haftalık program kaydedildi.');
+    setMsg('Haftalık taslak hazırlanıyor...');
+    try{
+      const r=await fetch('/api/student/smart-plan',{method:'POST',cache:'no-store'});
+      const j=await r.json();
+      if(!r.ok)throw new Error(j.error||'Taslak oluşturulamadı.');
+      setPlan(j.plan);
+      setMsg('Haftalık taslak güncellendi; koçun aktif programı değiştirilmedi.');
+    }catch(error){setMsg('Hata: '+(error instanceof Error?error.message:'Taslak oluşturulamadı.'));}
+  }
+
+  async function requestReview(){
+    setReviewBusy(true);
+    try{
+      const r=await fetch('/api/student/smart-plan',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'REQUEST_REVIEW'})});
+      const j=await r.json();
+      if(!r.ok)throw new Error(j.error||'Koç inceleme talebi oluşturulamadı.');
+      setMsg(j.alreadyPending?'Koçunun inceleme kutusunda bu taslak için açık talep var.':'Haftalık taslak koçunun incelemesine gönderildi; aktif plan değişmedi.');
+    }catch(error){setMsg('Hata: '+(error instanceof Error?error.message:'Talep gönderilemedi.'));}
+    finally{setReviewBusy(false);}
   }
 
   async function review(id:string,answer:string){
@@ -78,7 +93,12 @@ export function SmartCoachDashboard(){
           <MizaLogo/>
         </div>
         <p className="muted">Son doğruluk verileri, tamamlanmamış konular ve tekrar kuyruğuna göre açıklanabilir 7 günlük çalışma taslağı oluşturur. MİZA koçun hedefini veya müdahale kararını değiştirmez; taslak koçluk sürecinin yerine geçmez.</p>
-        <button className="btn primary" onClick={savePlan}>Haftalık Taslağı Oluştur</button>
+        <div className="row" style={{flexWrap:'wrap',gap:8}}>
+          <button className="btn primary" onClick={savePlan}>Haftalık Taslağı Yenile</button>
+          <button className="btn" onClick={requestReview} disabled={reviewBusy}>
+            {reviewBusy?'Koça iletiliyor…':'Taslağı Koçuma İlet'}
+          </button>
+        </div>
       </div>
 
       <div className="card dueReviewCard">
@@ -87,6 +107,23 @@ export function SmartCoachDashboard(){
         <p className="muted">Yanlış soru tekrar sistemindeki vadesi gelen sorular.</p>
       </div>
     </div>
+
+    {plan?.evidence&&<div className="card">
+      <div className="moduleEyebrow">AKILLI KOÇ · VERİ GÜVENİ</div>
+      <h3>{plan.evidence.confidence==='HIGH'?'Birden fazla güne yayılan güçlü gözlem':
+        plan.evidence.confidence==='MEDIUM'?'Orta düzeyde gözlem':'Ek ölçüm gerekli'}</h3>
+      <p className="muted">{plan.evidence.message}</p>
+      <div className="stack">
+        {(plan.evidence.subjects||[]).slice(0,4).map((x:any)=><div key={x.subject} className="notice">
+          <strong>{x.subject}</strong>
+          <div className="muted">{x.reason}</div>
+          <small>{x.priority==='REVIEW'?'Öncelik: Yanlış/boş analizli konu kontrolü':
+            x.priority==='MONITOR'?'Öncelik: Kısa test ve tekrar':
+            x.priority==='MAINTAIN'?'Güçlü alan: Düzenli pekiştirme':'Eksik kanıt: Farklı günlerde yeni soru seti'}</small>
+        </div>)}
+      </div>
+      <small className="muted">Öğrenci beyanı, bağımsız ölçme ve değerlendirme sonucunun yerine geçmez.</small>
+    </div>}
 
     {plan&&<div className="card weeklyPlanCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">7 GÜNLÜK PLAN</div><h2>Bu haftanın çalışma akışı</h2></div><span className="moduleIcon">▦</span></div>{plan.explanation&&<div className="notice"><strong>Plan neden böyle?</strong><div className="muted">{plan.explanation}</div></div>}<div className="weeklyPlanGrid">{plan.days.map((d:any)=><div className="dayPlan" key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR',{weekday:'long'})}</strong><span className="dayDate">{new Date(d.date).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}</span>{d.tasks.length===0?<p className="muted">Dinlenme / telafi</p>:d.tasks.map((t:any,i:number)=><div className="dayTask" key={i}><span>{t.type}</span><b>{t.title}</b><small>{t.duration} dk{t.questions?' · '+t.questions+' soru':''}</small>{t.reason&&<small className="muted">{t.reason}</small>}</div>)}</div>)}</div></div>}
 
