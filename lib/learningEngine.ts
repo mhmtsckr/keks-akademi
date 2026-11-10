@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import {dailyTaskStatus} from '@/lib/dailyTaskStatus';
 import { isFeatureEnabled } from '@/lib/systemConfig';
 import { aggregateInterventionPatterns,buildImpactHeadline,classifyCoachDecision,interventionKindLabel,summarizeImpactWindow,type InterventionKind } from '@/lib/coachInterventionImpact';
 import { rankGoalContributionAreas,targetNetFromBenchmarks } from '@/lib/goalDistance';
@@ -1317,7 +1318,7 @@ async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningP
   const [actions,reviews,topics,practice,mizaResults]=await Promise.all([
     actionIds.length?db.coachingAction.findMany({
       where:{studentId,id:{in:actionIds}},
-      select:{id:true,status:true,submission:{select:{id:true}}}
+      select:{id:true,status:true,taskDate:true,periodEnd:true,submission:{select:{id:true,submittedAt:true}}}
     }):Promise.resolve([]),
     reviewIds.length?db.reviewQueueItem.findMany({
       where:{studentId,id:{in:reviewIds}},
@@ -1338,6 +1339,9 @@ async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningP
   ]);
 
   const completedActions=new Set(actions.filter(x=>Boolean(x.submission)).map(x=>x.id));
+  const actionDailyStatuses=new Map(actions.map(action=>[
+    action.id,dailyTaskStatus({taskDate:action.taskDate,periodEnd:action.periodEnd,submittedAt:action.submission?.submittedAt||null})
+  ]));
   const reviewStatus=new Map(reviews.map(x=>[x.id,x.status]));
   const completedTopics=new Set(topics.filter(x=>x.completed).map(x=>x.subject+'|'+x.topic));
   const practiceTotals=new Map<string,number>();
@@ -1358,6 +1362,7 @@ async function hydrateTodayPlanCompletion(studentId:string,stored:TodayLearningP
       item.completed=true;
     }else if(item.source==='ACTION'&&typeof item.actionId==='string'){
       item.completed=completedActions.has(item.actionId);
+      item.dailyStatus=actionDailyStatuses.get(item.actionId)||'INCOMPLETE';
     }else if(item.source==='REVIEW_BATCH'&&Array.isArray(item.reviewIds)){
       const remaining=item.reviewIds.filter((id:string)=>reviewStatus.get(id)!=='COMPLETED');
       item.completed=remaining.length===0;
