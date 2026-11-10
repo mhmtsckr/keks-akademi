@@ -24,6 +24,18 @@ describe('otomatik koç görüşme hazırlığı',()=>{
     expect(result.notCompletedCount).toBe(1);
   });
 
+  it('koçun COMPLETED statüsü, öğrenci teslimi yoksa tamamlanma kanıtı değildir',()=>{
+    const rows=[
+      {id:'manual',title:'Geçmiş görevi işaretle',status:'COMPLETED',periodEnd:new Date('2026-09-25T12:00:00Z'),updatedAt:new Date('2026-09-26T12:00:00Z'),submission:null},
+      {id:'late',title:'Geç teslim',status:'RESCHEDULED',periodEnd:new Date('2026-09-24T12:00:00Z'),updatedAt:new Date('2026-09-24T12:00:00Z'),submission:{id:'s-late',submittedAt:new Date('2026-09-27T10:00:00Z')}}
+    ];
+    const result=summarizeSessionActions(rows,now);
+    expect(result.completedCount).toBe(1);
+    expect(result.completed[0].id).toBe('late');
+    expect(result.notCompletedCount).toBe(1);
+    expect(result.notCompleted[0].id).toBe('manual');
+  });
+
   it('tekrarları tamamlanan, bugün gelen ve geciken olarak ayırır',()=>{
     const rows=[
       {id:'1',status:'COMPLETED',dueAt:new Date('2026-09-26T09:00:00Z'),completedAt:new Date('2026-09-26T10:00:00Z'),lastCorrect:true,question:{subject:'Tarih',topic:'İlk Türk Devletleri'}},
