@@ -75,7 +75,8 @@ async function POST__handler(req:Request){
     db.questionBankItem.findMany({
       where:{examType:origin.examType,subject:origin.subject,topic:origin.topic,
        active:true,reviewStatus:'APPROVED'},
-      orderBy:{createdAt:'desc'},take:120
+      // Same-millisecond inserts need a stable tie-breaker for consistent selection.
+      orderBy:[{createdAt:'desc'},{id:'desc'}],take:120
     })
   ]);
   if(priorQuizzes.length>SUBJECT_PRACTICE_HISTORY_LIMIT||
