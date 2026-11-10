@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import {buildCoachEvidence} from '@/lib/coachEvidence';
 import {buildLearningDiagnostics} from '@/lib/learningDiagnostics';
+import {allocateWeeklyPriorities} from '@/lib/weeklyPlanPriorities';
 import { buildCapacityProfile,buildSubjectLearningModels,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
 import {publicEducationContext,resolveEducationLevelProfile,scalePracticeQuestionsForEducationLevel,subjectMatchesEducationLevel} from '@/lib/educationLevelProfile';
 
@@ -59,14 +60,19 @@ export async function computeGoalProgress(studentId:string){
 }
 
 export async function buildWeeklyPlan(studentId:string){
-  const [student,practice,topics,reviews,goal,capacity,subjectModels]=await Promise.all([
+  const [student,practice,topics,reviews,goal,capacity,subjectModels,coachingActions]=await Promise.all([
     db.student.findUnique({where:{id:studentId}}),
     db.practiceLog.findMany({where:{studentId},orderBy:{date:'desc'},take:100}),
     db.topicProgress.findMany({where:{studentId}}),
-    db.reviewQueueItem.findMany({where:{studentId,status:{in:['DUE','PENDING']}},orderBy:{dueAt:'asc'},take:30}),
+    db.reviewQueueItem.findMany({where:{studentId,status:{in:['DUE','PENDING']},dueAt:{lte:new Date(Date.now()+8*86400000)}},orderBy:{dueAt:'asc'},take:120,select:{id:true,dueAt:true}}),
     computeGoalProgress(studentId),
     buildCapacityProfile(studentId),
-    buildSubjectLearningModels(studentId)
+    buildSubjectLearningModels(studentId),
+    db.coachingAction.findMany({
+      where:{studentId,status:'ACTIVE',submission:{is:null},periodEnd:{gte:new Date(Date.now()-7*86400000)}},
+      select:{id:true,title:true,subject:true,topic:true,metricType:true,targetValue:true,taskDate:true,periodEnd:true},
+      orderBy:{periodEnd:'asc'},take:100
+    })
   ]);
   if(!student) throw new Error('Öğrenci bulunamadı');
   const educationProfile=resolveEducationLevelProfile(student.gradeLevel,student.academicTrack);
@@ -75,7 +81,7 @@ export async function buildWeeklyPlan(studentId:string){
   const evidence=buildCoachEvidence(eligiblePractice);
   const topicDiagnostics=buildLearningDiagnostics(eligiblePractice);
   // A single bad question is not enough to label a subject weak.
-  const weak=evidence.subjects.filter(x=>x.confidence!=='LOW')
+  const weak=evidence.subjects.filter(x=>x.confidence!=='LOW'&&(x.priority==='REVIEW'||x.priority==='MONITOR'))
     .map(x=>({subject:x.subject,accuracy:x.accuracy/100,questions:x.questions,priority:x.priority,reason:x.reason}));
   const incomplete=eligibleTopics.filter(x=>!x.completed);
   const subjectModelMap=new Map(subjectModels.map(x=>[x.subject,x]));
@@ -87,27 +93,37 @@ export async function buildWeeklyPlan(studentId:string){
   const today=new Date(Date.UTC(year,month-1,day,12,0,0));
   const lowCompletion=new Map((capacity.lowCompletionDays||[]).map(x=>[x.day,x.completionRate]));
   const weekday=(date:Date)=>new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Istanbul',weekday:'short'}).format(date);
-  const days=[] as any[];
-  for(let i=0;i<7;i++){
+  const calendar=Array.from({length:7},(_,i)=>{
     const date=new Date(today);date.setUTCDate(date.getUTCDate()+i);
     const historicalCompletion=lowCompletion.get(weekday(date))??null;
     const dayFactor=historicalCompletion!=null&&historicalCompletion<60?.75:historicalCompletion!=null&&historicalCompletion<75?.9:1;
-    const dayBudget=Math.max(30,Math.round(capacity.suggestedDailyMinutes*dayFactor));
-    const tasks:any[]=[];
-    let used=0;
+    return {date,key:dayKey(date),historicalCompletion,
+      dayBudget:Math.max(30,Math.min(360,Math.round((capacity.suggestedDailyMinutes||60)*dayFactor)))};
+  });
+  const priorities=allocateWeeklyPriorities(
+    calendar.map(d=>({key:d.key,budgetMinutes:d.dayBudget})),
+    coachingActions,reviews
+  );
+  const selectedTopicIds=new Set<string>();
+  const days=[] as any[];
+  for(let i=0;i<calendar.length;i++){
+    const {date,key,historicalCompletion,dayBudget}=calendar[i];
+    const reservation=priorities.byDay[key];
+    const tasks:any[]=[...reservation.tasks];
+    let used=reservation.reservedMinutes;
     const add=(task:any)=>{
       if(used+task.duration>dayBudget)return false;
       tasks.push(task);used+=task.duration;return true;
     };
-    const due=reviews.filter(r=>i===0?dayKey(r.dueAt)<=dayKey(date):dayKey(r.dueAt)===dayKey(date));
-    if(due.length)add({type:'REVIEW',title:`${Math.min(due.length,4)} yanlış soru tekrarı`,duration:Math.min(20,Math.max(8,due.length*4)),reason:'Bu soruların tekrar tarihi bugün olduğu için plana alındı.'});
-    const weakSub=weak[i%Math.max(weak.length,1)];
-    const topic=incomplete.find(t=>!weakSub||t.subject===weakSub.subject)||incomplete[i%Math.max(incomplete.length,1)];
+    const weakSub=weak.length?weak[i%weak.length]:undefined;
+    const topicCandidates=incomplete.filter(x=>!selectedTopicIds.has(x.id));
+    const topic=topicCandidates.find(x=>weakSub&&x.subject===weakSub.subject)
+      ||topicCandidates[0];
     const focusDuration=Math.min(capacity.recommendedFocusBlockMinutes||35,dayBudget);
-    if(topic)add({type:'TOPIC',title:`${topic.subject} · ${topic.topic}`,duration:focusDuration,reason:capacity.focusDropAfterMinutes
+    if(topic&&add({type:'TOPIC',title:`${topic.subject} · ${topic.topic}`,duration:focusDuration,reason:capacity.focusDropAfterMinutes
       ?`Uzun oturumlarda doğruluk düşüşü görüldüğü için konu bloğu ${focusDuration} dk ile sınırlandı.`
-      :'Konu ilerleme kaydında henüz tamamlanmadığı için gözlenen odak kapasitesine göre plana alındı.'});
-    if(weakSub){
+      :'Konu ilerleme kaydında henüz tamamlanmadığı için gözlenen odak kapasitesine göre plana alındı.'})))selectedTopicIds.add(topic.id);
+    if(weakSub&&i%2===0){
       const model=subjectModelMap.get(weakSub.subject);
       const questions=scalePracticeQuestionsForEducationLevel(dailyPracticeQuestionTarget({
         questionCapacity:capacity.questionCapacity,
@@ -171,6 +187,9 @@ export async function buildWeeklyPlan(studentId:string){
       recommendedWindow:capacity.bestWindow,
       plannedMinutes:used,
       capacityMinutes:dayBudget,
+      availableMinutes:dayBudget-used,
+      coachReservedMinutes:reservation.tasks.filter(x=>x.type==='COACH_ACTION').reduce((n,x)=>n+x.duration,0),
+      reviewReservedMinutes:reservation.tasks.filter(x=>x.type==='REVIEW').reduce((n,x)=>n+x.duration,0),
       historicalCompletion,
       tasks
     });
@@ -179,6 +198,15 @@ export async function buildWeeklyPlan(studentId:string){
     educationContext:publicEducationContext(educationProfile),
     evidence:{windowDays:evidence.windowDays,confidence:evidence.confidence,message:evidence.message,eligibleRecords:evidence.eligibleRecords,subjects:evidence.subjects.slice(0,8)},
     topicDiagnostics,
+    prioritySummary:{
+      coachTasksConsidered:coachingActions.length,
+      coachTasksIncluded:calendar.reduce((n,d)=>n+priorities.byDay[d.key].tasks.filter(x=>x.type==='COACH_ACTION').length,0),
+      coachTasksNeedingDecision:priorities.unallocatedCoachTasks,
+      allocatedReviewCount:priorities.allocatedReviewCount,
+      pendingReviewCount:priorities.pendingReviewCount,
+      reviewQueueTruncated:reviews.length===120,
+      coachQueueTruncated:coachingActions.length===100
+    },
     goal,
     capacityProfile:{
       plannedMinutes:capacity.plannedMinutes,
@@ -190,7 +218,7 @@ export async function buildWeeklyPlan(studentId:string){
       lowCompletionDays:capacity.lowCompletionDays,
       confidence:capacity.confidence
     },
-    explanation:'Bu plan; '+(educationProfile?educationProfile.label+' ders ve çalışma profilini, ':'')+'eğitim düzeyine uygun ders/kazanım havuzunu, vadesi gelen tekrarları ve akademik performansın yanında öğrencinin ölçülen gerçek çalışma süresini, verimli saat aralığını, odak bloğunu ve haftanın düşük tamamlama günlerini kullanarak oluşturulur. Beyan edilen süre tek başına plan kapasitesi değildir.',
+    explanation:'Bu öneri taslağı; '+(educationProfile?educationProfile.label+' ders ve çalışma profilini, ':'')+'önce koç tarafından atanmış görevleri, ardından vadesi gelen tekrarları günlük kapasiteye sığdırır. Geriye kalan süreye tamamlanmamış konular bir kez dağıtılır ve yeterli kanıt bulunan zayıf alanlar için dönüşümlü test önerilir. Koç görevlerinin ve tekrarların gerçek tarihleri değiştirilmez; sığmayan yük için koç kararı gerekir. Beyan edilen süre tek başına plan kapasitesi değildir.',
     inputs:{practiceRecords:eligiblePractice.length,incompleteTopics:incomplete.length,pendingReviews:reviews.length,capacityEvidenceDays:capacity.evidenceDays,subjectModels:subjectModels.length},
     days
   };
