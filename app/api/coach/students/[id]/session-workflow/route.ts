@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { buildExamNetChange,previousSessionDecisions,summarizeSessionActions,summarizeSessionReviews } from '@/lib/coachSessionPrep';
 import { classifyCoachDecision } from '@/lib/coachInterventionImpact';
 import {buildLearningDiagnostics} from '@/lib/learningDiagnostics';
+import {buildLearningFollowUps} from '@/lib/learningFollowUp';
 
 const postSchema=z.discriminatedUnion('action',[
   z.object({action:z.literal('prepare'),sessionId:z.string()}),
@@ -67,6 +68,7 @@ async function buildBrief(studentId:string){
   }
 
   const topicDiagnostics=buildLearningDiagnostics([...practice,...previousPractice],now,6);
+  const topicFollowUps=buildLearningFollowUps(topicDiagnostics,now,6);
   const currentPractice=practiceSummary(practice);
   const previousPracticeSummary=practiceSummary(previousPractice);
   const previousBySubject=new Map(previousPracticeSummary.subjects.map(x=>[x.subject,x]));
@@ -138,6 +140,7 @@ async function buildBrief(studentId:string){
     },
     netChange,
     topicDiagnostics,
+    topicFollowUps,
     reviews:reviewSummary,
     weeklyChange:{
       questions:{current:currentPractice.totalQuestions,previous:previousPracticeSummary.totalQuestions,delta:currentPractice.totalQuestions-previousPracticeSummary.totalQuestions},
