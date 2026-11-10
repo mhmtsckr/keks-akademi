@@ -37,7 +37,9 @@ async function POST__handler(req:Request){
 
   const target=Math.max(0,Number(task.targetValue||0));
   const achieved=Math.max(0,Number(input.achievedValue??target));
-  const completed=target<=0||achieved>=target;
+  // Confirmed application is a completed task; target attainment remains a separate metric.
+  const completed=true;
+  const achievementRate=target>0?Math.min(100,Math.round(achieved/target*100)):100;
   const now=new Date();
 
   // Coach actions always use /api/student/task-submissions; MİZA cannot mutate their status here.
@@ -67,6 +69,7 @@ async function POST__handler(req:Request){
     metricType:task.metricType,
     targetValue:target,
     achievedValue:achieved,
+    achievementRate,
     completed,
     recordedBy:'STUDENT',
     authority:'RESULT_ONLY_COACH_PLAN_UNCHANGED'
