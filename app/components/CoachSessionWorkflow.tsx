@@ -7,6 +7,8 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
   const [brief,setBrief]=useState<any>(null);
   const [selected,setSelected]=useState('');
   const [msg,setMsg]=useState('');
+  const [pendingTopic,setPendingTopic]=useState('');
+  const [followUpDone,setFollowUpDone]=useState<Record<string,boolean>>({});
 
   async function load(){
     const r=await fetch('/api/coach/students/'+studentId+'/operations');const j=await r.json();
@@ -19,6 +21,26 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
     if(bj.ok)setBrief(bj.brief);
   }
   useEffect(()=>{void load()},[]);
+
+  async function createLearningFollowUp(proposal:any){
+    const key=proposal.subject+'|'+proposal.topic;
+    if(pendingTopic||followUpDone[key])return;
+    setPendingTopic(key);setMsg('');
+    try{
+      const r=await fetch('/api/coach/students/'+studentId+'/learning-follow-up',{
+        method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({subject:proposal.subject,topic:proposal.topic})
+      });
+      const j=await r.json();
+      if(!r.ok)throw new Error(j.error||'Yeniden ölçüm takibi açılamadı.');
+      setFollowUpDone(x=>({...x,[key]:true}));
+      setMsg(j.alreadyPending
+        ?'Bu konu için açık bir koç takip görevi zaten var.'
+        :'Konu yeniden ölçüm önerisi koç takip kutuna eklendi. Öğrenci planı değiştirilmedi.');
+    }catch(e){
+      setMsg('Hata: '+(e instanceof Error?e.message:'Koç takibi oluşturulamadı.'));
+    }finally{setPendingTopic('');}
+  }
 
   async function prepare(){
     if(!selected)return setMsg('Hata: Önce bir seans seçin.');
@@ -112,6 +134,17 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
               <strong>{x.subject} · {x.topic}</strong>
               <p className="muted">{x.reason}</p>
               <p><strong>Koç için öneri:</strong> {x.nextAction}</p>
+              {brief.topicFollowUps?.find((p:any)=>p.subject===x.subject&&p.topic===x.topic)&&(()=>{
+                const proposal=brief.topicFollowUps.find((p:any)=>p.subject===x.subject&&p.topic===x.topic);
+                const key=proposal.subject+'|'+proposal.topic;
+                return <div className="row" style={{gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                  <small className="muted">{proposal.questionCount} yeni soru · önerilen kontrol günü: {new Date(proposal.dueDate+'T12:00:00+03:00').toLocaleDateString('tr-TR')}</small>
+                  <button type="button" className="btn" disabled={Boolean(pendingTopic)||followUpDone[key]}
+                    onClick={()=>void createLearningFollowUp(proposal)}>
+                    {followUpDone[key]?'Koç takibinde':pendingTopic===key?'Kaydediliyor…':'Koç Takibine Ekle'}
+                  </button>
+                </div>;
+              })()}
             </div>)}
           </div>
         </div>}
