@@ -11,7 +11,7 @@ import {recordMizaDailySummary} from '@/lib/mizaLearningService';
 const schema=z.object({
   taskId:z.string().min(1).max(300),
   achievedValue:z.number().min(0).max(10000).optional(),
-  completed:z.boolean().default(true)
+  confirmed:z.literal(true)
 });
 
 function dayBounds(){
@@ -31,27 +31,16 @@ async function POST__handler(req:Request){
   const orchestration=buildMizaTodayOrchestration(today);
   const task=orchestration.tasks.find(x=>x.id===input.taskId);
   if(!task)throw new HttpError(404,'Bugünkü MİZA görevi bulunamadı.');
-  if(!['ACTION_PROGRESS','SIMPLE_COMPLETE'].includes(task.resultMode)){
+  if(task.resultMode!=='SIMPLE_COMPLETE'){
     throw new HttpError(409,'Bu görev kendi ölçüm akışından kaydedilmelidir.');
   }
 
   const target=Math.max(0,Number(task.targetValue||0));
-  const achieved=Math.max(0,Number(input.achievedValue??(input.completed?target:0)));
-  const completed=input.completed&&(target<=0||achieved>=target);
+  const achieved=Math.max(0,Number(input.achievedValue??target));
+  const completed=target<=0||achieved>=target;
   const now=new Date();
 
-  if(task.resultMode==='ACTION_PROGRESS'){
-    if(!task.actionId)throw new HttpError(409,'Koç görevi bağlantısı bulunamadı.');
-    const action=await db.coachingAction.findFirst({where:{id:task.actionId,studentId:user.student.id}});
-    if(!action)throw new HttpError(404,'Koç görevi bulunamadı.');
-    await db.coachingAction.update({
-      where:{id:action.id},
-      data:{
-        currentValue:Math.min(achieved,action.targetValue),
-        status:completed?'COMPLETED':'ACTIVE'
-      }
-    });
-  }
+  // Coach actions always use /api/student/task-submissions; MİZA cannot mutate their status here.
 
   const {start,end}=dayBounds();
   const existing=await db.dailyLog.findFirst({
@@ -65,6 +54,8 @@ async function POST__handler(req:Request){
     },
     orderBy:{createdAt:'desc'}
   });
+
+  if(existing)throw new HttpError(409,'Bu günlük sonuç daha önce kaydedildi; öğrenci tarafından değiştirilemez.');
 
   const payload={
     type:'MIZA_TODAY_TASK_RESULT',
@@ -81,9 +72,7 @@ async function POST__handler(req:Request){
     authority:'RESULT_ONLY_COACH_PLAN_UNCHANGED'
   };
 
-  const log=existing
-    ?await db.dailyLog.update({where:{id:existing.id},data:{date:now,payload}})
-    :await db.dailyLog.create({data:{studentId:user.student.id,date:now,payload}});
+  const log=await db.dailyLog.create({data:{studentId:user.student.id,date:now,payload}});
 
   await db.auditLog.create({data:{
     actorUserId:user.id,
