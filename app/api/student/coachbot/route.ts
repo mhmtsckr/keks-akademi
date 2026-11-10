@@ -8,18 +8,21 @@ import { isFeatureEnabled } from '@/lib/systemConfig';
 import { ensureTodayLearningPlan,rebalanceMissedTasksCapacityAware } from '@/lib/learningEngine';
 import { buildMizaCoachHandoffReply,buildMizaTodayOrchestration,formatMizaTodayReply,isMizaCoachAuthorityIntent,isMizaTodayPlanIntent } from '@/lib/mizaOrchestrator';
 import {recordMizaDailySummary} from '@/lib/mizaLearningService';
+import {buildCoachEvidence} from '@/lib/coachEvidence';
 import {ensureMizaCapacityCoachAlert} from '@/lib/mizaCapacityEscalation';
 
 const schema=z.object({message:z.string().min(2).max(2000)});
 
 function fallbackReply(message:string,student:any){
-  const weak=student.practiceLogs?.slice(0,20).sort((a:any,b:any)=>a.net-b.net)[0];
+  const evidence=buildCoachEvidence(student.practiceLogs||[]);
+  const weak=evidence.subjects.find(x=>x.priority==='REVIEW'||x.priority==='MONITOR');
   const open=student.coachingActions?.find((x:any)=>x.status==='ACTIVE');
   const parts=[
     'KEKS rehber yanıtı:',
-    weak?(' Son kayıtlarda '+weak.subject+' alanı daha fazla tekrar gerektiriyor.'):'',
-    open?(' Aktif aksiyonun: '+open.title+' ('+open.currentValue+'/'+open.targetValue+').'):'',
-    ' Sorunu daha küçük bir göreve böl: 25–40 dakika odak + 5–10 dakika mola, ardından kısa aktif hatırlama uygula.'
+    weak?(' '+weak.subject+': '+weak.reason+' Önce bu alandan kısa test ve yanlış/boş analizi yap.')
+      :(' '+evidence.message),
+    open?(' Koçunun aktif görevi: '+open.title+' ('+open.currentValue+'/'+open.targetValue+').'):'',
+    ' Uygulanabilir adım: 15–25 dakika odaklan, 3 kaynaksız kontrol sorusu çöz, sonucu ve yanlış nedenini kaydet.'
   ];
   if(/plan|program|hafta/i.test(message))parts.push(' Bu hafta için zayıf derse 2 odak bloğu, 1 konu testi ve 1 yanlış soru tekrarı eklemeni öneririm.');
   if(/özet|özetle/i.test(message))parts.push(' Son çalışmalarını konu başlıkları, yanlışlar ve tamamlanmayan aksiyonlar üzerinden özetleyebilirim.');
