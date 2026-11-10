@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import {buildCoachEvidence} from '@/lib/coachEvidence';
 import { buildCapacityProfile,buildSubjectLearningModels,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
 import {publicEducationContext,resolveEducationLevelProfile,scalePracticeQuestionsForEducationLevel,subjectMatchesEducationLevel} from '@/lib/educationLevelProfile';
 
@@ -70,9 +71,10 @@ export async function buildWeeklyPlan(studentId:string){
   const educationProfile=resolveEducationLevelProfile(student.gradeLevel,student.academicTrack);
   const eligiblePractice=educationProfile?practice.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile)):practice;
   const eligibleTopics=educationProfile?topics.filter(x=>subjectMatchesEducationLevel(x.subject,educationProfile)):topics;
-  const bySubject=new Map<string,{q:number;c:number;w:number;n:number}>();
-  for(const p of eligiblePractice){const x=bySubject.get(p.subject)||{q:0,c:0,w:0,n:0};x.q+=p.total;x.c+=p.correct;x.w+=p.wrong;x.n+=p.net;bySubject.set(p.subject,x);}
-  const weak=[...bySubject.entries()].map(([subject,x])=>({subject,accuracy:x.q?x.c/x.q:1,net:x.n,questions:x.q})).sort((a,b)=>a.accuracy-b.accuracy);
+  const evidence=buildCoachEvidence(eligiblePractice);
+  // A single bad question is not enough to label a subject weak.
+  const weak=evidence.subjects.filter(x=>x.confidence!=='LOW')
+    .map(x=>({subject:x.subject,accuracy:x.accuracy/100,questions:x.questions,priority:x.priority,reason:x.reason}));
   const incomplete=eligibleTopics.filter(x=>!x.completed);
   const subjectModelMap=new Map(subjectModels.map(x=>[x.subject,x]));
   const today=new Date();today.setHours(0,0,0,0);
@@ -168,6 +170,7 @@ export async function buildWeeklyPlan(studentId:string){
   }
   return {
     educationContext:publicEducationContext(educationProfile),
+    evidence:{windowDays:evidence.windowDays,confidence:evidence.confidence,message:evidence.message,eligibleRecords:evidence.eligibleRecords,subjects:evidence.subjects.slice(0,8)},
     goal,
     capacityProfile:{
       plannedMinutes:capacity.plannedMinutes,
