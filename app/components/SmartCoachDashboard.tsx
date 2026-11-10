@@ -125,6 +125,25 @@ export function SmartCoachDashboard(){
       <small className="muted">Öğrenci beyanı, bağımsız ölçme ve değerlendirme sonucunun yerine geçmez.</small>
     </div>}
 
+    {Array.isArray(plan?.topicDiagnostics)&&plan.topicDiagnostics.length>0&&<div className="card">
+      <div className="moduleEyebrow">AKILLI KOÇ · FARKLI GÜNLERDE ÖĞRENME</div>
+      <h2>Konu bazlı kanıt ve sonraki adım</h2>
+      <p className="muted">Tek deneme başarı kabul edilmez. Son 35 günün farklı günlerdeki sonuçları karşılaştırılır; bunlar öğrencinin beyanına dayanan ölçümlerdir.</p>
+      <div className="stack">
+        {plan.topicDiagnostics.slice(0,5).map((x:any)=><article key={x.subject+'|'+x.topic} className="notice">
+          <div className="row" style={{justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+            <strong>{x.subject} · {x.topic}</strong>
+            <span className="pill">{x.signal==='REGRESSING'?'Gerileme sinyali':x.signal==='AT_RISK'?'Desteğe ihtiyaç var':
+              x.signal==='IMPROVING'?'Gelişme sinyali':x.signal==='CONSISTENT'?'İstikrarlı sonuç':
+              x.signal==='MIXED'?'Değişken sonuç':'Ek veri gerekli'}</span>
+          </div>
+          <p className="muted">{x.reason}</p>
+          <p><strong>Sonraki adım:</strong> {x.nextAction}</p>
+          <small className="muted">Kanıt: {x.studyDays} farklı gün · {x.totalQuestions} soru · {x.confidence==='MULTI_DAY'?'Karşılaştırılabilir günler':'Henüz karşılaştırma için yeterli değil'}</small>
+        </article>)}
+      </div>
+    </div>}
+
     {plan&&<div className="card weeklyPlanCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">7 GÜNLÜK PLAN</div><h2>Bu haftanın çalışma akışı</h2></div><span className="moduleIcon">▦</span></div>{plan.explanation&&<div className="notice"><strong>Plan neden böyle?</strong><div className="muted">{plan.explanation}</div></div>}<div className="weeklyPlanGrid">{plan.days.map((d:any)=><div className="dayPlan" key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR',{weekday:'long'})}</strong><span className="dayDate">{new Date(d.date).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}</span>{d.tasks.length===0?<p className="muted">Dinlenme / telafi</p>:d.tasks.map((t:any,i:number)=><div className="dayTask" key={i}><span>{t.type}</span><b>{t.title}</b><small>{t.duration} dk{t.questions?' · '+t.questions+' soru':''}</small>{t.reason&&<small className="muted">{t.reason}</small>}</div>)}</div>)}</div></div>}
 
     <div className="card trendCard">
