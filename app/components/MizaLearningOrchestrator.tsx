@@ -212,24 +212,27 @@ export function MizaLearningOrchestrator(){
 }
 
 function TaskControls({task,reviews,onSaved}:{task:MizaTask;reviews:any[];onSaved:(message:string)=>Promise<void>}){
-  const [correct,setCorrect]=useState('');
+  const [total,setTotal]=useState(String(task.targetValue||0));
   const [wrong,setWrong]=useState('');
   const [blank,setBlank]=useState('');
   const [reason,setReason]=useState('');
+  const [confirmed,setConfirmed]=useState(false);
   const [achieved,setAchieved]=useState(String(task.targetValue||0));
   const [answer,setAnswer]=useState<Record<string,string>>({});
   const [busy,setBusy]=useState(false);
 
   async function saveQuestions(){
-    const c=Number(correct||0),w=Number(wrong||0),b=Number(blank||0);
-    const total=c+w+b;
-    if(total<=0)return onSaved('Hata: En az bir soru sonucu girin.');
+    const totalQuestions=Number(total),w=Number(wrong||0),b=Number(blank||0);
+    if(![totalQuestions,w,b].every(n=>Number.isInteger(n)&&n>=0&&n<=2000)
+      ||totalQuestions<=0||w+b>totalQuestions)return onSaved('Hata: Toplam, yanlış ve boş sayıları geçerli olmalıdır.');
+    if(task.resultMode==='ACTION_QUESTIONS'&&!confirmed)return onSaved('Hata: Görev sonucu için öğrenci onayı gerekli.');
+    const c=totalQuestions-w-b;
     if(w>0&&!reason&&task.resultMode==='PRACTICE_QUESTIONS')return onSaved('Hata: Yanlış soru varsa yanlış nedenini seçin.');
     setBusy(true);
     try{
       const endpoint=task.resultMode==='ACTION_QUESTIONS'?'/api/student/task-submissions':'/api/student/progress';
       const body=task.resultMode==='ACTION_QUESTIONS'
-        ?{actionId:task.actionId,totalQuestions:total,correct:c,wrong:w,blank:b,errorReason:reason||null}
+        ?{actionId:task.actionId,confirmed:true,totalQuestions:totalQuestions,wrong:w,blank:b,errorReason:reason||null}
         :{action:'practice',examType:task.examType||'GENEL',subject:task.subject||'Genel',topic:task.topic||undefined,correct:c,wrong:w,blank:b,errorReason:reason||undefined};
       const r=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
       const j=await r.json();
@@ -239,12 +242,24 @@ function TaskControls({task,reviews,onSaved}:{task:MizaTask;reviews:any[];onSave
   }
 
   async function saveProgress(){
+    if(!confirmed)return onSaved('Hata: Kaydetmeden önce çalışmanı onaylamalısın.');
+    const achievedValue=Number(achieved);
+    if(!Number.isInteger(achievedValue)||achievedValue<0)return onSaved('Hata: Geçerli bir çalışma miktarı gir.');
     setBusy(true);
     try{
-      const r=await fetch('/api/student/miza/result',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({taskId:task.id,achievedValue:Number(achieved||0),completed:Number(achieved||0)>=task.targetValue})});
+      const isCoachTask=task.resultMode==='ACTION_PROGRESS';
+      const endpoint=isCoachTask?'/api/student/task-submissions':'/api/student/miza/result';
+      const body=isCoachTask
+        ?{actionId:task.actionId,confirmed:true,totalQuestions:0,wrong:0,blank:0,achievedValue}
+        :{taskId:task.id,confirmed:true,achievedValue};
+      const r=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
       const j=await r.json();
       if(!r.ok)return onSaved('Hata: '+(j.error||'Görev sonucu kaydedilemedi.'));
-      await onSaved(j.completed?'MİZA görevi tamamlandı olarak kaydetti.':'MİZA ilerlemeni kaydetti; görev henüz tamamlanmadı.');
+      await onSaved(j.dailyStatus==='LATE_COMPLETED'
+        ?'MİZA teslimini Geç Tamamlandı olarak kaydetti. Durum ve saat değiştirilemez.'
+        :j.completed||j.dailyStatus==='COMPLETED'
+          ?'MİZA görevi Tamamlandı olarak kaydetti. Kayıt değiştirilemez.'
+          :'MİZA çalışma bildirimini kaydetti.');
     }finally{setBusy(false)}
   }
 
@@ -274,12 +289,17 @@ function TaskControls({task,reviews,onSaved}:{task:MizaTask;reviews:any[];onSave
   if(task.resultMode==='ACTION_QUESTIONS'||task.resultMode==='PRACTICE_QUESTIONS'){
     return <div className="mizaResultBox">
       <div className="mizaResultInputs">
-        <label>Doğru<input type="number" min="0" value={correct} onChange={e=>setCorrect(e.target.value)}/></label>
+        <label>Toplam soru<input type="number" min="0" max="2000" value={total} onChange={e=>setTotal(e.target.value)}/></label>
+        <label>Doğru (otomatik)<input type="number" readOnly value={Math.max(0,Number(total||0)-Number(wrong||0)-Number(blank||0))}/></label>
         <label>Yanlış<input type="number" min="0" value={wrong} onChange={e=>setWrong(e.target.value)}/></label>
         <label>Boş<input type="number" min="0" value={blank} onChange={e=>setBlank(e.target.value)}/></label>
         <label>Yanlış nedeni<select value={reason} onChange={e=>setReason(e.target.value)}>{ERROR_REASONS.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
       </div>
-      <button className="btn primary" disabled={busy} onClick={saveQuestions}>{busy?'Kaydediliyor…':'Sonucu MİZA ile Kaydet'}</button>
+      {task.resultMode==='ACTION_QUESTIONS'&&<label className="row" style={{alignItems:'center',gap:8,marginTop:8}}>
+        <input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>
+        <span>Bu çalışmayı yaptığımı ve sonuçları onaylıyorum. Teslim sonradan değiştirilemez.</span>
+      </label>}
+      <button className="btn primary" disabled={busy||(task.resultMode==='ACTION_QUESTIONS'&&!confirmed)} onClick={saveQuestions}>{busy?'Kaydediliyor…':'Sonucu MİZA ile Kaydet'}</button>
     </div>;
   }
 
@@ -301,6 +321,10 @@ function TaskControls({task,reviews,onSaved}:{task:MizaTask;reviews:any[];onSave
 
   return <div className="mizaResultBox">
     <label className="mizaAchieved">Gerçekleşen {task.metricType==='MINUTES'?'dakika':'miktar'}<input type="number" min="0" value={achieved} onChange={e=>setAchieved(e.target.value)}/></label>
-    <button className="btn primary" disabled={busy} onClick={saveProgress}>{busy?'Kaydediliyor…':'Sonucu MİZA ile Kaydet'}</button>
+    <label className="row" style={{alignItems:'center',gap:8,marginTop:8}}>
+      <input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>
+      <span>Çalışmamı onaylıyorum. Sistem teslim zamanını ve durumunu belirler.</span>
+    </label>
+    <button className="btn primary" disabled={busy||!confirmed} onClick={saveProgress}>{busy?'Kaydediliyor…':'Sonucu MİZA ile Kaydet'}</button>
   </div>;
 }
