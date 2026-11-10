@@ -5,6 +5,8 @@ import { FormEvent,ReactNode,useEffect,useState } from 'react';
 export function CoachSessionWorkflow({studentId}:{studentId:string}){
   const [sessions,setSessions]=useState<any[]>([]);
   const [brief,setBrief]=useState<any>(null);
+  const [learningImpact,setLearningImpact]=useState<any[]>([]);
+  const [impactNote,setImpactNote]=useState('');
   const [selected,setSelected]=useState('');
   const [msg,setMsg]=useState('');
   const [pendingTopic,setPendingTopic]=useState('');
@@ -19,6 +21,12 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
     }
     const b=await fetch('/api/coach/students/'+studentId+'/session-workflow');const bj=await b.json();
     if(bj.ok)setBrief(bj.brief);
+    const impact=await fetch('/api/coach/students/'+studentId+'/learning-impact',{cache:'no-store'});
+    if(impact.ok){
+      const ij=await impact.json();
+      setLearningImpact(ij.items||[]);
+      setImpactNote(ij.truncated?'Son kayıtların bir bölümü analize dahil edilemedi; değerlendirme sınırlıdır.':'');
+    }
   }
   useEffect(()=>{void load()},[]);
 
@@ -34,6 +42,7 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
       const j=await r.json();
       if(!r.ok)throw new Error(j.error||'Yeniden ölçüm takibi açılamadı.');
       setFollowUpDone(x=>({...x,[key]:true}));
+      void load();
       setMsg(j.alreadyPending
         ?'Bu konu için açık bir koç takip görevi zaten var.'
         :'Konu yeniden ölçüm önerisi koç takip kutuna eklendi. Öğrenci planı değiştirilmedi.');
@@ -123,6 +132,35 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
             <p>Görev tamamlama: <strong>%{brief.weeklyChange?.taskCompletion?.current||0}</strong></p>
             <p>Odak: <strong>{brief.weeklyChange?.focusMinutes?.current||0} dk</strong></p>
           </BriefBlock>
+        </div>
+
+        <div className="card">
+          <div className="moduleEyebrow">MİZA · KOÇ MÜDAHALE ETKİ İZLEME</div>
+          <h3>Yeniden ölçümün gözlemlenen sonucu</h3>
+          <p className="muted">Koçun açtığı konu kontrollerinin önceki 14 gün ve sonraki en fazla 21 günlük soru sonuçları karşılaştırılır. Tekrar görevinin tamamlanması öğrenme kanıtı değildir.</p>
+          {impactNote&&<p className="muted">{impactNote}</p>}
+          {learningImpact.length===0
+            ?<p className="muted">Son 45 günde koçun açtığı yeniden ölçüm takibi bulunmuyor.</p>
+            :<div className="stack">
+              {learningImpact.slice(0,8).map((item:any)=><div className="notice" key={item.taskId}>
+                <div className="row" style={{justifyContent:'space-between',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                  <strong>{item.subject} · {item.topic}</strong>
+                  <span className="pill">{item.state==='IMPROVED_SIGNAL'?'Olumlu sinyal':
+                    item.state==='DECLINED_SIGNAL'?'Gerileme sinyali':
+                    item.state==='NO_CLEAR_CHANGE'?'Belirgin değişim yok':
+                    item.state==='WAITING_FOR_RECHECK'?'Yeniden ölçüm bekleniyor':'Kanıt yetersiz'}</span>
+                </div>
+                <p><strong>Önce:</strong> {item.baseline.questions} soru / {item.baseline.studyDays} gün
+                  {' · '}<strong>Sonra:</strong> {item.followUp.questions} soru / {item.followUp.studyDays} gün</p>
+                {item.accuracyDelta!==null
+                  ?<p>Doğruluk: %{item.baseline.accuracy} → %{item.followUp.accuracy}
+                    {' · '}<strong>{item.accuracyDelta>0?'+':''}{item.accuracyDelta} puan</strong></p>
+                  :<p className="muted">Karşılaştırılabilir iki dönem verisi henüz yok.</p>}
+                <p className="muted">{item.note}</p>
+                <p><strong>Önerilen koç adımı:</strong> {item.nextAction}</p>
+              </div>)}
+            </div>}
+          <small className="muted">Bunlar gözlemsel ilişkilerdir; müdahalenin değişime neden olduğu bilimsel olarak doğrulanmaz.</small>
         </div>
 
         {brief.topicDiagnostics?.length>0&&<div className="card">
