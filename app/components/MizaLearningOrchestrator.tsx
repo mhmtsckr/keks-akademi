@@ -233,7 +233,7 @@ export function MizaLearningOrchestrator(){
 }
 
 function TaskControls({task,reviews,onSaved}:{task:MizaTask;reviews:any[];onSaved:(message:string)=>Promise<void>}){
-  const [total,setTotal]=useState(String(task.targetValue||0));
+  const [total,setTotal]=useState('');
   const [wrong,setWrong]=useState('');
   const [blank,setBlank]=useState('');
   const [reason,setReason]=useState('');
@@ -246,7 +246,7 @@ function TaskControls({task,reviews,onSaved}:{task:MizaTask;reviews:any[];onSave
     const totalQuestions=Number(total),w=Number(wrong||0),b=Number(blank||0);
     if(![totalQuestions,w,b].every(n=>Number.isInteger(n)&&n>=0&&n<=2000)
       ||totalQuestions<=0||w+b>totalQuestions)return onSaved('Hata: Toplam, yanlış ve boş sayıları geçerli olmalıdır.');
-    if(task.resultMode==='ACTION_QUESTIONS'&&!confirmed)return onSaved('Hata: Görev sonucu için öğrenci onayı gerekli.');
+    if(!confirmed)return onSaved('Hata: Çalışma sonucu için öğrenci onayı gerekli.');
     const c=totalQuestions-w-b;
     if(w>0&&!reason&&task.resultMode==='PRACTICE_QUESTIONS')return onSaved('Hata: Yanlış soru varsa yanlış nedenini seçin.');
     setBusy(true);
@@ -316,11 +316,11 @@ function TaskControls({task,reviews,onSaved}:{task:MizaTask;reviews:any[];onSave
         <label>Boş<input type="number" min="0" value={blank} onChange={e=>setBlank(e.target.value)}/></label>
         <label>Yanlış nedeni<select value={reason} onChange={e=>setReason(e.target.value)}>{ERROR_REASONS.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
       </div>
-      {task.resultMode==='ACTION_QUESTIONS'&&<label className="row" style={{alignItems:'center',gap:8,marginTop:8}}>
+      {<label className="row" style={{alignItems:'center',gap:8,marginTop:8}}>
         <input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>
         <span>Bu çalışmayı yaptığımı ve sonuçları onaylıyorum. Teslim sonradan değiştirilemez.</span>
       </label>}
-      <button className="btn primary" disabled={busy||(task.resultMode==='ACTION_QUESTIONS'&&!confirmed)} onClick={saveQuestions}>{busy?'Kaydediliyor…':'Sonucu MİZA ile Kaydet'}</button>
+      <button className="btn primary" disabled={busy||!confirmed||!total.trim()} onClick={saveQuestions}>{busy?'Kaydediliyor…':'Sonucu MİZA ile Kaydet'}</button>
     </div>;
   }
 
