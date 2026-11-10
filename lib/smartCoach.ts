@@ -122,7 +122,7 @@ export async function buildWeeklyPlan(studentId:string){
     const focusDuration=Math.min(capacity.recommendedFocusBlockMinutes||35,dayBudget);
     if(topic&&add({type:'TOPIC',title:`${topic.subject} · ${topic.topic}`,duration:focusDuration,reason:capacity.focusDropAfterMinutes
       ?`Uzun oturumlarda doğruluk düşüşü görüldüğü için konu bloğu ${focusDuration} dk ile sınırlandı.`
-      :'Konu ilerleme kaydında henüz tamamlanmadığı için gözlenen odak kapasitesine göre plana alındı.'})))selectedTopicIds.add(topic.id);
+      :'Konu ilerleme kaydında henüz tamamlanmadığı için gözlenen odak kapasitesine göre plana alındı.'}))selectedTopicIds.add(topic.id);
     if(weakSub&&i%2===0){
       const model=subjectModelMap.get(weakSub.subject);
       const questions=scalePracticeQuestionsForEducationLevel(dailyPracticeQuestionTarget({
