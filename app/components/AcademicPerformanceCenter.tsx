@@ -55,6 +55,7 @@ export function AcademicPerformanceCenter({
   const topics=(report?.topics||[]).filter(matches);
   const formal=(report?.formalExamTopics||[]).filter(matches);
   const recommendations=(report?.recommendations||[]).filter(matches);
+  const errorReasons=(report?.errorReasons||[]).filter(matches);
   const isCoach=audience==='COACH';
   return <div className="stack">
     <section className="card">
@@ -77,6 +78,7 @@ export function AcademicPerformanceCenter({
           <span className="pill">{report.overview.questions} soru</span>
           <span className="pill">{report.subjects.length} ders analizi</span>
         </div>
+        <p className="muted"><strong>Tüm sınav ve programların toplam soru kaydı</strong> — aşağıdaki filtre ders, konu ve deneme ayrıntılarını değiştirir.</p>
         <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))'}}>
           {[
             ['Doğru',report.overview.correct],
@@ -151,9 +153,9 @@ export function AcademicPerformanceCenter({
         <div className="moduleEyebrow">YANLIŞ VE BOŞTAN ÖĞRENME</div>
         <h3>Yanlış nedeni kayıtları</h3>
         <p className="muted">Yanlış nedeni, tüm yanlış sorular için ayrı ayrı doğrulanmış değildir; kayıt bazlı bir açıklamadır.</p>
-        {report.errorReasons?.length
-          ?<div className="stack">{report.errorReasons.map((x:any)=><div className="row" style={{gap:12,justifyContent:'space-between',flexWrap:'wrap'}} key={x.code}>
-            <strong>{x.label}</strong>
+        {errorReasons.length
+          ?<div className="stack">{errorReasons.map((x:any)=><div className="row" style={{gap:12,justifyContent:'space-between',flexWrap:'wrap'}} key={x.examType+'|'+x.code}>
+            <strong>{x.examType} · {x.label}</strong>
             <span className="muted">{x.records} kayıt · Bu kayıtlarda {x.wrongQuestionsInRecords} yanlış</span>
           </div>)}</div>
           :<p className="muted">Yanlış nedeni içeren kayıt yok.</p>}
