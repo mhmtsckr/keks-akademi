@@ -43,6 +43,38 @@ describe('Akademik Performans Merkezi / rol ve gizlilik',()=>{
     expect(response.status).toBe(200);
     expect((await response.json()).report.overview.questions).toBe(10);
   });
+  it('öğrenci ve koç beş haftalık ritmi ve kaynak farkını aynı kimlikle görür',async()=>{
+    await db.practiceLog.create({data:{
+      studentId,examType:'TYT',subject:'Türkçe',topic:'Ana düşünce',
+      date:new Date(Date.now()-26*3600000),
+      total:12,correct:12,wrong:0,blank:0,net:12
+    }});
+    await db.examAnalyticsRecord.createMany({data:[
+      {studentId,examType:'TYT',subject:'Türkçe',topic:'Ana düşünce',
+        examDate:new Date(Date.now()-26*3600000),correct:0,wrong:6,blank:0},
+      {studentId,examType:'TYT',subject:'Türkçe',topic:'Ana düşünce',
+        examDate:new Date(Date.now()-3600000),correct:1,wrong:5,blank:0}
+    ]});
+    mocked.requireRole.mockResolvedValue({
+      role:'STUDENT',id:studentUserId,student:{id:studentId}
+    });
+    const studentResponse=await STUDENT_GET();
+    expect(studentResponse.status).toBe(200);
+    const studentReport=(await studentResponse.json()).report;
+    expect(studentReport.weeklyEvidence[0].weeks).toHaveLength(5);
+    expect(studentReport.topicConcordance[0]).toMatchObject({
+      examType:'TYT',subject:'Türkçe',topic:'Ana düşünce',
+      status:'CONFLICTING',practiceQuestions:22,examQuestions:12
+    });
+    expect(studentReport.sourceQuality.contradictoryTopics).toBe(1);
+    mocked.requireRole.mockResolvedValue({
+      role:'COACH',id:coachUserId,coachProfile:{id:coachProfileId}
+    });
+    const coachResponse=await COACH_GET(new Request(url),params(studentId));
+    const coachReport=(await coachResponse.json()).report;
+    expect(coachReport.topicConcordance).toEqual(studentReport.topicConcordance);
+    expect(coachReport.weeklyEvidence).toEqual(studentReport.weeklyEvidence);
+  });
   it('başka koçun öğrenci raporuna erişimi reddedilir',async()=>{
     const outsider=await db.user.create({data:{name:'Başka koç',role:'COACH',status:'ACTIVE'}});
     const profile=await db.coachProfile.create({data:{userId:outsider.id}});
