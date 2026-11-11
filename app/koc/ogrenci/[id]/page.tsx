@@ -20,6 +20,7 @@ import { MonthlyDevelopmentReport } from '@/app/components/MonthlyDevelopmentRep
 import { displayExamGroupWithTrack,getAdultExamGroup,isAgsOabtStudentRecord } from '@/lib/agsExamOptions';
 import { getEffectiveOabtField } from '@/lib/oabtFieldApproval';
 import { CoachLearningIntelligence } from '@/app/components/CoachLearningIntelligence';
+import { AcademicPerformanceCenter } from '@/app/components/AcademicPerformanceCenter';
 import { CoachResourceSummary } from '@/app/components/CoachResourceSummary';
 import { CoachStudentAlignmentSignals } from '@/app/components/CoachStudentAlignmentSignals';
 import { CoachPlanSimulator } from '@/app/components/CoachPlanSimulator';
@@ -118,6 +119,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
           {href:'#program',title:'Kişisel Çalışma Planı',description:student.plans.filter(x=>x.active).length+' aktif plan'},
           {href:'#ogrenci-koc-uyumu',title:'Öğrenci–Koç Uyum Sinyalleri',description:'Görev uygulaması, görüşme devamlılığı ve plan gerçekçiliği',badge:'YENİ'},
           {href:'#plan-simulatoru',title:'Plan Simülatörü',description:'Süre, çalışma günü ve deneme sıklığı için what-if analizi',badge:'YENİ'},
+          {href:'#akademik-performans-merkezi',title:'Akademik Performans Merkezi',description:'Ders ve konu öncelikleri, ölçüm güvenilirliği, yanlış–boş analizi',badge:'YENİ'},
           {href:'#denemeler',title:'Deneme & Soru Performansı',description:student.examResults.length+' deneme · '+student.practiceLogs.length+' soru çözüm kaydı'},
           {href:'#hedef',title:'Hedef Yönetimi',description:student.goal?'Hedef tanımlı':'Hedef bilgisi bekleniyor'}
         ]},
@@ -143,6 +145,7 @@ export default async function CoachStudentPage({params}:{params:Promise<{id:stri
     </section>
     <section id="aylik-keks-gelisim-raporu" className="section section-anchor"><MonthlyDevelopmentReport studentId={student.id} audience="COACH"/></section>\n    <section id="gelisim-zaman-cizelgesi" className="section section-anchor"><StudentDevelopmentTimeline studentId={student.id} audience="COACH"/></section>
     <section id="learning-engine" className="section section-anchor"><CoachLearningIntelligence studentId={student.id}/></section>
+    <section id="akademik-performans-merkezi" className="section section-anchor"><AcademicPerformanceCenter studentId={student.id} audience="COACH"/></section>
     <section id="ogrenci-koc-uyumu" className="section section-anchor"><CoachStudentAlignmentSignals studentId={student.id}/></section>
     <section id="plan-simulatoru" className="section section-anchor"><CoachPlanSimulator studentId={student.id}/></section>
     <section id="kaynak-takibi" className="section section-anchor"><CoachResourceSummary studentId={student.id}/></section>
