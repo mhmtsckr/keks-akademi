@@ -1,4 +1,5 @@
 import {buildLearningDiagnostics,type LearningSignal} from '@/lib/learningDiagnostics';
+import {buildAcademicEvidenceConsistency} from '@/lib/academicEvidenceConsistency';
 
 /** Descriptive learning signals only. No mastery or causal claims. */
 export type PerformancePractice={
@@ -166,11 +167,15 @@ export function buildAcademicPerformanceCenter(
       ...counts,recordCount:rows.length};
   }).sort((a,b)=>b.questions-a.questions).slice(0,12);
   const totalReported=valid.reduce((n,x)=>n+(x.taskSubmissionId?x.total:0),0);
+  const evidenceConsistency=buildAcademicEvidenceConsistency(practice,exams,now);
   return {
     windowDays:35,from:new Date(oldest).toISOString().slice(0,10),through:today,
     overview:{...all,reportedQuestions:totalReported,
       otherPracticeQuestions:all.questions-totalReported,excludedPractice},
     subjects,topics,errorReasons,formalExamTopics,
+    weeklyEvidence:evidenceConsistency.weekly,
+    topicConcordance:evidenceConsistency.topics,
+    sourceQuality:evidenceConsistency.sourceQuality,
     examEvidenceRecords:validExams.length,
     recommendations:subjects.slice(0,5).map(x=>({
       examType:x.examType,subject:x.subject,priority:x.priority,
@@ -181,6 +186,6 @@ export function buildAcademicPerformanceCenter(
         :x.priority==='COLLECT_EVIDENCE'?'Farklı günlerde en az 24 geçerli soru verisi biriktir.'
         :'Bir hafta sonra yeni soru türleriyle kalıcılık ve transferi yeniden kontrol et.'
     })),
-    limitations:'Soru çözüm kayıtları öğrenci girişleri içerebilir; öğrenci görev teslimleri ayrıca işaretlidir. Diğer pratik kayıtları da bağımsız sınav kanıtı değildir. Deneme soru analizleri ayrı gösterilir ve toplam pratiğe eklenerek çift sayılmaz. Yanlış nedeni tek bir kayıt için girilir; o kayıttaki her yanlış sorunun kesin nedeni sayılamaz. Dönemsel doğruluk farkı nedensel etki veya kalıcı öğrenme kanıtı değildir.'
+    limitations:'Soru çözüm kayıtları öğrenci girişleri içerebilir; öğrenci görev teslimleri ayrıca işaretlidir. Diğer pratik kayıtları da bağımsız sınav kanıtı değildir. Deneme soru analizleri ayrı gösterilir ve toplam pratiğe eklenerek çift sayılmaz. Yanlış nedeni tek bir kayıt için girilir; o kayıttaki her yanlış sorunun kesin nedeni sayılamaz. Dönemsel doğruluk farkı nedensel etki veya kalıcı öğrenme kanıtı değildir. '+evidenceConsistency.limitations
   };
 }
