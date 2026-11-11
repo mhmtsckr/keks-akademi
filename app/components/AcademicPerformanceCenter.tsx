@@ -9,6 +9,13 @@ const trendLabels:Record<string,string>={
   MEASURE_MORE:'Karşılaştırma verisi yetersiz',
   IMPROVING:'Olumlu eğilim',DECLINING:'Düşüş eğilimi',STEADY:'Sınırlı değişim'
 };
+const concordanceLabels:Record<string,string>={
+  CONFLICTING:'Kaynaklar arası belirgin fark',
+  BOTH_NEED_SUPPORT:'İki kaynakta da destek sinyali',
+  BOTH_HIGH:'İki kaynakta yüksek doğruluk',
+  MIXED:'Karma görünüm',
+  INSUFFICIENT:'Karşılaştırma için veri yetersiz'
+};
 const topicLabels:Record<string,string>={
   REGRESSING:'Düşüş sinyali',AT_RISK:'Destek gerektiren sinyal',
   MEASURE_MORE:'Ölçüm eksik',MIXED:'Karışık sinyal',
@@ -56,6 +63,8 @@ export function AcademicPerformanceCenter({
   const formal=(report?.formalExamTopics||[]).filter(matches);
   const recommendations=(report?.recommendations||[]).filter(matches);
   const errorReasons=(report?.errorReasons||[]).filter(matches);
+  const weeklyEvidence=(report?.weeklyEvidence||[]).filter(matches);
+  const topicConcordance=(report?.topicConcordance||[]).filter(matches);
   const isCoach=audience==='COACH';
   return <div className="stack">
     <section className="card">
@@ -106,6 +115,66 @@ export function AcademicPerformanceCenter({
       </>}
     </section>
     {report&&<>
+      <section className="card">
+        <div className="moduleEyebrow">5 HAFTALIK ÇALIŞMA RİTMİ · GÖZLEMLENEN KAYITLAR</div>
+        <h3>Soru hacmi, çalışma günü ve doğruluk birlikte</h3>
+        <p className="muted">Her dönem yedi takvim günüdür (İstanbul saati). Soru sayısı azalınca bu tek başına başarısızlık; doğruluk yükselince de kesin öğrenme anlamına gelmez. Her hafta en az 12 soru ve iki ayrı çalışma günü, yalnızca tanımlayıcı değerlendirme için asgari eşiktir.</p>
+        {weeklyEvidence.length===0
+          ?<p className="muted">Seçilen program için son 35 günde haftalık soru kaydı bulunmuyor.</p>
+          :<div className="stack">{weeklyEvidence.slice(0,6).map((series:any)=>{
+            const maximum=Math.max(12,...series.weeks.map((x:any)=>x.questions));
+            return <div className="notice" key={series.examType}>
+              <strong>{series.examType} · Haftalık dağılım</strong>
+              {series.weeks.map((week:any)=><div key={week.start} style={{marginTop:10}}>
+                <div className="row" style={{justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+                  <small>{week.start} – {week.end}</small>
+                  <small className="muted">{week.questions} soru · {week.studyDays} gün ·
+                    {' '}doğruluk {percent(week.accuracy)}
+                    {week.evidence==='MULTI_DAY'?' · Çok günlü kanıt':' · Veri sınırlı'}
+                  </small>
+                </div>
+                <progress aria-label={series.examType+' '+week.start+' soru hacmi'} value={week.questions} max={maximum}
+                  style={{width:'100%',height:9}}/>
+              </div>)}
+            </div>;
+          })}</div>}
+      </section>
+      <section className="card">
+        <div className="moduleEyebrow">DENEME – PRATİK KANIT KARŞILAŞTIRMASI</div>
+        <h3>İki kaynağın aynı konu için anlattığı sonuç uyuşuyor mu?</h3>
+        <p className="muted">Pratik ve deneme soru sonuçları ayrı sayılır. Karşılaştırma için pratikte en az 20 soru/2 gün, deneme analizinde en az 10 soru/2 farklı gün gerekir. Deneme analizi kaydı da bağımsız doğrulanmış bir sınav sonucu olmayabilir.</p>
+        {report.sourceQuality?.contradictoryTopics>0&&<p className="notice">
+          <strong>{report.sourceQuality.contradictoryTopics} konuda kaynaklar arasında belirgin doğruluk farkı var.</strong>
+          {' '}Bu sonuç öğrenme eksikliği tanısı değil; koçun soru türü ve güçlük karşılaştırması yapması için inceleme sinyalidir.
+        </p>}
+        {topicConcordance.length===0
+          ?<p className="muted">Bu sınav/program için karşılaştırılabilecek konu kaydı bulunmuyor.</p>
+          :<div className="stack">{topicConcordance.slice(0,12).map((topic:any)=>
+            <details className="notice" key={topic.examType+'|'+topic.subject+'|'+topic.topic}>
+              <summary>
+                <strong>{topic.examType} · {topic.subject} · {topic.topic}</strong>
+                {' · '}{concordanceLabels[topic.status]||topic.status}
+              </summary>
+              <p>Pratik: <strong>{topic.practiceQuestions} soru / {topic.practiceDays} gün</strong>
+                {' · '}Doğruluk {percent(topic.practiceAccuracy)}</p>
+              <p>Deneme konu analizi: <strong>{topic.examQuestions} soru / {topic.examDays} gün</strong>
+                {' · '}Doğruluk {percent(topic.examAccuracy)}</p>
+              {topic.practiceReportedQuestions>0&&<p className="muted">
+                Pratik kaydının {topic.practiceReportedQuestions} sorusu öğrenci görev tesliminden geliyor.
+              </p>}
+              {topic.accuracyGapPoints!=null&&<p><strong>Pratik − deneme farkı:</strong>
+                {' '}{change(topic.accuracyGapPoints)}</p>}
+              <p className="muted">{topic.explanation}</p>
+              <p><strong>{isCoach?'Koçun değerlendirebileceği adım:':'Önerilen yeniden ölçüm:'}</strong>
+                {' '}{topic.action}</p>
+            </details>)}</div>}
+        {report.sourceQuality&&(report.sourceQuality.excludedPractice>0||
+          report.sourceQuality.excludedExams>0)&&<p className="muted">
+          Haftalık ve çapraz kanıt analizinden dışlanan kayıtlar:
+          {' '}pratik {report.sourceQuality.excludedPractice},
+          {' '}deneme analizi {report.sourceQuality.excludedExams}.
+        </p>}
+      </section>
       <section className="card">
         <div className="moduleEyebrow">DERS BAZLI İLERLEME</div>
         <h3>Öncelik sırasına göre dersler</h3>
