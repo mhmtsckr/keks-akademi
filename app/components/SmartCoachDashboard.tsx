@@ -9,6 +9,7 @@ function pctWidth(v:number|null){return Math.max(0,Math.min(100,v??0))+'%';}
 export function SmartCoachDashboard(){
   const [metrics,setMetrics]=useState<any>(null);
   const [plan,setPlan]=useState<any>(null);
+  const [approvedPlan,setApprovedPlan]=useState<any>(null);
   const [adherence,setAdherence]=useState<any>(null);
   const [reviews,setReviews]=useState<any[]>([]);
   const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
@@ -23,7 +24,7 @@ export function SmartCoachDashboard(){
       fetch('/api/student/plan-adherence',{cache:'no-store'}).then(x=>x.json()).catch(()=>({ok:false}))
     ]);
     if(m.ok)setMetrics(m);
-    if(p.ok)setPlan(p.plan);
+    if(p.ok){setPlan(p.plan);setApprovedPlan(p.activePlan||null);}
     if(r.ok)setReviews(r.items||[]);
     if(a.ok)setAdherence(a);
   }
@@ -147,6 +148,24 @@ export function SmartCoachDashboard(){
       </div>
     </div>}
 
+    {approvedPlan&&<div className="card">
+      <div className="moduleEyebrow">KOÇ ONAYLI · ETKİN HAFTALIK PROGRAM</div>
+      <h2>Koçumun onayladığı çalışma planı</h2>
+      <p className="muted">{approvedPlan.title} · Onay tarihi: {new Date(approvedPlan.createdAt).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'})}</p>
+      <p className="muted">Bu bölüm etkinleştirilmiş programı gösterir. Aşağıdaki otomatik öneri taslağı koç onayı olmadan bu planı değiştiremez.</p>
+      <div className="stack">
+        {(approvedPlan.days||[]).slice(0,7).map((d:any,i:number)=><div className="notice" key={d.date||i}>
+          <strong>{new Date(d.date).toLocaleDateString('tr-TR',{
+            timeZone:'Europe/Istanbul',weekday:'long',day:'numeric',month:'long'
+          })}</strong>
+          <p className="muted">Planlanan: {d.plannedMinutes??'—'} dk · Kapasite: {d.capacityMinutes??'—'} dk</p>
+          {Array.isArray(d.tasks)?d.tasks.slice(0,8).map((t:any,j:number)=><p key={t.actionId||t.reviewIds?.join('|')||j}>
+            {t.title||t.type} <small className="muted">· {t.duration??'—'} dk</small>
+          </p>):<p className="muted">Bu güne ait görev listesi bulunmuyor.</p>}
+        </div>)}
+      </div>
+    </div>}
+
     {adherence&&<div className="card">
       <div className="moduleEyebrow">AKILLI KİŞİSEL PLAN · GERÇEKLEŞME İZLEME</div>
       <h3>Onaylı planda gerçekleşen çalışmalar</h3>
@@ -198,7 +217,7 @@ export function SmartCoachDashboard(){
         <p className="muted">Veri sınırına ulaşıldı. Bu plan, mevcut tüm görevleri veya tekrarları kapsamıyor olabilir.</p>}
     </div>}
 
-    {plan&&<div className="card weeklyPlanCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">7 GÜNLÜK PLAN</div><h2>Bu haftanın çalışma akışı</h2></div><span className="moduleIcon">▦</span></div>{plan.explanation&&<div className="notice"><strong>Plan neden böyle?</strong><div className="muted">{plan.explanation}</div></div>}<div className="weeklyPlanGrid">{plan.days.map((d:any)=><div className="dayPlan" key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR',{weekday:'long'})}</strong><span className="dayDate">{new Date(d.date).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}</span><small className="muted">Plan: {d.plannedMinutes} / {d.capacityMinutes} dk · Kalan {d.availableMinutes??Math.max(0,d.capacityMinutes-d.plannedMinutes)} dk</small>{d.tasks.length===0?<p className="muted">Dinlenme / telafi</p>:d.tasks.map((t:any,i:number)=><div className="dayTask" key={i}><span>{t.type==='COACH_ACTION'?'KOÇ GÖREVİ':t.type==='REVIEW'?'TEKRAR':t.type==='TOPIC'?'KONU':t.type==='PRACTICE'?'SORU':'ÇALIŞMA'}</span><b>{t.title}</b><small>{t.duration} dk{t.questions?' · '+t.questions+' soru':''}</small>{t.reason&&<small className="muted">{t.reason}</small>}</div>)}</div>)}</div></div>}
+    {plan&&<div className="card weeklyPlanCard"><div className="moduleHeaderRow"><div><div className="moduleEyebrow">7 GÜNLÜK ÖNERİ TASLAĞI</div><h2>Bu haftanın çalışma akışı</h2></div><span className="moduleIcon">▦</span></div>{plan.explanation&&<div className="notice"><strong>Plan neden böyle?</strong><div className="muted">{plan.explanation}</div></div>}<div className="weeklyPlanGrid">{plan.days.map((d:any)=><div className="dayPlan" key={d.date}><strong>{new Date(d.date).toLocaleDateString('tr-TR',{weekday:'long'})}</strong><span className="dayDate">{new Date(d.date).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}</span><small className="muted">Plan: {d.plannedMinutes} / {d.capacityMinutes} dk · Kalan {d.availableMinutes??Math.max(0,d.capacityMinutes-d.plannedMinutes)} dk</small>{d.tasks.length===0?<p className="muted">Dinlenme / telafi</p>:d.tasks.map((t:any,i:number)=><div className="dayTask" key={i}><span>{t.type==='COACH_ACTION'?'KOÇ GÖREVİ':t.type==='REVIEW'?'TEKRAR':t.type==='TOPIC'?'KONU':t.type==='PRACTICE'?'SORU':'ÇALIŞMA'}</span><b>{t.title}</b><small>{t.duration} dk{t.questions?' · '+t.questions+' soru':''}</small>{t.reason&&<small className="muted">{t.reason}</small>}</div>)}</div>)}</div></div>}
 
     <div className="card trendCard">
       <div className="moduleHeaderRow"><div><div className="moduleEyebrow">NET TRENDLERİ</div><h2>Ders bazlı gelişim</h2></div><span className="moduleIcon">⌁</span></div>
