@@ -201,6 +201,9 @@ export function SmartCoachDashboard(){
         <span className="pill">{plan.prioritySummary.coachTasksIncluded} koç görevi taslakta</span>
         <span className="pill">{plan.prioritySummary.allocatedReviewCount} tekrar önerilen günlere dağıtıldı</span>
         <span className="pill">Günlük öneri: {plan.capacityProfile?.suggestedDailyMinutes||'—'} dk</span>
+        {plan.prioritySummary.academicInterventionsSuggested>0&&<span className="pill">
+          Akademik kanıt incelemesi taslağı: {plan.prioritySummary.academicInterventionsSuggested}
+        </span>}
       </div>
       <p className="muted">Bunlar yalnızca taslak önceliklerdir. Gerçek koç görevlerinin ve tekrarların tarihleri değişmedi; yeni görevler öğrenci hesabına otomatik eklenmedi.</p>
       {plan.prioritySummary.coachTasksNeedingDecision?.length>0&&<div className="notice error">
@@ -209,6 +212,10 @@ export function SmartCoachDashboard(){
         {plan.prioritySummary.coachTasksNeedingDecision.slice(0,5).map((x:any)=>
           <p key={x.id}><strong>{x.title}</strong>: {x.minutes} dk — {x.reason}</p>)}
       </div>}
+      {plan.prioritySummary.academicInterventionsUnscheduled>0&&<p className="muted">
+        Bu haftanın kalan kapasitesine alınmayan akademik inceleme önerisi: {plan.prioritySummary.academicInterventionsUnscheduled}.
+        Bunlar öğrencinin zorunlu görevi değildir; koç ek değerlendirme yapabilir.
+      </p>}
       {plan.prioritySummary.pendingReviewCount>0&&<div className="notice">
         <strong>Henüz taslağa sığmayan {plan.prioritySummary.pendingReviewCount} tekrar var.</strong>
         <p className="muted">Bu sorular tamamlandı kabul edilmez. Mevcut tekrar kuyruğunda durur; koçla kapasite düzenlenebilir.</p>
