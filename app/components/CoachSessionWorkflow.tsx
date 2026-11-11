@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent,ReactNode,useEffect,useState } from 'react';
+import {CoachWeeklyPlanApproval} from './CoachWeeklyPlanApproval';
 
 export function CoachSessionWorkflow({studentId}:{studentId:string}){
   const [sessions,setSessions]=useState<any[]>([]);
@@ -81,6 +82,7 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
   const selectedSession=sessions.find(x=>x.id===selected);
 
   return <div className="coachSessionFlow">
+    <CoachWeeklyPlanApproval studentId={studentId} onActivated={()=>void load()}/>
     <div className="card">
       <div className="moduleHeaderRow">
         <div>
