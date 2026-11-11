@@ -7,6 +7,7 @@ vi.mock('@/lib/systemConfig',()=>({isFeatureEnabled:mocked.enabled}));
 vi.mock('@/lib/smartCoach',()=>({buildWeeklyPlan:mocked.plan}));
 import {db,resetDb} from './db';
 import {GET,POST} from '@/app/api/coach/students/[id]/smart-plan/route';
+import {GET as STUDENT_GET} from '@/app/api/student/smart-plan/route';
 
 const url='http://localhost/api/coach/students/test/smart-plan';
 const params=(id:string)=>({params:Promise.resolve({id})});
@@ -19,7 +20,7 @@ const plan=(title:string)=>({
   prioritySummary:{coachTasksNeedingDecision:[],pendingReviewCount:0},
   explanation:'Öğrenci davranışına dayalı yedi günlük taslak.'
 });
-let ownerId:string,studentId:string,coachId:string;
+let ownerId:string,studentId:string,coachId:string,studentUserId:string;
 beforeEach(async()=>{
   await resetDb();vi.clearAllMocks();
   const coach=await db.user.create({data:{name:'Koç',role:'COACH',status:'ACTIVE'}});
@@ -31,7 +32,7 @@ beforeEach(async()=>{
     userId:user.id,coachId:profile.id,fullName:'Öğrenci',
     studentCode:'SMART_APPROVAL_STUDENT'
   }});
-  studentId=student.id;
+  studentId=student.id;studentUserId=user.id;
   mocked.role.mockResolvedValue({id:coach.id,role:'COACH',coachProfile:profile});
   mocked.enabled.mockResolvedValue(true);
   mocked.plan.mockResolvedValue(plan('Yeni konu'));
@@ -95,6 +96,33 @@ describe('Koç haftalık plan onayı / PostgreSQL',()=>{
       action:'ACTIVATE',confirm:true,previewDigest:fresh.previewDigest
     }),params(studentId));
     expect(changed.status).toBe(409);
+  });
+  it('öğrenci ekranında yalnız koçun etkinleştirdiği plan onaylı görünür',async()=>{
+    mocked.role.mockResolvedValue({
+      id:studentUserId,role:'STUDENT',student:{
+        id:studentId,studentCode:'SMART_APPROVAL_STUDENT'
+      }
+    });
+    const initial=await (await STUDENT_GET()).json();
+    expect(initial.previewOnly).toBe(true);
+    expect(initial.activePlan).toBeNull();
+    mocked.role.mockResolvedValue({
+      id:ownerId,role:'COACH',coachProfile:{id:coachId}
+    });
+    const preview=await (await GET(new Request(url),params(studentId))).json();
+    const activated=await (await POST(request({
+      action:'ACTIVATE',confirm:true,previewDigest:preview.previewDigest
+    }),params(studentId))).json();
+    mocked.role.mockResolvedValue({
+      id:studentUserId,role:'STUDENT',student:{
+        id:studentId,studentCode:'SMART_APPROVAL_STUDENT'
+      }
+    });
+    const studentView=await (await STUDENT_GET()).json();
+    expect(studentView.activePlan.id).toBe(activated.planId);
+    expect(studentView.activePlan.days[0].tasks[0].title).toBe('Yeni konu');
+    expect(studentView.previewOnly).toBe(true);
+    expect(studentView.plan.days[0].tasks[0].title).toBe('Yeni konu');
   });
   it('başka koçun öğrencisine erişemez',async()=>{
     const outsider=await db.user.create({data:{name:'Yetkisiz',role:'COACH',status:'ACTIVE'}});
