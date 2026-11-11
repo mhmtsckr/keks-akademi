@@ -34,9 +34,49 @@ export function AcademicPerformanceCenter({
   const [error,setError]=useState('');
   const [loading,setLoading]=useState(true);
   const [examFilter,setExamFilter]=useState('ALL');
+  const [reviewReasons,setReviewReasons]=useState<Record<string,string>>({});
+  const [reviewPending,setReviewPending]=useState('');
+  const [reviewMessage,setReviewMessage]=useState('');
+  const [crossSourceFollowUps,setCrossSourceFollowUps]=useState<any[]>([]);
+  const [followUpTruncated,setFollowUpTruncated]=useState(false);
   const endpoint=audience==='COACH'
     ?'/api/coach/students/'+encodeURIComponent(studentId||'')+'/academic-performance'
     :'/api/student/academic-performance';
+  const interventionEndpoint=audience==='COACH'&&studentId
+    ?'/api/coach/students/'+encodeURIComponent(studentId)+'/academic-interventions'
+    :null;
+  const loadInterventions=useCallback(async()=>{
+    if(!interventionEndpoint)return;
+    try{
+      const response=await fetch(interventionEndpoint,{cache:'no-store'});
+      if(!response.ok)return;
+      const payload=await response.json();
+      setCrossSourceFollowUps(payload.items||[]);
+      setFollowUpTruncated(Boolean(payload.truncated));
+    }catch{/* Supplemental follow-up telemetry should never hide the main report. */}
+  },[interventionEndpoint]);
+  const openAcademicReview=async(topic:any)=>{
+    if(!interventionEndpoint||reviewPending)return;
+    const topicKey=[topic.examType,topic.subject,topic.topic].join('|');
+    const decisionReason=(reviewReasons[topicKey]||'').trim();
+    if(decisionReason.length<15)return;
+    setReviewPending(topicKey);setReviewMessage('');
+    try{
+      const response=await fetch(interventionEndpoint,{
+        method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          action:'REQUEST_RECHECK',examType:topic.examType,
+          subject:topic.subject,topic:topic.topic,decisionReason
+        })
+      });
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||'İnceleme kaydedilemedi.');
+      setReviewMessage(result.message||'Koç incelemesi oluşturuldu.');
+      await loadInterventions();
+    }catch(e){
+      setReviewMessage('Hata: '+(e instanceof Error?e.message:'İnceleme açılamadı.'));
+    }finally{setReviewPending('');}
+  };
   const load=useCallback(async()=>{
     setLoading(true);setError('');
     try{
@@ -44,9 +84,10 @@ export function AcademicPerformanceCenter({
       const payload=await response.json();
       if(!response.ok)throw new Error(payload.error||'Akademik performans raporu alınamadı.');
       setReport(payload.report||null);
+      await loadInterventions();
     }catch(e){setError(e instanceof Error?e.message:'Performans raporu yüklenemedi.');}
     finally{setLoading(false);}
-  },[endpoint]);
+  },[endpoint,loadInterventions]);
   useEffect(()=>{void load();},[load]);
   useEffect(()=>{
     const handler=()=>{void load();};
@@ -65,6 +106,7 @@ export function AcademicPerformanceCenter({
   const errorReasons=(report?.errorReasons||[]).filter(matches);
   const weeklyEvidence=(report?.weeklyEvidence||[]).filter(matches);
   const topicConcordance=(report?.topicConcordance||[]).filter(matches);
+  const visibleFollowUps=crossSourceFollowUps.filter(matches);
   const isCoach=audience==='COACH';
   return <div className="stack">
     <section className="card">
@@ -167,6 +209,30 @@ export function AcademicPerformanceCenter({
               <p className="muted">{topic.explanation}</p>
               <p><strong>{isCoach?'Koçun değerlendirebileceği adım:':'Önerilen yeniden ölçüm:'}</strong>
                 {' '}{topic.action}</p>
+              {isCoach&&!report.limited&&['CONFLICTING','BOTH_NEED_SUPPORT'].includes(topic.status)
+                &&topic.practiceQuestions>=20&&topic.practiceDays>=2
+                &&topic.examQuestions>=10&&topic.examDays>=2&&
+                <div style={{marginTop:12}}>
+                  <label htmlFor={'review-reason-'+topic.examType+'-'+topic.subject+'-'+topic.topic}>
+                    <strong>Koç inceleme gerekçesi</strong>
+                  </label>
+                  <textarea
+                    id={'review-reason-'+topic.examType+'-'+topic.subject+'-'+topic.topic}
+                    rows={2} maxLength={500}
+                    placeholder="Konu ve soru türü farkını incelemek için gerekçenizi belirtin."
+                    value={reviewReasons[[topic.examType,topic.subject,topic.topic].join('|')]||''}
+                    onChange={e=>setReviewReasons(s=>({...s,
+                      [[topic.examType,topic.subject,topic.topic].join('|')]:e.target.value}))}
+                    disabled={Boolean(reviewPending)}
+                  />
+                  <button type="button" className="btn" disabled={Boolean(reviewPending)||
+                    (reviewReasons[[topic.examType,topic.subject,topic.topic].join('|')]||'').trim().length<15}
+                    onClick={()=>void openAcademicReview(topic)}>
+                    {reviewPending===[topic.examType,topic.subject,topic.topic].join('|')
+                      ?'Kaydediliyor…':'Koç İnceleme Kaydı Aç'}
+                  </button>
+                  <p className="muted">Bu işlem öğrenciye yeni görev atamaz; yalnızca koç takip listesine gerekçeli inceleme ekler.</p>
+                </div>}
             </details>)}</div>}
         {report.sourceQuality&&(report.sourceQuality.excludedPractice>0||
           report.sourceQuality.excludedExams>0)&&<p className="muted">
@@ -175,6 +241,37 @@ export function AcademicPerformanceCenter({
           {' '}deneme analizi {report.sourceQuality.excludedExams}.
         </p>}
       </section>
+      {isCoach&&<section className="card">
+        <div className="moduleEyebrow">AKADEMİK KANIT İNCELEMELERİ · ÖNCE / SONRA</div>
+        <h3>Koçun açtığı konu kontrolleri ve ölçüm sinyalleri</h3>
+        <p className="muted">Koç incelemesinin açıldığı gün sınır alınır: önceki 14 gün ile sonraki en fazla 21 gün karşılaştırılır. İnceleme kaydının açılması müdahalenin uygulandığı veya başarılı olduğu anlamına gelmez.</p>
+        {reviewMessage&&<p className="notice" role="status">{reviewMessage}</p>}
+        {followUpTruncated&&<p className="notice">Kayıt üst sınırına ulaşıldı; bazı eski veriler rapora girmemiş olabilir.</p>}
+        {visibleFollowUps.length===0
+          ?<p className="muted">Bu sınav için henüz koç tarafından açılmış akademik karşılaştırma incelemesi yok.</p>
+          :<div className="stack">{visibleFollowUps.slice(0,12).map((x:any)=><details className="notice" key={x.taskId}>
+            <summary><strong>{x.examType} · {x.subject} · {x.topic}</strong>
+              {' · '}{x.state==='GAP_NARROWED'?'Kaynak farkı azaldı':x.state==='GAP_WIDENED'
+                ?'Kaynak farkı büyüdü':x.state==='GAP_SIMILAR'
+                  ?'Fark benzer kaldı':x.state==='WAITING_FOR_DATA'
+                    ?'Yeni veri bekleniyor':'Ölçüm verisi yetersiz'}
+            </summary>
+            <p><strong>İnceleme tarihi:</strong> {new Date(x.openedAt).toLocaleDateString('tr-TR')}
+              {' · '}<strong>Durum:</strong> {x.taskStatus}</p>
+            <p><strong>Önce:</strong> Pratik {x.baseline.practice.questions} soru /
+              {' '}{x.baseline.practice.days} gün ({percent(x.baseline.practice.accuracy)}),
+              {' '}deneme {x.baseline.exam.questions} soru /
+              {' '}{x.baseline.exam.days} gün ({percent(x.baseline.exam.accuracy)}).</p>
+            <p><strong>Sonra:</strong> Pratik {x.followUp.practice.questions} soru /
+              {' '}{x.followUp.practice.days} gün ({percent(x.followUp.practice.accuracy)}),
+              {' '}deneme {x.followUp.exam.questions} soru /
+              {' '}{x.followUp.exam.days} gün ({percent(x.followUp.exam.accuracy)}).</p>
+            {x.absoluteGapChange!=null&&<p><strong>Kaynaklar arası mutlak fark değişimi:</strong>
+              {' '}{change(x.absoluteGapChange)}</p>}
+            <p className="muted">{x.note}</p>
+            <p><strong>Sonraki ölçüm:</strong> {x.nextAction}</p>
+          </details>)}</div>}
+      </section>}
       <section className="card">
         <div className="moduleEyebrow">DERS BAZLI İLERLEME</div>
         <h3>Öncelik sırasına göre dersler</h3>
