@@ -35,7 +35,8 @@ export function selectAcademicPlanRecommendations(
     seen.add(id);
     const contradiction=t.status==='CONFLICTING';
     return [{
-      examType:t.examType,subject:t.subject,topic:t.topic,status:t.status,
+      examType:t.examType,subject:t.subject,topic:t.topic,
+      status:contradiction?'CONFLICTING' as const:'BOTH_NEED_SUPPORT' as const,
       priority:contradiction?'HIGH':'MEDIUM' as 'HIGH'|'MEDIUM',
       questions:8,minutes:20,
       practiceQuestions:t.practiceQuestions,practiceDays:t.practiceDays,
