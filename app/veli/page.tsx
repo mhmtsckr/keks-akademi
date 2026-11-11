@@ -228,34 +228,5 @@ export default async function ParentPage() {
       <div className="card" style={{marginTop:14}}><div className="moduleEyebrow">MAHREMİYET SINIRI</div><p>MİZA veli görünümü öğrencinin özel koç görüşmelerini, kişisel notlarını veya MİZA ile özel konuşmalarını veliye aktarmaz. Yalnız veli desteği için paylaşılabilir eğitim verilerinden rehberlik üretir.</p></div>
     </section>
 
-    <section id="veli-rehberligi" className="section section-anchor">
-      <PortalSectionTitle
-        eyebrow="VELİ REHBERLİĞİ"
-        title="Bu hafta nasıl destek olmalısınız?"
-      />
-
-      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-        <div className="card">
-          <div className="moduleEyebrow">BU HAFTA YAPIN</div>
-          <p>{parentDo}</p>
-        </div>
-
-        <div className="card">
-          <div className="moduleEyebrow">BU HAFTA YAPMAYIN</div>
-          <p>{parentAvoid}</p>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 14 }}>
-        <div className="moduleEyebrow">KOÇUN VELİYE NOTU</div>
-        {coachNote
-          ? <>
-              <strong>{latestCoachReport?.title}</strong>
-              <p>{coachNote}</p>
-              <small className="muted">{latestCoachReport?.createdAt.toLocaleDateString('tr-TR')}</small>
-            </>
-          : <p className="muted">Bu hafta veliye açılmış bir koç notu bulunmuyor.</p>}
-      </div>
-    </section>
   </PortalShell>;
 }

@@ -6,6 +6,7 @@ import { encryptPrivateCode } from '@/lib/security';
 import { sendGmailSmtp } from '@/lib/gmailSmtp';
 import { writeAudit } from '@/lib/audit';
 import { readJson,withApiErrors } from '@/lib/apiGuard';
+import { createRequestId,recordApiError } from '@/lib/errorMonitoring';
 
 const SENDER='keksakademi@gmail.com';
 const schema=z.object({appPassword:z.string().min(16).max(64)});
@@ -38,6 +39,7 @@ async function POST__handler(req:Request){
       html:'<h2>KEKS Akademi Gmail bağlantısı başarılı</h2><p>Öğrenci kayıt e-postaları artık bu Gmail hesabı üzerinden otomatik gönderilebilir.</p>'
     });
   }catch(error){
+    await recordApiError(req,error,createRequestId(req));
     const detail=error instanceof Error?error.message:'GMAIL_CONNECTION_FAILED';
     return NextResponse.json({error:'Gmail bağlantısı doğrulanamadı. Uygulama şifresini ve 2 Adımlı Doğrulamayı kontrol edin.',detail},{status:400});
   }

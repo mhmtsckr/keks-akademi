@@ -154,7 +154,7 @@ export function StudentCommandCenter(){
 
       <div className="card nextCoachSessionCard">
         <div className="moduleEyebrow">SONRAKİ KOÇLUK GÖRÜŞMESİ</div>
-        {t.nextSession?<><h2>{new Date(t.nextSession.startsAt).toLocaleDateString('tr-TR',{day:'2-digit',month:'long'})}</h2><p>{new Date(t.nextSession.startsAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})} · {t.nextSession.title}</p>{t.nextSession.meetingUrl&&<a className="btn" href={t.nextSession.meetingUrl} target="_blank">Görüşmeye Katıl</a>}</>:<><h2>Planlı seans yok</h2><p className="muted">Yeni seans planlandığında burada görünecek.</p></>}
+        {t.nextSession?<><h2>{new Date(t.nextSession.startsAt).toLocaleDateString('tr-TR',{day:'2-digit',month:'long'})}</h2><p>{new Date(t.nextSession.startsAt).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})} · {t.nextSession.title}</p>{t.nextSession.meetingUrl&&<a className="btn" href={t.nextSession.meetingUrl} target="_blank" rel="noopener noreferrer">Görüşmeye Katıl</a>}</>:<><h2>Planlı seans yok</h2><p className="muted">Yeni seans planlandığında burada görünecek.</p></>}
       </div>
     </div></details>
 

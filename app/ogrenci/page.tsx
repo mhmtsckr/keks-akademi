@@ -42,10 +42,63 @@ import { MizaLearningOrchestrator } from '@/app/components/MizaLearningOrchestra
 import { StudentActionHub } from '@/app/components/StudentActionHub';
 import { StudentMasteryOverview } from '@/app/components/StudentMasteryOverview';
 
-function pretty(v: unknown) {
-  if (!v) return '';
-  if (typeof v === 'string') return v;
-  try { return JSON.stringify(v); } catch { return String(v); }
+function str(v:unknown):string{return v==null?'':typeof v==='string'?v:String(v);}
+
+const LOG_TYPE_LABELS:Record<string,string>={
+  REVIEW_RESULT:'Tekrar Sonucu',MICRO_RESULT:'Mikro Öğrenme',MICRO_STARTED:'Mikro Öğrenme (devam)',
+  GUIDED_PRACTICE_RESULT:'Rehberli Çalışma',GUIDED_PRACTICE_STARTED:'Rehberli Çalışma (devam)',
+  MIZA_TODAY_TASK_RESULT:'MİZA Görev Sonucu',LEARNING_METRIC:'Öğrenme Metriği',
+  WRONG_REFLECTION:'Yanlış Soru Analizi',QUESTION_BOOKMARK:'Soru İşareti',
+  TYMM_PERFORMANCE_SUBMISSION:'Performans Görevi',TYMM_PERFORMANCE_REVIEWED:'Performans (Değerlendirildi)',
+  TYMM_TRANSFER_SUBMISSION:'Transfer Görevi',TYMM_TRANSFER_REVIEWED:'Transfer (Değerlendirildi)',
+  TYMM_RUBRIC_ACTION:'Rubrik Aksiyonu',COACH_INTERVENTION:'Koç Müdahalesi',
+};
+
+function formatDailyLog(payload:unknown):string{
+  if(!payload||typeof payload!=='object')return str(payload);
+  const p=payload as Record<string,unknown>;
+  const label=LOG_TYPE_LABELS[str(p.type)]||str(p.type);
+  const parts:string[]=[label];
+  if(p.subject)parts.push(str(p.subject));
+  if(p.topic)parts.push(str(p.topic));
+  if(p.correct!=null||p.wrong!=null)parts.push(`${p.correct??0}D ${p.wrong??0}Y`);
+  if(p.durationSeconds)parts.push(Math.round(Number(p.durationSeconds)/60)+'dk');
+  if(p.completed!=null)parts.push(p.completed?'Tamamlandı':'Devam ediyor');
+  return parts.join(' · ')||str(payload);
+}
+
+function formatExamResult(payload:unknown):string{
+  if(!payload||typeof payload!=='object')return str(payload);
+  const p=payload as Record<string,unknown>;
+  const parts:string[]=[];
+  if(p.totalNet!=null||p.net!=null)parts.push((p.totalNet??p.net)+' net');
+  if(p.score!=null)parts.push(p.score+' puan');
+  if(p.usedDurationMinutes)parts.push(p.usedDurationMinutes+' dk');
+  if(p.percentile!=null)parts.push('%'+p.percentile+' dilim');
+  return parts.join(' · ')||str(payload);
+}
+
+function formatPlanSummary(payload:unknown):string{
+  if(!payload||typeof payload!=='object')return str(payload);
+  const p=payload as Record<string,unknown>;
+  const days=Array.isArray(p.days)?p.days:[];
+  if(!days.length)return str(p.explanation||payload);
+  const totalTasks=days.reduce((n:number,d:any)=>n+(Array.isArray(d.tasks)?d.tasks.length:0),0);
+  const totalMin=days.reduce((n:number,d:any)=>n+(Array.isArray(d.tasks)?d.tasks.reduce((m:number,t:any)=>m+(Number(t.duration)||0),0):0),0);
+  return `${days.length} gün · ${totalTasks} görev · ~${totalMin} dk toplam`;
+}
+
+function formatProfile(v:unknown):string{
+  if(!v||typeof v!=='object')return str(v);
+  const p=v as Record<string,unknown>;
+  const parts:string[]=[];
+  if(p.status)parts.push(str(p.status)==='COMPLETED'?'Profil tamamlandı':'Profil devam ediyor');
+  if(p.inputs&&typeof p.inputs==='object'){
+    const inp=p.inputs as Record<string,unknown>;
+    if(inp.goal)parts.push('Hedef: '+str(inp.goal));
+    if(inp.gradeLevel)parts.push(str(inp.gradeLevel));
+  }
+  return parts.join(' · ')||str(v);
 }
 
 export default async function StudentPage() {
@@ -263,15 +316,15 @@ export default async function StudentPage() {
     </section>
 
     <section id="hedef-teknikler" className="section section-anchor"><div className="panelSectionBand"><div><small>HEDEF & ÇALIŞMA AYARLARI</small><strong>Hedefim ve atanmış tekniklerim</strong><p>Hedef bilgisi ile koçun önerdiği çalışma tekniklerini aynı yerde gör.</p></div><span>KİŞİSEL AYAR</span></div><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
-      <div className="card"><h2>Hedefim</h2><p>{student.goal || 'Koçunuz henüz hedef bilgisi eklemedi.'}</p>{activeTarget&&<div className="notice"><strong>{activeTarget.institutionName}</strong>{activeTarget.departmentName?' · '+activeTarget.departmentName:''}<br/><span className="muted">{activeTarget.source} · {activeTarget.dataYear||'Yıl belirtilmedi'} · Puan {activeTarget.score??'—'} · Sıra {activeTarget.ranking??'—'} · Yüzdelik {activeTarget.percentile??'—'}</span></div>}{student.profile&&<p className="muted">{pretty(student.profile)}</p>}</div>
+      <div className="card"><h2>Hedefim</h2><p>{student.goal || 'Koçunuz henüz hedef bilgisi eklemedi.'}</p>{activeTarget&&<div className="notice"><strong>{activeTarget.institutionName}</strong>{activeTarget.departmentName?' · '+activeTarget.departmentName:''}<br/><span className="muted">{activeTarget.source} · {activeTarget.dataYear||'Yıl belirtilmedi'} · Puan {activeTarget.score??'—'} · Sıra {activeTarget.ranking??'—'} · Yüzdelik {activeTarget.percentile??'—'}</span></div>}{student.profile&&<p className="muted">{formatProfile(student.profile)}</p>}</div>
       <div className="card"><h2>Çalışma Tekniklerim</h2>{student.studyTechniques.length===0?<p className="muted">Henüz teknik atanmadı.</p>:student.studyTechniques.map(t=><div key={t.id} style={{marginBottom:12}}><strong>{t.title}</strong><div className="muted">{t.description}</div></div>)}</div>
     </div></section>
 
-    <section id="programlar" className="section section-anchor"><PortalSectionTitle eyebrow="AKILLI KİŞİSEL ÇALIŞMA PLANI" title="Yıllık, Aylık, Haftalık ve Günlük Planlarım" description="Onaylı planların hedef, eksik ders, çalışma süresi ve gelişim verilerine göre aynı sistemde yürür."/>{student.plans.length===0?<div className="card muted">Henüz aktif program bulunmuyor.</div>:<div className="stack">{student.plans.map(p=><div className="card" key={p.id}><strong>{p.title}</strong><p className="muted">{pretty(p.payload)}</p></div>)}</div>}</section>
+    <section id="programlar" className="section section-anchor"><PortalSectionTitle eyebrow="AKILLI KİŞİSEL ÇALIŞMA PLANI" title="Yıllık, Aylık, Haftalık ve Günlük Planlarım" description="Onaylı planların hedef, eksik ders, çalışma süresi ve gelişim verilerine göre aynı sistemde yürür."/>{student.plans.length===0?<div className="card muted">Henüz aktif program bulunmuyor.</div>:<div className="stack">{student.plans.map(p=><div className="card" key={p.id}><strong>{p.title}</strong><p className="muted">{formatPlanSummary(p.payload)}</p></div>)}</div>}</section>
 
     <section id="kayitlar-raporlar" className="section section-anchor"><div className="panelSectionBand"><div><small>RAPORLAR & KAYITLAR</small><strong>Çalışma geçmişi ve gelişim kayıtları</strong><p>Çalışmalar, denemeler, koç raporları ve kütüphane içerikleri aynı bölümde.</p></div><span>GEÇMİŞ VERİ</span></div><div className="grid" style={{gridTemplateColumns:'1fr 1fr'}}>
-      <div className="card"><h2>Çalışma Kayıtlarım</h2>{student.dailyLogs.length===0?<p className="muted">Henüz kayıt yok.</p>:student.dailyLogs.map(l=><div key={l.id} style={{marginBottom:12}}><strong>{new Date(l.date).toLocaleDateString('tr-TR')}</strong><div className="muted">{pretty(l.payload)}</div></div>)}</div>
-      <div className="card"><h2>Denemelerim</h2>{student.examResults.length===0?<p className="muted">Henüz deneme kaydı yok.</p>:student.examResults.map(x=><div key={x.id} style={{marginBottom:12}}><strong>{x.examType}</strong><div className="muted">{pretty(x.payload)}</div></div>)}</div>
+      <div className="card"><h2>Çalışma Kayıtlarım</h2>{student.dailyLogs.length===0?<p className="muted">Henüz kayıt yok.</p>:student.dailyLogs.map(l=><div key={l.id} style={{marginBottom:12}}><strong>{new Date(l.date).toLocaleDateString('tr-TR')}</strong><div className="muted">{formatDailyLog(l.payload)}</div></div>)}</div>
+      <div className="card"><h2>Denemelerim</h2>{student.examResults.length===0?<p className="muted">Henüz deneme kaydı yok.</p>:student.examResults.map(x=><div key={x.id} style={{marginBottom:12}}><strong>{x.examType}</strong><div className="muted">{formatExamResult(x.payload)}</div></div>)}</div>
     </div></section>
 
     <section className="section"><div className="grid" style={{gridTemplateColumns:'2fr 1fr'}}>

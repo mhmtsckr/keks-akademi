@@ -176,8 +176,8 @@ export async function POST(req:Request){
       report
     });
     await db.assessment.update({where:{id:assessmentId},data:{emailedAt:new Date()}});
-  }catch{
-    console.error('EXTERNAL_ASSESSMENT_EMAIL_FAILED');
+  }catch(emailError){
+    await recordApiError(req,emailError,createRequestId(req));
   }
 
   return json({
