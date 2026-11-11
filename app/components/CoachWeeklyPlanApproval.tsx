@@ -17,10 +17,27 @@ export function CoachWeeklyPlanApproval({studentId,onActivated}:Props){
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
   const [activatedId,setActivatedId]=useState('');
+  const [revisionReason,setRevisionReason]=useState('');
+  const [history,setHistory]=useState<any[]>([]);
+  const [historyLoaded,setHistoryLoaded]=useState(false);
+  const [historyBusy,setHistoryBusy]=useState(false);
+  const [historyError,setHistoryError]=useState('');
 
+  async function loadHistory(){
+    setHistoryBusy(true);setHistoryError('');
+    try{
+      const response=await fetch('/api/coach/students/'+studentId+'/smart-plan/history',{cache:'no-store'});
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.error||'Plan geçmişi yüklenemedi.');
+      setHistory(data.history||[]);
+      setHistoryLoaded(true);
+    }catch(e){
+      setHistoryError(e instanceof Error?e.message:'Plan geçmişi yüklenemedi.');
+    }finally{setHistoryBusy(false);}
+  }
   async function showPreview(){
     if(busy)return;
-    setBusy(true);setApproved(false);setMessage('');setPreview(null);setActivatedId('');
+    setBusy(true);setApproved(false);setRevisionReason('');setMessage('');setPreview(null);setActivatedId('');
     try{
       const response=await fetch('/api/coach/students/'+studentId+'/smart-plan',{
         cache:'no-store'
@@ -33,13 +50,14 @@ export function CoachWeeklyPlanApproval({studentId,onActivated}:Props){
     }finally{setBusy(false);}
   }
   async function activate(){
-    if(busy||!approved||!preview?.previewDigest)return;
+    if(busy||!approved||!preview?.previewDigest||revisionReason.trim().length<15)return;
     setBusy(true);setMessage('');
     try{
       const response=await fetch('/api/coach/students/'+studentId+'/smart-plan',{
         method:'POST',headers:{'content-type':'application/json'},
         body:JSON.stringify({
-          action:'ACTIVATE',confirm:true,previewDigest:preview.previewDigest
+          action:'ACTIVATE',confirm:true,previewDigest:preview.previewDigest,
+          revisionReason:revisionReason.trim()
         })
       });
       const result=await response.json();
@@ -48,8 +66,9 @@ export function CoachWeeklyPlanApproval({studentId,onActivated}:Props){
         throw new Error(result.error||'Plan etkinleştirilemedi.');
       }
       setActivatedId(result.planId);
-      setPreview(null);setApproved(false);
-      setMessage('Koç onayı kaydedildi. Yeni haftalık plan etkinleştirildi; eski planlar geçmiş kayıtlarında korundu.');
+      setPreview(null);setApproved(false);setRevisionReason('');
+      setMessage('Koç onayı ve revizyon gerekçesi kaydedildi. Yeni haftalık plan etkinleştirildi; eski planlar geçmiş kayıtlarında korundu.');
+      void loadHistory();
       onActivated?.();
     }catch(e){
       setMessage('Hata: '+(e instanceof Error?e.message:'Plan onaylanamadı.'));
@@ -139,6 +158,11 @@ export function CoachWeeklyPlanApproval({studentId,onActivated}:Props){
           :<p className="muted">Kaldırılan görev adı yok.</p>}
       </details>
       <div className="notice">
+        <label htmlFor="coach-plan-revision-reason"><strong>Koçun revizyon gerekçesi (zorunlu)</strong></label>
+        <textarea id="coach-plan-revision-reason" rows={3} maxLength={600}
+          placeholder="Örnek: Son iki haftada zamanlayıcı verisi 90 dakikalık hedefe yetişmediği için yeni programda günlük yükü düşürüyorum."
+          value={revisionReason} onChange={e=>setRevisionReason(e.target.value)} disabled={busy}/>
+        <small className="muted">En az 15, en çok 600 karakter. Gerekçe plan geçmişinde ve işlem kaydında saklanır ({revisionReason.trim().length}/600).</small>
         <label style={{display:'flex',alignItems:'flex-start',gap:9}}>
           <input type="checkbox" checked={approved}
             onChange={e=>setApproved(e.target.checked)} disabled={busy}/>
@@ -148,11 +172,36 @@ export function CoachWeeklyPlanApproval({studentId,onActivated}:Props){
           </span>
         </label>
         <button className="btn primary" type="button" onClick={()=>void activate()}
-          disabled={busy||!approved}>
+          disabled={busy||!approved||revisionReason.trim().length<15}>
           {busy?'Doğrulanıyor…':'Açık Onayla Yeni Planı Etkinleştir'}
         </button>
         <small className="muted">Onaydan önce sunucu planı yeniden hesaplar. Veri veya aktif plan değişmişse işlem reddedilir; yeni önizleme gerekir.</small>
       </div>
     </>}
+    <div className="notice">
+      <div className="row" style={{justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+        <strong>Onaylı haftalık plan geçmişi</strong>
+        <button className="btn" type="button" onClick={()=>void loadHistory()} disabled={historyBusy}>
+          {historyBusy?'Yükleniyor…':historyLoaded?'Geçmişi Yenile':'Plan Geçmişini Göster'}
+        </button>
+      </div>
+      {historyError&&<p role="alert" className="riskText">{historyError}</p>}
+      {historyLoaded&&history.length===0&&<p className="muted">Henüz koç onaylı haftalık plan kaydı bulunmuyor.</p>}
+      {historyLoaded&&history.map((item:any,i:number)=><details key={item.id}>
+        <summary>
+          {new Date(item.createdAt).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'})}
+          {' · '}{item.title} {item.active?'(Etkin)':'(Arşiv)'}
+        </summary>
+        <p><strong>Onaylayan:</strong> {item.approvedBy||'Önceki sürüm kaydı'}
+          {' · '}<strong>Haftalık süre:</strong> {item.summary?.minutes||0} dk</p>
+        <p><strong>Gerekçe:</strong> {item.revisionReason||'Bu eski sürümde gerekçe kaydı yok.'}</p>
+        {item.versusPrevious?.deltaMinutes!=null&&<p className="muted">
+          Önceki sürüme göre değişim: {delta(item.versusPrevious.deltaMinutes,'dk')};
+          {' '}koç görevi {delta(item.versusPrevious.deltaCoachTasks,'adet')};
+          {' '}tekrar {delta(item.versusPrevious.deltaReviewQuestions,'soru')}
+        </p>}
+        <small className="muted">Bu tarihçe salt okunur. Önceki programın yeniden etkinleştirilmesi bu ekrandan yapılmaz.</small>
+      </details>)}
+    </div>
   </section>;
 }
