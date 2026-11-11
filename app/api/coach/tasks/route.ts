@@ -55,6 +55,8 @@ async function PATCH__handler(req:Request){
   const input=await readJson(req, patchSchema);
   const task=await db.coachTask.findFirst({where:{id:input.id,coachId:user.coachProfile.id}});
   if(!task)return NextResponse.json({error:'Görev bulunamadı.'},{status:404});
+  if(task.sourceType==='ACADEMIC_CROSS_SOURCE_RECHECK')
+    return NextResponse.json({error:'Akademik kanıt incelemeleri yalnız Akademik Performans Merkezi içindeki gerekçeli karar akışından güncellenebilir.'},{status:409});
   const status=input.status??task.status;
   const updated=await db.coachTask.update({where:{id:task.id},data:{
     status,
