@@ -58,6 +58,15 @@ describe('Akademik Performans Merkezi / kanıta dayalı analitik',()=>{
     expect(result.formalExamTopics[0].questions).toBe(10);
     expect(result.examEvidenceRecords).toBe(1);
   });
+  it('yanlış nedeni raporunu TYT ve AYT için ayrı tutar',()=>{
+    const rows=[
+      entry('2026-11-08','TYT','Türkçe','Paragraf',3,7),
+      entry('2026-11-09','AYT','Türkçe','Paragraf',4,6)
+    ];
+    const r=buildAcademicPerformanceCenter(rows,[],now);
+    expect(r.errorReasons).toHaveLength(2);
+    expect(r.errorReasons.map(x=>x.examType).sort()).toEqual(['AYT','TYT']);
+  });
   it('geçersiz ve gelecekteki kayıtları dışlar ve sınırlılığı raporlar',()=>{
     const invalid={...entry('2026-11-10','TYT','Türkçe','Paragraf',3,2),total:10};
     const later=entry('2026-11-25','TYT','Türkçe','Paragraf',9,1);
