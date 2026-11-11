@@ -96,6 +96,7 @@ export function StudentProgressTools({allowedExams,initialProgress,initialPracti
     const r=await fetch('/api/student/progress',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json(); if(!r.ok){setMsg('Hata: '+(j.error||'Kaydedilemedi.'));return}
     setPractice(p=>[{...j.row,errorReason:j.errorReason??j.row.errorReason,masteryScore:j.learning?.score??null,masteryState:j.learning?.state??null,metricPayload:j.learning??null},...p]);
+    window.dispatchEvent(new Event('keks:practice-saved'));
     const reasonLabel=String(j.errorReason||'').replaceAll('_',' ').toLocaleLowerCase('tr-TR');
     setMsg('Kayıt eklendi. Net: '+j.row.net+' · Bilgi hâkimiyeti: '+(j.learning?.score??'—')+' · '+(j.learning?.state==='DURABLE'?'Kalıcı':j.learning?.state==='RISKY'?'Riskli':j.learning?.state==='REINFORCING'?'Pekiştiriliyor':j.learning?.state==='LEARNING'?'Öğreniliyor':'Yeni')+(j.errorReason?' · Yanlış nedeni: '+reasonLabel+' ('+(j.errorReasonSource==='SYSTEM'?'sistem':'öğrenci')+')':'')+(j.learning?.nextAction?' · Sonraki adım: '+j.learning.nextAction:'')); form.reset();
   }
