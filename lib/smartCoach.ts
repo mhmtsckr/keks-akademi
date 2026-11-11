@@ -1,5 +1,7 @@
 import { db } from '@/lib/db';
 import {buildCoachEvidence} from '@/lib/coachEvidence';
+import {readAcademicPerformance} from '@/lib/academicPerformanceService';
+import {selectAcademicPlanRecommendations,academicInterventionKey} from '@/lib/academicPlanRecommendations';
 import {buildLearningDiagnostics} from '@/lib/learningDiagnostics';
 import {allocateWeeklyPriorities} from '@/lib/weeklyPlanPriorities';
 import { buildCapacityProfile,buildSubjectLearningModels,dailyPracticeQuestionTarget } from '@/lib/learningEngine';
@@ -60,7 +62,7 @@ export async function computeGoalProgress(studentId:string){
 }
 
 export async function buildWeeklyPlan(studentId:string){
-  const [student,practice,topics,reviews,goal,capacity,subjectModels,coachingActions]=await Promise.all([
+  const [student,practice,topics,reviews,goal,capacity,subjectModels,coachingActions,academicReport]=await Promise.all([
     db.student.findUnique({where:{id:studentId}}),
     db.practiceLog.findMany({where:{studentId},orderBy:{date:'desc'},take:100}),
     db.topicProgress.findMany({where:{studentId}}),
@@ -72,7 +74,8 @@ export async function buildWeeklyPlan(studentId:string){
       where:{studentId,status:'ACTIVE',submission:{is:null},periodEnd:{gte:new Date(Date.now()-7*86400000)}},
       select:{id:true,title:true,subject:true,topic:true,metricType:true,targetValue:true,taskDate:true,periodEnd:true},
       orderBy:{periodEnd:'asc'},take:100
-    })
+    }),
+    readAcademicPerformance(studentId)
   ]);
   if(!student) throw new Error('Öğrenci bulunamadı');
   const educationProfile=resolveEducationLevelProfile(student.gradeLevel,student.academicTrack);
@@ -84,6 +87,8 @@ export async function buildWeeklyPlan(studentId:string){
   const weak=evidence.subjects.filter(x=>x.confidence!=='LOW'&&(x.priority==='REVIEW'||x.priority==='MONITOR'))
     .map(x=>({subject:x.subject,accuracy:x.accuracy/100,questions:x.questions,priority:x.priority,reason:x.reason}));
   const incomplete=eligibleTopics.filter(x=>!x.completed);
+  const academicCandidates=selectAcademicPlanRecommendations(academicReport.topicConcordance,6)
+    .filter(x=>!educationProfile||subjectMatchesEducationLevel(x.subject,educationProfile));
   const subjectModelMap=new Map(subjectModels.map(x=>[x.subject,x]));
   // Date arithmetic is anchored at Istanbul-local noon, not the Vercel server timezone.
   const dayKey=(d:Date)=>new Intl.DateTimeFormat('en-CA',{
@@ -105,6 +110,7 @@ export async function buildWeeklyPlan(studentId:string){
     coachingActions,reviews
   );
   const selectedTopicIds=new Set<string>();
+  const academicScheduled=new Set<string>();
   const days=[] as any[];
   for(let i=0;i<calendar.length;i++){
     const {date,key,historicalCompletion,dayBudget}=calendar[i];
@@ -115,6 +121,25 @@ export async function buildWeeklyPlan(studentId:string){
       if(used+task.duration>dayBudget)return false;
       tasks.push(task);used+=task.duration;return true;
     };
+    // Optional evidence-review blocks are draft-only; assigned coach actions
+    // and actual due reviews have already consumed capacity in the allocator.
+    if(i===1||i===4){
+      const matching=(a:string,b:string)=>a.trim().toLocaleLowerCase('tr-TR')===b.trim().toLocaleLowerCase('tr-TR');
+      const academic=academicCandidates.find(x=>{
+        if(academicScheduled.has(academicInterventionKey(x)))return false;
+        return !reservation.tasks.some(t=>t.type==='COACH_ACTION'
+          &&t.subject&&matching(t.subject,x.subject)
+          &&t.title.toLocaleLowerCase('tr-TR').includes(x.topic.toLocaleLowerCase('tr-TR')));
+      });
+      if(academic&&add({
+        type:'ACADEMIC_EVIDENCE_RECHECK',
+        examType:academic.examType,subject:academic.subject,topic:academic.topic,
+        title:academic.examType+' · '+academic.subject+' · '+academic.topic+' · kanıt karşılaştırması',
+        duration:academic.minutes,questions:academic.questions,
+        reason:academic.rationale+' '+academic.instruction+
+          ' Bu yalnızca koçun değerlendireceği taslaktır; öğrenciye ayrı takip görevi atanmadı.'
+      }))academicScheduled.add(academicInterventionKey(academic));
+    }
     const weakSub=weak.length?weak[i%weak.length]:undefined;
     const topicCandidates=incomplete.filter(x=>!selectedTopicIds.has(x.id));
     const topic=topicCandidates.find(x=>weakSub&&x.subject===weakSub.subject)
@@ -199,6 +224,9 @@ export async function buildWeeklyPlan(studentId:string){
     evidence:{windowDays:evidence.windowDays,confidence:evidence.confidence,message:evidence.message,eligibleRecords:evidence.eligibleRecords,subjects:evidence.subjects.slice(0,8)},
     topicDiagnostics,
     prioritySummary:{
+      academicInterventionsConsidered:academicCandidates.length,
+      academicInterventionsSuggested:academicScheduled.size,
+      academicInterventionsUnscheduled:academicCandidates.length-academicScheduled.size,
       coachTasksConsidered:coachingActions.length,
       coachTasksIncluded:calendar.reduce((n,d)=>n+priorities.byDay[d.key].tasks.filter(x=>x.type==='COACH_ACTION').length,0),
       coachTasksNeedingDecision:priorities.unallocatedCoachTasks,
