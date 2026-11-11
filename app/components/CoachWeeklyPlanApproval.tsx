@@ -125,6 +125,15 @@ export function CoachWeeklyPlanApproval({studentId,onActivated}:Props){
         {proposal.prioritySummary.coachTasksNeedingDecision.slice(0,4).map((t:any)=>
           <p key={t.id}>{t.title} · {t.minutes} dk</p>)}
       </div>}
+      {proposal.prioritySummary?.academicInterventionsConsidered>0&&<div className="notice">
+        <strong>Akademik Performans Merkezi ile eşlenen konu incelemeleri</strong>
+        <p className="muted">
+          {proposal.prioritySummary.academicInterventionsSuggested} öneri yeni taslakta;
+          {' '}{proposal.prioritySummary.academicInterventionsUnscheduled} öneri kapasite nedeniyle taslak dışında.
+          Akademik inceleme blokları koçun ayrıca değerlendirmesi gereken önerilerdir;
+          öğrenciye otomatik atanmış görev veya doğrulanmış öğrenme sonucu değildir.
+        </p>
+      </div>}
       {proposal.prioritySummary?.pendingReviewCount>0&&<p className="muted">
         Yeni önerinin kapasitesine sığmayan tekrar sayısı: {proposal.prioritySummary.pendingReviewCount}. Bu tekrarlar kuyruktan silinmez.
       </p>}
