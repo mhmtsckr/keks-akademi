@@ -55,8 +55,24 @@ async function POST__handler(req:Request){
 
 async function GET__handler(){
   const student=await studentContext();
-  const plan=await buildWeeklyPlan(student.id);
-  return NextResponse.json({ok:true,plan,previewOnly:true},{headers:{'Cache-Control':'private, no-store'}});
+  const [plan,active]=await Promise.all([
+    buildWeeklyPlan(student.id),
+    db.studyPlan.findFirst({
+      where:{studentId:student.id,active:true,title:{startsWith:'Akıllı Haftalık Program'}},
+      orderBy:{createdAt:'desc'},
+      select:{id:true,title:true,createdAt:true,payload:true}
+    })
+  ]);
+  // The student's dynamic suggestion is never labeled as the approved plan.
+  const stored=active?.payload&&typeof active.payload==='object'&&!Array.isArray(active.payload)
+    ?active.payload as Record<string,unknown>:null;
+  const days=stored&&Array.isArray(stored.days)?stored.days.slice(0,14):[];
+  const activePlan=active?{
+    id:active.id,title:active.title,createdAt:active.createdAt,
+    days
+  }:null;
+  return NextResponse.json({ok:true,plan,activePlan,previewOnly:true},
+    {headers:{'Cache-Control':'private, no-store'}});
 }
 
 export const POST=withApiErrors(POST__handler);
