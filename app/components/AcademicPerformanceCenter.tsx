@@ -37,6 +37,10 @@ export function AcademicPerformanceCenter({
   const [reviewReasons,setReviewReasons]=useState<Record<string,string>>({});
   const [reviewPending,setReviewPending]=useState('');
   const [reviewMessage,setReviewMessage]=useState('');
+  const [decisionNotes,setDecisionNotes]=useState<Record<string,string>>({});
+  const [decisionTypes,setDecisionTypes]=useState<Record<string,string>>({});
+  const [decisionDates,setDecisionDates]=useState<Record<string,string>>({});
+  const [decisionPending,setDecisionPending]=useState('');
   const [crossSourceFollowUps,setCrossSourceFollowUps]=useState<any[]>([]);
   const [followUpTruncated,setFollowUpTruncated]=useState(false);
   const endpoint=audience==='COACH'
@@ -76,6 +80,30 @@ export function AcademicPerformanceCenter({
     }catch(e){
       setReviewMessage('Hata: '+(e instanceof Error?e.message:'İnceleme açılamadı.'));
     }finally{setReviewPending('');}
+  };
+  const saveAcademicReviewDecision=async(item:any)=>{
+    if(!interventionEndpoint||decisionPending)return;
+    const decision=decisionTypes[item.taskId]||'COLLECT_MORE_EVIDENCE';
+    const note=(decisionNotes[item.taskId]||'').trim();
+    const nextReviewDate=decisionDates[item.taskId]||'';
+    if(note.length<20||decision==='COLLECT_MORE_EVIDENCE'&&!nextReviewDate)return;
+    setDecisionPending(item.taskId);setReviewMessage('');
+    try{
+      const response=await fetch(interventionEndpoint,{
+        method:'PATCH',headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          taskId:item.taskId,decision,note,
+          ...(decision==='COLLECT_MORE_EVIDENCE'?{nextReviewDate}:{})
+        })
+      });
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||'İnceleme kararı kaydedilemedi.');
+      setReviewMessage(result.message||'Koç kararı kaydedildi.');
+      setDecisionNotes(prev=>({...prev,[item.taskId]:''}));
+      await loadInterventions();
+    }catch(e){
+      setReviewMessage('Hata: '+(e instanceof Error?e.message:'İnceleme kararı kaydedilemedi.'));
+    }finally{setDecisionPending('');}
   };
   const load=useCallback(async()=>{
     setLoading(true);setError('');
@@ -270,6 +298,68 @@ export function AcademicPerformanceCenter({
               {' '}{change(x.absoluteGapChange)}</p>}
             <p className="muted">{x.note}</p>
             <p><strong>Sonraki ölçüm:</strong> {x.nextAction}</p>
+            {x.reviewDecision&&<div className="notice">
+              <strong>Son koç kararı:</strong>
+              {' '}{x.reviewDecision.decision==='CLOSE_REVIEW'?'İnceleme tamamlandı'
+                :x.reviewDecision.decision==='DISMISS_SIGNAL'?'Gerekçeli iptal'
+                  :'Ek ölçüm istendi'}
+              <p>{x.reviewDecision.note}</p>
+              <small className="muted">
+                {new Date(x.reviewDecision.decidedAt).toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'})}
+                {x.reviewDecision.nextReviewDate?' · Yeni kontrol '+x.reviewDecision.nextReviewDate:''}
+              </small>
+            </div>}
+            {x.reviewHistory?.length>1&&<details>
+              <summary>Önceki koç kararları ({x.reviewHistory.length})</summary>
+              {x.reviewHistory.slice(1).map((d:any,i:number)=><p className="muted" key={i}>
+                {new Date(d.decidedAt).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'})}
+                {' · '}{d.decision} · {d.note}
+              </p>)}
+            </details>}
+            {x.taskStatus==='OPEN'&&<div style={{marginTop:14}}>
+              <strong>Koç inceleme kararı</strong>
+              {x.dueAt&&<p className="muted">
+                Takip için kayıtlı son tarih: {new Date(x.dueAt).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'})}
+              </p>}
+              <div className="field">
+                <label htmlFor={'decision-kind-'+x.taskId}>Karar türü</label>
+                <select id={'decision-kind-'+x.taskId}
+                  value={decisionTypes[x.taskId]||'COLLECT_MORE_EVIDENCE'}
+                  onChange={e=>setDecisionTypes(p=>({...p,[x.taskId]:e.target.value}))}
+                  disabled={Boolean(decisionPending)}>
+                  <option value="COLLECT_MORE_EVIDENCE">Ek kanıt topla ve takip tarihi belirle</option>
+                  <option value="CLOSE_REVIEW">İncelemeyi gerekçeli tamamla</option>
+                  <option value="DISMISS_SIGNAL">Desteklenmeyen sinyali gerekçeli iptal et</option>
+                </select>
+              </div>
+              {(decisionTypes[x.taskId]||'COLLECT_MORE_EVIDENCE')==='COLLECT_MORE_EVIDENCE'&&
+                <div className="field">
+                  <label htmlFor={'decision-date-'+x.taskId}>Yeni kontrol günü (1–28 gün içinde)</label>
+                  <input type="date" id={'decision-date-'+x.taskId}
+                    value={decisionDates[x.taskId]||''}
+                    onChange={e=>setDecisionDates(p=>({...p,[x.taskId]:e.target.value}))}
+                    disabled={Boolean(decisionPending)}/>
+                </div>}
+              <div className="field">
+                <label htmlFor={'decision-note-'+x.taskId}>Gözlem ve karar gerekçesi (en az 20 karakter)</label>
+                <textarea id={'decision-note-'+x.taskId}
+                  rows={3} maxLength={1000}
+                  placeholder="Soru türleri, güçlük, süre baskısı veya veri yeterliliği hakkında gözleminizi belirtin."
+                  value={decisionNotes[x.taskId]||''}
+                  onChange={e=>setDecisionNotes(p=>({...p,[x.taskId]:e.target.value}))}
+                  disabled={Boolean(decisionPending)}/>
+              </div>
+              <button className="btn primary" type="button"
+                disabled={Boolean(decisionPending)||
+                  (decisionNotes[x.taskId]||'').trim().length<20||
+                  ((decisionTypes[x.taskId]||'COLLECT_MORE_EVIDENCE')==='COLLECT_MORE_EVIDENCE'
+                    &&!decisionDates[x.taskId])}
+                onClick={()=>void saveAcademicReviewDecision(x)}>
+                {decisionPending===x.taskId?'Karar kaydediliyor…':'Koç Kararını Kaydet'}
+              </button>
+              <p className="muted">Koçun kararı denetim kaydında saklanır.
+                İncelemenin kapatılması öğrenciye yeni görev atamaz veya öğrenmenin kanıtlandığı anlamına gelmez.</p>
+            </div>}
           </details>)}</div>}
       </section>}
       <section className="card">
