@@ -11,7 +11,8 @@ import {compareWeeklyPlans,planPreviewDigest} from '@/lib/smartPlanApproval';
 const confirmSchema=z.object({
   action:z.literal('ACTIVATE'),
   confirm:z.literal(true),
-  previewDigest:z.string().regex(/^[a-f0-9]{64}$/)
+  previewDigest:z.string().regex(/^[a-f0-9]{64}$/),
+  revisionReason:z.string().trim().min(15).max(600)
 });
 
 async function coachStudent(id:string){
@@ -90,14 +91,16 @@ async function POST__handler(req:Request,{params}:{params:Promise<{id:string}>})
           oldMinutes:comparison.previous?.minutes??null,
           newMinutes:comparison.proposed.minutes,
           deltaMinutes:comparison.deltaMinutes,
-          approvedAt:now.toISOString()
+          approvedAt:now.toISOString(),
+          revisionReason:input.revisionReason
         }
       }});
       return created;
     },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable,maxWait:6000,timeout:15000});
     return NextResponse.json({
       ok:true,activated:true,planId:row.id,previousPlanIds:previous.map(x=>x.id),
-      comparison,note:'Koç onayı kaydedildi. Önceki planlar geçmişte korundu; yeni etkin plan açıldı. Öğrencinin görev ve tekrar teslim kayıtları değiştirilmedi.'
+      comparison,revisionReason:input.revisionReason,
+      note:'Koç onayı ve revizyon gerekçesi kaydedildi. Önceki planlar geçmişte korundu; yeni etkin plan açıldı. Öğrencinin görev ve tekrar teslim kayıtları değiştirilmedi.'
     },{headers:{'Cache-Control':'private, no-store'}});
   }catch(error){
     if((error as {code?:string})?.code==='P2034')
