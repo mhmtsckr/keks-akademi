@@ -5,6 +5,7 @@ import { FormEvent,ReactNode,useEffect,useState } from 'react';
 export function CoachSessionWorkflow({studentId}:{studentId:string}){
   const [sessions,setSessions]=useState<any[]>([]);
   const [brief,setBrief]=useState<any>(null);
+  const [planAudit,setPlanAudit]=useState<any>(null);
   const [learningImpact,setLearningImpact]=useState<any[]>([]);
   const [impactNote,setImpactNote]=useState('');
   const [selected,setSelected]=useState('');
@@ -21,6 +22,10 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
     }
     const b=await fetch('/api/coach/students/'+studentId+'/session-workflow');const bj=await b.json();
     if(bj.ok)setBrief(bj.brief);
+    try{
+      const planResponse=await fetch('/api/coach/students/'+studentId+'/plan-adherence',{cache:'no-store'});
+      if(planResponse.ok){const pa=await planResponse.json();if(pa.ok)setPlanAudit(pa);}
+    }catch{/* Plan telemetry is supplemental; keep coach session accessible. */}
     const impact=await fetch('/api/coach/students/'+studentId+'/learning-impact',{cache:'no-store'});
     if(impact.ok){
       const ij=await impact.json();
@@ -133,6 +138,35 @@ export function CoachSessionWorkflow({studentId}:{studentId:string}){
             <p>Odak: <strong>{brief.weeklyChange?.focusMinutes?.current||0} dk</strong></p>
           </BriefBlock>
         </div>
+
+        {planAudit&&<div className="card">
+          <div className="moduleEyebrow">AKILLI ÇALIŞMA PLANI · ONAYLI PLANIN GERÇEKLEŞMESİ</div>
+          <h3>Koç kararları için gerçekleşme sinyalleri</h3>
+          {!planAudit.report
+            ?<p className="muted">{planAudit.note||'Aktif ve onaylı akıllı haftalık program yok.'}</p>
+            :<>
+              <p className="muted">Onaylı plan: {planAudit.report.title}</p>
+              <div className="row" style={{flexWrap:'wrap',gap:10}}>
+                <span className="pill">Teslim edilen koç görevi: {planAudit.report.summary.confirmedCoachTasks}/{planAudit.report.summary.expectedCoachTasks}</span>
+                <span className="pill">Geçmiş, teslimsiz: {planAudit.report.summary.missedCoachTasks}</span>
+                <span className="pill">Zamanlayıcı verili gün: {planAudit.report.summary.observedFocusDays}</span>
+              </div>
+              {planAudit.report.recommendations?.length
+                ?planAudit.report.recommendations.map((x:any,i:number)=><div className="notice" key={i}>
+                    <strong>{x.reason}</strong><p>{x.action}</p>
+                  </div>)
+                :<p className="muted">Ek revizyon sinyali yok. Bu, bütün öneri bloklarının tamamlandığını göstermez.</p>}
+              <details><summary>Günlük plan ve ölçülen süreleri karşılaştır</summary>
+                {planAudit.report.days.map((d:any)=><p key={d.date}>
+                  <strong>{d.date}:</strong> {d.plannedMinutes} dk planlanan;
+                  {' '}{d.observedFocusMinutes==null?'ölçülen süre yok':d.observedFocusMinutes+' dk ölçülen odak'};
+                  {' · '}Koç teslimi {d.coachConfirmed}/{d.coachAssigned}
+                </p>)}
+              </details>
+              <small className="muted">{planAudit.report.evidenceNote}</small>
+              {planAudit.dataLimitReached&&<p className="muted">Veri üst sınırına ulaşıldı; tüm oturumlar dahil olmayabilir.</p>}
+            </>}
+        </div>}
 
         <div className="card">
           <div className="moduleEyebrow">MİZA · KOÇ MÜDAHALE ETKİ İZLEME</div>
