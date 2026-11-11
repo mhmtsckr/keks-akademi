@@ -26,7 +26,8 @@ describe('Akademik yeniden ölçüm: koç inceleme talebinden önce ve sonra',()
  });
  it('fark artarsa bunu olumsuz ölçüm sinyali olarak gösterir',()=>{
   const r=evaluateAcademicCrossSourceOutcome(task,
-    practices,[...exams.slice(0,2),row('2026-11-04','TYT',0,6),row('2026-11-06','TYT',0,6)],now);
+    practices,[row('2026-10-29','TYT',5,1),row('2026-10-30','TYT',5,1),
+      row('2026-11-04','TYT',0,6),row('2026-11-06','TYT',0,6)],now);
   expect(r.state).toBe('GAP_WIDENED');
  });
  it('tek deneme gününü yeterli kanıt saymaz',()=>{
