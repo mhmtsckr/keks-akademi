@@ -9,20 +9,23 @@ function pctWidth(v:number|null){return Math.max(0,Math.min(100,v??0))+'%';}
 export function SmartCoachDashboard(){
   const [metrics,setMetrics]=useState<any>(null);
   const [plan,setPlan]=useState<any>(null);
+  const [adherence,setAdherence]=useState<any>(null);
   const [reviews,setReviews]=useState<any[]>([]);
   const [reviewAnswers,setReviewAnswers]=useState<Record<string,string>>({});
   const [msg,setMsg]=useState('');
   const [reviewBusy,setReviewBusy]=useState(false);
 
   async function load(){
-    const [m,p,r]=await Promise.all([
+    const [m,p,r,a]=await Promise.all([
       fetch('/api/student/metrics').then(x=>x.json()),
       fetch('/api/student/smart-plan').then(x=>x.json()),
-      fetch('/api/student/reviews').then(x=>x.json())
+      fetch('/api/student/reviews').then(x=>x.json()),
+      fetch('/api/student/plan-adherence',{cache:'no-store'}).then(x=>x.json()).catch(()=>({ok:false}))
     ]);
     if(m.ok)setMetrics(m);
     if(p.ok)setPlan(p.plan);
     if(r.ok)setReviews(r.items||[]);
+    if(a.ok)setAdherence(a);
   }
   useEffect(()=>{load()},[]);
 
@@ -142,6 +145,34 @@ export function SmartCoachDashboard(){
           <small className="muted">Kanıt: {x.studyDays} farklı gün · {x.totalQuestions} soru · {x.confidence==='MULTI_DAY'?'Karşılaştırılabilir günler':'Henüz karşılaştırma için yeterli değil'}</small>
         </article>)}
       </div>
+    </div>}
+
+    {adherence&&<div className="card">
+      <div className="moduleEyebrow">AKILLI KİŞİSEL PLAN · GERÇEKLEŞME İZLEME</div>
+      <h3>Onaylı planda gerçekleşen çalışmalar</h3>
+      {!adherence.approvedPlan||!adherence.report
+        ?<p className="muted">{adherence.note||'Koç tarafından onaylanmış etkin haftalık plan yok.'}</p>
+        :<>
+          <p className="muted">Yalnızca koçun onayladığı etkin programdaki görev teslimleri ve ölçülen zamanlayıcı oturumları kullanılır. Öğrenci taslakları bu oranlara dahil değildir.</p>
+          <div className="row" style={{gap:10,flexWrap:'wrap'}}>
+            <span className="pill">Koç görevi: {adherence.report.summary.confirmedCoachTasks} / {adherence.report.summary.expectedCoachTasks}</span>
+            <span className="pill">Geçmiş, teslimsiz görev: {adherence.report.summary.missedCoachTasks}</span>
+            <span className="pill">Ölçülmüş odak günü: {adherence.report.summary.observedFocusDays}</span>
+          </div>
+          <div className="stack">
+            {adherence.report.days.map((d:any)=><div className="notice" key={d.date}>
+              <strong>{new Date(d.date+'T12:00:00+03:00').toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</strong>
+              <p className="muted">Planlanan: {d.plannedMinutes} dk · Zamanlayıcıyla ölçülen: {d.observedFocusMinutes==null?'Süre kaydı yok':d.observedFocusMinutes+' dk'}</p>
+              <small className="muted">Koç teslimi {d.coachConfirmed}/{d.coachAssigned} · {d.status==='FUTURE'?'Gelecek gün':d.status==='TODAY'?'Bugün':'Geçmiş gün'} · {d.suggestedBlocks} öneri bloğu (teslim kanıtı yok)</small>
+            </div>)}
+          </div>
+          <details>
+            <summary>Veri sınırları ve önerilen koç adımları</summary>
+            <p className="muted">{adherence.report.evidenceNote}</p>
+            {adherence.dataLimitReached&&<p className="muted">Kayıt üst sınırına ulaşıldı; bazı veriler değerlendirmeye dahil edilmemiş olabilir.</p>}
+            {(adherence.report.recommendations||[]).map((x:any,i:number)=><p key={i}><strong>{x.reason}</strong> {x.action}</p>)}
+          </details>
+        </>}
     </div>}
 
     {plan?.prioritySummary&&<div className="card">
