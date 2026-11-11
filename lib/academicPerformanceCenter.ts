@@ -131,18 +131,21 @@ export function buildAcademicPerformanceCenter(
     }));
   }).sort((a,b)=>topicOrder[a.signal]-topicOrder[b.signal]
     ||b.questions-a.questions||a.subject.localeCompare(b.subject,'tr')).slice(0,24);
-  const errorCounts=new Map<string,{records:number;wrong:number}>();
+  const errorCounts=new Map<string,{examType:string;code:string;records:number;wrong:number}>();
   for(const row of valid){
     if(row.wrong===0)continue;
     const code=row.errorReason?.trim().toUpperCase()||'UNSPECIFIED';
-    const current=errorCounts.get(code)||{records:0,wrong:0};
+    const examType=row.examType.trim();
+    const bucket=normalize(examType)+'|'+code;
+    const current=errorCounts.get(bucket)||{examType,code,records:0,wrong:0};
     current.records++;current.wrong+=row.wrong;
-    errorCounts.set(code,current);
+    errorCounts.set(bucket,current);
   }
-  const errorReasons=[...errorCounts].map(([code,x])=>({
-    code,label:reasons[code]|| (code==='UNSPECIFIED'?'Neden belirtilmedi':'Diğer / sınıflanmamış'),
+  const errorReasons=[...errorCounts.values()].map(x=>({
+    examType:x.examType,code:x.code,
+    label:reasons[x.code]|| (x.code==='UNSPECIFIED'?'Neden belirtilmedi':'Diğer / sınıflanmamış'),
     records:x.records,wrongQuestionsInRecords:x.wrong
-  })).sort((a,b)=>b.records-a.records).slice(0,9);
+  })).sort((a,b)=>b.records-a.records).slice(0,30);
   const validExams=exams.filter(x=>{
     const d=new Date(x.examDate).getTime(),total=x.correct+x.wrong+x.blank;
     return Number.isFinite(d)&&d<=nowTime&&d>=oldest
