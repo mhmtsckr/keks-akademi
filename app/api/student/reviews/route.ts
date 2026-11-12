@@ -8,6 +8,7 @@ import {areEquivalentShortAnswers} from '@/lib/mathAnswerEquivalence';
 import { adaptiveReviewIntervalDays,reviewIntervalReason } from '@/lib/learningEngine';
 import {buildWrongQuestionSupport,REMEDIATION_REASONS} from '@/lib/wrongQuestionRemediation';
 import {reasonForPersonalReview} from '@/lib/quizErrorLearning';
+import {isKeksMathQuestion,keksMathDueAt,nextKeksMathReview} from '@/lib/keksMathReview';
 
 const schema=z.object({
   id:z.string(),answer:z.string().max(2000).default(''),submitBlank:z.boolean().default(false),microSessionId:z.string().optional(),
@@ -133,11 +134,12 @@ async function POST__handler(req:Request){
     ?Math.round(recentWindow.filter(x=>x.correct).length/recentWindow.length*100)
     :null;
 
-  let step=item.stepIndex;
-  if(correct) step=Math.min(step+1,REVIEW_DAYS.length);
-  else step=Math.max(0,step-1);
-  const completed=correct && step>=REVIEW_DAYS.length;
-  const due=new Date();
+  const strictMath=isKeksMathQuestion(item.question.sourceKind);
+  const keksState=strictMath?nextKeksMathReview(item.stepIndex,correct):null;
+  let step=keksState?keksState.stepIndex:item.stepIndex;
+  if(!keksState){if(correct)step=Math.min(step+1,REVIEW_DAYS.length);else step=Math.max(0,step-1);}
+  const completed=keksState?keksState.completed:(correct && step>=REVIEW_DAYS.length);
+  let due=new Date();
   const adaptiveInput={
     nextStep:step,
     correct,
@@ -146,11 +148,12 @@ async function POST__handler(req:Request){
     incorrectStreak,
     recentAccuracy
   };
-  const nextIntervalDays=completed?null:adaptiveReviewIntervalDays(adaptiveInput);
+  const nextIntervalDays=keksState?keksState.nextIntervalDays:(completed?null:adaptiveReviewIntervalDays(adaptiveInput));
   const intervalReason=completed
-    ?'Bu sorunun tekrar döngüsü bitti; kazanımın kalıcılığı farklı sorularda ayrıca doğrulanmalıdır.'
+    ?'Tekrar döngüsü bitti; kalıcı öğrenme yeni sorularla ayrıca doğrulanmalıdır.'
+    :strictMath?(correct?'KEKS Matematik sabit 0–1–3–7–14–28. gün programına göre sonraki aşama planlandı.':'Yanlış veya boş cevap nedeniyle soru yeniden 0. gün aşamasına alındı.')
     :reviewIntervalReason(adaptiveInput,Number(nextIntervalDays||0));
-  if(!completed) due.setDate(due.getDate()+Number(nextIntervalDays||0));
+  if(!completed){if(strictMath)due=keksMathDueAt(due,Number(nextIntervalDays||0));else due.setDate(due.getDate()+Number(nextIntervalDays||0));}
   const row=await db.$transaction(async tx=>{
     if(microSession){
       const result={correct,blank,outcome,correctAnswer:item.question.correctAnswer,explanation:item.question.explanation,support,completed,nextIntervalDays,intervalReason,nextDueAt:completed?null:due.toISOString()};
@@ -184,6 +187,7 @@ async function POST__handler(req:Request){
         previousStep:item.stepIndex,
         nextStep:step,
         nextIntervalDays,
+        scheduleKind:strictMath?'KEKS_MATH_FIXED_01371428':'ADAPTIVE',
         intervalReason,
         nextDueAt:completed?null:due.toISOString()
       }
