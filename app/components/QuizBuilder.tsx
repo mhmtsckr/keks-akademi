@@ -29,9 +29,9 @@ const REVIEW_DAYS=[0,1,3,7,14,28];
 function reviewStage(step:number){return REVIEW_DAYS[Math.min(Math.max(step,0),REVIEW_DAYS.length-1)]??0}
 function trDate(v:string){return new Date(v).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul',day:'2-digit',month:'long',year:'numeric'})}
 
-export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
+export function QuizBuilder({allowedExams,fixedSubject,bankOnly=false}:{allowedExams:ExamType[];fixedSubject?:string;bankOnly?:boolean}) {
   const [exam,setExam]=useState<ExamType>(allowedExams[0]||'TYT');
-  const [subject,setSubject]=useState<string>(Object.keys(EXAM_CATALOG[allowedExams[0]||'TYT'])[0]||'');
+  const [subject,setSubject]=useState<string>(fixedSubject||Object.keys(EXAM_CATALOG[allowedExams[0]||'TYT'])[0]||'');
   const [topic,setTopic]=useState('');
   const [count,setCount]=useState(10);
   const [quiz,setQuiz]=useState<{id:string;title:string}|null>(null);
@@ -90,21 +90,21 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     const timer=setTimeout(()=>{void persistDraft(currentQuizId)},650);
     return ()=>clearTimeout(timer);
   },[currentQuizId,answers,markedForReturn,hydrated,finished,submitting]);
-  const subjects=Object.keys(EXAM_CATALOG[exam]||{});
-  const topics=useMemo(()=>((EXAM_CATALOG[exam] as any)?.[subject]||[]) as string[],[exam,subject]);
+  const subjects=fixedSubject?[fixedSubject]:Object.keys(EXAM_CATALOG[exam]||{});
+  const topics=useMemo(()=>{const list=(((EXAM_CATALOG[exam] as any)?.[subject]||[]) as string[]);return bankOnly?[...new Set([...list,'Mantık','Karma'])]:list;},[exam,subject,bankOnly]);
 
-  function changeExam(v:ExamType){setExam(v);const s=Object.keys(EXAM_CATALOG[v])[0]||'';setSubject(s);setTopic('');setQuiz(null);setQuestions([])}
+  function changeExam(v:ExamType){setExam(v);const s=fixedSubject||Object.keys(EXAM_CATALOG[v])[0]||'';setSubject(s);setTopic('');setQuiz(null);setQuestions([])}
 
   async function loadReviews(){
     const r=await fetch('/api/student/reviews',{cache:'no-store'});
     const j=await r.json();
-    if(r.ok)setReviews(j.items||[]);
+    if(r.ok)setReviews(bankOnly?(j.items||[]).filter((x:ReviewItem)=>x.question.sourceKind.startsWith('KEKS_MAT_2026:')):(j.items||[]));
   }
   useEffect(()=>{loadReviews()},[]);
 
   async function build(){
     setMsg('Test hazırlanıyor...');
-    const r=await fetch('/api/student/quizzes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({examType:exam,subject,topic:topic||undefined,count})});
+    const r=await fetch('/api/student/quizzes',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({examType:exam,subject,topic:topic||undefined,count,...(bankOnly?{bank:'KEKS_MAT_2026'}:{})})});
     const j=await r.json();
     if(!r.ok){setMsg('Hata: '+(j.error||'Test oluşturulamadı.'));return}
     setQuiz(j.quiz);setQuestions(j.questions);setAnswers({});setActiveQuestion(0);setMarkedForReturn({});setShowFinishConfirm(false);setFinished(false);setResult(null);setBlankReasons({});setHydrated(false);setMsg('');
@@ -135,7 +135,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
     }catch{setMsg('Hata: Bağlantı kurulamadı. Sonuç kaydedilemedi.');return}
     finally{setSubmitting(false)}
     setFinished(true);setShowFinishConfirm(false);setResult(j);
-    setMsg('Test tamamlandı · Doğru '+j.attempt.correct+' · Yanlış '+j.attempt.wrong+' · Boş '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.reviewAdded+' yanlış soru 0. gün tekrar kuyruğuna eklendi.':'')+' · Koç raporu oluşturuldu.');
+    setMsg('Test tamamlandı · Doğru '+j.attempt.correct+' · Yanlış '+j.attempt.wrong+' · Boş '+j.attempt.blank+' · Net '+j.attempt.net+(j.reviewAdded?' · '+j.reviewAdded+' yanlış/boş soru 0. gün tekrar kuyruğuna eklendi.':'')+' · Koç raporu oluşturuldu.');
     await loadReviews();
   }
 
@@ -167,11 +167,11 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
 
   return <div className="stack keksFocusArea">
     <div className="card">
-      <h1>Konu Bazlı Test Oluştur</h1>
-      <p className="muted">Sistem özgün veya lisanslı soru bankasından test oluşturur. Resmî çıkmış sorular için kaynak bağlantısı gösterilebilir.</p>
+      <h1>{bankOnly?'KEKS Matematik · Soru Bankası':'Konu Bazlı Test Oluştur'}</h1>
+      <p className="muted">{bankOnly?'Yalnızca matematiksel doğruluğu ve çözümü editör onayından geçen KEKS soruları sunulur. Test tamamlandığında yanlış ve boş sorular 0–1–3–7–14–28. gün tekrarına alınır.':'Sistem özgün veya lisanslı soru bankasından test oluşturur. Resmî çıkmış sorular için kaynak bağlantısı gösterilebilir.'}</p>
       <div className="row">
-        <div className="field" style={{flex:1}}><label>Sınav</label><select value={exam} onChange={e=>changeExam(e.target.value as ExamType)}>{allowedExams.map(x=><option key={x}>{x}</option>)}</select></div>
-        <div className="field" style={{flex:1}}><label>Branş</label><select value={subject} onChange={e=>{setSubject(e.target.value);setTopic('')}}>{subjects.map(x=><option key={x}>{x}</option>)}</select></div>
+        {!bankOnly&&<div className="field" style={{flex:1}}><label>Sınav</label><select value={exam} onChange={e=>changeExam(e.target.value as ExamType)}>{allowedExams.map(x=><option key={x}>{x}</option>)}</select></div>}
+        {!bankOnly&&<div className="field" style={{flex:1}}><label>Branş</label><select value={subject} onChange={e=>{setSubject(e.target.value);setTopic('')}}>{subjects.map(x=><option key={x}>{x}</option>)}</select></div>}
       </div>
       <div className="row">
         <div className="field" style={{flex:2}}><label>Konu</label><select value={topic} onChange={e=>setTopic(e.target.value)}><option value="">Karma</option>{topics.map(x=><option key={x}>{x}</option>)}</select></div>
@@ -250,7 +250,7 @@ export function QuizBuilder({allowedExams}:{allowedExams:ExamType[]}) {
 
     <div className="card">
       <div className="moduleHeaderRow">
-        <div><div className="moduleEyebrow">0–1–3–7–14–28. GÜN TEKRAR SİSTEMİ</div><h2>Yanlış Soru Tekrar Kuyruğu</h2><p className="muted">Yanlış yaptığın sorular otomatik kuyruğa girer. Doğru çözdükçe tekrar aralığı 1 → 3 → 7 → 14 → 28 güne genişler; tekrar yanlış olursa soru 0. güne döner.</p></div>
+        <div><div className="moduleEyebrow">0–1–3–7–14–28. GÜN TEKRAR SİSTEMİ</div><h2>Yanlış ve Boş Soru Tekrar Kuyruğu</h2><p className="muted">Yanlış veya boş bıraktığın her soru otomatik kuyruğa girer. KEKS Matematik soruları sabit 0–1–3–7–14–28. gün aşamalarında tekrar edilir; tekrar yanlış olursa soru 0. güne döner.</p></div>
         <span className="pill">{reviews.length} soru</span>
       </div>
       {reviews.length===0?<div className="notice">Tekrar kuyruğun boş. Testlerde yanlış yaptığın sorular burada branş branş görünecek.</div>:<div className="stack">
